@@ -103,7 +103,6 @@ from electrum.commands import get_parser, known_commands, Commands, config_varia
 from electrum import daemon
 from electrum import keystore
 from electrum.mnemonic import Mnemonic
-import electrum_plugins
 
 # get password routine
 def prompt_password(prompt, confirm=True):
@@ -360,6 +359,10 @@ if __name__ == '__main__':
     if config.get('nolnet'):
         bitcoin.set_nolnet()
         network.set_nolnet()
+
+    if config.get('simnet'):
+        bitcoin.set_simnet()
+        network.set_simnet()
 
     # run non-RPC commands separately
     if cmdname in ['create', 'restore']:

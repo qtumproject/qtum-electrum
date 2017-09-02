@@ -90,6 +90,8 @@ class SimpleConfig(PrintError):
             path = os.path.join(path, 'testnet')
         elif self.get('nolnet'):
             path = os.path.join(path, 'nolnet')
+        elif self.get("simnet"):
+            path = os.path.join(path, 'simnet')
 
         # Make directory if it does not yet exist.
         if not os.path.exists(path):
