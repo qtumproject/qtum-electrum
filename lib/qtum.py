@@ -3,6 +3,20 @@
 __author__ = 'CodeFace'
 """
 
+import hashlib
+import base64
+import re
+import hmac
+import os
+
+import ecdsa
+import pyaes
+
+from .util import bfh, bh2u, to_string
+from . import version
+from .util import print_error, InvalidPassword, assert_bytes, to_bytes
+from . import segwit_addr
+
 # QTUM network constants
 TESTNET = False
 NOLNET = False
