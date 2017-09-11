@@ -40,7 +40,7 @@ from .i18n import _
 import urllib.request, urllib.parse, urllib.error
 import queue
 
-base_units = {'BTC':8, 'mBTC':5, 'uBTC':2}
+base_units = {'QTUM':8, 'mQTUM':5, 'uQTUM':2}
 fee_levels = [_('Within 25 blocks'), _('Within 10 blocks'), _('Within 5 blocks'), _('Within 2 blocks'), _('In the next block')]
 
 def normalize_version(v):
