@@ -96,6 +96,13 @@ def set_nolnet():
         '14.3.140.101': DEFAULT_PORTS,
     }
 
+def set_skynet():
+    global DEFAULT_PORTS, DEFAULT_SERVERS
+    DEFAULT_PORTS = {'t': '50001', 's': '50002'}
+    DEFAULT_SERVERS = {
+        '127.0.0.1': DEFAULT_PORTS,
+    }
+
 NODES_RETRY_INTERVAL = 60
 SERVER_RETRY_INTERVAL = 10
 

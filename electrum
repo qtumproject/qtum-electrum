@@ -93,7 +93,7 @@ if is_local or is_android:
     imp.load_module('electrum_plugins', *imp.find_module('plugins'))
 
 
-from electrum import bitcoin, network
+from electrum import bitcoin, network, qtum
 from electrum import SimpleConfig, Network
 from electrum.wallet import Wallet, Imported_Wallet
 from electrum.storage import WalletStorage
@@ -353,13 +353,17 @@ if __name__ == '__main__':
     config = SimpleConfig(config_options)
     cmdname = config.get('cmd')
 
-    if config.get('testnet'):
-        bitcoin.set_testnet()
-        network.set_testnet()
+    # if config.get('testnet'):
+    #     bitcoin.set_testnet()
+    #     network.set_testnet()
+    #
+    # if config.get('nolnet'):
+    #     bitcoin.set_nolnet()
+    #     network.set_nolnet()
 
-    if config.get('nolnet'):
-        bitcoin.set_nolnet()
-        network.set_nolnet()
+    if config.get('skynet'):
+        qtum.set_skynet()
+        network.set_skynet()
 
     # run non-RPC commands separately
     if cmdname in ['create', 'restore']:
