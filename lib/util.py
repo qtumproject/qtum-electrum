@@ -435,36 +435,14 @@ def time_difference(distance_in_time, include_seconds):
         return "over %d years" % (round(distance_in_minutes / 525600))
 
 mainnet_block_explorers = {
-    'Biteasy.com': ('https://www.biteasy.com/blockchain',
+    'Qtum.info': ('https://qtum.info',
                         {'tx': 'transactions', 'addr': 'addresses'}),
-    'Bitflyer.jp': ('https://chainflyer.bitflyer.jp',
-                        {'tx': 'Transaction', 'addr': 'Address'}),
-    'Blockchain.info': ('https://blockchain.info',
-                        {'tx': 'tx', 'addr': 'address'}),
-    'blockchainbdgpzk.onion': ('https://blockchainbdgpzk.onion',
-                        {'tx': 'tx', 'addr': 'address'}),
-    'Blockr.io': ('https://btc.blockr.io',
-                        {'tx': 'tx/info', 'addr': 'address/info'}),
-    'Blocktrail.com': ('https://www.blocktrail.com/BTC',
-                        {'tx': 'tx', 'addr': 'address'}),
-    'BTC.com': ('https://chain.btc.com',
-                        {'tx': 'tx', 'addr': 'address'}),
-    'Chain.so': ('https://www.chain.so',
-                        {'tx': 'tx/BTC', 'addr': 'address/BTC'}),
-    'Insight.is': ('https://insight.bitpay.com',
-                        {'tx': 'tx', 'addr': 'address'}),
-    'TradeBlock.com': ('https://tradeblock.com/blockchain',
-                        {'tx': 'tx', 'addr': 'address'}),
-    'BlockCypher.com': ('https://live.blockcypher.com/btc',
-                        {'tx': 'tx', 'addr': 'address'}),
-    'Blockchair.com': ('https://blockchair.com/bitcoin',
-                        {'tx': 'transaction', 'addr': 'address'}),
     'system default': ('blockchain:',
                         {'tx': 'tx', 'addr': 'address'}),
 }
 
-testnet_block_explorers = {
-    'Blocktrail.com': ('https://www.blocktrail.com/tBTC',
+skynet_block_explorers = {
+    'Qtum.info': ('https://skynet.qtum.info',
                        {'tx': 'tx', 'addr': 'address'}),
     'system default': ('blockchain:',
                        {'tx': 'tx', 'addr': 'address'}),
@@ -472,10 +450,10 @@ testnet_block_explorers = {
 
 def block_explorer_info():
     from . import bitcoin
-    return testnet_block_explorers if bitcoin.TESTNET else mainnet_block_explorers
+    return skynet_block_explorers if bitcoin.SKYNET else mainnet_block_explorers
 
 def block_explorer(config):
-    return config.get('block_explorer', 'Blocktrail.com')
+    return config.get('block_explorer', 'qtum.info')
 
 def block_explorer_tuple(config):
     return block_explorer_info().get(block_explorer(config))
@@ -500,7 +478,7 @@ def parse_URI(uri, on_pr=None):
 
     if ':' not in uri:
         if not bitcoin.is_address(uri):
-            raise BaseException("Not a bitcoin address")
+            raise BaseException("Not a qtum address")
         return {'address': uri}
 
     u = urllib.parse.urlparse(uri)
