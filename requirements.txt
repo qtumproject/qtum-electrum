@@ -1,0 +1,13 @@
+dnspython
+ecdsa
+jsonrpclib-pelix
+pbkdf2
+protobuf
+publicsuffix
+pyaes
+PySocks
+qrcode
+requests
+rsa
+six
+
