@@ -522,7 +522,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         d = self.network.get_donation_address()
         if d:
             host = self.network.get_parameters()[0]
-            self.pay_to_URI('bitcoin:%s?message=donation for %s'%(d, host))
+            self.pay_to_URI('qtum:%s?message=donation for %s'%(d, host))
         else:
             self.show_error(_('No donation address for this server'))
 
@@ -1510,7 +1510,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         try:
             out = util.parse_URI(URI, self.on_pr)
         except BaseException as e:
-            self.show_error(_('Invalid bitcoin URI:') + '\n' + str(e))
+            self.show_error(_('Invalid qtum URI:') + '\n' + str(e))
             return
         self.show_send_tab()
         r = out.get('r')
