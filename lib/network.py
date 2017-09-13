@@ -49,58 +49,15 @@ from .version import ELECTRUM_VERSION, PROTOCOL_VERSION
 
 DEFAULT_PORTS = {'t':'50001', 's':'50002'}
 
-#There is a schedule to move the default list to e-x (electrumx) by Jan 2018
-#Schedule is as follows:
-#move ~3/4 to e-x by 1.4.17
-#then gradually switch remaining nodes to e-x nodes
-
 DEFAULT_SERVERS = {
-    'erbium1.sytes.net':DEFAULT_PORTS,                  # core, e-x
-    'ecdsa.net':{'t':'50001', 's':'110'},               # core, e-x
-    'gh05.geekhosters.com':DEFAULT_PORTS,               # core, e-s
-    'VPS.hsmiths.com':DEFAULT_PORTS,                    # core, e-x
-    'electrum.anduck.net':DEFAULT_PORTS,                # core, e-s; banner with version pending
-    'electrum.no-ip.org':DEFAULT_PORTS,                 # core, e-s
-    'electrum.be':DEFAULT_PORTS,                        # core, e-x
-    'helicarrier.bauerj.eu':DEFAULT_PORTS,              # core, e-x
-    'elex01.blackpole.online':DEFAULT_PORTS,            # core, e-x
-    'electrumx.not.fyi':DEFAULT_PORTS,                  # core, e-x
-    'node.xbt.eu':DEFAULT_PORTS,                        # core, e-x
-    'kirsche.emzy.de':DEFAULT_PORTS,                    # core, e-x
-    'electrum.villocq.com':DEFAULT_PORTS,               # core?, e-s; banner with version recommended
-    'us11.einfachmalnettsein.de':DEFAULT_PORTS,         # core, e-x
-    'electrum.trouth.net':DEFAULT_PORTS,                # BU, e-s
-    'Electrum.hsmiths.com':{'t':'8080', 's':'995'},     # core, e-x
-    'electrum3.hachre.de':DEFAULT_PORTS,                # core, e-x
-    'b.1209k.com':DEFAULT_PORTS,                        # XT, jelectrum
-    'elec.luggs.co':{ 's':'443'},                       # core, e-x
-    'btc.smsys.me':{'t':'110', 's':'995'},              # BU, e-x
+
 }
-
-def set_testnet():
-    global DEFAULT_PORTS, DEFAULT_SERVERS
-    DEFAULT_PORTS = {'t':'51001', 's':'51002'}
-    DEFAULT_SERVERS = {
-        'testnetnode.arihanc.com': DEFAULT_PORTS,
-        'testnet1.bauerj.eu': DEFAULT_PORTS,
-        '14.3.140.101': DEFAULT_PORTS,
-        'testnet.hsmiths.com': {'t':'53011', 's':'53012'},
-        'electrum.akinbo.org': DEFAULT_PORTS,
-        'ELEX05.blackpole.online': {'t':'52011', 's':'52002'},
-    }
-
-def set_nolnet():
-    global DEFAULT_PORTS, DEFAULT_SERVERS
-    DEFAULT_PORTS = {'t':'52001', 's':'52002'}
-    DEFAULT_SERVERS = {
-        '14.3.140.101': DEFAULT_PORTS,
-    }
 
 def set_skynet():
     global DEFAULT_PORTS, DEFAULT_SERVERS
-    DEFAULT_PORTS = {'t': '50001', 's': '50002'}
+    DEFAULT_PORTS = {'t': '52001', 's': '52002'}
     DEFAULT_SERVERS = {
-        '127.0.0.1': DEFAULT_PORTS,
+        '47.88.61.227': DEFAULT_PORTS,
     }
 
 NODES_RETRY_INTERVAL = 60
@@ -127,17 +84,19 @@ def parse_servers(result):
                 elif re.match("p\d*", v):
                     pruning_level = v[1:]
                 if pruning_level == '': pruning_level = '0'
-        try:
-            is_recent = util.normalize_version(version) >= util.normalize_version(PROTOCOL_VERSION)
-        except Exception as e:
-            print_error(e)
-            is_recent = False
-
-        if out and is_recent:
+        if out:
             out['pruning'] = pruning_level
+            out['version'] = version
             servers[host] = out
-
     return servers
+
+def filter_version(servers):
+    def is_recent(version):
+        try:
+            return util.normalize_version(version) >= util.normalize_version(PROTOCOL_VERSION)
+        except Exception as e:
+            return False
+    return {k: v for k, v in servers.items() if is_recent(v.get('version'))}
 
 def filter_protocol(hostmap, protocol = 's'):
     '''Filters the hostmap for those implementing protocol.
@@ -581,7 +540,7 @@ class Network(util.DaemonThread):
                 self.on_notify_header(interface, result)
         elif method == 'server.peers.subscribe':
             if error is None:
-                self.irc_servers = parse_servers(result)
+                self.irc_servers = filter_version(parse_servers(result))
                 self.notify('servers')
         elif method == 'server.banner':
             if error is None:

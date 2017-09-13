@@ -407,14 +407,12 @@ def PrivKeyToSecret(privkey):
 
 
 def SecretToASecret(secret, compressed=False):
-    addrtype = ADDRTYPE_P2PKH
     vchIn = bytes([SECRET_KEY]) + secret
     if compressed: vchIn += b'\01'
     return EncodeBase58Check(vchIn)
 
 
 def ASecretToSecret(key):
-    addrtype = ADDRTYPE_P2PKH
     vch = DecodeBase58Check(key)
     if vch and vch[0] == SECRET_KEY:
         return vch[1:]
@@ -455,10 +453,8 @@ def public_key_from_private_key(sec):
 
 
 def address_from_private_key(sec):
-    # 根本没有调用这个函数，这个函数是棒棒的
     public_key = public_key_from_private_key(sec)
     address = public_key_to_p2pkh(bfh(public_key))
-    print(sec, address)
     return address
 
 
