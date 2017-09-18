@@ -15,6 +15,7 @@ import pyaes
 from .util import bfh, bh2u, to_string
 from . import version
 from .util import print_error, InvalidPassword, assert_bytes, to_bytes
+from .util import unpack_uint16_from, unpack_uint32_from, unpack_uint64_from, unpack_int32_from, unpack_int64_from
 from . import segwit_addr
 
 # QTUM network constants
@@ -936,3 +937,106 @@ def xkeys_from_seed(seed, passphrase, derivation):
     xprv, xpub = bip32_private_derivation(xprv, "m/", derivation)
     return xprv, xpub
 
+
+class Deserializer(object):
+    '''Deserializes blocks into transactions.
+
+    External entry points are read_tx() and read_block().
+
+    This code is performance sensitive as it is executed 100s of
+    millions of times during sync.
+    '''
+
+    def __init__(self, binary, start=0):
+        assert isinstance(binary, bytes)
+        self.binary = binary
+        self.binary_length = len(binary)
+        self.cursor = start
+
+    def read_byte(self):
+        cursor = self.cursor
+        self.cursor += 1
+        return self.binary[cursor]
+
+    def read_varbytes(self):
+        return self._read_nbytes(self._read_varint())
+
+    def read_varint(self):
+        n = self.binary[self.cursor]
+        self.cursor += 1
+        if n < 253:
+            return n
+        if n == 253:
+            return self._read_le_uint16()
+        if n == 254:
+            return self._read_le_uint32()
+        return self._read_le_uint64()
+
+    def _read_nbytes(self, n):
+        cursor = self.cursor
+        self.cursor = end = cursor + n
+        assert self.binary_length >= end
+        return self.binary[cursor:end]
+
+    def _read_le_int32(self):
+        result, = unpack_int32_from(self.binary, self.cursor)
+        self.cursor += 4
+        return result
+
+    def _read_le_int64(self):
+        result, = unpack_int64_from(self.binary, self.cursor)
+        self.cursor += 8
+        return result
+
+    def _read_le_uint16(self):
+        result, = unpack_uint16_from(self.binary, self.cursor)
+        self.cursor += 2
+        return result
+
+    def _read_le_uint32(self):
+        result, = unpack_uint32_from(self.binary, self.cursor)
+        self.cursor += 4
+        return result
+
+    def _read_le_uint64(self):
+        result, = unpack_uint64_from(self.binary, self.cursor)
+        self.cursor += 8
+        return result
+
+
+def serialize_header(res):
+    sig_length = len(res.get('sig'))//2
+    s = int_to_hex(res.get('version'), 4) \
+        + rev_hex(res.get('prev_block_hash')) \
+        + rev_hex(res.get('merkle_root')) \
+        + int_to_hex(int(res.get('timestamp')), 4) \
+        + int_to_hex(int(res.get('bits')), 4) \
+        + int_to_hex(int(res.get('nonce')), 4) \
+        + rev_hex(res.get('hash_state_root')) \
+        + rev_hex(res.get('hash_utxo_root')) \
+        + rev_hex(res.get('hash_prevout_stake')) \
+        + int_to_hex(int(res.get('hash_prevout_n')), 4) \
+        + var_int(sig_length) \
+        + (res.get('sig'))
+    return s
+
+
+def deserialize_header(s, height):
+    hex_to_int = lambda s: int('0x' + bh2u(s[::-1]), 16)
+    deserializer = Deserializer(s, start=180)
+    sig_length = deserializer.read_varint()
+    h = {
+        'block_height': height,
+        'version': hex_to_int(s[0:4]),
+        'prev_block_hash': hash_encode(s[4:36]),
+        'merkle_root': hash_encode(s[36:68]),
+        'timestamp': hex_to_int(s[68:72]),
+        'bits': hex_to_int(s[72:76]),
+        'nonce': hex_to_int(s[76:80]),
+        'hash_state_root': hash_encode(s[80:112]),
+        'hash_utxo_root': hash_encode(s[112:144]),
+        'hash_prevout_stake': hash_encode(s[144:176]),
+        'hash_prevout_n': hex_to_int(s[176:180]),
+        'sig': hash_encode(s[:-sig_length - 1:-1]),
+    }
+    return h

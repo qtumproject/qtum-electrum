@@ -33,6 +33,7 @@ from decimal import Decimal
 import traceback
 import urllib
 import threading
+from struct import Struct
 
 from .i18n import _
 
@@ -42,6 +43,12 @@ import queue
 
 base_units = {'QTUM':8, 'mQTUM':5, 'uQTUM':2}
 fee_levels = [_('Within 25 blocks'), _('Within 10 blocks'), _('Within 5 blocks'), _('Within 2 blocks'), _('In the next block')]
+
+unpack_int32_from = Struct('<i').unpack_from
+unpack_int64_from = Struct('<q').unpack_from
+unpack_uint16_from = Struct('<H').unpack_from
+unpack_uint32_from = Struct('<I').unpack_from
+unpack_uint64_from = Struct('<Q').unpack_from
 
 def normalize_version(v):
     return [int(x) for x in re.sub(r'(\.0+)*$','', v).split(".")]
