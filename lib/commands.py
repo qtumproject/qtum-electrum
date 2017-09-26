@@ -27,26 +27,22 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import os
-import sys
-import datetime
-import time
-import copy
 import argparse
-import json
 import ast
 import base64
-from functools import wraps
+import copy
+import datetime
+import json
+import sys
 from decimal import Decimal
+from functools import wraps
 
-from .import util
-from .util import print_msg, format_satoshis, print_stderr
-from .import bitcoin
-from .bitcoin import is_address,  hash_160, COIN, TYPE_ADDRESS
-from .transaction import Transaction
-from .import paymentrequest
+from . import bitcoin
+from . import util
+from .bitcoin import is_address, hash_160, COIN, TYPE_ADDRESS
 from .paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED
-from .import contacts
+from .transaction import Transaction
+from .util import format_satoshis
 
 known_commands = {}
 
@@ -196,14 +192,6 @@ class Commands:
         is a walletless server query, results are not checked by SPV.
         """
         return self.network.synchronous_get(('blockchain.address.listunspent', [address]))
-
-    @command('n')
-    def getutxoaddress(self, txid, pos):
-        """Get the address of a UTXO. Note: This is a walletless server query, results are
-        not checked by SPV.
-        """
-        r = self.network.synchronous_get(('blockchain.utxo.get_address', [txid, pos]))
-        return {'address': r}
 
     @command('')
     def serialize(self, jsontx):
