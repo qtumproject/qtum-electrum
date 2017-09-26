@@ -47,19 +47,6 @@ from .interface import Connection, Interface
 from . import blockchain
 from .version import ELECTRUM_VERSION, PROTOCOL_VERSION
 
-DEFAULT_PORTS = {'t':'50001', 's':'50002'}
-
-DEFAULT_SERVERS = {
-
-}
-
-def set_skynet():
-    global DEFAULT_PORTS, DEFAULT_SERVERS
-    DEFAULT_PORTS = {'t': '52001', 's': '52002'}
-    DEFAULT_SERVERS = {
-        '116.62.215.44': DEFAULT_PORTS,
-        '120.27.209.201': DEFAULT_PORTS,
-    }
 
 NODES_RETRY_INTERVAL = 60
 SERVER_RETRY_INTERVAL = 10
@@ -367,11 +354,10 @@ class Network(util.DaemonThread):
         return list(self.interfaces.keys())
 
     def get_servers(self):
+        out = DEFAULT_SERVERS
         if self.irc_servers:
-            out = self.irc_servers.copy()
-            out.update(DEFAULT_SERVERS)
+            out.update(filter_version(self.irc_servers.copy()))
         else:
-            out = DEFAULT_SERVERS
             for s in self.recent_servers:
                 try:
                     host, port, protocol = deserialize_server(s)
@@ -543,7 +529,7 @@ class Network(util.DaemonThread):
                 self.on_notify_header(interface, result)
         elif method == 'server.peers.subscribe':
             if error is None:
-                self.irc_servers = filter_version(parse_servers(result))
+                self.irc_servers = parse_servers(result)
                 self.notify('servers')
         elif method == 'server.banner':
             if error is None:

@@ -8,6 +8,7 @@ import base64
 import re
 import hmac
 import os
+import json
 
 import ecdsa
 import pyaes
@@ -18,9 +19,16 @@ from .util import print_error, InvalidPassword, assert_bytes, to_bytes
 from .util import unpack_uint16_from, unpack_uint32_from, unpack_uint64_from, unpack_int32_from, unpack_int64_from
 from . import segwit_addr
 
+def read_json_dict(filename):
+    path = os.path.join(os.path.dirname(__file__), filename)
+    try:
+        r = json.loads(open(path, 'r').read())
+    except:
+        r = {}
+    return r
+
 # QTUM network constants
 TESTNET = False
-NOLNET = False
 SKYNET = False
 ADDRTYPE_P2PKH = 0x3a
 ADDRTYPE_P2SH = 0x32
@@ -32,12 +40,15 @@ HEADERS_URL = ""
 GENESIS = "0000c07f635271213ea71bd68e589694b9b10b0cd2ddd195a2ab07f36cf00473"
 GENESIS_BITS = 0x1f00ffff
 BASIC_HEADER_SIZE = 180
+SERVERLIST = 'servers.json'
+DEFAULT_SERVERS = read_json_dict(SERVERLIST)
+DEFAULT_PORTS = {'t':'50001', 's':'50002'}
 
 
 def set_skynet():
     global ADDRTYPE_P2PKH, ADDRTYPE_P2SH, SECRET_KEY
     global XPRV_HEADER, XPUB_HEADER
-    global SKYNET, HEADERS_URL
+    global SKYNET, SERVERLIST, DEFAULT_PORTS, DEFAULT_SERVERS
     global GENESIS, GENESIS_BITS
     global SEGWIT_HRP
     SKYNET = True
@@ -47,9 +58,11 @@ def set_skynet():
     SECRET_KEY = 0x80
     XPRV_HEADER = 0x0488ADE4
     XPUB_HEADER = 0x0488B21E
-    HEADERS_URL = ""
     GENESIS = "0000c07f635271213ea71bd68e589694b9b10b0cd2ddd195a2ab07f36cf00473"
     GENESIS_BITS = 0x1f00ffff
+    SERVERLIST = 'servers_skynet.json'
+    DEFAULT_SERVERS = read_json_dict(SERVERLIST)
+    DEFAULT_PORTS = {'t': '52001', 's': '52002'}
 
 ################################## transactions
 

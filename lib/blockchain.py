@@ -325,9 +325,7 @@ class Blockchain(util.PrintError):
         bits, target = self.get_target(height // 2016)
         try:
             self.verify_header(header, previous_header, bits, target)
-            print('verify_header success', height)
         except Exception as e:
-            print('verify_header failed', e, height)
             return False
         return True
 
