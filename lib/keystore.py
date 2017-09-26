@@ -24,19 +24,13 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import struct
-
 from unicodedata import normalize
 
-from .version import *
 from . import bitcoin
-from .bitcoin import pw_encode, pw_decode, bip32_root, bip32_private_derivation, bip32_public_derivation, bip32_private_key, deserialize_xprv, deserialize_xpub
-from .bitcoin import public_key_from_private_key, public_key_to_p2pkh
 from .bitcoin import *
-
-from .bitcoin import is_old_seed, is_new_seed, is_seed
-from .util import PrintError, InvalidPassword, hfu
+from .bitcoin import is_seed
 from .mnemonic import Mnemonic, load_wordlist
+from .util import PrintError, InvalidPassword, hfu
 
 
 class KeyStore(PrintError):
@@ -683,7 +677,7 @@ def bip44_derivation(account_id, segwit=False):
     coin = 1 if bitcoin.TESTNET else 0
     return "m/%d'/%d'/%d'" % (bip, coin, int(account_id))
 
-def from_seed(seed, passphrase):
+def from_seed(seed, passphrase, is_multisig):
     t = seed_type(seed)
     if t == 'old':
         keystore = Old_KeyStore({})
@@ -693,7 +687,9 @@ def from_seed(seed, passphrase):
         keystore.add_seed(seed)
         keystore.passphrase = passphrase
         bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
-        keystore.add_xprv_from_seed(bip32_seed, t, "m/")
+        purpose = 1 if is_multisig else 0
+        der = "m/" if t == 'standard' else ("m/%d'/" % purpose)
+        keystore.add_xprv_from_seed(bip32_seed, t, der)
     else:
         raise BaseException(t)
     return keystore

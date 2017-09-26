@@ -3,9 +3,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import six
-import unittest
 import sys
+import unittest
+
 from ecdsa.util import number_to_string
 
 from lib.bitcoin import (
@@ -66,7 +66,7 @@ class Test_bitcoin(unittest.TestCase):
         assert xprv == "xprvA2nrNbFZABcdryreWet9Ea4LvTJcGsqrMzxHx98MMrotbir7yrKCEXw7nadnHM8Dq38EGfSh6dqA9QWTyefMLEcBYJUuekgW4BYPJcr9E7j"
 
     def _do_test_bip32(self, seed, sequence):
-        xprv, xpub = bip32_root(bfh(seed), 0)
+        xprv, xpub = bip32_root(bfh(seed), 'standard')
         assert sequence[0:2] == "m/"
         path = 'm'
         sequence = sequence[2:]
