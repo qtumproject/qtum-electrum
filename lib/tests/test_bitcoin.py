@@ -3,9 +3,9 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import sys
+import six
 import unittest
-
+import sys
 from ecdsa.util import number_to_string
 
 from lib.bitcoin import (
@@ -13,7 +13,7 @@ from lib.bitcoin import (
     bip32_root, bip32_public_derivation, bip32_private_derivation, pw_encode,
     pw_decode, Hash, public_key_from_private_key, address_from_private_key,
     is_address, is_private_key, xpub_from_xprv, is_new_seed, is_old_seed,
-    var_int, op_push)
+    var_int, op_push, address_to_script)
 from lib.util import bfh
 
 try:
@@ -23,36 +23,35 @@ except ImportError:
 
 
 class Test_bitcoin(unittest.TestCase):
-
     def test_crypto(self):
-        for message in [b"Chancellor on brink of second bailout for banks", b'\xff'*512]:
+        for message in [b"Chancellor on brink of second bailout for banks", b'\xff' * 512]:
             self._do_test_crypto(message)
 
     def _do_test_crypto(self, message):
         G = generator_secp256k1
-        _r  = G.order()
-        pvk = ecdsa.util.randrange( pow(2,256) ) %_r
+        _r = G.order()
+        pvk = ecdsa.util.randrange(pow(2, 256)) % _r
 
-        Pub = pvk*G
-        pubkey_c = point_to_ser(Pub,True)
-        #pubkey_u = point_to_ser(Pub,False)
+        Pub = pvk * G
+        pubkey_c = point_to_ser(Pub, True)
+        # pubkey_u = point_to_ser(Pub,False)
         addr_c = public_key_to_p2pkh(pubkey_c)
 
-        #print "Private key            ", '%064x'%pvk
-        eck = EC_KEY(number_to_string(pvk,_r))
+        # print "Private key            ", '%064x'%pvk
+        eck = EC_KEY(number_to_string(pvk, _r))
 
-        #print "Compressed public key  ", pubkey_c.encode('hex')
+        # print "Compressed public key  ", pubkey_c.encode('hex')
         enc = EC_KEY.encrypt_message(message, pubkey_c)
         dec = eck.decrypt_message(enc)
         assert dec == message
 
-        #print "Uncompressed public key", pubkey_u.encode('hex')
-        #enc2 = EC_KEY.encrypt_message(message, pubkey_u)
+        # print "Uncompressed public key", pubkey_u.encode('hex')
+        # enc2 = EC_KEY.encrypt_message(message, pubkey_u)
         dec2 = eck.decrypt_message(enc)
         assert dec2 == message
 
         signature = eck.sign_message(message, True)
-        #print signature
+        # print signature
         EC_KEY.verify_message(eck, signature, message)
 
     def test_bip32(self):
@@ -61,7 +60,9 @@ class Test_bitcoin(unittest.TestCase):
         assert xpub == "xpub6H1LXWLaKsWFhvm6RVpEL9P4KfRZSW7abD2ttkWP3SSQvnyA8FSVqNTEcYFgJS2UaFcxupHiYkro49S8yGasTvXEYBVPamhGW6cFJodrTHy"
         assert xprv == "xprvA41z7zogVVwxVSgdKUHDy1SKmdb533PjDz7J6N6mV6uS3ze1ai8FHa8kmHScGpWmj4WggLyQjgPie1rFSruoUihUZREPSL39UNdE3BBDu76"
 
-        xpub, xprv = self._do_test_bip32("fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542","m/0/2147483647'/1/2147483646'/2")
+        xpub, xprv = self._do_test_bip32(
+            "fffcf9f6f3f0edeae7e4e1dedbd8d5d2cfccc9c6c3c0bdbab7b4b1aeaba8a5a29f9c999693908d8a8784817e7b7875726f6c696663605d5a5754514e4b484542",
+            "m/0/2147483647'/1/2147483646'/2")
         assert xpub == "xpub6FnCn6nSzZAw5Tw7cgR9bi15UV96gLZhjDstkXXxvCLsUXBGXPdSnLFbdpq8p9HmGsApME5hQTZ3emM2rnY5agb9rXpVGyy3bdW6EEgAtqt"
         assert xprv == "xprvA2nrNbFZABcdryreWet9Ea4LvTJcGsqrMzxHx98MMrotbir7yrKCEXw7nadnHM8Dq38EGfSh6dqA9QWTyefMLEcBYJUuekgW4BYPJcr9E7j"
 
@@ -128,7 +129,7 @@ class Test_bitcoin(unittest.TestCase):
 
     def test_var_int(self):
         for i in range(0xfd):
-            self.assertEqual(var_int(i), "{:02x}".format(i) )
+            self.assertEqual(var_int(i), "{:02x}".format(i))
 
         self.assertEqual(var_int(0xfd), "fdfd00")
         self.assertEqual(var_int(0xfe), "fdfe00")
@@ -154,6 +155,31 @@ class Test_bitcoin(unittest.TestCase):
         self.assertEqual(op_push(0xffff), '4effff0000')
         self.assertEqual(op_push(0x10000), '4e00000100')
         self.assertEqual(op_push(0x12345678), '4e78563412')
+
+    # TODO testnet addresses
+    def test_address_to_script(self):
+        # bech32 native segwit
+        # test vectors from BIP-0173
+        self.assertEqual(address_to_script('BC1QW508D6QEJXTDG4Y5R3ZARVARY0C5XW7KV8F3T4'),
+                         '0014751e76e8199196d454941c45d1b3a323f1433bd6')
+        self.assertEqual(
+            address_to_script('bc1pw508d6qejxtdg4y5r3zarvary0c5xw7kw508d6qejxtdg4y5r3zarvary0c5xw7k7grplx'),
+            '5128751e76e8199196d454941c45d1b3a323f1433bd6751e76e8199196d454941c45d1b3a323f1433bd6')
+        self.assertEqual(address_to_script('BC1SW50QA3JX3S'), '6002751e')
+        self.assertEqual(address_to_script('bc1zw508d6qejxtdg4y5r3zarvaryvg6kdaj'),
+                         '5210751e76e8199196d454941c45d1b3a323')
+
+        # base58 P2PKH
+        self.assertEqual(address_to_script('14gcRovpkCoGkCNBivQBvw7eso7eiNAbxG'),
+                         '76a91428662c67561b95c79d2257d2a93d9d151c977e9188ac')
+        self.assertEqual(address_to_script('1BEqfzh4Y3zzLosfGhw1AsqbEKVW6e1qHv'),
+                         '76a914704f4b81cadb7bf7e68c08cd3657220f680f863c88ac')
+
+        # base58 P2SH
+        self.assertEqual(address_to_script('35ZqQJcBQMZ1rsv8aSuJ2wkC7ohUCQMJbT'),
+                         'a9142a84cf00d47f699ee7bbc1dea5ec1bdecb4ac15487')
+        self.assertEqual(address_to_script('3PyjzJ3im7f7bcV724GR57edKDqoZvH7Ji'),
+                         'a914f47c8954e421031ad04ecd8e7752c9479206b9d387')
 
 
 class Test_keyImport(unittest.TestCase):
@@ -183,7 +209,7 @@ class Test_keyImport(unittest.TestCase):
 
 class Test_seeds(unittest.TestCase):
     """ Test old and new seeds. """
-    
+
     def test_new_seed(self):
         seed = "cram swing cover prefer miss modify ritual silly deliver chunk behind inform able"
         self.assertTrue(is_new_seed(seed))
