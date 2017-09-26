@@ -27,22 +27,26 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
+import os
+import sys
+import datetime
+import time
+import copy
 import argparse
+import json
 import ast
 import base64
-import copy
-import datetime
-import json
-import sys
-from decimal import Decimal
 from functools import wraps
+from decimal import Decimal
 
-from . import bitcoin
-from . import util
-from .bitcoin import is_address, hash_160, COIN, TYPE_ADDRESS
-from .paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED
+from .import util
+from .util import print_msg, format_satoshis, print_stderr
+from .import bitcoin
+from .bitcoin import is_address,  hash_160, COIN, TYPE_ADDRESS
 from .transaction import Transaction
-from .util import format_satoshis
+from .import paymentrequest
+from .paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED
+from .import contacts
 
 known_commands = {}
 
@@ -156,10 +160,10 @@ class Commands:
         return True
 
     @command('')
-    def make_seed(self, nbits=132, entropy=1, language=None):
+    def make_seed(self, nbits=132, entropy=1, language=None, segwit=False):
         """Create a seed"""
         from .mnemonic import Mnemonic
-        t = 'segwit' if self.config.get('segwit') else 'standard'
+        t = 'segwit' if segwit else 'standard'
         s = Mnemonic(language).make_seed(t, nbits, custom_entropy=entropy)
         return s
 
@@ -814,8 +818,6 @@ def add_global_options(parser):
     group.add_argument("-P", "--portable", action="store_true", dest="portable", default=False, help="Use local 'electrum_data' directory")
     group.add_argument("-w", "--wallet", dest="wallet_path", help="wallet path")
     # group.add_argument("--testnet", action="store_true", dest="testnet", default=False, help="Use Testnet")
-    # group.add_argument("--segwit", action="store_true", dest="segwit", default=False, help="The Wizard will create Segwit seed phrases (Testnet only).")
-    # group.add_argument("--nolnet", action="store_true", dest="nolnet", default=False, help="Use Nolnet")
     group.add_argument("--skynet", action="store_true", dest="skynet", default=False, help="Use Skynet")
 
 def get_parser():
