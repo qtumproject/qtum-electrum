@@ -34,8 +34,6 @@ ADDRTYPE_P2PKH = 0x3a
 ADDRTYPE_P2SH = 0x32
 SECRET_KEY = 0x80
 SEGWIT_HRP = "bc"
-XPRV_HEADER = 0x0488ADE4
-XPUB_HEADER = 0x0488B21E
 HEADERS_URL = ""
 GENESIS = "0000c07f635271213ea71bd68e589694b9b10b0cd2ddd195a2ab07f36cf00473"
 GENESIS_BITS = 0x1f00ffff
@@ -45,9 +43,24 @@ DEFAULT_SERVERS = read_json_dict(SERVERLIST)
 DEFAULT_PORTS = {'t':'50001', 's':'50002'}
 
 
+# Version numbers for BIP32 extended keys
+# standard: xprv, xpub
+# segwit in p2sh: yprv, ypub
+# native segwit: zprv, zpub
+XPRV_HEADERS = {
+    'standard': 0x0488ade4,
+    'segwit_p2sh': 0x049d7878,
+    'segwit': 0x4b2430c
+}
+XPUB_HEADERS = {
+    'standard': 0x0488b21e,
+    'segwit_p2sh': 0x049d7cb2,
+    'segwit': 0x4b24746
+}
+
+
 def set_skynet():
     global ADDRTYPE_P2PKH, ADDRTYPE_P2SH, SECRET_KEY
-    global XPRV_HEADER, XPUB_HEADER
     global SKYNET, SERVERLIST, DEFAULT_PORTS, DEFAULT_SERVERS
     global GENESIS, GENESIS_BITS
     global SEGWIT_HRP
@@ -56,8 +69,6 @@ def set_skynet():
     ADDRTYPE_P2SH = 0x32
     SEGWIT_HRP = "tb"
     SECRET_KEY = 0x80
-    XPRV_HEADER = 0x0488ADE4
-    XPUB_HEADER = 0x0488B21E
     GENESIS = "0000c07f635271213ea71bd68e589694b9b10b0cd2ddd195a2ab07f36cf00473"
     GENESIS_BITS = 0x1f00ffff
     SERVERLIST = 'servers_skynet.json'
@@ -822,11 +833,11 @@ def _CKD_pub(cK, c, s):
 
 
 def xprv_header(xtype):
-    return bfh("%08x" % (XPRV_HEADER + xtype))
+    return bfh("%08x" % (XPRV_HEADERS[xtype]))
 
 
 def xpub_header(xtype):
-    return bfh("%08x" % (XPUB_HEADER + xtype))
+    return bfh("%08x" % (XPUB_HEADERS[xtype]))
 
 
 def serialize_xprv(xtype, c, k, depth=0, fingerprint=b'\x00'*4, child_number=b'\x00'*4):
@@ -847,10 +858,11 @@ def deserialize_xkey(xkey, prv):
     fingerprint = xkey[5:9]
     child_number = xkey[9:13]
     c = xkey[13:13+32]
-    header = XPRV_HEADER if prv else XPUB_HEADER
-    xtype = int('0x' + bh2u(xkey[0:4]), 16) - header
-    if xtype not in [0, 1]:
-        raise BaseException('Invalid header')
+    header = int('0x' + bh2u(xkey[0:4]), 16)
+    headers = XPRV_HEADERS if prv else XPUB_HEADERS
+    if header not in headers.values():
+        raise BaseException('Invalid xpub format', hex(header))
+    xtype = list(headers.keys())[list(headers.values()).index(header)]
     n = 33 if prv else 32
     K_or_k = xkey[13+n:]
     return xtype, depth, fingerprint, child_number, c, K_or_k
