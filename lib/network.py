@@ -57,7 +57,8 @@ def set_skynet():
     global DEFAULT_PORTS, DEFAULT_SERVERS
     DEFAULT_PORTS = {'t': '52001', 's': '52002'}
     DEFAULT_SERVERS = {
-        '47.88.61.227': DEFAULT_PORTS,
+        '116.62.215.44': DEFAULT_PORTS,
+        '120.27.209.201': DEFAULT_PORTS,
     }
 
 NODES_RETRY_INTERVAL = 60
@@ -212,6 +213,8 @@ class Network(util.DaemonThread):
         self.sub_cache = {}
         # callbacks set by the GUI
         self.callbacks = defaultdict(list)
+
+        self.downloading_headers = False
 
         dir_path = os.path.join( self.config.path, 'certs')
         if not os.path.exists(dir_path):
@@ -754,7 +757,7 @@ class Network(util.DaemonThread):
         result = response.get('result')
         params = response.get('params')
         if result is None or params is None or error is not None:
-            interface.print_error(error or 'bad response')
+            print('on get chunk error', error, result, params)
             return
         # Ignore unsolicited chunks
         index = params[0]
@@ -794,6 +797,7 @@ class Network(util.DaemonThread):
             return
 
         chain = blockchain.check_header(header)
+
         if interface.mode == 'backward':
             if chain:
                 interface.print_error("binary search")
@@ -818,6 +822,7 @@ class Network(util.DaemonThread):
             else:
                 interface.bad = height
                 interface.bad_header = header
+
             if interface.bad != interface.good + 1:
                 next_height = (interface.bad + interface.good) // 2
             elif not interface.blockchain.can_connect(interface.bad_header, check_height=False):
@@ -938,34 +943,36 @@ class Network(util.DaemonThread):
             self.process_responses(interface)
 
     def init_headers_file(self):
-        b = self.blockchains[0]
-        if b.get_hash(0) == bitcoin.GENESIS:
-            self.downloading_headers = False
-            return
-        filename = b.path()
-        def download_thread():
-            try:
-                import urllib.request, socket
-                socket.setdefaulttimeout(30)
-                self.print_error("downloading ", bitcoin.HEADERS_URL)
-                urllib.request.urlretrieve(bitcoin.HEADERS_URL, filename + '.tmp')
-                os.rename(filename + '.tmp', filename)
-                self.print_error("done.")
-            except Exception:
-                self.print_error("download failed. creating file", filename)
-                open(filename, 'wb+').close()
-            b = self.blockchains[0]
-            with b.lock: b.update_size()
-            self.downloading_headers = False
-        self.downloading_headers = True
-        t = threading.Thread(target = download_thread)
-        t.daemon = True
-        t.start()
+        pass
+        # b = self.blockchains[0]
+        # if b.get_hash(0) == bitcoin.GENESIS:
+        #     self.downloading_headers = False
+        #     return
+        # filename = b.path()
+        # def download_thread():
+        #     try:
+        #         import urllib.request, socket
+        #         socket.setdefaulttimeout(30)
+        #         self.print_error("downloading ", bitcoin.HEADERS_URL)
+        #         urllib.request.urlretrieve(bitcoin.HEADERS_URL, filename + '.tmp')
+        #         os.rename(filename + '.tmp', filename)
+        #         self.print_error("done.")
+        #     except Exception:
+        #         self.print_error("download failed. creating file", filename)
+        #         # open(filename, 'wb+').close()
+        #     b = self.blockchains[0]
+        #     with b.lock: b.update_size()
+        #     self.downloading_headers = False
+        # self.downloading_headers = True
+        # t = threading.Thread(target = download_thread)
+        # t.daemon = True
+        # t.start()
 
     def run(self):
-        self.init_headers_file()
-        while self.is_running() and self.downloading_headers:
-            time.sleep(1)
+        # self.init_headers_file()
+        #
+        # while self.is_running() and self.downloading_headers:
+        #     time.sleep(1)
         while self.is_running():
             self.maintain_sockets()
             self.wait_on_sockets()
@@ -983,6 +990,7 @@ class Network(util.DaemonThread):
         interface.tip = height
         if interface.mode != 'default':
             return
+
         b = blockchain.check_header(header)
         if b:
             interface.blockchain = b
