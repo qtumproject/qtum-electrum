@@ -25,28 +25,23 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-import time
-import queue
-import os
 import errno
-import sys
+import queue
 import random
 import select
-import traceback
-from collections import defaultdict, deque
-import threading
-
 import socket
-import json
+import threading
+import time
+from collections import defaultdict
 
 import socks
-from . import util
+
 from . import bitcoin
+from . import blockchain
+from . import util
 from .bitcoin import *
 from .interface import Connection, Interface
-from . import blockchain
 from .version import ELECTRUM_VERSION, PROTOCOL_VERSION
-
 
 NODES_RETRY_INTERVAL = 60
 SERVER_RETRY_INTERVAL = 10
@@ -54,7 +49,6 @@ SERVER_RETRY_INTERVAL = 10
 
 def parse_servers(result):
     """ parse servers list into dict format"""
-    from .version import PROTOCOL_VERSION
     servers = {}
     for item in result:
         host = item[1]
@@ -892,7 +886,8 @@ class Network(util.DaemonThread):
                 self.notify('updated')
 
         elif interface.mode == 'default':
-            if not ok:
+            can_connect = interface.blockchain.can_connect(header)
+            if not can_connect:
                 interface.print_error("default: cannot connect %d"% height)
                 interface.mode = 'backward'
                 interface.bad = height
