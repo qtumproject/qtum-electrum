@@ -2,12 +2,13 @@
 
 # python setup.py sdist --format=zip,gztar
 
-from setuptools import setup
-import os
-import sys
-import platform
-import imp
 import argparse
+import imp
+import os
+import platform
+import sys
+
+from setuptools import setup
 
 version = imp.load_source('version', 'lib/version.py')
 
@@ -75,6 +76,8 @@ setup(
             'www/index.html',
             'wordlist/*.txt',
             'locale/*/LC_MESSAGES/electrum.mo',
+            'servers.json',
+            'servers_skynet.json'
         ]
     },
     scripts=['electrum'],

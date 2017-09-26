@@ -23,9 +23,8 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import sys
-import os
 import signal
+import sys
 
 try:
     import PyQt4
@@ -38,11 +37,8 @@ import PyQt4.QtCore as QtCore
 
 from electrum.i18n import _, set_language
 from electrum.plugins import run_hook
-from electrum import SimpleConfig, Wallet, WalletStorage
-from electrum.synchronizer import Synchronizer
-from electrum.verifier import SPV
-from electrum.util import DebugMem, UserCancelled, InvalidPassword
-from electrum.wallet import Abstract_Wallet
+from electrum import WalletStorage
+from electrum.util import UserCancelled
 
 from .installwizard import InstallWizard, GoBack
 
@@ -184,6 +180,9 @@ class ElectrumGui:
             w = self.create_window_for_wallet(wallet)
         if uri:
             w.pay_to_URI(uri)
+        w.bring_to_top()
+        w.setWindowState(w.windowState() & ~QtCore.Qt.WindowMinimized | QtCore.Qt.WindowActive)
+        w.activateWindow()
         return w
 
     def close_window(self, window):
