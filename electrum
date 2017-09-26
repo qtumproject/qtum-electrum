@@ -25,10 +25,11 @@
 # SOFTWARE.
 import os
 import sys
-import six
-
 # from https://gist.github.com/tito/09c42fb4767721dc323d
 import threading
+
+import six
+
 try:
     import jnius
 except:
@@ -71,11 +72,6 @@ def check_imports():
     except ImportError as e:
         sys.exit("Error: %s. Try 'sudo pip install <module-name>'"%e.message)
     # the following imports are for pyinstaller
-    from google.protobuf import descriptor
-    from google.protobuf import message
-    from google.protobuf import reflection
-    from google.protobuf import descriptor_pb2
-    from jsonrpclib import SimpleJSONRPCServer
     # make sure that certificates are here
     if is_bundle and sys.platform=='darwin':
         requests.utils.DEFAULT_CA_BUNDLE_PATH = os.path.join(os.path.dirname(__file__), 'cacert.pem')
@@ -92,8 +88,7 @@ if is_local or is_android:
     imp.load_module('electrum_gui', *imp.find_module('gui'))
     imp.load_module('electrum_plugins', *imp.find_module('plugins'))
 
-
-from electrum import bitcoin, network, qtum
+from electrum import network, qtum
 from electrum import SimpleConfig, Network
 from electrum.wallet import Wallet, Imported_Wallet
 from electrum.storage import WalletStorage
@@ -103,7 +98,7 @@ from electrum.commands import get_parser, known_commands, Commands, config_varia
 from electrum import daemon
 from electrum import keystore
 from electrum.mnemonic import Mnemonic
-import electrum_plugins
+
 
 # get password routine
 def prompt_password(prompt, confirm=True):
@@ -166,7 +161,8 @@ def run_non_RPC(config):
     elif cmdname == 'create':
         password = password_dialog()
         passphrase = config.get('passphrase', '')
-        seed = Mnemonic('en').make_seed()
+        seed_type = 'segwit' if config.get('segwit') else 'standard'
+        seed = Mnemonic('en').make_seed(seed_type)
         k = keystore.from_seed(seed, passphrase)
         k.update_password(None, password)
         storage.put('keystore', k.dump())
@@ -356,10 +352,6 @@ if __name__ == '__main__':
     # if config.get('testnet'):
     #     bitcoin.set_testnet()
     #     network.set_testnet()
-    #
-    # if config.get('nolnet'):
-    #     bitcoin.set_nolnet()
-    #     network.set_nolnet()
 
     if config.get('skynet'):
         qtum.set_skynet()
