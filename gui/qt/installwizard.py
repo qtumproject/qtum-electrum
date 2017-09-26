@@ -423,8 +423,12 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
         self.confirm(message, title)
 
     def confirm(self, message, title):
+        area = QScrollArea()
+        label = WWLabel(message)
+        area.setWidget(label)
+
         vbox = QVBoxLayout()
-        vbox.addWidget(WWLabel(message))
+        vbox.addWidget(area)
         self.exec_layout(vbox, title)
 
     @wizard_dialog
@@ -489,7 +493,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
     def init_network(self, network):
         message = _("Electrum communicates with remote servers to get "
                   "information about your transactions and addresses. The "
-                  "servers all fulfil the same purpose only differing in "
+                  "servers all fulfill the same purpose only differing in "
                   "hardware. In most cases you simply want to let Electrum "
                   "pick one at random.  However if you prefer feel free to "
                   "select a server manually.")
