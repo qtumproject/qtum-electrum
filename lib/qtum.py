@@ -30,13 +30,15 @@ XPRV_HEADER = 0x0488ADE4
 XPUB_HEADER = 0x0488B21E
 HEADERS_URL = ""
 GENESIS = "0000c07f635271213ea71bd68e589694b9b10b0cd2ddd195a2ab07f36cf00473"
+GENESIS_BITS = 0x1f00ffff
+BASIC_HEADER_SIZE = 180
 
 
 def set_skynet():
     global ADDRTYPE_P2PKH, ADDRTYPE_P2SH, SECRET_KEY
     global XPRV_HEADER, XPUB_HEADER
     global SKYNET, HEADERS_URL
-    global GENESIS
+    global GENESIS, GENESIS_BITS
     global SEGWIT_HRP
     SKYNET = True
     ADDRTYPE_P2PKH = 0x3a
@@ -47,6 +49,7 @@ def set_skynet():
     XPUB_HEADER = 0x0488B21E
     HEADERS_URL = ""
     GENESIS = "0000c07f635271213ea71bd68e589694b9b10b0cd2ddd195a2ab07f36cf00473"
+    GENESIS_BITS = 0x1f00ffff
 
 ################################## transactions
 
@@ -1018,12 +1021,13 @@ def serialize_header(res):
         + int_to_hex(int(res.get('hash_prevout_n')), 4) \
         + var_int(sig_length) \
         + (res.get('sig'))
+    # print('serialize_header', res, '\n', s)
     return s
 
 
 def deserialize_header(s, height):
     hex_to_int = lambda s: int('0x' + bh2u(s[::-1]), 16)
-    deserializer = Deserializer(s, start=180)
+    deserializer = Deserializer(s, start=BASIC_HEADER_SIZE)
     sig_length = deserializer.read_varint()
     h = {
         'block_height': height,
@@ -1040,3 +1044,10 @@ def deserialize_header(s, height):
         'sig': hash_encode(s[:-sig_length - 1:-1]),
     }
     return h
+
+
+def read_a_raw_header_from_chunk(data, start):
+    deserializer = Deserializer(data, start=start+BASIC_HEADER_SIZE)
+    sig_length = deserializer.read_varint()
+    cursor = deserializer.cursor + sig_length
+    return data[start: cursor], cursor
