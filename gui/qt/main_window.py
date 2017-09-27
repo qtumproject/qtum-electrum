@@ -140,9 +140,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.utxo_tab = self.create_utxo_tab()
         self.console_tab = self.create_console_tab()
         self.contacts_tab = self.create_contacts_tab()
+
         tabs.addTab(self.create_history_tab(), QIcon(":icons/tab_history.png"), _('History'))
         tabs.addTab(self.send_tab, QIcon(":icons/tab_send.png"), _('Send'))
         tabs.addTab(self.receive_tab, QIcon(":icons/tab_receive.png"), _('Receive'))
+        tabs.addTab(self.contacts_tab, QIcon(":icons/tab_contacts.png"), _('Contacts'))
 
         def add_optional_tab(tabs, tab, icon, description, name):
             tab.tab_icon = icon
@@ -154,7 +156,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         add_optional_tab(tabs, self.addresses_tab, QIcon(":icons/tab_addresses.png"), _("&Addresses"), "addresses")
         add_optional_tab(tabs, self.utxo_tab, QIcon(":icons/tab_coins.png"), _("Co&ins"), "utxo")
-        add_optional_tab(tabs, self.contacts_tab, QIcon(":icons/tab_contacts.png"), _("Con&tacts"), "contacts")
+        # add_optional_tab(tabs, self.contacts_tab, QIcon(":icons/tab_contacts.png"), _("Con&tacts"), "contacts")
         add_optional_tab(tabs, self.console_tab, QIcon(":icons/tab_console.png"), _("Con&sole"), "console")
 
         tabs.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
@@ -491,7 +493,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         view_menu = menubar.addMenu(_("&View"))
         add_toggle_action(view_menu, self.addresses_tab)
         add_toggle_action(view_menu, self.utxo_tab)
-        add_toggle_action(view_menu, self.contacts_tab)
+        # add_toggle_action(view_menu, self.contacts_tab)
         add_toggle_action(view_menu, self.console_tab)
 
         tools_menu = menubar.addMenu(_("&Tools"))
@@ -752,7 +754,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.receive_address_e = ButtonsLineEdit()
         self.receive_address_e.addCopyButton(self.app)
         self.receive_address_e.setReadOnly(True)
-        msg = _('Bitcoin address where the payment should be received. Note that each payment request uses a different Bitcoin address.')
+        msg = _(
+            'Qtum address where the payment should be received. Note that each payment request uses a different Bitcoin address.')
         self.receive_address_label = HelpLabel(_('Receiving address'), msg)
         self.receive_address_e.textChanged.connect(self.update_receive_qr)
         self.receive_address_e.setFocusPolicy(Qt.NoFocus)
@@ -783,7 +786,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             _('Expiration date of your request.'),
             _('This information is seen by the recipient if you send them a signed payment request.'),
             _('Expired requests have to be deleted manually from your list, in order to free the corresponding Qtum addresses.'),
-            _('The qtum address never expires and will always be part of this electrum wallet.'),
+            _('The Qtum address never expires and will always be part of this electrum wallet.'),
         ])
         grid.addWidget(HelpLabel(_('Request expires'), msg), 3, 0)
         grid.addWidget(self.expires_combo, 3, 1)
@@ -999,8 +1002,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         from .paytoedit import PayToEdit
         self.amount_e = BTCAmountEdit(self.get_decimal_point)
         self.payto_e = PayToEdit(self)
-        msg = _('Recipient of the funds.') + '\n\n'\
-              + _('You may enter a Bitcoin address, a label from your list of contacts (a list of completions will be proposed), or an alias (email-like address that forwards to a Bitcoin address)')
+        msg = _('Recipient of the funds.') + '\n\n' \
+              + _(
+            'You may enter a QTUM address, a label from your list of contacts (a list of completions will be proposed), or an alias (email-like address that forwards to a Bitcoin address)')
         payto_label = HelpLabel(_('Pay to'), msg)
         grid.addWidget(payto_label, 1, 0)
         grid.addWidget(self.payto_e, 1, 1, 1, -1)
@@ -1047,8 +1051,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         hbox.addStretch(1)
         grid.addLayout(hbox, 4, 4)
 
-        msg = _('Bitcoin transactions are in general not free. A transaction fee is paid by the sender of the funds.') + '\n\n'\
-              + _('The amount of fee can be decided freely by the sender. However, transactions with low fees take more time to be processed.') + '\n\n'\
+        msg = _(
+            'Qtum transactions are in general not free. A transaction fee is paid by the sender of the funds.') + '\n\n' \
+              + _('The amount of fee can be decided freely by the sender. However, transactions with low fees take more time to be processed.') + '\n\n' \
               + _('A suggested fee is automatically added to this field. You may override it. The suggested fee increases with the size of the transaction.')
         self.fee_e_label = HelpLabel(_('Fee'), msg)
 
@@ -1305,10 +1310,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         for _type, addr, amount in outputs:
             if addr is None:
-                self.show_error(_('Bitcoin Address is None'))
+                self.show_error(_('Qtum Address is None'))
                 return
             if _type == TYPE_ADDRESS and not bitcoin.is_address(addr):
-                self.show_error(_('Invalid Bitcoin Address'))
+                self.show_error(_('Invalid Qtum Address'))
                 return
             if amount is None:
                 self.show_error(_('Invalid Amount'))
