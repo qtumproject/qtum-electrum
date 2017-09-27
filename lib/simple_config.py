@@ -87,8 +87,6 @@ class SimpleConfig(PrintError):
 
         if self.get('testnet'):
             path = os.path.join(path, 'testnet')
-        elif self.get('nolnet'):
-            path = os.path.join(path, 'nolnet')
 
         # Make directory if it does not yet exist.
         if not os.path.exists(path):
@@ -235,7 +233,7 @@ class SimpleConfig(PrintError):
         return len(self.fee_estimates)==4
 
     def is_dynfee(self):
-        return self.get('dynamic_fees', True)
+        return self.get('dynamic_fees', True) and self.has_fee_estimates()
 
     def fee_per_kb(self):
         dyn = self.is_dynfee()

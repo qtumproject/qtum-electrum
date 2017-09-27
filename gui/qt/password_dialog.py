@@ -28,8 +28,8 @@ from __future__ import print_function
 from __future__ import unicode_literals
 
 import six
-from PyQt4.QtGui import *
-from PyQt4.QtCore import *
+from PyQt5.QtGui import *
+from PyQt5.QtCore import *
 from electrum.i18n import _
 from .util import *
 import re
@@ -177,7 +177,7 @@ class ChangePasswordDialog(WindowModalDialog):
             msg += ' ' + _('Use this dialog to add a password to your wallet.')
         else:
             if not is_encrypted:
-                msg = _('Your bitcoins are password protected. However, your wallet file is not encrypted.')
+                msg = _('Your qtumss are password protected. However, your wallet file is not encrypted.')
             else:
                 msg = _('Your wallet is password protected and encrypted.')
             msg += ' ' + _('Use this dialog to change your password.')

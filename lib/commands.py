@@ -160,10 +160,11 @@ class Commands:
         return True
 
     @command('')
-    def make_seed(self, nbits=132, entropy=1, language=None):
+    def make_seed(self, nbits=132, entropy=1, language=None, segwit=False):
         """Create a seed"""
         from .mnemonic import Mnemonic
-        s = Mnemonic(language).make_seed('standard', nbits, custom_entropy=entropy)
+        t = 'segwit' if segwit else 'standard'
+        s = Mnemonic(language).make_seed(t, nbits, custom_entropy=entropy)
         return s
 
     @command('')
@@ -195,14 +196,6 @@ class Commands:
         is a walletless server query, results are not checked by SPV.
         """
         return self.network.synchronous_get(('blockchain.address.listunspent', [address]))
-
-    @command('n')
-    def getutxoaddress(self, txid, pos):
-        """Get the address of a UTXO. Note: This is a walletless server query, results are
-        not checked by SPV.
-        """
-        r = self.network.synchronous_get(('blockchain.utxo.get_address', [txid, pos]))
-        return {'address': r}
 
     @command('')
     def serialize(self, jsontx):
@@ -570,7 +563,7 @@ class Commands:
             PR_PAID: 'Paid',
             PR_EXPIRED: 'Expired',
         }
-        out['amount (BTC)'] = format_satoshis(out.get('amount'))
+        out['amount (QTUM)'] = format_satoshis(out.get('amount'))
         out['status'] = pr_str[out.get('status', PR_UNKNOWN)]
         return out
 
@@ -691,8 +684,8 @@ param_descriptions = {
     'pubkey': 'Public key',
     'message': 'Clear text message. Use quotes if it contains spaces.',
     'encrypted': 'Encrypted message',
-    'amount': 'Amount to be sent (in BTC). Type \'!\' to send the maximum available.',
-    'requested_amount': 'Requested amount (in BTC).',
+    'amount': 'Amount to be sent (in QTUM). Type \'!\' to send the maximum available.',
+    'requested_amount': 'Requested amount (in QTUM).',
     'outputs': 'list of ["address", amount]',
 }
 
@@ -708,11 +701,12 @@ command_options = {
     'show_labels': ("-l", "--labels",      "Show the labels of listed addresses"),
     'nocheck':     (None, "--nocheck",     "Do not verify aliases"),
     'imax':        (None, "--imax",        "Maximum number of inputs"),
-    'tx_fee':      ("-f", "--fee",         "Transaction fee (in BTC)"),
+    'tx_fee':      ("-f", "--fee",         "Transaction fee (in QTUM)"),
     'from_addr':   ("-F", "--from",        "Source address. If it isn't in the wallet, it will ask for the private key unless supplied in the format public_key:private_key. It's not saved in the wallet."),
     'change_addr': ("-c", "--change",      "Change address. Default is a spare address, or the source address if it's not in the wallet"),
     'nbits':       (None, "--nbits",       "Number of bits of entropy"),
     'entropy':     (None, "--entropy",     "Custom entropy"),
+    'segwit':      (None, "--segwit",      "Create segwit seed"),
     'language':    ("-L", "--lang",        "Default language for wordlist"),
     'gap_limit':   ("-G", "--gap",         "Gap limit"),
     'privkey':     (None, "--privkey",     "Private key. Set to '?' to get a prompt."),
@@ -824,9 +818,8 @@ def add_global_options(parser):
     group.add_argument("-D", "--dir", dest="electrum_path", help="electrum directory")
     group.add_argument("-P", "--portable", action="store_true", dest="portable", default=False, help="Use local 'electrum_data' directory")
     group.add_argument("-w", "--wallet", dest="wallet_path", help="wallet path")
-    group.add_argument("--testnet", action="store_true", dest="testnet", default=False, help="Use Testnet")
-    group.add_argument("--segwit", action="store_true", dest="segwit", default=False, help="The Wizard will create Segwit seed phrases (Testnet only).")
-    group.add_argument("--nolnet", action="store_true", dest="nolnet", default=False, help="Use Nolnet")
+    # group.add_argument("--testnet", action="store_true", dest="testnet", default=False, help="Use Testnet")
+    group.add_argument("--skynet", action="store_true", dest="skynet", default=False, help="Use Skynet")
 
 def get_parser():
     # create main parser
@@ -836,7 +829,7 @@ def get_parser():
     subparsers = parser.add_subparsers(dest='cmd', metavar='<command>')
     # gui
     parser_gui = subparsers.add_parser('gui', description="Run Electrum's Graphical User Interface.", help="Run GUI (default)")
-    parser_gui.add_argument("url", nargs='?', default=None, help="bitcoin URI (or bip70 file)")
+    parser_gui.add_argument("uri", nargs='?', default=None, help="qtum URI (or bip70 file)")
     parser_gui.add_argument("-g", "--gui", dest="gui", help="select graphical user interface", choices=['qt', 'kivy', 'text', 'stdio'])
     parser_gui.add_argument("-o", "--offline", action="store_true", dest="offline", default=False, help="Run offline")
     parser_gui.add_argument("-m", action="store_true", dest="hide_gui", default=False, help="hide GUI on startup")

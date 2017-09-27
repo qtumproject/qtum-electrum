@@ -648,7 +648,7 @@ class Abstract_Wallet(PrintError):
                     self.pruned_txo.pop(ser)
             # add tx to pruned_txo, and undo the txi addition
             for next_tx, dd in self.txi.items():
-                for addr, l in dd.items():
+                for addr, l in list(dd.items()):
                     ll = l[:]
                     for item in ll:
                         ser, v = item
@@ -804,7 +804,7 @@ class Abstract_Wallet(PrintError):
             _type, data, value = o
             if _type == TYPE_ADDRESS:
                 if not is_address(data):
-                    raise BaseException("Invalid bitcoin address:" + data)
+                    raise BaseException("Invalid Qtum address:" + data)
             if value == '!':
                 if i_max is not None:
                     raise BaseException("More than one output set to spend max")
@@ -1190,7 +1190,7 @@ class Abstract_Wallet(PrintError):
         if not r:
             return
         out = copy.copy(r)
-        out['URI'] = 'bitcoin:' + addr + '?amount=' + format_satoshis(out.get('amount'))
+        out['URI'] = 'qtum:' + addr + '?amount=' + format_satoshis(out.get('amount'))
         status, conf = self.get_request_status(addr)
         out['status'] = status
         if conf is not None:
@@ -1544,8 +1544,7 @@ class Simple_Wallet(Abstract_Wallet):
 
     def load_keystore(self):
         self.keystore = load_keystore(self.storage, 'keystore')
-        self.is_segwit = self.keystore.is_segwit()
-        self.txin_type = 'p2wpkh-p2sh' if self.is_segwit else 'p2pkh'
+        self.txin_type = self.keystore.txin_type()
 
     def get_pubkey(self, c, i):
         return self.derive_pubkeys(c, i)
@@ -1635,37 +1634,24 @@ class Simple_Deterministic_Wallet(Deterministic_Wallet, Simple_Wallet):
         return addr
 
 
-class P2SH:
-
-    def pubkeys_to_redeem_script(self, pubkeys):
-        raise NotImplementedError()
-
-    def pubkeys_to_address(self, pubkey):
-        redeem_script = self.pubkeys_to_redeem_script(pubkey)
-        return bitcoin.hash160_to_p2sh(hash_160(bfh(redeem_script)))
-
-
 class Standard_Wallet(Simple_Deterministic_Wallet):
     wallet_type = 'standard'
 
-    def pubkeys_to_redeem_script(self, pubkey):
-        if self.is_segwit:
-            return transaction.segwit_script(pubkey)
-
     def pubkeys_to_address(self, pubkey):
-        if not self.is_segwit:
+        if self.txin_type == 'p2pkh':
             return bitcoin.public_key_to_p2pkh(bfh(pubkey))
-        elif bitcoin.TESTNET:
-            redeem_script = self.pubkeys_to_redeem_script(pubkey)
-            return bitcoin.hash160_to_p2sh(hash_160(bfh(redeem_script)))
+        elif self.txin_type == 'p2wpkh':
+            return bitcoin.hash_to_segwit_addr(hash_160(bfh(pubkey)))
+        elif self.txin_type == 'p2wpkh-p2sh':
+            scriptSig = transaction.p2wpkh_nested_script(pubkey)
+            return bitcoin.hash160_to_p2sh(hash_160(bfh(scriptSig)))
         else:
-            raise NotImplementedError()
+            raise NotImplementedError(self.txin_type)
 
 
-class Multisig_Wallet(Deterministic_Wallet, P2SH):
+class Multisig_Wallet(Deterministic_Wallet):
     # generic m of n
     gap_limit = 20
-    txin_type = 'p2sh'
 
     def __init__(self, storage):
         self.wallet_type = storage.get('wallet_type')
@@ -1675,9 +1661,19 @@ class Multisig_Wallet(Deterministic_Wallet, P2SH):
     def get_pubkeys(self, c, i):
         return self.derive_pubkeys(c, i)
 
-    def redeem_script(self, c, i):
-        pubkeys = self.get_pubkeys(c, i)
-        return transaction.multisig_script(sorted(pubkeys), self.m)
+    def pubkeys_to_address(self, pubkeys):
+        if self.txin_type == 'p2sh':
+            redeem_script = self.pubkeys_to_redeem_script(pubkeys)
+            return bitcoin.hash160_to_p2sh(hash_160(bfh(redeem_script)))
+        elif self.txin_type == 'p2wsh':
+            witness_script = self.pubkeys_to_redeem_script(pubkeys)
+            return bitcoin.script_to_p2wsh(witness_script)
+        elif self.txin_type == 'p2wsh-p2sh':
+            witness_script = self.pubkeys_to_redeem_script(pubkeys)
+            scriptSig = transaction.p2wsh_nested_script(witness_script)
+            return bitcoin.hash160_to_p2sh(hash_160(bfh(scriptSig)))
+        else:
+            raise NotImplementedError(self.txin_type)
 
     def pubkeys_to_redeem_script(self, pubkeys):
         return transaction.multisig_script(sorted(pubkeys), self.m)
@@ -1691,6 +1687,7 @@ class Multisig_Wallet(Deterministic_Wallet, P2SH):
             name = 'x%d/'%(i+1)
             self.keystores[name] = load_keystore(self.storage, name)
         self.keystore = self.keystores['x1/']
+        self.txin_type = self.keystore.txin_type()
 
     def save_keystore(self):
         for name, k in self.keystores.items():

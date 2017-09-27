@@ -24,19 +24,13 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-import struct
-
 from unicodedata import normalize
 
-from .version import *
 from . import bitcoin
-from .bitcoin import pw_encode, pw_decode, bip32_root, bip32_private_derivation, bip32_public_derivation, bip32_private_key, deserialize_xprv, deserialize_xpub
-from .bitcoin import public_key_from_private_key, public_key_to_p2pkh
 from .bitcoin import *
-
-from .bitcoin import is_old_seed, is_new_seed, is_seed
-from .util import PrintError, InvalidPassword, hfu
+from .bitcoin import is_seed
 from .mnemonic import Mnemonic, load_wordlist
+from .util import PrintError, InvalidPassword, hfu
 
 
 class KeyStore(PrintError):
@@ -75,9 +69,6 @@ class KeyStore(PrintError):
         if self.is_watching_only():
             return False
         return bool(self.get_tx_derivations(tx))
-
-    def is_segwit(self):
-        return False
 
 
 class Software_KeyStore(KeyStore):
@@ -190,6 +181,9 @@ class Deterministic_KeyStore(Software_KeyStore):
         self.seed = d.get('seed', '')
         self.passphrase = d.get('passphrase', '')
 
+    def txin_type(self):
+        return 'p2pkh'
+
     def is_deterministic(self):
         return True
 
@@ -276,6 +270,17 @@ class Xpub:
             return
         return derivation
 
+    def txin_type(self):
+        xtype = deserialize_xpub(self.xpub)[0]
+        if xtype == 'standard':
+            return 'p2pkh'
+        elif xtype == 'segwit':
+            return 'p2wpkh'
+        elif xtype == 'segwit_p2sh':
+            return 'p2wpkh-p2sh'
+        else:
+            raise BaseException('unknown txin_type', xtype)
+
 
 class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
 
@@ -334,9 +339,6 @@ class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
         _, _, _, _, c, k = deserialize_xprv(xprv)
         pk = bip32_private_key(sequence, k, c)
         return pk
-
-    def is_segwit(self):
-        return bool(deserialize_xpub(self.xpub)[0])
 
 
 class Old_KeyStore(Deterministic_KeyStore):
@@ -480,6 +482,9 @@ class Old_KeyStore(Deterministic_KeyStore):
         if self.has_seed():
             decoded = pw_decode(self.seed, old_password)
             self.seed = pw_encode(decoded, new_password)
+
+    def txin_type(self):
+        return 'p2phk'
 
 
 class Hardware_KeyStore(KeyStore, Xpub):
@@ -699,8 +704,9 @@ def from_seed(seed, passphrase):
         keystore.add_seed(seed)
         keystore.passphrase = passphrase
         bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
-        xtype = 0 if t == 'standard' else 1
-        keystore.add_xprv_from_seed(bip32_seed, xtype, "m/")
+        keystore.add_xprv_from_seed(bip32_seed, t, "m/")
+    else:
+        raise BaseException(t)
     return keystore
 
 def from_private_key_list(text):

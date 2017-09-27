@@ -27,12 +27,11 @@ from __future__ import division
 from __future__ import print_function
 from __future__ import unicode_literals
 
-from threading import Lock
 import hashlib
+from threading import Lock
 
-from .bitcoin import Hash, hash_encode
 from .transaction import Transaction
-from .util import print_error, print_msg, ThreadJob, bh2u
+from .util import ThreadJob, bh2u
 
 
 class Synchronizer(ThreadJob):
@@ -51,7 +50,7 @@ class Synchronizer(ThreadJob):
         self.network = network
         self.new_addresses = set()
         # Entries are (tx_hash, tx_height) tuples
-        self.requested_tx = set()
+        self.requested_tx = {}
         self.requested_histories = {}
         self.requested_addrs = set()
         self.lock = Lock()
@@ -135,7 +134,7 @@ class Synchronizer(ThreadJob):
         params, result = self.parse_response(response)
         if not params:
             return
-        tx_hash, tx_height = params
+        tx_hash = params[0]
         #assert tx_hash == hash_encode(Hash(bytes.fromhex(result)))
         tx = Transaction(result)
         try:
@@ -143,8 +142,8 @@ class Synchronizer(ThreadJob):
         except Exception:
             self.print_msg("cannot deserialize transaction, skipping", tx_hash)
             return
+        tx_height = self.requested_tx.pop(tx_hash)
         self.wallet.receive_tx_callback(tx_hash, tx, tx_height)
-        self.requested_tx.remove((tx_hash, tx_height))
         self.print_error("received tx %s height: %d bytes: %d" %
                          (tx_hash, tx_height, len(tx.raw)))
         # callbacks
@@ -152,18 +151,17 @@ class Synchronizer(ThreadJob):
         if not self.requested_tx:
             self.network.trigger_callback('updated')
 
-
     def request_missing_txs(self, hist):
         # "hist" is a list of [tx_hash, tx_height] lists
-        missing = set()
+        requests = []
         for tx_hash, tx_height in hist:
-            if self.wallet.transactions.get(tx_hash) is None:
-                missing.add((tx_hash, tx_height))
-        missing -= self.requested_tx
-        if missing:
-            requests = [('blockchain.transaction.get', tx) for tx in missing]
-            self.network.send(requests, self.tx_response)
-            self.requested_tx |= missing
+            if tx_hash in self.requested_tx:
+                continue
+            if tx_hash in self.wallet.transactions:
+                continue
+            requests.append(('blockchain.transaction.get', [tx_hash]))
+            self.requested_tx[tx_hash] = tx_height
+        self.network.send(requests, self.tx_response)
 
     def initialize(self):
         '''Check the initial state of the wallet.  Subscribe to all its

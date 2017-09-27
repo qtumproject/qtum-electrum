@@ -33,6 +33,7 @@ from decimal import Decimal
 import traceback
 import urllib
 import threading
+from struct import Struct
 
 from .i18n import _
 
@@ -40,8 +41,14 @@ from .i18n import _
 import urllib.request, urllib.parse, urllib.error
 import queue
 
-base_units = {'BTC':8, 'mBTC':5, 'uBTC':2}
+base_units = {'QTUM':8, 'mQTUM':5, 'uQTUM':2}
 fee_levels = [_('Within 25 blocks'), _('Within 10 blocks'), _('Within 5 blocks'), _('Within 2 blocks'), _('In the next block')]
+
+unpack_int32_from = Struct('<i').unpack_from
+unpack_int64_from = Struct('<q').unpack_from
+unpack_uint16_from = Struct('<H').unpack_from
+unpack_uint32_from = Struct('<I').unpack_from
+unpack_uint64_from = Struct('<Q').unpack_from
 
 def normalize_version(v):
     return [int(x) for x in re.sub(r'(\.0+)*$','', v).split(".")]
@@ -435,36 +442,14 @@ def time_difference(distance_in_time, include_seconds):
         return "over %d years" % (round(distance_in_minutes / 525600))
 
 mainnet_block_explorers = {
-    'Biteasy.com': ('https://www.biteasy.com/blockchain',
+    'Qtum.info': ('https://qtum.info',
                         {'tx': 'transactions', 'addr': 'addresses'}),
-    'Bitflyer.jp': ('https://chainflyer.bitflyer.jp',
-                        {'tx': 'Transaction', 'addr': 'Address'}),
-    'Blockchain.info': ('https://blockchain.info',
-                        {'tx': 'tx', 'addr': 'address'}),
-    'blockchainbdgpzk.onion': ('https://blockchainbdgpzk.onion',
-                        {'tx': 'tx', 'addr': 'address'}),
-    'Blockr.io': ('https://btc.blockr.io',
-                        {'tx': 'tx/info', 'addr': 'address/info'}),
-    'Blocktrail.com': ('https://www.blocktrail.com/BTC',
-                        {'tx': 'tx', 'addr': 'address'}),
-    'BTC.com': ('https://chain.btc.com',
-                        {'tx': 'tx', 'addr': 'address'}),
-    'Chain.so': ('https://www.chain.so',
-                        {'tx': 'tx/BTC', 'addr': 'address/BTC'}),
-    'Insight.is': ('https://insight.bitpay.com',
-                        {'tx': 'tx', 'addr': 'address'}),
-    'TradeBlock.com': ('https://tradeblock.com/blockchain',
-                        {'tx': 'tx', 'addr': 'address'}),
-    'BlockCypher.com': ('https://live.blockcypher.com/btc',
-                        {'tx': 'tx', 'addr': 'address'}),
-    'Blockchair.com': ('https://blockchair.com/bitcoin',
-                        {'tx': 'transaction', 'addr': 'address'}),
     'system default': ('blockchain:',
                         {'tx': 'tx', 'addr': 'address'}),
 }
 
-testnet_block_explorers = {
-    'Blocktrail.com': ('https://www.blocktrail.com/tBTC',
+skynet_block_explorers = {
+    'Qtum.info': ('https://skynet.qtum.info',
                        {'tx': 'tx', 'addr': 'address'}),
     'system default': ('blockchain:',
                        {'tx': 'tx', 'addr': 'address'}),
@@ -472,10 +457,10 @@ testnet_block_explorers = {
 
 def block_explorer_info():
     from . import bitcoin
-    return testnet_block_explorers if bitcoin.TESTNET else mainnet_block_explorers
+    return skynet_block_explorers if bitcoin.SKYNET else mainnet_block_explorers
 
 def block_explorer(config):
-    return config.get('block_explorer', 'Blocktrail.com')
+    return config.get('block_explorer', 'qtum.info')
 
 def block_explorer_tuple(config):
     return block_explorer_info().get(block_explorer(config))
@@ -500,12 +485,12 @@ def parse_URI(uri, on_pr=None):
 
     if ':' not in uri:
         if not bitcoin.is_address(uri):
-            raise BaseException("Not a bitcoin address")
+            raise BaseException("Not a qtum address")
         return {'address': uri}
 
     u = urllib.parse.urlparse(uri)
-    if u.scheme != 'bitcoin':
-        raise BaseException("Not a bitcoin URI")
+    if u.scheme != 'qtum':
+        raise BaseException("Not a qtum URI")
     address = u.path
 
     # python for android fails to parse query
@@ -522,7 +507,7 @@ def parse_URI(uri, on_pr=None):
     out = {k: v[0] for k, v in pq.items()}
     if address:
         if not bitcoin.is_address(address):
-            raise BaseException("Invalid bitcoin address:" + address)
+            raise BaseException("Invalid qtum address:" + address)
         out['address'] = address
     if 'amount' in out:
         am = out['amount']
@@ -572,7 +557,7 @@ def create_URI(addr, amount, message):
         query.append('amount=%s'%format_satoshis_plain(amount))
     if message:
         query.append('message=%s'%urllib.parse.quote(message))
-    p = urllib.parse.ParseResult(scheme='bitcoin', netloc='', path=addr, params='', query='&'.join(query), fragment='')
+    p = urllib.parse.ParseResult(scheme='qtum', netloc='', path=addr, params='', query='&'.join(query), fragment='')
     return urllib.parse.urlunparse(p)
 
 

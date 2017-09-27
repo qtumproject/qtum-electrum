@@ -24,12 +24,12 @@
 # SOFTWARE.
 
 import os
+
 from . import bitcoin
 from . import keystore
-from .keystore import bip44_derivation
-from .wallet import Wallet, Imported_Wallet, Standard_Wallet, Multisig_Wallet, wallet_types
 from .i18n import _
-from .plugins import run_hook
+from .keystore import bip44_derivation
+from .wallet import Imported_Wallet, Standard_Wallet, Multisig_Wallet, wallet_types
 
 
 class BaseWizard(object):
@@ -120,7 +120,7 @@ class BaseWizard(object):
         if self.wallet_type =='standard' or i==0:
             message = _('Do you want to create a new seed, or to restore a wallet using an existing seed?')
             choices = [
-                ('create_seed', _('Create a new seed')),
+                ('choose_seed_type', _('Create a new seed')),
                 ('restore_from_seed', _('I already have a seed')),
                 ('restore_from_key', _('Use public or private keys')),
             ]
@@ -160,9 +160,8 @@ class BaseWizard(object):
             ])
             self.add_xpub_dialog(title=title, message=message, run_next=self.on_restore_from_key, is_valid=v)
         else:
-            v = keystore.is_bip32_key
             i = len(self.keystores) + 1
-            self.add_cosigner_dialog(index=i, run_next=self.on_restore_from_key, is_valid=v)
+            self.add_cosigner_dialog(index=i, run_next=self.on_restore_from_key, is_valid=keystore.is_bip32_key)
 
     def on_restore_from_key(self, text):
         k = keystore.from_keys(text)
@@ -227,7 +226,7 @@ class BaseWizard(object):
             self.derivation_dialog(f)
 
     def derivation_dialog(self, f):
-        default = bip44_derivation(0, self.config.get('segwit'))
+        default = bip44_derivation(0, False)
         message = '\n'.join([
             _('Enter your wallet derivation here.'),
             _('If you are not sure what this is, leave this field unchanged.')
@@ -289,17 +288,18 @@ class BaseWizard(object):
             raise BaseException('Unknown seed type', self.seed_type)
 
     def on_restore_bip39(self, seed, passphrase):
-        f = lambda x: self.run('on_bip44', seed, passphrase, str(x))
+        f = lambda x: self.run('on_bip43', seed, passphrase, str(x))
         self.derivation_dialog(f)
 
     def create_keystore(self, seed, passphrase):
         k = keystore.from_seed(seed, passphrase)
         self.on_keystore(k)
 
-    def on_bip44(self, seed, passphrase, derivation):
+    def on_bip43(self, seed, passphrase, derivation):
         k = keystore.BIP32_KeyStore({})
         bip32_seed = keystore.bip39_to_seed(seed, passphrase)
-        k.add_xprv_from_seed(bip32_seed, 0, derivation)
+        t = 'segwit_p2sh' if derivation.startswith("m/49'") else 'standard'
+        k.add_xprv_from_seed(bip32_seed, t, derivation)
         self.on_keystore(k)
 
     def on_keystore(self, k):
@@ -311,6 +311,15 @@ class BaseWizard(object):
                 self.show_error(_('Error: duplicate master public key'))
                 self.run('choose_keystore')
                 return
+            from .bitcoin import xpub_type
+            if len(self.keystores) > 0:
+                t1 = xpub_type(k.xpub)
+                t2 = xpub_type(self.keystores[0].xpub)
+                if t1 != t2:
+                    self.show_error(
+                        _('Cannot add this cosigner:') + '\n' + "Their key type is '%s', we are '%s'" % (t1, t2))
+                    self.run('choose_keystore')
+                    return
             self.keystores.append(k)
             if len(self.keystores) == 1:
                 xpub = k.get_master_public_key()
@@ -348,16 +357,33 @@ class BaseWizard(object):
     def show_xpub_and_add_cosigners(self, xpub):
         self.show_xpub_dialog(xpub=xpub, run_next=lambda x: self.run('choose_keystore'))
 
-    def add_cosigners(self, password, i):
-        self.add_cosigner_dialog(run_next=lambda x: self.on_cosigner(x, password, i), index=i, is_valid=keystore.is_xpub)
-
     def on_cosigner(self, text, password, i):
         k = keystore.from_keys(text, password)
         self.on_keystore(k)
 
-    def create_seed(self):
+    def choose_seed_type(self):
+        title = _('Choose Seed type')
+        message = ' '.join([
+            "The type of addresses used by your wallet will depend on your seed.",
+            "Segwit wallets use bech32 addresses, defined in BIP173.",
+            "Please note that websites and other wallets may not support these addresses yet.",
+            "Thus, you might want to keep using a non-segwit wallet in order to be able to receive bitcoins during the transition period."
+        ])
+        choices = [
+            ('create_standard_seed', _('Standard')),
+            ('create_segwit_seed', _('Segwit')),
+        ]
+        self.choice_dialog(title=title, message=message, choices=choices, run_next=self.run)
+
+    def create_segwit_seed(self):
+        self.create_seed('segwit')
+
+    def create_standard_seed(self):
+        self.create_seed('standard')
+
+    def create_seed(self, seed_type):
         from . import mnemonic
-        self.seed_type = 'segwit' if bitcoin.TESTNET and self.config.get('segwit') else 'standard'
+        self.seed_type = seed_type
         seed = mnemonic.Mnemonic('en').make_seed(self.seed_type)
         self.opt_bip39 = False
         f = lambda x: self.request_passphrase(seed, x)
