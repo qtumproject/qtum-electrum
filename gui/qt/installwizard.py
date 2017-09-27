@@ -97,7 +97,6 @@ def wizard_dialog(func):
     return func_wrapper
 
 
-
 # WindowModalDialog must come first as it overrides show_error
 class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
 
@@ -131,20 +130,25 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
         self.next_button.clicked.connect(lambda: self.loop.exit(2))
         outer_vbox = QVBoxLayout(self)
         inner_vbox = QVBoxLayout()
-        inner_vbox = QVBoxLayout()
         inner_vbox.addWidget(self.title)
         inner_vbox.addWidget(self.main_widget)
         inner_vbox.addStretch(1)
         inner_vbox.addWidget(self.please_wait)
         inner_vbox.addStretch(1)
+        scroll_widget = QWidget()
+        scroll_widget.setLayout(inner_vbox)
+        scroll = QScrollArea()
+        scroll.setWidget(scroll_widget)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        scroll.setWidgetResizable(True)
         icon_vbox = QVBoxLayout()
         icon_vbox.addWidget(self.logo)
         icon_vbox.addStretch(1)
         hbox = QHBoxLayout()
         hbox.addLayout(icon_vbox)
         hbox.addSpacing(5)
-        hbox.addLayout(inner_vbox)
-        hbox.setStretchFactor(inner_vbox, 1)
+        hbox.addWidget(scroll)
+        hbox.setStretchFactor(scroll, 1)
         outer_vbox.addLayout(hbox)
         outer_vbox.addLayout(Buttons(self.back_button, self.next_button))
         self.set_icon(':icons/electrum.png')
@@ -426,12 +430,9 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
         self.confirm(message, title)
 
     def confirm(self, message, title):
-        area = QScrollArea()
         label = WWLabel(message)
-        area.setWidget(label)
-
         vbox = QVBoxLayout()
-        vbox.addWidget(area)
+        vbox.addWidget(label)
         self.exec_layout(vbox, title)
 
     @wizard_dialog
