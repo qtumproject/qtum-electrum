@@ -182,7 +182,7 @@ class Deterministic_KeyStore(Software_KeyStore):
         self.passphrase = d.get('passphrase', '')
 
     def txin_type(self):
-        return 'standard'
+        return 'p2pkh'
 
     def is_deterministic(self):
         return True
@@ -484,7 +484,7 @@ class Old_KeyStore(Deterministic_KeyStore):
             self.seed = pw_encode(decoded, new_password)
 
     def txin_type(self):
-        return 'standard'
+        return 'p2phk'
 
 
 class Hardware_KeyStore(KeyStore, Xpub):
