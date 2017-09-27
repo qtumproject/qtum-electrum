@@ -522,7 +522,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         help_menu.addAction(_("&Documentation"), lambda: webbrowser.open("http://docs.electrum.org/")).setShortcut(QKeySequence.HelpContents)
         help_menu.addAction(_("&Report Bug"), self.show_report_bug)
         help_menu.addSeparator()
-        help_menu.addAction(_("&Donate to server"), self.donate_to_server)
+        # help_menu.addAction(_("&Donate to server"), self.donate_to_server)
 
         self.setMenuBar(menubar)
 
@@ -544,7 +544,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         msg = ' '.join([
             _("Please report any bugs as issues on github:<br/>"),
             "<a href=\"https://github.com/qtumproject/qtum-electrum/issues\">https://github.com/qtumproject/qtum-electrum/issues</a><br></br>",
-            "<a href=\"https://github.com/spesmilo/electrum/issues\">https://github.com/spesmilo/electrum/issues</a><br/><br/>",
             _("Before reporting a bug, upgrade to the most recent version of Electrum (latest release or git HEAD), and include the version number in your report."),
             _("Try to explain not only what the bug is, but how it occurs.")
          ])

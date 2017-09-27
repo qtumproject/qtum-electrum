@@ -307,7 +307,7 @@ class Network(util.DaemonThread):
             message_id = self.queue_request(request[0], request[1])
             self.unanswered_requests[message_id] = request
         self.queue_request('server.banner', [])
-        self.queue_request('server.donation_address', [])
+        # self.queue_request('server.donation_address', [])
         self.queue_request('server.peers.subscribe', [])
         for i in bitcoin.FEE_TARGETS:
             self.queue_request('blockchain.estimatefee', [i])
