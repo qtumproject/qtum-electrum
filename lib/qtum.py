@@ -19,6 +19,7 @@ from .util import print_error, InvalidPassword, assert_bytes, to_bytes
 from .util import unpack_uint16_from, unpack_uint32_from, unpack_uint64_from, unpack_int32_from, unpack_int64_from
 from . import segwit_addr
 
+
 def read_json_dict(filename):
     path = os.path.join(os.path.dirname(__file__), filename)
     try:
@@ -1091,3 +1092,11 @@ def read_a_raw_header_from_chunk(data, start):
     sig_length = deserializer.read_varint()
     cursor = deserializer.cursor + sig_length
     return data[start: cursor], cursor
+
+
+def is_pos(header):
+    hash_prevout_stake = header.get('hash_prevout_stake', None)
+    hash_prevout_n = header.get('hash_prevout_n', 0)
+    return hash_prevout_stake and (
+        hash_prevout_stake != '0000000000000000000000000000000000000000000000000000000000000000'
+        or hash_prevout_n != 0xffffffff)
