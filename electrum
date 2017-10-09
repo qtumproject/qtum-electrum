@@ -284,9 +284,11 @@ def run_offline_command(config, config_options):
         wallet.storage.write()
     return result
 
+
 def init_plugins(config, gui_name):
     from electrum.plugins import Plugins
     return Plugins(config, is_local or is_android, gui_name)
+
 
 if __name__ == '__main__':
 
@@ -332,7 +334,8 @@ if __name__ == '__main__':
     config_options['cwd'] = os.getcwd()
 
     if config_options.get('portable'):
-        config_options['electrum_path'] = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'electrum_data')
+        config_options['electrum_path'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                       'qtum_electrum_data')
 
     # kivy sometimes freezes when we write to sys.stderr
     set_verbosity(config_options.get('verbose') and config_options.get('gui')!='kivy')
@@ -419,7 +422,6 @@ if __name__ == '__main__':
             else:
                 init_plugins(config, 'cmdline')
                 result = run_offline_command(config, config_options)
-
                 # print result
     if isinstance(result, six.text_type):
         print_msg(result)
