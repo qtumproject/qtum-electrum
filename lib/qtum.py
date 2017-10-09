@@ -38,11 +38,13 @@ SEGWIT_HRP = "bc"
 HEADERS_URL = ""
 GENESIS = "0000c07f635271213ea71bd68e589694b9b10b0cd2ddd195a2ab07f36cf00473"
 GENESIS_BITS = 0x1f00ffff
+MAX_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
 BASIC_HEADER_SIZE = 180
 SERVERLIST = 'servers.json'
 DEFAULT_SERVERS = read_json_dict(SERVERLIST)
 DEFAULT_PORTS = {'t':'50001', 's':'50002'}
-
+POW_BLOCK_COUNT = 5000
+CHUNK_SIZE = 2016
 
 # Version numbers for BIP32 extended keys
 # standard: xprv, xpub
@@ -1100,3 +1102,7 @@ def is_pos(header):
     return hash_prevout_stake and (
         hash_prevout_stake != '0000000000000000000000000000000000000000000000000000000000000000'
         or hash_prevout_n != 0xffffffff)
+
+
+def chunk_index(height):
+    return 0 if height < POW_BLOCK_COUNT else 1 + (height - POW_BLOCK_COUNT) // CHUNK_SIZE

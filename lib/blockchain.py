@@ -27,8 +27,6 @@ from . import util
 from . import bitcoin
 from .bitcoin import *
 
-MAX_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
-
 
 def hash_header(header):
     if header is None:
@@ -162,13 +160,18 @@ class Blockchain(util.PrintError):
         _hash = hash_header(header)
         if prev_hash != header.get('prev_block_hash'):
             raise BaseException("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
-        if bitcoin.TESTNET:
-            return
-        # todo
-        # if bits != header.get('bits'):
-        #     raise BaseException("bits mismatch: %s vs %s" % (bits, header.get('bits')))
-        # if int('0x' + _hash, 16) > target:
-        #     raise BaseException("insufficient proof of work: %s vs target %s" % (int('0x' + _hash, 16), target))
+
+        # 验证nbits，保证target没有作假
+        if bits != header.get('bits'):
+            raise BaseException("bits mismatch: %s vs %s" % (bits, header.get('bits')))
+
+        if is_pos(header):
+            pass
+            # todo
+            # 需要拿到value，计算新的target
+        else:
+            if int('0x' + _hash, 16) > target:
+                raise BaseException("insufficient proof of work: %s vs target %s" % (int('0x' + _hash, 16), target))
 
     def read_chunk(self, data):
         raw_headers = []
@@ -183,16 +186,16 @@ class Blockchain(util.PrintError):
     def verify_chunk(self, index, raw_headers):
         prev_header = None
         if index != 0:
-            prev_header = self.read_header(index * 2016 - 1)
+            prev_header = self.read_header(index * CHUNK_SIZE - 1)
         bits, target = self.get_target(index)
         for i, raw_header in enumerate(raw_headers):
-            header = deserialize_header(raw_header, index * 2016 + i)
+            header = deserialize_header(raw_header, index * CHUNK_SIZE + i)
             self.verify_header(header, prev_header, bits, target)
             prev_header = header
 
     def save_chunk(self, index, raw_headers):
         for i, raw_header in enumerate(raw_headers):
-            height = index * 2016 + i
+            height = i if index == 0 else POW_BLOCK_COUNT + CHUNK_SIZE * (index - 1) + i
             self.write(raw_header, height)
         self.swap_with_parent()
 
@@ -272,32 +275,31 @@ class Blockchain(util.PrintError):
         return sum([self.BIP9(h-i, 2) for i in range(N)])*10000/N/100.
 
     def get_target(self, index):
-        if bitcoin.TESTNET:
-            return 0, 0
+
         if index == 0:
             return GENESIS_BITS, MAX_TARGET
 
-        first = self.read_header((index-1) * 2016)
-        last = self.read_header(index*2016 - 1)
+        # 前5000个块的nbits都是﻿0x1f00ffff
+
+        # get the previous chunk's first and last header
+        first = self.read_header(POW_BLOCK_COUNT + (index - 1) * CHUNK_SIZE)
+        last = self.read_header(POW_BLOCK_COUNT + index * CHUNK_SIZE - 1)
+
         # bits to target
         bits = last.get('bits')
-
         bitsN = (bits >> 24) & 0xff
-
-        # todo
-        # if not (bitsN >= 0x03 and bitsN <= 0x1d):
-        #     raise BaseException("First part of bits should be in [0x03, 0x1d]")
-
         bitsBase = bits & 0xffffff
-        if not (bitsBase >= 0x8000 and bitsBase <= 0x7fffff):
-            raise BaseException("Second part of bits should be in [0x8000, 0x7fffff]")
         target = bitsBase << (8 * (bitsN-3))
+
         # new target
         nActualTimespan = last.get('timestamp') - first.get('timestamp')
         nTargetTimespan = 14 * 24 * 60 * 60
-        nActualTimespan = max(nActualTimespan, nTargetTimespan // 4)
-        nActualTimespan = min(nActualTimespan, nTargetTimespan * 4)
+
+        # nActualTimespan = max(nActualTimespan, nTargetTimespan // 4)
+        # nActualTimespan = min(nActualTimespan, nTargetTimespan * 4)
+
         new_target = min(MAX_TARGET, (target * nActualTimespan) // nTargetTimespan)
+
         # convert new target to bits
         c = ("%064x" % new_target)[2:]
         while c[:2] == '00' and len(c) > 6:
@@ -307,7 +309,47 @@ class Blockchain(util.PrintError):
             bitsN += 1
             bitsBase >>= 8
         new_bits = bitsN << 24 | bitsBase
+
         return new_bits, bitsBase << (8 * (bitsN - 3))
+
+    # def get_target(self, index):
+    #     if bitcoin.TESTNET:
+    #         return 0, 0
+    #     if index == 0:
+    #         return GENESIS_BITS, MAX_TARGET
+    #
+    #     first = self.read_header((index-1) * 2016)
+    #     last = self.read_header(index*2016 - 1)
+    #     # bits to target
+    #     bits = last.get('bits')
+    #
+    #
+    #     bitsN = (bits >> 24) & 0xff
+    #
+    #     # todo
+    #     # if not (bitsN >= 0x03 and bitsN <= 0x1d):
+    #     #     raise BaseException("First part of bits should be in [0x03, 0x1d]")
+    #
+    #     bitsBase = bits & 0xffffff
+    #     if not (bitsBase >= 0x8000 and bitsBase <= 0x7fffff):
+    #         raise BaseException("Second part of bits should be in [0x8000, 0x7fffff]")
+    #     target = bitsBase << (8 * (bitsN-3))
+    #     # new target
+    #     nActualTimespan = last.get('timestamp') - first.get('timestamp')
+    #     nTargetTimespan = 14 * 24 * 60 * 60
+    #     nActualTimespan = max(nActualTimespan, nTargetTimespan // 4)
+    #     nActualTimespan = min(nActualTimespan, nTargetTimespan * 4)
+    #     new_target = min(MAX_TARGET, (target * nActualTimespan) // nTargetTimespan)
+    #     # convert new target to bits
+    #     c = ("%064x" % new_target)[2:]
+    #     while c[:2] == '00' and len(c) > 6:
+    #         c = c[2:]
+    #     bitsN, bitsBase = len(c) // 2, int('0x' + c[:6], 16)
+    #     if bitsBase >= 0x800000:
+    #         bitsN += 1
+    #         bitsBase >>= 8
+    #     new_bits = bitsN << 24 | bitsBase
+    #     return new_bits, bitsBase << (8 * (bitsN - 3))
 
     def can_connect(self, header, check_height=True):
         height = header['block_height']
@@ -322,7 +364,8 @@ class Blockchain(util.PrintError):
         prev_hash = hash_header(previous_header)
         if prev_hash != header.get('prev_block_hash'):
             return False
-        bits, target = self.get_target(height // 2016)
+        bits, target = self.get_target(chunk_index(height))
+        print('get_target:', height, 'bits:', bits, 'target:', target)
         try:
             self.verify_header(header, previous_header, bits, target)
         except Exception as e:
