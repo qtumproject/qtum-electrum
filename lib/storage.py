@@ -46,7 +46,7 @@ from . import bitcoin
 
 OLD_SEED_VERSION = 4        # electrum versions < 2.0
 NEW_SEED_VERSION = 11       # electrum versions >= 2.0
-FINAL_SEED_VERSION = 13     # electrum >= 2.7 will set this to prevent
+FINAL_SEED_VERSION = 14  # electrum >= 2.7 will set this to prevent
                             # old versions from overwriting new format
 
 
@@ -363,7 +363,6 @@ class WalletStorage(PrintError):
 
     def convert_account(self):
         self.put('accounts', None)
-        self.put('pubkeys', None)
 
     def get_action(self):
         action = run_hook('get_action', self)
