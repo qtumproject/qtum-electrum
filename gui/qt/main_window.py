@@ -537,9 +537,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.show_error(_('No donation address for this server'))
 
     def show_about(self):
-        QMessageBox.about(self, "Electrum for Qtum",
-            _("Version")+" %s" % (self.wallet.electrum_version) + "\n\n" +
-                _("This software is based on Electrum to support Qtum. Electrum's focus is speed, with low resource usage and simplifying Bitcoin. You do not need to perform regular backups, because your wallet can be recovered from a secret phrase that you can memorize or write on paper. Startup times are instant because it operates in conjunction with high-performance servers that handle the most complicated parts of the Bitcoin system."  + "\n\n" +
+        QMessageBox.about(self, "Qtum Electrum",
+                          _("Version") +" %s" % (self.wallet.electrum_version) + "\n\n" +
+                          _("This software is based on Electrum to support Qtum. Electrum's focus is speed, with low resource usage and simplifying Bitcoin. You do not need to perform regular backups, because your wallet can be recovered from a secret phrase that you can memorize or write on paper. Startup times are instant because it operates in conjunction with high-performance servers that handle the most complicated parts of the Bitcoin system."  + "\n\n" +
                 _("Uses icons from the Icons8 icon pack (icons8.com).")))
 
     def show_report_bug(self):
@@ -549,7 +549,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             _("Before reporting a bug, upgrade to the most recent version of Electrum (latest release or git HEAD), and include the version number in your report."),
             _("Try to explain not only what the bug is, but how it occurs.")
          ])
-        self.show_message(msg, title="Electrum for Qtum - " + _("Reporting Bugs"))
+        self.show_message(msg, title="Qtum Electrum - " + _("Reporting Bugs"))
 
     def notify_transactions(self):
         if not self.network or not self.network.is_connected():
@@ -577,7 +577,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def notify(self, message):
         if self.tray:
-            self.tray.showMessage("Electrum for Qtum", message, QSystemTrayIcon.Information, 20000)
+            self.tray.showMessage("Qtum Electrum", message, QSystemTrayIcon.Information, 20000)
 
     # custom wrappers for getOpenFileName and getSaveFileName, that remember the path selected by the user
     def getOpenFileName(self, title, filter = ""):
@@ -1004,7 +1004,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.payto_e = PayToEdit(self)
         msg = _('Recipient of the funds.') + '\n\n' \
               + _(
-            'You may enter a QTUM address, a label from your list of contacts (a list of completions will be proposed), or an alias (email-like address that forwards to a Bitcoin address)')
+            'You may enter a QTUM address, a label from your list of contacts (a list of completions will be proposed), or an alias (email-like address that forwards to a Qtum address)')
         payto_label = HelpLabel(_('Pay to'), msg)
         grid.addWidget(payto_label, 1, 0)
         grid.addWidget(self.payto_e, 1, 1, 1, -1)
@@ -1898,7 +1898,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         address  = address.text().strip()
         message = message.toPlainText().strip()
         if not bitcoin.is_address(address):
-            self.show_message('Invalid Bitcoin address.')
+            self.show_message('Invalid Qtum address.')
             return
         if not bitcoin.is_p2pkh(address):
             self.show_message('Cannot sign messages with this type of address.' + '\n\n' + self.msg_sign)
@@ -1914,9 +1914,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def do_verify(self, address, message, signature):
         address  = address.text().strip()
-        message = message.toPlainText().strip().encode('utf8')
+        message = message.toPlainText().strip().encode('utf-8')
         if not bitcoin.is_address(address):
-            self.show_message('Invalid Bitcoin address.')
+            self.show_message('Invalid Qtum address.')
             return
         if not bitcoin.is_p2pkh(address):
             self.show_message('Cannot verify messages with this type of address.' + '\n\n' + self.msg_sign)
@@ -1973,11 +1973,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     def do_decrypt(self, message_e, pubkey_e, encrypted_e, password):
         cyphertext = encrypted_e.toPlainText()
         task = partial(self.wallet.decrypt_message, pubkey_e.text(), cyphertext, password)
-        self.wallet.thread.add(task, on_success=lambda text: message_e.setText(text.decode('utf8')))
+        self.wallet.thread.add(task, on_success=lambda text: message_e.setText(text.decode('utf-8')))
 
     def do_encrypt(self, message_e, pubkey_e, encrypted_e):
         message = message_e.toPlainText()
-        message = message.encode('utf8')
+        message = message.encode('utf-8')
         try:
             encrypted = bitcoin.encrypt_message(message, pubkey_e.text())
             encrypted_e.setText(encrypted.decode('ascii'))
@@ -2049,12 +2049,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         if not data:
             return
         # if the user scanned a bitcoin URI
-        if data.startswith("bitcoin:"):
+        if data.startswith("qtum:"):
             self.pay_to_URI(data)
             return
         # else if the user scanned an offline signed tx
         # transactions are binary, but qrcode seems to return utf8...
-        data = data.decode('utf8')
+        data = data.decode('utf-8')
         z = bitcoin.base_decode(data, length=None, base=43)
         data = bh2u(''.join(chr(ord(b)) for b in z))
         tx = self.tx_from_text(data)
