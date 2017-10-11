@@ -9,6 +9,7 @@ import curses, datetime, locale
 from decimal import Decimal
 import getpass
 
+import electrum
 from electrum.util import format_satoshis, set_verbosity
 from electrum.bitcoin import is_address, COIN, TYPE_ADDRESS
 from electrum import Wallet, WalletStorage
@@ -395,6 +396,7 @@ class ElectrumGui:
                     except Exception:
                         self.show_message("Error:" + server + "\nIn doubt, type \"auto-connect\"")
                         return False
+            if out.get('server') or out.get('proxy'):
                 proxy = self.parse_proxy_options(out.get('proxy')) if out.get('proxy') else None
                 self.network.set_parameters(host, port, protocol, proxy, auto_connect)
 
