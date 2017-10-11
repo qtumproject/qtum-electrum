@@ -132,11 +132,19 @@ def run_non_RPC(config):
             wallet = Imported_Wallet(storage)
             for x in text.split():
                 wallet.import_address(x)
+        elif keystore.is_private_key_list(text):
+            k = keystore.Imported_KeyStore({})
+            storage.put('keystore', k.dump())
+            storage.put('use_encryption', bool(password))
+            wallet = Imported_Wallet(storage)
+            for x in text.split():
+                wallet.import_private_key(x, password)
+            storage.write()
         else:
             if keystore.is_seed(text):
                 k = keystore.from_seed(text, passphrase)
-            elif keystore.is_any_key(text):
-                k = keystore.from_keys(text)
+            elif keystore.is_master_key(text):
+                k = keystore.from_master_key(text)
             else:
                 sys.exit("Error: Seed or key not recognized")
             if password:
@@ -351,10 +359,6 @@ if __name__ == '__main__':
     # todo: defer this to gui
     config = SimpleConfig(config_options)
     cmdname = config.get('cmd')
-
-    # if config.get('testnet'):
-    #     bitcoin.set_testnet()
-    #     network.set_testnet()
 
     if config.get('skynet'):
         qtum.set_skynet()

@@ -368,7 +368,7 @@ class Commands:
         if not self.wallet.can_import_privkey():
             return "Error: This type of wallet cannot import private keys. Try to create a new wallet with that key."
         try:
-            addr = self.wallet.import_key(privkey, password)
+            addr = self.wallet.import_private_key(privkey, password)
             out = "Keypair imported: " + addr
         except BaseException as e:
             out = "Error: " + str(e)
@@ -687,6 +687,7 @@ param_descriptions = {
     'amount': 'Amount to be sent (in QTUM). Type \'!\' to send the maximum available.',
     'requested_amount': 'Requested amount (in QTUM).',
     'outputs': 'list of ["address", amount]',
+    'redeem_script': 'redeem script (hexadecimal)',
 }
 
 command_options = {
