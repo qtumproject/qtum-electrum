@@ -486,16 +486,6 @@ def deserialize(raw):
 
 # pay & redeem scripts
 
-def p2wpkh_nested_script(pubkey):
-    pubkey = safe_parse_pubkey(pubkey)
-    pkh = bh2u(hash_160(bfh(pubkey)))
-    return '00' + push_script(pkh)
-
-
-def p2wsh_nested_script(witness_script):
-    wsh = bh2u(sha256(bfh(witness_script)))
-    return '00' + push_script(wsh)
-
 
 def multisig_script(public_keys, m):
     n = len(public_keys)
@@ -505,8 +495,6 @@ def multisig_script(public_keys, m):
     op_n = format(opcodes.OP_1 + n - 1, 'x')
     keylist = [op_push(len(k)//2) + k for k in public_keys]
     return op_m + ''.join(keylist) + op_n + 'ae'
-
-
 
 
 class Transaction:
@@ -678,11 +666,11 @@ class Transaction:
         elif _type in ['p2wpkh', 'p2wsh']:
             return ''
         elif _type == 'p2wpkh-p2sh':
-            scriptSig = p2wpkh_nested_script(pubkeys[0])
+            scriptSig = bitcoin.p2wpkh_nested_script(pubkeys[0])
             return push_script(scriptSig)
         elif _type == 'p2wsh-p2sh':
             witness_script = self.get_preimage_script(txin)
-            scriptSig = p2wsh_nested_script(witness_script)
+            scriptSig = bitcoin.p2wsh_nested_script(witness_script)
             return push_script(scriptSig)
         elif _type == 'address':
             script += push_script(pubkeys[0])
