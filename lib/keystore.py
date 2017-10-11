@@ -575,6 +575,14 @@ def parse_xpubkey(x_pubkey):
     return BIP32_KeyStore.parse_xpubkey(x_pubkey)
 
 
+def from_bip39_seed(seed, passphrase, derivation):
+    k = BIP32_KeyStore({})
+    bip32_seed = bip39_to_seed(seed, passphrase)
+    t = 'segwit_p2sh' if derivation.startswith("m/49'") else 'standard'  # bip43
+    k.add_xprv_from_seed(bip32_seed, t, derivation)
+    return k
+
+
 def xpubkey_to_address(x_pubkey):
     if x_pubkey[0:2] == 'fd':
         # TODO: check that ord() is OK here
