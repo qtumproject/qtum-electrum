@@ -80,12 +80,13 @@ class Software_KeyStore(KeyStore):
         return not self.is_watching_only()
 
     def sign_message(self, sequence, message, password):
-        sec = self.get_private_key(sequence, password)
-        return sign_message_with_wif_privkey(sec, message)
+        privkey, compressed = self.get_private_key(sequence, password)
+        key = regenerate_key(privkey)
+        return key.sign_message(message, compressed)
 
     def decrypt_message(self, sequence, message, password):
-        sec = self.get_private_key(sequence, password)
-        ec = regenerate_key(sec)
+        privkey, compressed = self.get_private_key(sequence, password)
+        ec = regenerate_key(privkey)
         decrypted = ec.decrypt_message(message)
         return decrypted
 
@@ -97,7 +98,7 @@ class Software_KeyStore(KeyStore):
         # Add private keys
         keypairs = self.get_tx_derivations(tx)
         for k, v in keypairs.items():
-            keypairs[k] = self.get_private_key(v, password)
+            keypairs[k] = self.get_private_key(v, password)[0]
         # Sign
         if keypairs:
             tx.sign(keypairs)
@@ -147,7 +148,7 @@ class Imported_KeyStore(Software_KeyStore):
         # this checks the password
         if pubkey != public_key_from_private_key(privkey, compressed):
             raise InvalidPassword()
-        return privkey
+        return privkey, compressed
 
     def get_pubkey_derivation(self, x_pubkey):
         if x_pubkey[0:2] in ['02', '03', '04']:
@@ -320,7 +321,7 @@ class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
         xprv = self.get_master_private_key(password)
         _, _, _, _, c, k = deserialize_xprv(xprv)
         pk = bip32_private_key(sequence, k, c)
-        return pk
+        return pk, True
 
 
 class Old_KeyStore(Deterministic_KeyStore):
@@ -409,7 +410,7 @@ class Old_KeyStore(Deterministic_KeyStore):
         for_change, n = sequence
         secexp = self.stretch_key(seed)
         pk = self.get_private_key_from_stretched_exponent(for_change, n, secexp)
-        return pk
+        return pk, False
 
     def check_seed(self, seed):
         secexp = self.stretch_key(seed)

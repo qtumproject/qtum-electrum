@@ -623,8 +623,11 @@ def verify_message(address, sig, message):
         public_key, compressed = pubkey_from_signature(sig, h)
         # check public key using the address
         pubkey = point_to_ser(public_key.pubkey.point, compressed)
-        addr = public_key_to_p2pkh(pubkey)
-        if address != addr:
+        for txin_type in ['p2pkh', 'p2wpkh', 'p2wpkh-p2sh']:
+            addr = pubkey_to_address(txin_type, bh2u(pubkey))
+            if address == addr:
+                break
+        else:
             raise Exception("Bad signature")
         # check message
         public_key.verify_digest(sig[1:], h, sigdecode = ecdsa.util.sigdecode_string)
@@ -632,12 +635,6 @@ def verify_message(address, sig, message):
     except Exception as e:
         print_error("Verification error: {0}".format(e))
         return False
-
-
-def sign_message_with_wif_privkey(sec, message):
-    txin_type, privkey, compressed = deserialize_privkey(sec)
-    key = regenerate_key(privkey)
-    return key.sign_message(message, compressed)
 
 
 def encrypt_message(message, pubkey):

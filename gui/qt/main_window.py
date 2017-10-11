@@ -1900,7 +1900,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         if not bitcoin.is_address(address):
             self.show_message('Invalid Qtum address.')
             return
-        if not bitcoin.is_p2pkh(address):
+        txin_type = self.wallet.get_txin_type(address)
+        if txin_type not in ['p2pkh', 'p2wpkh', 'p2wpkh-p2sh']:
             self.show_message('Cannot sign messages with this type of address.' + '\n\n' + self.msg_sign)
             return
         if not self.wallet.is_mine(address):
@@ -1918,9 +1919,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         if not bitcoin.is_address(address):
             self.show_message('Invalid Qtum address.')
             return
-        if not bitcoin.is_p2pkh(address):
-            self.show_message('Cannot verify messages with this type of address.' + '\n\n' + self.msg_sign)
-            return
         try:
             # This can throw on invalid base64
             sig = base64.b64decode(str(signature.toPlainText()))
@@ -1934,7 +1932,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def sign_verify_message(self, address=''):
         d = WindowModalDialog(self, _('Sign/verify Message'))
-        d.setMinimumSize(410, 290)
+        d.setMinimumSize(610, 290)
 
         layout = QGridLayout(d)
 
