@@ -1454,7 +1454,9 @@ class Imported_Wallet(Abstract_Wallet):
         return addr
 
     def export_private_key(self, address, password):
-        txin_type, pubkey, redeem_script = self.addresses[address]
+        d = self.addresses[address]
+        pubkey = d['pubkey']
+        redeem_script = d['redeem_script']
         sec = pw_decode(self.keystore.keypairs[pubkey], password)
         return sec, redeem_script
 
