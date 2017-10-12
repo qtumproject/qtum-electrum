@@ -164,7 +164,7 @@ class Blockchain(util.PrintError):
 
         if bits != header.get('bits'):
             raise BaseException("bits mismatch: %s vs %s, %s" %
-                                (bits, header.get('bits'), _hash))
+                                (hex(bits), hex(header.get('bits'), _hash)))
 
         if is_pos(header):
             pass
@@ -284,6 +284,7 @@ class Blockchain(util.PrintError):
 
         prev_header = self.read_header(height - 1)
         pprev_header = self.read_header(height - 2)
+
         #  Limit adjustment step
         nActualSpace = prev_header.get('timestamp') - pprev_header.get('timestamp')
         nActualSpace = max(0, nActualSpace)
@@ -297,7 +298,10 @@ class Blockchain(util.PrintError):
         if new_target <= 0 or new_target > POS_LIMIT:
             new_target = POS_LIMIT
 
-        return compact_from_uint256(new_target), new_target
+        nbits = compact_from_uint256(new_target)
+        new_target = uint256_from_compact(nbits)
+
+        return nbits, new_target
 
     #  # bitcoin
     # def get_target(self, index):
@@ -351,7 +355,7 @@ class Blockchain(util.PrintError):
             return False
 
         bits, target = self.get_target(height)
-        print('get_target:', height, 'bits:', hex(bits))
+        # print('get_target:', height, 'bits:', hex(bits))
         try:
             self.verify_header(header, prev_header, bits, target)
         except Exception as e:

@@ -1167,5 +1167,8 @@ def compact_from_uint256(target):
     while c[:2] == '00' and len(c) > 6:
         c = c[2:]
     bitsN, bitsBase = len(c) // 2, int('0x' + c[:6], 16)
+    if bitsBase >= 0x800000:
+        bitsN += 1
+        bitsBase >>= 8
     new_bits = bitsN << 24 | bitsBase
     return new_bits
