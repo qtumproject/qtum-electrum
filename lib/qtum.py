@@ -37,14 +37,16 @@ SECRET_KEY = 0x80
 SEGWIT_HRP = "bc"
 HEADERS_URL = ""
 GENESIS = "0000c07f635271213ea71bd68e589694b9b10b0cd2ddd195a2ab07f36cf00473"
-GENESIS_BITS = 0x1f00ffff
-MAX_TARGET = 0xffff00000000000000000000000000000000000000000000000000000000
 BASIC_HEADER_SIZE = 180
 SERVERLIST = 'servers.json'
 DEFAULT_SERVERS = read_json_dict(SERVERLIST)
 DEFAULT_PORTS = {'t':'50001', 's':'50002'}
 POW_BLOCK_COUNT = 5000
 CHUNK_SIZE = 2016
+POW_LIMIT = 0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+POS_LIMIT = 0x00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+POW_TARGET_TIMESPAN = 16 * 60  # bitcoin is 14 * 24 * 60 * 60
+POW_TARGET_TIMESPACE = 2 * 64  # bitcoin is 10 * 60
 
 # Version numbers for BIP32 extended keys
 # standard: xprv, xpub
@@ -1147,5 +1149,23 @@ def is_pos(header):
         or hash_prevout_n != 0xffffffff)
 
 
-def chunk_index(height):
-    return 0 if height < POW_BLOCK_COUNT else 1 + (height - POW_BLOCK_COUNT) // CHUNK_SIZE
+# def chunk_index(height):
+#     return 0 if height < POW_BLOCK_COUNT else 1 + (height - POW_BLOCK_COUNT) // CHUNK_SIZE
+
+
+# nbits to target
+def uint256_from_compact(bits):
+    bitsN = (bits >> 24) & 0xff
+    bitsBase = bits & 0xffffff
+    target = bitsBase << (8 * (bitsN - 3))
+    return target
+
+
+# target to nbits
+def compact_from_uint256(target):
+    c = ("%064x" % target)[2:]
+    while c[:2] == '00' and len(c) > 6:
+        c = c[2:]
+    bitsN, bitsBase = len(c) // 2, int('0x' + c[:6], 16)
+    new_bits = bitsN << 24 | bitsBase
+    return new_bits

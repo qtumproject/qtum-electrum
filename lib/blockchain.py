@@ -162,9 +162,9 @@ class Blockchain(util.PrintError):
             print(prev_header, header)
             raise BaseException("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
 
-        # 验证nbits，保证target没有作假
-        # if bits != header.get('bits'):
-        #     raise BaseException("bits mismatch: %s vs %s" % (bits, header.get('bits')))
+        if bits != header.get('bits'):
+            raise BaseException("bits mismatch: %s vs %s, %s" %
+                                (bits, header.get('bits'), _hash))
 
         if is_pos(header):
             pass
@@ -276,45 +276,30 @@ class Blockchain(util.PrintError):
         h = self.local_height
         return sum([self.BIP9(h-i, 2) for i in range(N)])*10000/N/100.
 
-    def get_target(self, index):
-        if index == 0:
-            return GENESIS_BITS, MAX_TARGET
+    def get_target(self, height):
+        if height < POW_BLOCK_COUNT:
+            return compact_from_uint256(POW_LIMIT), POW_LIMIT
+        if height == POW_BLOCK_COUNT:
+            return compact_from_uint256(POS_LIMIT), POS_LIMIT
 
-        # get the previous chunk's first and last header
-        if index == 1:
-            first_height = 0
-        else:
-            first_height = POW_BLOCK_COUNT + (index - 2) * CHUNK_SIZE
+        prev_header = self.read_header(height - 1)
+        pprev_header = self.read_header(height - 2)
+        #  Limit adjustment step
+        nActualSpace = prev_header.get('timestamp') - pprev_header.get('timestamp')
+        nActualSpace = max(0, nActualSpace)
+        nActualSpace = min(nActualSpace, POW_TARGET_TIMESPACE * 10)
+        #  Retarget
+        nInterval = POW_TARGET_TIMESPAN // POW_TARGET_TIMESPACE
+        new_target = uint256_from_compact(prev_header.get('bits'))
+        new_target *= ((nInterval - 1) * POW_TARGET_TIMESPACE + nActualSpace + nActualSpace)
+        new_target //= ((nInterval + 1) * POW_TARGET_TIMESPACE)
 
-        first = self.read_header(first_height)
-        last = self.read_header(first_height + CHUNK_SIZE - 1)
+        if new_target <= 0 or new_target > POS_LIMIT:
+            new_target = POS_LIMIT
 
-        # bits to target
-        bits = last.get('bits')
-        bitsN = (bits >> 24) & 0xff
-        bitsBase = bits & 0xffffff
-        target = bitsBase << (8 * (bitsN-3))
+        return compact_from_uint256(new_target), new_target
 
-        # new target
-        nActualTimespan = last.get('timestamp') - first.get('timestamp')
-        nTargetTimespan = 14 * 24 * 60 * 60
-
-        # nActualTimespan = max(nActualTimespan, nTargetTimespan // 4)
-        # nActualTimespan = min(nActualTimespan, nTargetTimespan * 4)
-        new_target = min(MAX_TARGET, (target * nActualTimespan) // nTargetTimespan)
-
-        # convert new target to bits
-        c = ("%064x" % new_target)[2:]
-        while c[:2] == '00' and len(c) > 6:
-            c = c[2:]
-        bitsN, bitsBase = len(c) // 2, int('0x' + c[:6], 16)
-        if bitsBase >= 0x800000:
-            bitsN += 1
-            bitsBase >>= 8
-        new_bits = bitsN << 24 | bitsBase
-
-        return new_bits, bitsBase << (8 * (bitsN - 3))
-
+    #  # bitcoin
     # def get_target(self, index):
     #     if bitcoin.TESTNET:
     #         return 0, 0
@@ -358,17 +343,17 @@ class Blockchain(util.PrintError):
             return False
         if height == 0:
             return hash_header(header) == bitcoin.GENESIS
-        previous_header = self.read_header(height -1)
-        if not previous_header:
+        prev_header = self.read_header(height - 1)
+        if not prev_header:
             return False
-
-        prev_hash = hash_header(previous_header)
+        prev_hash = hash_header(prev_header)
         if prev_hash != header.get('prev_block_hash'):
             return False
-        bits, target = self.get_target(chunk_index(height))
-        print('get_target:', height, 'bits:', bits, 'target:', target)
+
+        bits, target = self.get_target(height)
+        print('get_target:', height, 'bits:', hex(bits))
         try:
-            self.verify_header(header, previous_header, bits, target)
+            self.verify_header(header, prev_header, bits, target)
         except Exception as e:
             return False
         return True
