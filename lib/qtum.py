@@ -28,6 +28,7 @@ def read_json_dict(filename):
         r = {}
     return r
 
+
 # QTUM network constants
 TESTNET = False
 SKYNET = False
@@ -37,10 +38,11 @@ SECRET_KEY = 0x80
 SEGWIT_HRP = "bc"
 HEADERS_URL = ""
 GENESIS = "0000c07f635271213ea71bd68e589694b9b10b0cd2ddd195a2ab07f36cf00473"
+GENESIS_BITS = 0x1f00ffff
 BASIC_HEADER_SIZE = 180
 SERVERLIST = 'servers.json'
 DEFAULT_SERVERS = read_json_dict(SERVERLIST)
-DEFAULT_PORTS = {'t':'50001', 's':'50002'}
+DEFAULT_PORTS = {'t': '50001', 's': '50002'}
 POW_BLOCK_COUNT = 5000
 CHUNK_SIZE = 2016
 POW_LIMIT = 0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
@@ -64,6 +66,34 @@ XPUB_HEADERS = {
 }
 
 
+def set_testnet():
+    global ADDRTYPE_P2PKH, ADDRTYPE_P2SH, SECRET_KEY
+    global TESTNET, SERVERLIST, DEFAULT_PORTS, DEFAULT_SERVERS
+    global GENESIS, GENESIS_BITS
+    global SEGWIT_HRP
+    global XPUB_HEADERS, XPRV_HEADERS
+    TESTNET = True
+    ADDRTYPE_P2PKH = 120
+    ADDRTYPE_P2SH = 110
+    SEGWIT_HRP = "tb"
+    SECRET_KEY = 239
+    GENESIS = "0000e803ee215c0684ca0d2f9220594d3f828617972aad66feb2ba51f5e14222"
+    GENESIS_BITS = 0x1f00ffff
+    SERVERLIST = 'servers_testnet.json'
+    DEFAULT_SERVERS = read_json_dict(SERVERLIST)
+    DEFAULT_PORTS = {'t': '51001', 's': '51002'}
+    XPUB_HEADERS = {
+        'standard': 0x043587CF,
+        'segwit_p2sh': 0,
+        'segwit': 0
+    }
+    XPRV_HEADERS = {
+        'standard': 0x04358394,
+        'segwit_p2sh': 0,
+        'segwit': 0
+    }
+
+
 def set_skynet():
     global ADDRTYPE_P2PKH, ADDRTYPE_P2SH, SECRET_KEY
     global SKYNET, SERVERLIST, DEFAULT_PORTS, DEFAULT_SERVERS
@@ -79,6 +109,7 @@ def set_skynet():
     SERVERLIST = 'servers_skynet.json'
     DEFAULT_SERVERS = read_json_dict(SERVERLIST)
     DEFAULT_PORTS = {'t': '52001', 's': '52002'}
+
 
 ################################## transactions
 

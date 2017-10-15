@@ -365,7 +365,8 @@ if __name__ == '__main__':
 
     if config.get('skynet'):
         qtum.set_skynet()
-        network.set_skynet()
+    elif config.get('testnet'):
+        qtum.set_testnet()
 
     # run non-RPC commands separately
     if cmdname in ['create', 'restore']:
