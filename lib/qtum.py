@@ -37,7 +37,7 @@ ADDRTYPE_P2SH = 0x32
 SECRET_KEY = 0x80
 SEGWIT_HRP = "bc"
 HEADERS_URL = ""
-GENESIS = "0000c07f635271213ea71bd68e589694b9b10b0cd2ddd195a2ab07f36cf00473"
+GENESIS = "000075aef83cf2853580f8ae8ce6f8c3096cfa21d98334d6e3f95e5582ed986c"
 GENESIS_BITS = 0x1f00ffff
 BASIC_HEADER_SIZE = 180
 SERVERLIST = 'servers.json'
@@ -95,17 +95,12 @@ def set_testnet():
 
 
 def set_skynet():
-    global ADDRTYPE_P2PKH, ADDRTYPE_P2SH, SECRET_KEY
     global SKYNET, SERVERLIST, DEFAULT_PORTS, DEFAULT_SERVERS
-    global GENESIS, GENESIS_BITS
+    global GENESIS
     global SEGWIT_HRP
     SKYNET = True
-    ADDRTYPE_P2PKH = 0x3a
-    ADDRTYPE_P2SH = 0x32
     SEGWIT_HRP = "tb"
-    SECRET_KEY = 0x80
     GENESIS = "0000c07f635271213ea71bd68e589694b9b10b0cd2ddd195a2ab07f36cf00473"
-    GENESIS_BITS = 0x1f00ffff
     SERVERLIST = 'servers_skynet.json'
     DEFAULT_SERVERS = read_json_dict(SERVERLIST)
     DEFAULT_PORTS = {'t': '52001', 's': '52002'}
@@ -292,7 +287,7 @@ def seed_type(x):
         return 'segwit'
     elif is_new_seed(x, version.SEED_PREFIX_2FA):
         return '2fa'
-    return ''
+    return 'standard'
 
 is_seed = lambda x: bool(seed_type(x))
 
