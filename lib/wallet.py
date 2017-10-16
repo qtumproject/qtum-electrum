@@ -551,10 +551,9 @@ class Abstract_Wallet(PrintError):
         return self.get_receiving_addresses()[0]
 
     def get_addresses(self):
-        out = []
-        out += self.get_receiving_addresses()
-        out += self.get_change_addresses()
-        return out
+        out = set(self.get_receiving_addresses())
+        out.update(self.get_change_addresses())
+        return list(out)
 
     def get_frozen_balance(self):
         return self.get_balance(self.frozen_addresses)
