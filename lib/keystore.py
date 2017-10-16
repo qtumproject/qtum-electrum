@@ -221,21 +221,31 @@ class Xpub:
         return self.xpub
 
     def derive_pubkey(self, for_change, n):
-        xpub = self.xpub_change if for_change else self.xpub_receive
-        if xpub is None:
-            xpub = bip32_public_derivation(self.xpub, "", "/%d"%for_change)
-            if for_change:
-                self.xpub_change = xpub
-            else:
-                self.xpub_receive = xpub
-        return self.get_pubkey_from_xpub(xpub, (n,))
+        # m / 88' / 0' / n'
+        sub_xprv, sub_xpub = bip32_private_derivation(self.xprv, "", "/{}'".format(n))
+        return self.get_pubkey_from_xpub(sub_xpub, ())
+
+        # m / 88' / 0' / n' / for_change / 0
+        # sub_xprv, sub_xpub = bip32_private_derivation(self.xprv, "", "/{}'/{}".format(n, int(for_change)))
+        # return self.get_pubkey_from_xpub(sub_xpub, (0, ))
+
+        # m / 88' / 0' / 0' / for_change / n
+        # xpub = self.xpub_change if for_change else self.xpub_receive
+        # if xpub is None:
+        #     xpub = bip32_public_derivation(self.xpub, "", "/%d"%for_change)
+        #     if for_change:
+        #         self.xpub_change = xpub
+        #     else:
+        #         self.xpub_receive = xpub
+        # return self.get_pubkey_from_xpub(xpub, (n,))
 
     @classmethod
     def get_pubkey_from_xpub(self, xpub, sequence):
         _, _, _, _, c, cK = deserialize_xpub(xpub)
         for i in sequence:
             cK, c = CKD_pub(cK, c, i)
-        return bh2u(cK)
+        public_key = bh2u(cK)
+        return public_key
 
     def get_xpubkey(self, c, i):
         s = ''.join(map(lambda x: bitcoin.int_to_hex(x,2), (c, i)))
@@ -318,6 +328,7 @@ class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
         self.add_xprv(xprv)
 
     def get_private_key(self, sequence, password):
+        print('get_private_key', sequence)
         xprv = self.get_master_private_key(password)
         _, _, _, _, c, k = deserialize_xprv(xprv)
         pk = bip32_private_key(sequence, k, c)
@@ -579,7 +590,7 @@ def parse_xpubkey(x_pubkey):
 def from_bip39_seed(seed, passphrase, derivation):
     k = BIP32_KeyStore({})
     bip32_seed = bip39_to_seed(seed, passphrase)
-    t = 'segwit_p2sh' if derivation.startswith("m/49'") else 'standard'  # bip43
+    t = 'segwit_p2sh' if derivation.startswith("m/89'") else 'standard'  # bip43
     k.add_xprv_from_seed(bip32_seed, t, derivation)
     return k
 
@@ -673,7 +684,7 @@ is_bip32_key = lambda x: is_xprv(x) or is_xpub(x)
 
 
 def bip44_derivation(account_id, segwit=False):
-    bip  = 49 if segwit else 44
+    bip = 89 if segwit else 88
     coin = 1 if bitcoin.TESTNET else 0
     return "m/%d'/%d'/%d'" % (bip, coin, int(account_id))
 
@@ -703,11 +714,13 @@ def from_seed(seed, passphrase):
         #     raise BaseException(t)
         # return keystore
 
+
 def from_private_key_list(text):
     keystore = Imported_KeyStore({})
     for x in get_private_keys(text):
         keystore.import_key(x, None)
     return keystore
+
 
 def from_old_mpk(mpk):
     keystore = Old_KeyStore({})

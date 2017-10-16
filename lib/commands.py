@@ -831,7 +831,7 @@ def add_global_options(parser):
     group.add_argument("-D", "--dir", dest="electrum_path", help="electrum directory")
     group.add_argument("-P", "--portable", action="store_true", dest="portable", default=False, help="Use local 'electrum_data' directory")
     group.add_argument("-w", "--wallet", dest="wallet_path", help="wallet path")
-    # group.add_argument("--testnet", action="store_true", dest="testnet", default=False, help="Use Testnet")
+    group.add_argument("--testnet", action="store_true", dest="testnet", default=False, help="Use Testnet")
     group.add_argument("--skynet", action="store_true", dest="skynet", default=False, help="Use Skynet")
 
 def get_parser():
