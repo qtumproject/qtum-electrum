@@ -780,6 +780,7 @@ class Network(util.DaemonThread):
 
     def request_header(self, interface, height):
         #interface.print_error("requesting header %d" % height)
+        height = max(height, 0)
         self.queue_request('blockchain.block.get_header', [height], interface)
         interface.request = height
         interface.req_time = time.time()
