@@ -325,7 +325,7 @@ class WalletStorage(PrintError):
                     d['seed'] = seed
                 self.put(key, d)
         else:
-            raise
+            raise Exception("convert_wallet_type error")
         # remove junk
         self.put('master_public_key', None)
         self.put('master_public_keys', None)

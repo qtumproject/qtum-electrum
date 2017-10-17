@@ -187,17 +187,16 @@ class Blockchain(util.PrintError):
     def verify_chunk(self, index, raw_headers):
         prev_header = None
         if index != 0:
-            prev_header = self.read_header(POW_BLOCK_COUNT + (index - 1) * CHUNK_SIZE - 1)
+            prev_header = self.read_header(index * CHUNK_SIZE - 1)
         bits, target = self.get_target(index)
         for i, raw_header in enumerate(raw_headers):
-            height = i if index == 0 else POW_BLOCK_COUNT + CHUNK_SIZE * (index - 1) + i
-            header = deserialize_header(raw_header, height)
+            header = deserialize_header(raw_header, index * CHUNK_SIZE + i)
             self.verify_header(header, prev_header, bits, target)
             prev_header = header
 
     def save_chunk(self, index, raw_headers):
         for i, raw_header in enumerate(raw_headers):
-            height = i if index == 0 else POW_BLOCK_COUNT + CHUNK_SIZE * (index - 1) + i
+            height = index * CHUNK_SIZE + i
             self.write(raw_header, height)
         self.swap_with_parent()
 

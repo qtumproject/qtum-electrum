@@ -899,7 +899,8 @@ def _CKD_priv(k, c, s, is_prime):
 # This function allows us to find the nth public key, as long as n is
 #  non-negative. If n is negative, we need the master private key to find it.
 def CKD_pub(cK, c, n):
-    if n & BIP32_PRIME: raise
+    if n & BIP32_PRIME:
+        raise Exception('CKD_pub error')
     return _CKD_pub(cK, c, bfh(rev_hex(int_to_hex(n,4))))
 
 # helper function, callable with arbitrary string
@@ -1173,11 +1174,6 @@ def is_pos(header):
     return hash_prevout_stake and (
         hash_prevout_stake != '0000000000000000000000000000000000000000000000000000000000000000'
         or hash_prevout_n != 0xffffffff)
-
-
-# def chunk_index(height):
-#     return 0 if height < POW_BLOCK_COUNT else 1 + (height - POW_BLOCK_COUNT) // CHUNK_SIZE
-
 
 # nbits to target
 def uint256_from_compact(bits):

@@ -894,7 +894,7 @@ class Network(util.DaemonThread):
         # If not finished, get the next header
         if next_height:
             if interface.mode == 'catch_up' and interface.tip > next_height + 50:
-                self.request_chunk(interface, chunk_index(next_height))
+                self.request_chunk(interface, next_height // CHUNK_SIZE)
             else:
                 self.request_header(interface, next_height)
         else:
