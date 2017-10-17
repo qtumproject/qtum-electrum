@@ -775,7 +775,7 @@ class Abstract_Wallet(PrintError):
             else:
                 status = 4
         else:
-            status = 4 + min(conf, 6)
+            status = 4 + min(conf, RECOMMEND_CONFIRMATIONS)
         time_str = format_time(timestamp) if timestamp else _("unknown")
         status_str = TX_STATUS[status] if status < 5 else time_str
         return status, status_str

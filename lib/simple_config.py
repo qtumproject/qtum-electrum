@@ -130,9 +130,9 @@ class SimpleConfig(PrintError):
     def get(self, key, default=None):
         with self.lock:
             out = self.cmdline_options.get(key)
-            if out is None:
+            if not out:
                 out = self.user_config.get(key)
-                if out is None:
+                if not out:
                     out = self.system_config.get(key, default)
         return out
 

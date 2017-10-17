@@ -457,7 +457,9 @@ def block_explorer_info():
 
 
 def block_explorer(config):
-    return config.get('block_explorer', 'qtum.info')
+    bbb = config.get('block_explorer', 'qtum.info')
+    print_error('[block_explorer]', bbb)
+    return bbb
 
 def block_explorer_tuple(config):
     return block_explorer_info().get(block_explorer(config))
