@@ -758,7 +758,7 @@ class Network(util.DaemonThread):
         result = response.get('result')
         params = response.get('params')
         if result is None or params is None or error is not None:
-            print('on get chunk error', error, result, params)
+            print_error('on get chunk error', error, result, params)
             return
         # Ignore unsolicited chunks
         index = params[0]
@@ -793,6 +793,7 @@ class Network(util.DaemonThread):
             self.connection_down(interface.server)
             return
         height = header.get('block_height')
+        print_error('[on_get_header] {}'.format(height))
         if interface.request != height:
             interface.print_error("unsolicited header",interface.request, height)
             self.connection_down(interface.server)

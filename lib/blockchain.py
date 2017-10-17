@@ -24,8 +24,8 @@ import threading
 import sqlite3
 
 from . import util
-from . import bitcoin
-from .bitcoin import *
+from . import qtum
+from .qtum import *
 
 
 def hash_header(header):
@@ -56,6 +56,7 @@ def read_blockchains(config):
 
 def check_header(header):
     if type(header) is not dict:
+        print('[check_header] header not dic')
         return False
     for b in blockchains.values():
         if b.check_header(header):
@@ -159,12 +160,10 @@ class Blockchain(util.PrintError):
         prev_hash = hash_header(prev_header)
         _hash = hash_header(header)
         if prev_hash != header.get('prev_block_hash'):
-            print(prev_header, header)
             raise BaseException("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
-
         if bits != header.get('bits'):
             raise BaseException("bits mismatch: %s vs %s, %s" %
-                                (hex(bits), hex(header.get('bits'), _hash)))
+                                (hex(bits), hex(header.get('bits')), _hash))
 
         if is_pos(header):
             pass
@@ -186,12 +185,16 @@ class Blockchain(util.PrintError):
 
     def verify_chunk(self, index, raw_headers):
         prev_header = None
+        pprev_header = None
         if index != 0:
             prev_header = self.read_header(index * CHUNK_SIZE - 1)
-        bits, target = self.get_target(index)
+            pprev_header = self.read_header(index * CHUNK_SIZE - 2)
         for i, raw_header in enumerate(raw_headers):
-            header = deserialize_header(raw_header, index * CHUNK_SIZE + i)
+            height = index * CHUNK_SIZE + i
+            header = deserialize_header(raw_header, height)
+            bits, target = self.get_target(height, prev_header=prev_header, pprev_header=pprev_header)
             self.verify_header(header, prev_header, bits, target)
+            pprev_header = prev_header
             prev_header = header
 
     def save_chunk(self, index, raw_headers):
@@ -275,14 +278,16 @@ class Blockchain(util.PrintError):
         h = self.local_height
         return sum([self.BIP9(h-i, 2) for i in range(N)])*10000/N/100.
 
-    def get_target(self, height):
-        if height < POW_BLOCK_COUNT:
+    def get_target(self, height, prev_header=None, pprev_header=None):
+        if height <= POW_BLOCK_COUNT:
             return compact_from_uint256(POW_LIMIT), POW_LIMIT
-        if height == POW_BLOCK_COUNT:
+        if height <= POW_BLOCK_COUNT + 2:
             return compact_from_uint256(POS_LIMIT), POS_LIMIT
 
-        prev_header = self.read_header(height - 1)
-        pprev_header = self.read_header(height - 2)
+        if not prev_header:
+            prev_header = self.read_header(height - 1)
+        if not pprev_header:
+            pprev_header = self.read_header(height - 2)
 
         #  Limit adjustment step
         nActualSpace = prev_header.get('timestamp') - pprev_header.get('timestamp')
@@ -343,21 +348,25 @@ class Blockchain(util.PrintError):
     def can_connect(self, header, check_height=True):
         height = header['block_height']
         if check_height and self.height() != height - 1:
+            print_error('[can_connect] check_height failed')
             return False
         if height == 0:
-            return hash_header(header) == bitcoin.GENESIS
+            valid = hash_header(header) == qtum.GENESIS
+            if not valid:
+                print_error('[can_connect] GENESIS hash check', hash_header(header), qtum.GENESIS)
+            return valid
         prev_header = self.read_header(height - 1)
         if not prev_header:
             return False
         prev_hash = hash_header(prev_header)
         if prev_hash != header.get('prev_block_hash'):
+            print_error('[can_connect] hash check failed')
             return False
-
         bits, target = self.get_target(height)
-        # print('get_target:', height, 'bits:', hex(bits))
         try:
             self.verify_header(header, prev_header, bits, target)
         except Exception as e:
+            print_error('[can_connect] verify_header failed', e)
             return False
         return True
 
@@ -370,6 +379,5 @@ class Blockchain(util.PrintError):
             self.save_chunk(idx, raw_heades)
             return True
         except BaseException as e:
-            print('connect_chunk failed', str(e))
             self.print_error('connect_chunk failed', str(e))
             return False
