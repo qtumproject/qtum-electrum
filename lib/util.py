@@ -445,23 +445,16 @@ def time_difference(distance_in_time, include_seconds):
     else:
         return "over %d years" % (round(distance_in_minutes / 525600))
 
-mainnet_block_explorers = {
-    'Qtum.info': ('https://qtum.info',
-                        {'tx': 'transactions', 'addr': 'addresses'}),
-    'system default': ('blockchain:',
-                        {'tx': 'tx', 'addr': 'address'}),
-}
-
-skynet_block_explorers = {
-    'Qtum.info': ('https://skynet.qtum.info',
-                       {'tx': 'tx', 'addr': 'address'}),
-    'system default': ('blockchain:',
-                       {'tx': 'tx', 'addr': 'address'}),
-}
 
 def block_explorer_info():
-    from . import bitcoin
-    return skynet_block_explorers if bitcoin.SKYNET else mainnet_block_explorers
+    from . import qtum
+    if qtum.SKYNET:
+        return qtum.skynet_block_explorers
+    elif qtum.TESTNET:
+        return qtum.testnet_block_explorers
+    else:
+        return qtum.mainnet_block_explorers
+
 
 def block_explorer(config):
     return config.get('block_explorer', 'qtum.info')

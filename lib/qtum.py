@@ -39,7 +39,7 @@ SEGWIT_HRP = "bc"
 HEADERS_URL = ""
 GENESIS = "000075aef83cf2853580f8ae8ce6f8c3096cfa21d98334d6e3f95e5582ed986c"
 GENESIS_BITS = 0x1f00ffff
-BASIC_HEADER_SIZE = 180
+BASIC_HEADER_SIZE = 180  # not include sig
 SERVERLIST = 'servers.json'
 DEFAULT_SERVERS = read_json_dict(SERVERLIST)
 DEFAULT_PORTS = {'t': '50001', 's': '50002'}
@@ -49,6 +49,7 @@ POW_LIMIT = 0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 POS_LIMIT = 0x00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 POW_TARGET_TIMESPAN = 16 * 60  # bitcoin is 14 * 24 * 60 * 60
 POW_TARGET_TIMESPACE = 2 * 64  # bitcoin is 10 * 60
+RECOMMEND_CONFIRMATIONS = 10
 
 # Version numbers for BIP32 extended keys
 # standard: xprv, xpub
@@ -105,6 +106,31 @@ def set_skynet():
     DEFAULT_SERVERS = read_json_dict(SERVERLIST)
     DEFAULT_PORTS = {'t': '52001', 's': '52002'}
 
+
+mainnet_block_explorers = {
+    'qtum.info': ('https://qtum.info',
+                  {'tx': 'tx', 'addr': 'address'}),
+    'explorer.qtum.org': ('https://explorer.qtum.org',
+                          {'tx': 'tx', 'addr': 'address'}),
+    'qtumexplorer.io': ('https://qtumexplorer.io/',
+                        {'tx': 'tx', 'addr': 'address'}),
+    'system default': ('blockchain:',
+                       {'tx': 'tx', 'addr': 'address'}),
+}
+
+testnet_block_explorers = {
+    'qtum.info': ('https://testnet.qtum.info',
+                  {'tx': 'tx', 'addr': 'address'}),
+    'system default': ('blockchain:',
+                       {'tx': 'tx', 'addr': 'address'}),
+}
+
+skynet_block_explorers = {
+    'qtum.info': ('https://skynet.qtum.info',
+                  {'tx': 'tx', 'addr': 'address'}),
+    'system default': ('blockchain:',
+                       {'tx': 'tx', 'addr': 'address'}),
+}
 
 ################################## transactions
 
