@@ -111,8 +111,12 @@ class ElectrumGui:
 
     def build_tray_menu(self):
         # Avoid immediate GC of old menu when window closed via its action
-        self.old_menu = self.tray.contextMenu()
-        m = QMenu()
+        if self.tray.contextMenu() is None:
+            m = QMenu()
+            self.tray.setContextMenu(m)
+        else:
+            m = self.tray.contextMenu()
+            m.clear()
         for window in self.windows:
             submenu = m.addMenu(window.wallet.basename())
             submenu.addAction(_("Show/Hide"), window.show_or_hide)
@@ -120,7 +124,6 @@ class ElectrumGui:
         m.addAction(_("Dark/Light"), self.toggle_tray_icon)
         m.addSeparator()
         m.addAction(_("Exit Electrum"), self.close)
-        self.tray.setContextMenu(m)
 
     def tray_icon(self):
         if self.dark_icon:
