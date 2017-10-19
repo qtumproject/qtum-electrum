@@ -40,15 +40,14 @@ from electrum.plugins import hook
 from .trustedcoin import TrustedCoinPlugin, server
 
 
-class QTOSSignalObject(QObject):
-    two_factor_tos_signal = pyqtSignal()
+class TOS(QTextEdit):
+    tos_signal = pyqtSignal()
 
 
 class Plugin(TrustedCoinPlugin):
 
     def __init__(self, parent, config, name):
         super().__init__(parent, config, name)
-        self.tos_signal_obj = QTOSSignalObject()
 
     @hook
     def on_new_window(self, window):
@@ -57,7 +56,7 @@ class Plugin(TrustedCoinPlugin):
             return
         if wallet.can_sign_without_server():
             msg = ' '.join([
-                _('This wallet is was restored from seed, and it contains two master private keys.'),
+                _('This wallet was restored from seed, and it contains two master private keys.'),
                 _('Therefore, two-factor authentication is disabled.')
             ])
             action = lambda: window.show_message(msg)
@@ -189,7 +188,7 @@ class Plugin(TrustedCoinPlugin):
         vbox = QVBoxLayout()
         vbox.addWidget(QLabel(_("Terms of Service")))
 
-        tos_e = QTextEdit()
+        tos_e = TOS()
         tos_e.setReadOnly(True)
         vbox.addWidget(tos_e)
 
@@ -204,7 +203,7 @@ class Plugin(TrustedCoinPlugin):
         def request_TOS():
             tos = server.get_terms_of_service()
             self.TOS = tos
-            self.tos_signal_obj.two_factor_tos_signal.emit()
+            tos_e.tos_signal.emit()
 
         def on_result():
             tos_e.setText(self.TOS)
@@ -212,7 +211,7 @@ class Plugin(TrustedCoinPlugin):
         def set_enabled():
             next_button.setEnabled(re.match(regexp,email_e.text()) is not None)
 
-        self.tos_signal_obj.two_factor_tos_signal.connect(on_result)
+        tos_e.tos_signal.connect(on_result)
         t = Thread(target=request_TOS)
         t.setDaemon(True)
         t.start()

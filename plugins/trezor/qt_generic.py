@@ -3,7 +3,7 @@ import threading
 
 from PyQt5.Qt import Qt
 from PyQt5.Qt import QGridLayout, QInputDialog, QPushButton
-from PyQt5.Qt import QVBoxLayout, QLabel, SIGNAL
+from PyQt5.Qt import QVBoxLayout, QLabel
 from electrum_gui.qt.util import *
 from .plugin import TIM_NEW, TIM_RECOVER, TIM_MNEMONIC
 from ..hw_wallet.qt import QtHandlerBase, QtPluginBase
@@ -23,10 +23,10 @@ PASSPHRASE_HELP = PASSPHRASE_HELP_SHORT + "  " + _(
     "accessible behind its own passphrase.")
 RECOMMEND_PIN = _(
     "You should enable PIN protection.  Your PIN is the only protection "
-    "for your qtums if your device is lost or stolen.")
+    "for your bitcoins if your device is lost or stolen.")
 PASSPHRASE_NOT_PIN = _(
     "If you forget a passphrase you will be unable to access any "
-    "qtums in the wallet behind it.  A passphrase is not a PIN. "
+    "bitcoins in the wallet behind it.  A passphrase is not a PIN. "
     "Only change this if you are sure you understand it.")
 CHARACTER_RECOVERY = (
     "Use the recovery cipher shown on your device to input your seed words.  "
@@ -213,7 +213,7 @@ class QtPlugin(QtPluginBase):
         vbox.addLayout(hl)
 
         def clean_text(widget):
-            text = unicode(widget.toPlainText()).strip()
+            text = widget.toPlainText().strip()
             return ' '.join(text.split())
 
         if method in [TIM_NEW, TIM_RECOVER]:
@@ -281,7 +281,7 @@ class QtPlugin(QtPluginBase):
             item = ' '.join(str(clean_text(text)).split())
             pin = str(pin.text())
 
-        return (item, unicode(name.text()), pin, cb_phrase.isChecked())
+        return (item, name.text(), pin, cb_phrase.isChecked())
 
 
 
@@ -352,7 +352,7 @@ class SettingsDialog(WindowModalDialog):
             label_apply.setEnabled(label_edit.text() != self.features.label)
 
         def rename():
-            invoke_client('change_label', unicode(label_edit.text()))
+            invoke_client('change_label', label_edit.text())
 
         def toggle_passphrase():
             title = _("Confirm Toggle Passphrase Protection")
@@ -406,7 +406,7 @@ class SettingsDialog(WindowModalDialog):
             if wallet and sum(wallet.get_balance()):
                 title = _("Confirm Device Wipe")
                 msg = _("Are you SURE you want to wipe the device?\n"
-                        "Your wallet still has qtums in it!")
+                        "Your wallet still has bitcoins in it!")
                 if not self.question(msg, title=title,
                                      icon=QMessageBox.Critical):
                     return
@@ -481,7 +481,7 @@ class SettingsDialog(WindowModalDialog):
         settings_glayout.addWidget(pin_button, 2, 1)
         pin_msg = QLabel(_("PIN protection is strongly recommended.  "
                            "A PIN is your only protection against someone "
-                           "stealing your qtums if they obtain physical "
+                           "stealing your bitcoins if they obtain physical "
                            "access to your %s.") % plugin.device)
         pin_msg.setWordWrap(True)
         pin_msg.setStyleSheet("color: red")
@@ -541,7 +541,7 @@ class SettingsDialog(WindowModalDialog):
         clear_pin_button.clicked.connect(clear_pin)
         clear_pin_warning = QLabel(
             _("If you disable your PIN, anyone with physical access to your "
-              "%s device can spend your qtums.") % plugin.device)
+              "%s device can spend your bitcoins.") % plugin.device)
         clear_pin_warning.setWordWrap(True)
         clear_pin_warning.setStyleSheet("color: red")
         advanced_glayout.addWidget(clear_pin_button, 0, 2)
@@ -566,7 +566,7 @@ class SettingsDialog(WindowModalDialog):
         wipe_device_msg.setWordWrap(True)
         wipe_device_warning = QLabel(
             _("Only wipe a device if you have the recovery seed written down "
-              "and the device wallet(s) are empty, otherwise the qtums "
+              "and the device wallet(s) are empty, otherwise the bitcoins "
               "will be lost forever."))
         wipe_device_warning.setWordWrap(True)
         wipe_device_warning.setStyleSheet("color: red")

@@ -6,7 +6,7 @@ from binascii import hexlify, unhexlify
 from functools import partial
 
 from electrum.util import bfh, bh2u
-from electrum.bitcoin import (b58_address_to_hash160, xpub_from_pubkey,
+from electrum.bitcoin import (is_segwit_address, b58_address_to_hash160, xpub_from_pubkey,
                               public_key_to_p2pkh, EncodeBase58Check,
                               TYPE_ADDRESS, TYPE_SCRIPT,
                               TESTNET, ADDRTYPE_P2PKH, ADDRTYPE_P2SH)
@@ -33,14 +33,7 @@ class TrezorCompatibleKeyStore(Hardware_KeyStore):
         return self.plugin.get_client(self, force_pair)
 
     def decrypt_message(self, sequence, message, password):
-        raise RuntimeError(_('Electrum and %s encryption and decryption are currently incompatible') % self.device)
-        client = self.get_client()
-        address_path = self.get_derivation() + "/%d/%d"%sequence
-        address_n = client.expand_path(address_path)
-        payload = base64.b64decode(message)
-        nonce, message, msg_hmac = payload[:33], payload[33:-8], payload[-8:]
-        result = client.decrypt_message(address_n, nonce, message, msg_hmac)
-        return result.message
+        raise RuntimeError(_('Encryption and decryption are not implemented by %s') % self.device)
 
     def sign_message(self, sequence, message, password):
         client = self.get_client()
@@ -59,7 +52,7 @@ class TrezorCompatibleKeyStore(Hardware_KeyStore):
         for txin in tx.inputs():
             pubkeys, x_pubkeys = tx.get_sorted_pubkeys(txin)
             tx_hash = txin['prevout_hash']
-            prev_tx[tx_hash] = txin['prev_tx'] 
+            prev_tx[tx_hash] = txin['prev_tx']
             for x_pubkey in x_pubkeys:
                 if not is_xpubkey(x_pubkey):
                     continue
@@ -100,7 +93,7 @@ class TrezorCompatiblePlugin(HW_PluginBase):
             # raise
             self.print_error("cannot connect at", device.path, str(e))
             return None
- 
+
     def _try_bridge(self, device):
         self.print_error("Trying to connect over Trezor Bridge...")
         try:
@@ -253,7 +246,7 @@ class TrezorCompatiblePlugin(HW_PluginBase):
     def show_address(self, wallet, address):
         client = self.get_client(wallet.keystore)
         if not client.atleast_version(1, 3):
-            keystore.handler.show_error(_("Your device firmware is too old"))
+            wallet.keystore.handler.show_error(_("Your device firmware is too old"))
             return
         change, index = wallet.get_address_index(address)
         derivation = wallet.keystore.derivation
@@ -365,13 +358,16 @@ class TrezorCompatiblePlugin(HW_PluginBase):
                     txoutputtype.script_type = self.types.PAYTOOPRETURN
                     txoutputtype.op_return_data = address[2:]
                 elif _type == TYPE_ADDRESS:
-                    addrtype, hash_160 = b58_address_to_hash160(address)
-                    if addrtype == ADDRTYPE_P2PKH:
-                        txoutputtype.script_type = self.types.PAYTOADDRESS
-                    elif addrtype == ADDRTYPE_P2SH:
-                        txoutputtype.script_type = self.types.PAYTOSCRIPTHASH
+                    if is_segwit_address(address):
+                        txoutputtype.script_type = self.types.PAYTOWITNESS
                     else:
-                        raise BaseException('addrtype')
+                        addrtype, hash_160 = b58_address_to_hash160(address)
+                        if addrtype == ADDRTYPE_P2PKH:
+                            txoutputtype.script_type = self.types.PAYTOADDRESS
+                        elif addrtype == ADDRTYPE_P2SH:
+                            txoutputtype.script_type = self.types.PAYTOSCRIPTHASH
+                        else:
+                            raise BaseException('addrtype')
                     txoutputtype.address = address
 
             outputs.append(txoutputtype)

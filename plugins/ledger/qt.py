@@ -1,7 +1,7 @@
 import threading
 
 from PyQt5.Qt import (QDialog, QInputDialog, QLineEdit,
-                      QVBoxLayout, QLabel, SIGNAL)
+                      QVBoxLayout, QLabel)
 import PyQt5.QtCore as QtCore
 
 from electrum.i18n import _
