@@ -377,10 +377,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         title += '  [%s]'% ', '.join(extra)
 
         if TESTNET:
-            title += ' - testnet'
+            title += '  -  testnet'
         elif SKYNET:
-            title += ' - skynet'
+            title += '  -  skynet'
 
+
+x
         self.setWindowTitle(title)
         self.password_menu.setEnabled(self.wallet.can_change_password())
         self.import_privkey_menu.setVisible(self.wallet.can_import_privkey())
