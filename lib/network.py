@@ -996,6 +996,7 @@ class Network(util.DaemonThread):
             self.switch_lagging_interface()
             self.notify('updated')
             self.notify('interfaces')
+            self.notify('updated')
             return
         tip = max([x.height() for x in self.blockchains.values()])
         if tip >=0:
