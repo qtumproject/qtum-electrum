@@ -240,7 +240,7 @@ class Xpub:
         # return self.get_pubkey_from_xpub(xpub, (n,))
 
     @classmethod
-    def get_pubkey_from_xpub(self, xpub, sequence):
+    def get_pubkey_from_xpub(cls, xpub, sequence):
         _, _, _, _, c, cK = deserialize_xpub(xpub)
         for i in sequence:
             cK, c = CKD_pub(cK, c, i)
@@ -250,6 +250,14 @@ class Xpub:
     def get_xpubkey(self, c, i):
         s = ''.join(map(lambda x: bitcoin.int_to_hex(x,2), (c, i)))
         return 'ff' + bh2u(bitcoin.DecodeBase58Check(self.xpub)) + s
+
+    @classmethod
+    def get_privatekey_from_xprv(self, xprv, sequence):
+        _, _, _, _, c, cK = deserialize_xprv(xprv)
+        for i in sequence:
+            cK, c = CKD_priv(cK, c, i)
+        # private_key = bh2u(cK)
+        return cK
 
     @classmethod
     def parse_xpubkey(self, pubkey):
@@ -328,10 +336,11 @@ class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
         self.add_xprv(xprv)
 
     def get_private_key(self, sequence, password):
-        print('get_private_key', sequence)
-        xprv = self.get_master_private_key(password)
-        _, _, _, _, c, k = deserialize_xprv(xprv)
-        pk = bip32_private_key(sequence, k, c)
+        master_xprv = self.get_master_private_key(password)
+        sub_xprv, sub_xpub = bip32_private_derivation(master_xprv, "", "/{}'".format(sequence[1]))
+        pk = self.get_privatekey_from_xprv(sub_xprv, ())
+        # _, _, _, _, c, k = deserialize_xprv(sub_xprv)
+        # pk = bip32_private_key(sequence, k, c)
         return pk, True
 
 
@@ -700,19 +709,6 @@ def from_seed(seed, passphrase):
         return keystore
     else:
         raise BaseException(t)
-        # t = seed_type(seed)
-        # if t == 'old':
-        #     keystore = Old_KeyStore({})
-        #     keystore.add_seed(seed)
-        # elif t in ['standard', 'segwit']:
-        #     keystore = BIP32_KeyStore({})
-        #     keystore.add_seed(seed)
-        #     keystore.passphrase = passphrase
-        #     bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
-        #     keystore.add_xprv_from_seed(bip32_seed, t, "m/")
-        # else:
-        #     raise BaseException(t)
-        # return keystore
 
 
 def from_private_key_list(text):

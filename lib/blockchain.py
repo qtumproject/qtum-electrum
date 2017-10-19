@@ -56,7 +56,7 @@ def read_blockchains(config):
 
 def check_header(header):
     if type(header) is not dict:
-        print('[check_header] header not dic')
+        print_error('[check_header] header not dic')
         return False
     for b in blockchains.values():
         if b.check_header(header):
@@ -95,7 +95,7 @@ class Blockchain(util.PrintError):
                            '(height INT PRIMARY KEY NOT NULL, data BLOB NOT NULL)')
             self.conn.commit()
         except (sqlite3.DatabaseError, ) as e:
-            print('error when init_db', e, 'will delete the db file and recreate')
+            print_error('error when init_db', e, 'will delete the db file and recreate')
             os.remove(self.path())
             self.conn = None
             self.init_db()
