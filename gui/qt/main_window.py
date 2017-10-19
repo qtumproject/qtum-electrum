@@ -43,6 +43,7 @@ from . import icons_rc
 
 from electrum import keystore
 from electrum.bitcoin import COIN, is_address, TYPE_ADDRESS
+from electrum.qtum import TESTNET, SKYNET
 from electrum.plugins import run_hook
 from electrum.i18n import _
 from electrum.util import (format_time, format_satoshis, PrintError,
@@ -374,6 +375,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.warn_if_watching_only()
             extra.append(_('watching only'))
         title += '  [%s]'% ', '.join(extra)
+
+        if TESTNET:
+            title += ' - testnet'
+        elif SKYNET:
+            title += ' - skynet'
+
         self.setWindowTitle(title)
         self.password_menu.setEnabled(self.wallet.can_change_password())
         self.import_privkey_menu.setVisible(self.wallet.can_import_privkey())
