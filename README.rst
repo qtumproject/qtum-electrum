@@ -90,6 +90,9 @@ Mac OS X
 
 ::
 
+    /usr/local/lib/python3.6/site-packages/PyQt5/uic/port_v2/ascii_upper.py
+    _ascii_trans_table = str.maketrans(string.ascii_lowercase, string.ascii_uppercase)
+
     # On MacPorts installs: 
     sudo python setup-release.py py2app
     
