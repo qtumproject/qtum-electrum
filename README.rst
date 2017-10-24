@@ -4,25 +4,12 @@ Qtum Electrum - Lightweight Qtum client
 ::
 
   Licence: MIT Licence
-  Qtum Electrum is forked from Electrum
-
-
-Electrum - Lightweight Bitcoin client
-=====================================
-
-::
-
-  Licence: MIT Licence
-  Author: Thomas Voegtlin
-  Language: Python
-  Homepage: https://electrum.org/
+  Qtum Electrum is forked from [Electrum](https://github.com/spesmilo/electrum)
 
 
 .. image:: https://travis-ci.org/spesmilo/electrum.svg?branch=master
     :target: https://travis-ci.org/spesmilo/electrum
     :alt: Build Status
-
-
 
 
 
