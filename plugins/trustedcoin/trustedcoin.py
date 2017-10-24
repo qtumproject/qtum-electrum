@@ -190,6 +190,7 @@ class TrustedCoinCosignerClient(object):
 server = TrustedCoinCosignerClient(user_agent="Electrum/" + version.ELECTRUM_VERSION)
 
 class Wallet_2fa(Multisig_Wallet):
+    wallet_type = '2fa'
 
     def __init__(self, storage):
         self.m, self.n = 2, 3
@@ -329,6 +330,9 @@ class TrustedCoinPlugin(BasePlugin):
 
     def is_enabled(self):
         return True
+
+    def can_user_disable(self):
+        return False
 
     @hook
     def get_tx_extra_fee(self, wallet, tx):

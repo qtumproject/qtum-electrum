@@ -177,7 +177,7 @@ class Plugin(TrustedCoinPlugin):
         if window.pluginsdialog:
             window.pluginsdialog.close()
         wallet = window.wallet
-        uri = "qtum:" + wallet.billing_info[
+        uri = "bitcoin:" + wallet.billing_info[
             'billing_address'] + "?message=TrustedCoin %d Prepaid Transactions&amount=" % k + str(
             Decimal(v) / 100000000)
         wallet.is_billing = True

@@ -41,3 +41,4 @@ class Plugin(TrustedCoinPlugin):
             else:
                 self.print_error("twofactor: xpub3 not needed")
             wallet.auth_code = auth_code
+

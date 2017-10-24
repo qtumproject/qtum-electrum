@@ -132,8 +132,6 @@ class TrezorCompatiblePlugin(HW_PluginBase):
         return client
 
     def get_client(self, keystore, force_pair=True):
-        # All client interaction should not be in the main GUI thread
-        assert self.main_thread != threading.current_thread()
         devmgr = self.device_manager()
         handler = keystore.handler
         with devmgr.hid_lock:
@@ -358,16 +356,7 @@ class TrezorCompatiblePlugin(HW_PluginBase):
                     txoutputtype.script_type = self.types.PAYTOOPRETURN
                     txoutputtype.op_return_data = address[2:]
                 elif _type == TYPE_ADDRESS:
-                    if is_segwit_address(address):
-                        txoutputtype.script_type = self.types.PAYTOWITNESS
-                    else:
-                        addrtype, hash_160 = b58_address_to_hash160(address)
-                        if addrtype == ADDRTYPE_P2PKH:
-                            txoutputtype.script_type = self.types.PAYTOADDRESS
-                        elif addrtype == ADDRTYPE_P2SH:
-                            txoutputtype.script_type = self.types.PAYTOSCRIPTHASH
-                        else:
-                            raise BaseException('addrtype')
+                    txoutputtype.script_type = self.types.PAYTOADDRESS
                     txoutputtype.address = address
 
             outputs.append(txoutputtype)

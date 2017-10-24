@@ -41,6 +41,7 @@ def to_hexstr(s):
     return binascii.hexlify(s).decode('ascii')
 
 class DigitalBitbox_Client():
+
     def __init__(self, plugin, hidDevice):
         self.plugin = plugin
         self.dbb_hid = hidDevice
@@ -82,6 +83,7 @@ class DigitalBitbox_Client():
     def _get_xpub(self, bip32_path):
         if self.check_device_dialog():
             return self.hid_send_encrypt(b'{"xpub": "%s"}' % bip32_path.encode('utf8'))
+
 
     def get_xpub(self, bip32_path):
         reply = self._get_xpub(bip32_path)
@@ -521,7 +523,6 @@ class DigitalBitbox_KeyStore(Hardware_KeyStore):
                     if txin['type'] == 'p2sh':
                         return '00' + push_script(Transaction.get_preimage_script(txin))
                     raise Exception("unsupported type %s" % txin['type'])
-
             tx_dbb_serialized = CustomTXSerialization(tx.serialize()).serialize()
 
             # Build sign command
