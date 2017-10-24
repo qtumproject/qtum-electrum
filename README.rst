@@ -4,7 +4,7 @@ Qtum Electrum - Lightweight Qtum client
 ::
 
   Licence: MIT Licence
-  Qtum Electrum is forked from [Electrum](https://github.com/spesmilo/electrum)
+  Qtum Electrum is forked from `Electrum <https://github.com/spesmilo/electrum>`
 
 
 .. image:: https://travis-ci.org/spesmilo/electrum.svg?branch=master
@@ -87,8 +87,7 @@ Mac OS X
 ::
 
     # PyQt5/uic/port_v2/ascii_upper.py
-    change `string.maketrans(string.ascii_lowercase, string.ascii_uppercase)` to
-`str.maketrans(string.ascii_lowercase, string.ascii_uppercase)`
+    change string.maketrans to str.maketrans
 
     # py2app
     use py2app==0.12
