@@ -41,6 +41,10 @@ from .i18n import _
 import urllib.request, urllib.parse, urllib.error
 import queue
 
+
+def inv_dict(d):
+    return {v: k for k, v in d.items()}
+
 base_units = {'QTUM':8, 'mQTUM':5, 'uQTUM':2}
 fee_levels = [_('Within 25 blocks'), _('Within 10 blocks'), _('Within 5 blocks'), _('Within 2 blocks'), _('In the next block')]
 
@@ -338,11 +342,11 @@ def user_dir():
     if 'ANDROID_DATA' in os.environ:
         return android_check_data_dir()
     elif os.name == 'posix':
-        return os.path.join(os.environ["HOME"], ".electrum")
+        return os.path.join(os.environ["HOME"], ".qtum-electrum")
     elif "APPDATA" in os.environ:
-        return os.path.join(os.environ["APPDATA"], "Electrum")
+        return os.path.join(os.environ["APPDATA"], "Qtum-Electrum")
     elif "LOCALAPPDATA" in os.environ:
-        return os.path.join(os.environ["LOCALAPPDATA"], "Electrum")
+        return os.path.join(os.environ["LOCALAPPDATA"], "Qtum-Electrum")
     else:
         #raise Exception("No home directory found in environment variables.")
         return
@@ -441,26 +445,19 @@ def time_difference(distance_in_time, include_seconds):
     else:
         return "over %d years" % (round(distance_in_minutes / 525600))
 
-mainnet_block_explorers = {
-    'Qtum.info': ('https://qtum.info',
-                        {'tx': 'transactions', 'addr': 'addresses'}),
-    'system default': ('blockchain:',
-                        {'tx': 'tx', 'addr': 'address'}),
-}
-
-skynet_block_explorers = {
-    'Qtum.info': ('https://skynet.qtum.info',
-                       {'tx': 'tx', 'addr': 'address'}),
-    'system default': ('blockchain:',
-                       {'tx': 'tx', 'addr': 'address'}),
-}
 
 def block_explorer_info():
-    from . import bitcoin
-    return skynet_block_explorers if bitcoin.SKYNET else mainnet_block_explorers
+    from . import qtum
+    if qtum.TESTNET:
+        return qtum.testnet_block_explorers
+    else:
+        return qtum.mainnet_block_explorers
+
 
 def block_explorer(config):
-    return config.get('block_explorer', 'qtum.info')
+    bbb = config.get('block_explorer', 'qtum.info')
+    print_error('[block_explorer]', bbb)
+    return bbb
 
 def block_explorer_tuple(config):
     return block_explorer_info().get(block_explorer(config))

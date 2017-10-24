@@ -60,8 +60,6 @@ class ScanQRTextEdit(ButtonsTextEdit, MessageBoxMixin):
         except BaseException as e:
             self.show_error(str(e))
             data = ''
-        if type(data) != str:
-            data = ''
         self.setText(data)
         return data
 

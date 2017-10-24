@@ -7,13 +7,14 @@ import ast
 import json
 import threading
 import os
+import stat
 
 from copy import deepcopy
 from .util import user_dir, print_error, print_msg, print_stderr, PrintError
 
 from .bitcoin import MAX_FEE_RATE, FEE_TARGETS
 
-SYSTEM_CONFIG_PATH = "/etc/electrum.conf"
+SYSTEM_CONFIG_PATH = "/etc/qtum-electrum.conf"
 
 config = None
 
@@ -128,9 +129,9 @@ class SimpleConfig(PrintError):
     def get(self, key, default=None):
         with self.lock:
             out = self.cmdline_options.get(key)
-            if out is None:
+            if not out:
                 out = self.user_config.get(key)
-                if out is None:
+                if not out:
                     out = self.system_config.get(key, default)
         return out
 
@@ -145,9 +146,7 @@ class SimpleConfig(PrintError):
         f = open(path, "w")
         f.write(s)
         f.close()
-        if 'ANDROID_DATA' not in os.environ:
-            import stat
-            os.chmod(path, stat.S_IREAD | stat.S_IWRITE)
+        os.chmod(path, stat.S_IREAD | stat.S_IWRITE)
 
     def get_wallet_path(self):
         """Set the path of the wallet."""
@@ -235,6 +234,15 @@ class SimpleConfig(PrintError):
     def is_dynfee(self):
         return self.get('dynamic_fees', True) and self.has_fee_estimates()
 
+    def static_fee(self, i):
+        return self.max_fee_rate() * 0.4 + self.max_fee_rate() * 0.06 * i
+
+    def static_fee_index(self, value):
+        index = int((value - self.max_fee_rate() * 0.4) / self.max_fee_rate() * 0.06)
+        index = min(0, index)
+        index = max(10, index)
+        return index
+
     def fee_per_kb(self):
         dyn = self.is_dynfee()
         if dyn:
@@ -251,7 +259,7 @@ class SimpleConfig(PrintError):
 
 
 def read_system_config(path=SYSTEM_CONFIG_PATH):
-    """Parse and return the system config settings in /etc/electrum.conf."""
+    """Parse and return the system config settings in /etc/qtum-electrum.conf."""
     result = {}
     if os.path.exists(path):
         import configparser
@@ -266,7 +274,7 @@ def read_system_config(path=SYSTEM_CONFIG_PATH):
     return result
 
 def read_user_config(path):
-    """Parse and store the user config settings in electrum.conf into user_config[]."""
+    """Parse and store the user config settings in qtum-electrum.conf into user_config[]."""
     if not path:
         return {}
     config_path = os.path.join(path, "config")

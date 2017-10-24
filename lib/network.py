@@ -614,10 +614,11 @@ class Network(util.DaemonThread):
 
     def overload_cb(self, callback):
         def cb2(x):
-            p = x.pop('params')
+            x2 = x.copy()
+            p = x2.pop('params')
             addr = self.h2addr[p[0]]
-            x['params'] = [addr]
-            callback(x)
+            x2['params'] = [addr]
+            callback(x2)
         return cb2
 
     def subscribe_to_addresses(self, addresses, callback):
@@ -757,7 +758,7 @@ class Network(util.DaemonThread):
         result = response.get('result')
         params = response.get('params')
         if result is None or params is None or error is not None:
-            print('on get chunk error', error, result, params)
+            print_error('on get chunk error', error, result, params)
             return
         # Ignore unsolicited chunks
         index = params[0]
@@ -779,6 +780,7 @@ class Network(util.DaemonThread):
 
     def request_header(self, interface, height):
         #interface.print_error("requesting header %d" % height)
+        height = max(height, 0)
         self.queue_request('blockchain.block.get_header', [height], interface)
         interface.request = height
         interface.req_time = time.time()
@@ -791,6 +793,7 @@ class Network(util.DaemonThread):
             self.connection_down(interface.server)
             return
         height = header.get('block_height')
+        print_error('[on_get_header] {} {}'.format(height, interface.mode))
         if interface.request != height:
             interface.print_error("unsolicited header",interface.request, height)
             self.connection_down(interface.server)
@@ -892,7 +895,7 @@ class Network(util.DaemonThread):
         # If not finished, get the next header
         if next_height:
             if interface.mode == 'catch_up' and interface.tip > next_height + 50:
-                self.request_chunk(interface, next_height // 2016)
+                self.request_chunk(interface, next_height // CHUNK_SIZE)
             else:
                 self.request_header(interface, next_height)
         else:
@@ -993,6 +996,7 @@ class Network(util.DaemonThread):
             self.switch_lagging_interface()
             self.notify('updated')
             self.notify('interfaces')
+            self.notify('updated')
             return
         tip = max([x.height() for x in self.blockchains.values()])
         if tip >=0:
@@ -1016,7 +1020,7 @@ class Network(util.DaemonThread):
     def get_blockchains(self):
         out = {}
         for k, b in self.blockchains.items():
-            r = list(filter(lambda i: i.blockchain==b, self.interfaces.values()))
+            r = list(filter(lambda i: i.blockchain == b, list(self.interfaces.values())))
             if r:
                 out[k] = r
         return out

@@ -77,15 +77,15 @@ setup(
             'wordlist/*.txt',
             'locale/*/LC_MESSAGES/electrum.mo',
             'servers.json',
-            'servers_skynet.json'
+            'servers_testnet.json',
         ]
     },
     scripts=['electrum'],
     data_files=data_files,
     description="Lightweight Qtum Wallet",
-    author="Thomas Voegtlin",
-    author_email="thomasv@electrum.org",
+    author="CodeFace",
+    author_email="codeface@qtum.org",
     license="MIT Licence",
-    url="https://electrum.org",
+    url="https://qtum.org",
     long_description="""Lightweight Qtum Wallet"""
 )

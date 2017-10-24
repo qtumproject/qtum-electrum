@@ -28,7 +28,6 @@ import sys
 # from https://gist.github.com/tito/09c42fb4767721dc323d
 import threading
 
-import six
 
 try:
     import jnius
@@ -64,13 +63,12 @@ def check_imports():
         import pyaes
         import ecdsa
         import requests
-        import six
         import qrcode
         import pbkdf2
         import google.protobuf
         import jsonrpclib
     except ImportError as e:
-        sys.exit("Error: %s. Try 'sudo pip install <module-name>'"%e.message)
+        sys.exit("Error: {}. Try 'sudo pip install <module-name>'".format(e))
     # the following imports are for pyinstaller
     # make sure that certificates are here
     if is_bundle and sys.platform=='darwin':
@@ -132,11 +130,19 @@ def run_non_RPC(config):
             wallet = Imported_Wallet(storage)
             for x in text.split():
                 wallet.import_address(x)
+        elif keystore.is_private_key_list(text):
+            k = keystore.Imported_KeyStore({})
+            storage.put('keystore', k.dump())
+            storage.put('use_encryption', bool(password))
+            wallet = Imported_Wallet(storage)
+            for x in text.split():
+                wallet.import_private_key(x, password)
+            storage.write()
         else:
             if keystore.is_seed(text):
                 k = keystore.from_seed(text, passphrase)
-            elif keystore.is_any_key(text):
-                k = keystore.from_keys(text)
+            elif keystore.is_master_key(text):
+                k = keystore.from_master_key(text)
             else:
                 sys.exit("Error: Seed or key not recognized")
             if password:
@@ -274,19 +280,24 @@ def run_offline_command(config, config_options):
     args = [config.get(x) for x in cmd.params]
     # decode json arguments
     args = list(map(json_decode, args))
+
     # options
-    args += [(config_options.get(x) if x in ['password', 'new_password'] else config.get(x)) for x in cmd.options]
+    kwargs = {}
+    for x in cmd.options:
+        kwargs[x] = (config_options.get(x) if x in ['password', 'new_password'] else config.get(x))
     cmd_runner = Commands(config, wallet, None)
     func = getattr(cmd_runner, cmd.name)
-    result = func(*args)
+    result = func(*args, **kwargs)
     # save wallet
     if wallet:
         wallet.storage.write()
     return result
 
+
 def init_plugins(config, gui_name):
     from electrum.plugins import Plugins
     return Plugins(config, is_local or is_android, gui_name)
+
 
 if __name__ == '__main__':
 
@@ -332,7 +343,8 @@ if __name__ == '__main__':
     config_options['cwd'] = os.getcwd()
 
     if config_options.get('portable'):
-        config_options['electrum_path'] = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'electrum_data')
+        config_options['electrum_path'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
+                                                       'qtum-electrum-data')
 
     # kivy sometimes freezes when we write to sys.stderr
     set_verbosity(config_options.get('verbose') and config_options.get('gui')!='kivy')
@@ -349,13 +361,8 @@ if __name__ == '__main__':
     config = SimpleConfig(config_options)
     cmdname = config.get('cmd')
 
-    # if config.get('testnet'):
-    #     bitcoin.set_testnet()
-    #     network.set_testnet()
-
-    if config.get('skynet'):
-        qtum.set_skynet()
-        network.set_skynet()
+    if config.get('testnet'):
+        qtum.set_testnet()
 
     # run non-RPC commands separately
     if cmdname in ['create', 'restore']:
@@ -419,9 +426,8 @@ if __name__ == '__main__':
             else:
                 init_plugins(config, 'cmdline')
                 result = run_offline_command(config, config_options)
-
                 # print result
-    if isinstance(result, six.text_type):
+    if isinstance(result, str):
         print_msg(result)
     elif type(result) is dict and result.get('error'):
         print_stderr(result.get('error'))

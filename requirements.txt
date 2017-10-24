@@ -10,4 +10,5 @@ qrcode
 requests
 rsa
 six
+py2app==0.12
 

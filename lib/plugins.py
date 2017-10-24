@@ -93,7 +93,7 @@ class Plugins(DaemonThread):
 
     def load_plugin(self, name):
         if name in self.plugins:
-            return
+            return self.plugins[name]
         full_name = 'electrum_plugins.' + name + '.' + self.gui_name
         loader = pkgutil.find_loader(full_name)
         if not loader:
@@ -255,6 +255,9 @@ class BasePlugin(PrintError):
 
     def settings_dialog(self):
         pass
+
+    def can_user_disable(self):
+        return True
 
 
 class DeviceNotFoundError(Exception):

@@ -49,6 +49,10 @@ TX_ICONS = [
     "clock3.png",
     "clock4.png",
     "clock5.png",
+    "clock6.png",
+    "clock7.png",
+    "clock8.png",
+    "clock9.png",
     "confirmed.png",
 ]
 
@@ -83,9 +87,11 @@ class HistoryList(MyTreeWidget):
         if fx: fx.history_used_spot = False
         for h_item in h:
             tx_hash, height, conf, timestamp, value, balance = h_item
+
             status, status_str = self.wallet.get_tx_status(tx_hash, height, conf, timestamp)
             has_invoice = self.wallet.invoices.paid.get(tx_hash)
             icon = QIcon(":icons/" + TX_ICONS[status])
+
             v_str = self.parent.format_amount(value, True, whitespaces=True)
             balance_str = self.parent.format_amount(balance, whitespaces=True)
             label = self.wallet.get_label(tx_hash)
@@ -105,7 +111,6 @@ class HistoryList(MyTreeWidget):
                     item.setTextAlignment(i, Qt.AlignRight)
                 if i!=2:
                     item.setFont(i, QFont(MONOSPACE_FONT))
-                    item.setTextAlignment(i, Qt.AlignVCenter)
             if value and value < 0:
                 item.setForeground(3, QBrush(QColor("#BC1E1E")))
                 item.setForeground(4, QBrush(QColor("#BC1E1E")))
@@ -116,12 +121,15 @@ class HistoryList(MyTreeWidget):
                 self.setCurrentItem(item)
 
     def on_doubleclick(self, item, column):
-        if self.permit_edit(item, column):
-            super(HistoryList, self).on_doubleclick(item, column)
-        else:
-            tx_hash = item.data(0, Qt.UserRole)
-            tx = self.wallet.transactions.get(tx_hash)
-            self.parent.show_transaction(tx)
+        tx_hash = item.data(0, Qt.UserRole)
+        tx = self.wallet.transactions.get(tx_hash)
+        self.parent.show_transaction(tx)
+        # if self.permit_edit(item, column):
+        #     super(HistoryList, self).on_doubleclick(item, column)
+        # else:
+        #     tx_hash = item.data(0, Qt.UserRole)
+        #     tx = self.wallet.transactions.get(tx_hash)
+        #     self.parent.show_transaction(tx)
 
     def update_labels(self):
         root = self.invisibleRootItem()

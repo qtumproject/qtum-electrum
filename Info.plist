@@ -6,7 +6,7 @@
   <array>
     <dict>
       <key>CFBundleURLName</key>
-      <string>bitcoin</string>
+      <string>qtum</string>
       <key>CFBundleURLSchemes</key>
       <array>
         <string>qtum</string>

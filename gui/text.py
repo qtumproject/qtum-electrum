@@ -9,6 +9,7 @@ import curses, datetime, locale
 from decimal import Decimal
 import getpass
 
+import electrum
 from electrum.util import format_satoshis, set_verbosity
 from electrum.bitcoin import is_address, COIN, TYPE_ADDRESS
 from electrum import Wallet, WalletStorage
@@ -44,7 +45,7 @@ class ElectrumGui:
         curses.use_default_colors()
         curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLUE)
         curses.init_pair(2, curses.COLOR_WHITE, curses.COLOR_CYAN)
-        curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE);
+        curses.init_pair(3, curses.COLOR_BLACK, curses.COLOR_WHITE)
         self.stdscr.keypad(1)
         self.stdscr.border(0)
         self.maxy, self.maxx = self.stdscr.getmaxyx()
@@ -180,6 +181,7 @@ class ElectrumGui:
         self.print_edit_line(9, _("Fee"), self.str_fee, 3, 15)
         self.stdscr.addstr( 12, 15, _("[Send]"), curses.A_REVERSE if self.pos%6==4 else curses.color_pair(2))
         self.stdscr.addstr( 12, 25, _("[Clear]"), curses.A_REVERSE if self.pos%6==5 else curses.color_pair(2))
+        self.maxpos = 6
 
     def print_banner(self):
         if self.network:
@@ -202,14 +204,15 @@ class ElectrumGui:
             l = l.encode("utf-8")
             self.stdscr.addstr(i+5, 5, l, curses.color_pair(3))
 
-    def print_list(self, list, firstline = None):
-        self.maxpos = len(list)
+    def print_list(self, lst, firstline=None):
+        lst = list(lst)
+        self.maxpos = len(lst)
         if not self.maxpos: return
         if firstline:
             firstline += " "*(self.maxx -2 - len(firstline))
             self.stdscr.addstr( 1, 1, firstline )
         for i in range(self.maxy-4):
-            msg = list[i] if i < len(list) else ""
+            msg = lst[i] if i < len(lst) else ""
             msg += " "*(self.maxx - 2 - len(msg))
             m = msg[0:self.maxx - 2]
             m = m.encode(self.encoding)
@@ -224,14 +227,18 @@ class ElectrumGui:
     def main_command(self):
         c = self.stdscr.getch()
         print(c)
+        cc = curses.unctrl(c).decode()
         if   c == curses.KEY_RIGHT: self.tab = (self.tab + 1)%self.num_tabs
         elif c == curses.KEY_LEFT: self.tab = (self.tab - 1)%self.num_tabs
         elif c == curses.KEY_DOWN: self.pos +=1
         elif c == curses.KEY_UP: self.pos -= 1
         elif c == 9: self.pos +=1 # tab
-        elif curses.unctrl(c) in ['^W', '^C', '^X', '^Q']: self.tab = -1
-        elif curses.unctrl(c) in ['^N']: self.network_dialog()
-        elif curses.unctrl(c) == '^S': self.settings_dialog()
+        elif cc in ['^W', '^C', '^X', '^Q']:
+            self.tab = -1
+        elif cc in ['^N']:
+            self.network_dialog()
+        elif cc == '^S':
+            self.settings_dialog()
         else: return c
         if self.pos<0: self.pos=0
         if self.pos>=self.maxpos: self.pos=self.maxpos - 1
@@ -244,20 +251,18 @@ class ElectrumGui:
             c = self.main_command()
             if c: exec_func(c)
 
-
     def run_history_tab(self, c):
         if c == 10:
             out = self.run_popup('',["blah","foo"])
 
-
     def edit_str(self, target, c, is_num=False):
         # detect backspace
+        cc = curses.unctrl(c).decode()
         if c in [8, 127, 263] and target:
             target = target[:-1]
-        elif not is_num or curses.unctrl(c) in '0123456789.':
-            target += curses.unctrl(c)
+        elif not is_num or cc in '0123456789.':
+            target += cc
         return target
-
 
     def run_send_tab(self, c):
         if self.pos%6 == 0:
@@ -273,15 +278,14 @@ class ElectrumGui:
         elif self.pos%6==5:
             if c == 10: self.do_clear()
 
-
     def run_receive_tab(self, c):
         if c == 10:
             out = self.run_popup('Address', ["Edit label", "Freeze", "Prioritize"])
 
     def run_contacts_tab(self, c):
         if c == 10 and self.contacts:
-            out = self.run_popup('Adress', ["Copy", "Pay to", "Edit label", "Delete"]).get('button')
-            key = self.contacts.keys()[self.pos%len(self.contacts.keys())]
+            out = self.run_popup('Address', ["Copy", "Pay to", "Edit label", "Delete"]).get('button')
+            key = list(self.contacts.keys())[self.pos % len(self.contacts.keys())]
             if out == "Pay to":
                 self.tab = 1
                 self.str_recipient = key
@@ -289,7 +293,7 @@ class ElectrumGui:
             elif out == "Edit label":
                 s = self.get_string(6 + self.pos, 18)
                 if s:
-                    self.wallet.labels[address] = s
+                    self.wallet.labels[key] = s
 
     def run_banner_tab(self, c):
         self.show_message(repr(c))
@@ -370,7 +374,8 @@ class ElectrumGui:
         if getchar: c = self.stdscr.getch()
 
     def run_popup(self, title, items):
-        return self.run_dialog(title, map(lambda x: {'type':'button','label':x}, items), interval=1, y_pos = self.pos+3)
+        return self.run_dialog(title, list(map(lambda x: {'type': 'button', 'label': x}, items)), interval=1,
+                               y_pos=self.pos + 3)
 
     def network_dialog(self):
         if not self.network:
@@ -392,6 +397,7 @@ class ElectrumGui:
                     except Exception:
                         self.show_message("Error:" + server + "\nIn doubt, type \"auto-connect\"")
                         return False
+            if out.get('server') or out.get('proxy'):
                 proxy = self.parse_proxy_options(out.get('proxy')) if out.get('proxy') else None
                 self.network.set_parameters(host, port, protocol, proxy, auto_connect)
 
@@ -405,18 +411,16 @@ class ElectrumGui:
                 fee = int(Decimal(out['Default fee']) * COIN)
                 self.config.set_key('fee_per_kb', fee, True)
 
-
     def password_dialog(self):
         out = self.run_dialog('Password', [
             {'label':'Password', 'type':'password', 'value':''}
             ], buttons = 1)
         return out.get('Password')
 
-
     def run_dialog(self, title, items, interval=2, buttons=None, y_pos=3):
         self.popup_pos = 0
 
-        self.w = curses.newwin( 5 + len(items)*interval + (2 if buttons else 0), 50, y_pos, 5)
+        self.w = curses.newwin(5 + len(list(items)) * interval + (2 if buttons else 0), 50, y_pos, 5)
         w = self.w
         out = {}
         while True:
@@ -424,11 +428,10 @@ class ElectrumGui:
             w.border(0)
             w.addstr( 0, 2, title)
 
-            num = len(items)
+            num = len(list(items))
 
             numpos = num
             if buttons: numpos += 2
-
             for i in range(num):
                 item = items[i]
                 label = item.get('label')
@@ -447,7 +450,7 @@ class ElectrumGui:
                 if len(value)<20:
                     value += ' '*(20-len(value))
 
-                if item.has_key('value'):
+                if 'value' in item:
                     w.addstr( 2+interval*i, 2, label)
                     w.addstr( 2+interval*i, 15, value, curses.A_REVERSE if self.popup_pos%numpos==i else curses.color_pair(1) )
                 else:

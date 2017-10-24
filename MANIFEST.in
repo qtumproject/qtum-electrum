@@ -1,6 +1,6 @@
 include LICENCE RELEASE-NOTES AUTHORS
 include README.rst
-include electrum.conf.sample
+include qtum-electrum.conf.sample
 include electrum.desktop
 include *.py
 include electrum

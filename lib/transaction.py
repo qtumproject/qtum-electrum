@@ -363,7 +363,7 @@ def parse_redeemScript(s):
     op_n = opcodes.OP_1 + n - 1
     match_multisig = [ op_m ] + [opcodes.OP_PUSHDATA4]*n + [ op_n, opcodes.OP_CHECKMULTISIG ]
     if not match_decoded(dec2, match_multisig):
-        print_error("cannot find address in input script", bh2u(_bytes))
+        print_error("cannot find address in input script", bh2u(s))
         return
     x_pubkeys = [bh2u(x[1]) for x in dec2[1:-2]]
     pubkeys = [safe_parse_pubkey(x) for x in x_pubkeys]
@@ -429,6 +429,8 @@ def parse_input(vds):
 def parse_witness(vds, txin):
     n = vds.read_compact_size()
     if n == 0:
+        return
+    if n == 0xffffffff:
         txin['value'] = vds.read_uint64()
         n = vds.read_compact_size()
     w = list(bh2u(vds.read_bytes(vds.read_compact_size())) for i in range(n))
@@ -441,6 +443,7 @@ def parse_witness(vds, txin):
         txin['witnessScript'] = witnessScript
     else:
         txin['num_sig'] = 1
+        txin['x_pubkeys'] = [w[1]]
         txin['pubkeys'] = [w[1]]
         txin['signatures'] = parse_sig([w[0]])
 
@@ -486,16 +489,6 @@ def deserialize(raw):
 
 # pay & redeem scripts
 
-def p2wpkh_nested_script(pubkey):
-    pubkey = safe_parse_pubkey(pubkey)
-    pkh = bh2u(hash_160(bfh(pubkey)))
-    return '00' + push_script(pkh)
-
-
-def p2wsh_nested_script(witness_script):
-    wsh = bh2u(sha256(bfh(witness_script)))
-    return '00' + push_script(wsh)
-
 
 def multisig_script(public_keys, m):
     n = len(public_keys)
@@ -505,8 +498,6 @@ def multisig_script(public_keys, m):
     op_n = format(opcodes.OP_1 + n - 1, 'x')
     keylist = [op_push(len(k)//2) + k for k in public_keys]
     return op_m + ''.join(keylist) + op_n + 'ae'
-
-
 
 
 class Transaction:
@@ -643,16 +634,19 @@ class Transaction:
 
     @classmethod
     def serialize_witness(self, txin):
+        add_w = lambda x: var_int(len(x) // 2) + x
+        if not self.is_segwit_input(txin):
+            return '00'
         pubkeys, sig_list = self.get_siglist(txin)
         if txin['type'] in ['p2wpkh', 'p2wpkh-p2sh']:
-            witness = var_int(2) + push_script(sig_list[0]) + push_script(pubkeys[0])
+            witness = var_int(2) + add_w(sig_list[0]) + add_w(pubkeys[0])
         elif txin['type'] in ['p2wsh', 'p2wsh-p2sh']:
             n = len(sig_list) + 2
             witness_script = multisig_script(pubkeys, txin['num_sig'])
-            witness = var_int(n) + '00' + ''.join(var_int(len(x)//2) + x for x in sig_list) + var_int(len(witness_script)//2) + witness_script
+            witness = var_int(n) + '00' + ''.join(add_w(x) for x in sig_list) + add_w(witness_script)
         else:
             raise BaseException('wrong txin type')
-        value_field = '' if self.is_txin_complete(txin) else var_int(0) + int_to_hex(txin['value'], 8)
+        value_field = '' if self.is_txin_complete(txin) else var_int(0xffffffff) + int_to_hex(txin['value'], 8)
         return value_field + witness
 
     @classmethod
@@ -678,11 +672,12 @@ class Transaction:
         elif _type in ['p2wpkh', 'p2wsh']:
             return ''
         elif _type == 'p2wpkh-p2sh':
-            scriptSig = p2wpkh_nested_script(pubkeys[0])
+            pubkey = safe_parse_pubkey(pubkeys[0])
+            scriptSig = bitcoin.p2wpkh_nested_script(pubkey)
             return push_script(scriptSig)
         elif _type == 'p2wsh-p2sh':
             witness_script = self.get_preimage_script(txin)
-            scriptSig = p2wsh_nested_script(witness_script)
+            scriptSig = bitcoin.p2wsh_nested_script(witness_script)
             return push_script(scriptSig)
         elif _type == 'address':
             script += push_script(pubkeys[0])
@@ -890,8 +885,8 @@ class Transaction:
                     break
                 if x_pubkey in keypairs.keys():
                     print_error("adding signature for", x_pubkey)
-                    sec = keypairs.get(x_pubkey)
-                    pubkey = public_key_from_private_key(sec)
+                    sec, compressed = keypairs.get(x_pubkey)
+                    pubkey = public_key_from_private_key(sec, compressed)
                     # add signature
                     pre_hash = Hash(bfh(self.serialize_preimage(i)))
                     pkey = regenerate_key(sec)

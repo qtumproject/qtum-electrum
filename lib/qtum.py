@@ -15,9 +15,10 @@ import pyaes
 
 from .util import bfh, bh2u, to_string
 from . import version
-from .util import print_error, InvalidPassword, assert_bytes, to_bytes
+from .util import print_error, InvalidPassword, assert_bytes, to_bytes, inv_dict
 from .util import unpack_uint16_from, unpack_uint32_from, unpack_uint64_from, unpack_int32_from, unpack_int64_from
 from . import segwit_addr
+
 
 def read_json_dict(filename):
     path = os.path.join(os.path.dirname(__file__), filename)
@@ -27,21 +28,27 @@ def read_json_dict(filename):
         r = {}
     return r
 
+
 # QTUM network constants
 TESTNET = False
-SKYNET = False
 ADDRTYPE_P2PKH = 0x3a
 ADDRTYPE_P2SH = 0x32
 SECRET_KEY = 0x80
 SEGWIT_HRP = "bc"
 HEADERS_URL = ""
-GENESIS = "0000c07f635271213ea71bd68e589694b9b10b0cd2ddd195a2ab07f36cf00473"
+GENESIS = "000075aef83cf2853580f8ae8ce6f8c3096cfa21d98334d6e3f95e5582ed986c"
 GENESIS_BITS = 0x1f00ffff
-BASIC_HEADER_SIZE = 180
+BASIC_HEADER_SIZE = 180  # not include sig
 SERVERLIST = 'servers.json'
 DEFAULT_SERVERS = read_json_dict(SERVERLIST)
-DEFAULT_PORTS = {'t':'50001', 's':'50002'}
-
+DEFAULT_PORTS = {'t': '50001', 's': '50002'}
+POW_BLOCK_COUNT = 5000
+CHUNK_SIZE = 2016
+POW_LIMIT = 0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+POS_LIMIT = 0x00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+POW_TARGET_TIMESPAN = 16 * 60  # bitcoin is 14 * 24 * 60 * 60
+POW_TARGET_TIMESPACE = 2 * 64  # bitcoin is 10 * 60
+RECOMMEND_CONFIRMATIONS = 10
 
 # Version numbers for BIP32 extended keys
 # standard: xprv, xpub
@@ -59,26 +66,58 @@ XPUB_HEADERS = {
 }
 
 
-def set_skynet():
+def set_testnet():
     global ADDRTYPE_P2PKH, ADDRTYPE_P2SH, SECRET_KEY
-    global SKYNET, SERVERLIST, DEFAULT_PORTS, DEFAULT_SERVERS
+    global TESTNET, SERVERLIST, DEFAULT_PORTS, DEFAULT_SERVERS
     global GENESIS, GENESIS_BITS
     global SEGWIT_HRP
-    SKYNET = True
-    ADDRTYPE_P2PKH = 0x3a
-    ADDRTYPE_P2SH = 0x32
+    global XPUB_HEADERS, XPRV_HEADERS
+    TESTNET = True
+    ADDRTYPE_P2PKH = 120
+    ADDRTYPE_P2SH = 110
     SEGWIT_HRP = "tb"
-    SECRET_KEY = 0x80
-    GENESIS = "0000c07f635271213ea71bd68e589694b9b10b0cd2ddd195a2ab07f36cf00473"
+    SECRET_KEY = 239
+    GENESIS = "0000e803ee215c0684ca0d2f9220594d3f828617972aad66feb2ba51f5e14222"
     GENESIS_BITS = 0x1f00ffff
-    SERVERLIST = 'servers_skynet.json'
+    SERVERLIST = 'servers_testnet.json'
     DEFAULT_SERVERS = read_json_dict(SERVERLIST)
-    DEFAULT_PORTS = {'t': '52001', 's': '52002'}
+    DEFAULT_PORTS = {'t': '51001', 's': '51002'}
+    XPUB_HEADERS = {
+        'standard': 0x043587CF,
+        'segwit_p2sh': 0,
+        'segwit': 0
+    }
+    XPRV_HEADERS = {
+        'standard': 0x04358394,
+        'segwit_p2sh': 0,
+        'segwit': 0
+    }
+
+
+mainnet_block_explorers = {
+    'qtum.info': ('https://qtum.info',
+                  {'tx': 'tx', 'addr': 'address'}),
+    'explorer.qtum.org': ('https://explorer.qtum.org',
+                          {'tx': 'tx', 'addr': 'address'}),
+    'qtumexplorer.io': ('https://qtumexplorer.io/',
+                        {'tx': 'tx', 'addr': 'address'}),
+    'system default': ('blockchain:',
+                       {'tx': 'tx', 'addr': 'address'}),
+}
+
+testnet_block_explorers = {
+    'qtum.info': ('https://testnet.qtum.info',
+                  {'tx': 'tx', 'addr': 'address'}),
+    'system default': ('blockchain:',
+                       {'tx': 'tx', 'addr': 'address'}),
+}
+
 
 ################################## transactions
 
-FEE_STEP = 10000
-MAX_FEE_RATE = 300000
+MAX_FEE_RATE = 1000000
+# min fee rate is set to 0.4*MAX_FEE_RATE
+
 FEE_TARGETS = [25, 10, 5, 2]
 
 COINBASE_MATURITY = 100
@@ -90,26 +129,46 @@ TYPE_PUBKEY  = 1
 TYPE_SCRIPT  = 2
 
 # AES encryption
+
 try:
     from Crypto.Cipher import AES
 except:
     AES = None
 
 
+class InvalidPadding(Exception):
+    pass
+
+
+def append_PKCS7_padding(data):
+    assert_bytes(data)
+    padlen = 16 - (len(data) % 16)
+    return data + bytes([padlen]) * padlen
+
+
+def strip_PKCS7_padding(data):
+    assert_bytes(data)
+    if len(data) % 16 != 0 or len(data) == 0:
+        raise InvalidPadding("invalid length")
+    padlen = data[-1]
+    if padlen > 16:
+        raise InvalidPadding("invalid padding byte (large)")
+    for i in data[-padlen:]:
+        if i != padlen:
+            raise InvalidPadding("invalid padding byte (inconsistent)")
+    return data[0:-padlen]
+
+
 def aes_encrypt_with_iv(key, iv, data):
     assert_bytes(key, iv, data)
+    data = append_PKCS7_padding(data)
     if AES:
-        padlen = 16 - (len(data) % 16)
-        if padlen == 0:
-            padlen = 16
-        data += chr(padlen) * padlen
         e = AES.new(key, AES.MODE_CBC, iv).encrypt(data)
-        return e
     else:
         aes_cbc = pyaes.AESModeOfOperationCBC(key, iv=iv)
-        aes = pyaes.Encrypter(aes_cbc)
-        e = aes.feed(data) + aes.feed()  # empty aes.feed() appends pkcs padding
-        return e
+        aes = pyaes.Encrypter(aes_cbc, padding=pyaes.PADDING_NONE)
+        e = aes.feed(data) + aes.feed()  # empty aes.feed() flushes buffer
+    return e
 
 
 def aes_decrypt_with_iv(key, iv, data):
@@ -117,16 +176,14 @@ def aes_decrypt_with_iv(key, iv, data):
     if AES:
         cipher = AES.new(key, AES.MODE_CBC, iv)
         data = cipher.decrypt(data)
-        padlen = ord(data[-1])
-        for i in data[-padlen:]:
-            if ord(i) != padlen:
-                raise InvalidPassword()
-        return data[0:-padlen]
     else:
         aes_cbc = pyaes.AESModeOfOperationCBC(key, iv=iv)
-        aes = pyaes.Decrypter(aes_cbc)
-        s = aes.feed(data) + aes.feed()  # empty aes.feed() strips pkcs padding
-        return s
+        aes = pyaes.Decrypter(aes_cbc, padding=pyaes.PADDING_NONE)
+        data = aes.feed(data) + aes.feed()  # empty aes.feed() flushes buffer
+    try:
+        return strip_PKCS7_padding(data)
+    except InvalidPadding:
+        raise InvalidPassword()
 
 
 def EncodeAES(secret, s):
@@ -256,7 +313,7 @@ def seed_type(x):
         return 'segwit'
     elif is_new_seed(x, version.SEED_PREFIX_2FA):
         return '2fa'
-    return ''
+    return 'standard'  # to compatibale with qtum mobile wallet
 
 is_seed = lambda x: bool(seed_type(x))
 
@@ -332,6 +389,40 @@ def public_key_to_p2wpkh(public_key):
 
 def script_to_p2wsh(script):
     return hash_to_segwit_addr(sha256(bfh(script)))
+
+
+def p2wpkh_nested_script(pubkey):
+    pkh = bh2u(hash_160(bfh(pubkey)))
+    return '00' + push_script(pkh)
+
+
+def p2wsh_nested_script(witness_script):
+    wsh = bh2u(sha256(bfh(witness_script)))
+    return '00' + push_script(wsh)
+
+
+def pubkey_to_address(txin_type, pubkey):
+    if txin_type == 'p2pkh':
+        return public_key_to_p2pkh(bfh(pubkey))
+    elif txin_type == 'p2wpkh':
+        return hash_to_segwit_addr(hash_160(bfh(pubkey)))
+    elif txin_type == 'p2wpkh-p2sh':
+        scriptSig = p2wpkh_nested_script(pubkey)
+        return hash160_to_p2sh(hash_160(bfh(scriptSig)))
+    else:
+        raise NotImplementedError(txin_type)
+
+
+def redeem_script_to_address(txin_type, redeem_script):
+    if txin_type == 'p2sh':
+        return hash160_to_p2sh(hash_160(bfh(redeem_script)))
+    elif txin_type == 'p2wsh':
+        return script_to_p2wsh(redeem_script)
+    elif txin_type == 'p2wsh-p2sh':
+        scriptSig = p2wsh_nested_script(redeem_script)
+        return hash160_to_p2sh(hash_160(bfh(scriptSig)))
+    else:
+        raise NotImplementedError(txin_type)
 
 
 def address_to_script(addr):
@@ -450,32 +541,42 @@ def DecodeBase58Check(psz):
         return key
 
 
-def PrivKeyToSecret(privkey):
-    return privkey[9:9+32]
+# extended key export format for segwit
+
+SCRIPT_TYPES = {
+    'p2pkh': 0,
+    'p2wpkh': 1,
+    'p2wpkh-p2sh': 2,
+    'p2sh': 5,
+    'p2wsh': 6,
+    'p2wsh-p2sh': 7
+}
 
 
-def SecretToASecret(secret, compressed=False):
-    vchIn = bytes([SECRET_KEY]) + secret
-    if compressed: vchIn += b'\01'
+def serialize_privkey(secret, compressed, txin_type):
+    prefix = bytes([(SCRIPT_TYPES[txin_type] + 128) & 255])
+    suffix = b'\01' if compressed else b''
+    vchIn = prefix + secret + suffix
     return EncodeBase58Check(vchIn)
 
 
-def ASecretToSecret(key):
+def deserialize_privkey(key):
+    # whether the pubkey is compressed should be visible from the keystore
     vch = DecodeBase58Check(key)
-    if vch and vch[0] == SECRET_KEY:
-        return vch[1:]
-    elif is_minikey(key):
-        return minikey_to_private_key(key)
+    if is_minikey(key):
+        return 'p2pkh', minikey_to_private_key(key), True
+    elif vch:
+        txin_type = inv_dict(SCRIPT_TYPES)[vch[0] - 128]
+        assert len(vch) in [33, 34]
+        compressed = len(vch) == 34
+        return txin_type, vch[1:33], compressed
     else:
-        return False
+        raise BaseException("cannot deserialize", key)
 
 
-def regenerate_key(sec):
-    b = ASecretToSecret(sec)
-    if not b:
-        return False
-    b = b[0:32]
-    return EC_KEY(b)
+def regenerate_key(pk):
+    assert len(pk) == 32
+    return EC_KEY(pk)
 
 
 def GetPubKey(pubkey, compressed=False):
@@ -487,22 +588,19 @@ def GetSecret(pkey):
 
 
 def is_compressed(sec):
-    b = ASecretToSecret(sec)
-    return len(b) == 33
+    return deserialize_privkey(sec)[2]
 
 
-def public_key_from_private_key(sec):
-    # rebuild public key from private key, compressed or uncompressed
-    pkey = regenerate_key(sec)
-    assert pkey
-    compressed = is_compressed(sec)
+def public_key_from_private_key(pk, compressed):
+    pkey = regenerate_key(pk)
     public_key = GetPubKey(pkey.pubkey, compressed)
     return bh2u(public_key)
 
 
 def address_from_private_key(sec):
-    public_key = public_key_from_private_key(sec)
-    address = public_key_to_p2pkh(bfh(public_key))
+    txin_type, privkey, compressed = deserialize_privkey(sec)
+    public_key = public_key_from_private_key(privkey, compressed)
+    address = pubkey_to_address(txin_type, public_key)
     return address
 
 
@@ -539,7 +637,7 @@ def is_p2sh(addr):
 
 def is_private_key(key):
     try:
-        k = ASecretToSecret(key)
+        k = deserialize_privkey(key)
         return k is not False
     except:
         return False
@@ -554,8 +652,8 @@ def is_minikey(text):
     # suffixed with '?' have its SHA256 hash begin with a zero byte.
     # They are widely used in Casascius physical bitoins.
     return (len(text) >= 20 and text[0] == 'S'
-            and all(c in __b58chars for c in text)
-            and ord(sha256(text + '?')[0]) == 0)
+            and all(ord(c) in __b58chars for c in text)
+            and sha256(text + '?')[0] == 0x00)
 
 
 def minikey_to_private_key(text):
@@ -568,9 +666,8 @@ from ecdsa.util import string_to_number, number_to_string
 
 
 def msg_magic(message):
-    varint = var_int(len(message))
-    encoded_varint = varint.encode('ascii')
-    return b"\x18Bitcoin Signed Message:\n" + encoded_varint + message
+    length = bfh(var_int(len(message)))
+    return b"\x18Qtum Signed Message:\n" + length + message
 
 
 def verify_message(address, sig, message):
@@ -580,8 +677,11 @@ def verify_message(address, sig, message):
         public_key, compressed = pubkey_from_signature(sig, h)
         # check public key using the address
         pubkey = point_to_ser(public_key.pubkey.point, compressed)
-        addr = public_key_to_p2pkh(pubkey)
-        if address != addr:
+        for txin_type in ['p2pkh', 'p2wpkh', 'p2wpkh-p2sh']:
+            addr = pubkey_to_address(txin_type, bh2u(pubkey))
+            if address == addr:
+                break
+        else:
             raise Exception("Bad signature")
         # check message
         public_key.verify_digest(sig[1:], h, sigdecode = ecdsa.util.sigdecode_string)
@@ -825,7 +925,8 @@ def _CKD_priv(k, c, s, is_prime):
 # This function allows us to find the nth public key, as long as n is
 #  non-negative. If n is negative, we need the master private key to find it.
 def CKD_pub(cK, c, n):
-    if n & BIP32_PRIME: raise
+    if n & BIP32_PRIME:
+        raise Exception('CKD_pub error')
     return _CKD_pub(cK, c, bfh(rev_hex(int_to_hex(n,4))))
 
 # helper function, callable with arbitrary string
@@ -978,7 +1079,7 @@ def bip32_public_derivation(xpub, branch, sequence):
 def bip32_private_key(sequence, k, chain):
     for i in sequence:
         k, chain = CKD_priv(k, chain, i)
-    return SecretToASecret(k, True)
+    return k
 
 
 class Deserializer(object):
@@ -1091,3 +1192,31 @@ def read_a_raw_header_from_chunk(data, start):
     sig_length = deserializer.read_varint()
     cursor = deserializer.cursor + sig_length
     return data[start: cursor], cursor
+
+
+def is_pos(header):
+    hash_prevout_stake = header.get('hash_prevout_stake', None)
+    hash_prevout_n = header.get('hash_prevout_n', 0)
+    return hash_prevout_stake and (
+        hash_prevout_stake != '0000000000000000000000000000000000000000000000000000000000000000'
+        or hash_prevout_n != 0xffffffff)
+
+# nbits to target
+def uint256_from_compact(bits):
+    bitsN = (bits >> 24) & 0xff
+    bitsBase = bits & 0xffffff
+    target = bitsBase << (8 * (bitsN - 3))
+    return target
+
+
+# target to nbits
+def compact_from_uint256(target):
+    c = ("%064x" % target)[2:]
+    while c[:2] == '00' and len(c) > 6:
+        c = c[2:]
+    bitsN, bitsBase = len(c) // 2, int('0x' + c[:6], 16)
+    if bitsBase >= 0x800000:
+        bitsN += 1
+        bitsBase >>= 8
+    new_bits = bitsN << 24 | bitsBase
+    return new_bits
