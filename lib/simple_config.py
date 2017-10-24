@@ -234,6 +234,15 @@ class SimpleConfig(PrintError):
     def is_dynfee(self):
         return self.get('dynamic_fees', True) and self.has_fee_estimates()
 
+    def static_fee(self, i):
+        return self.max_fee_rate() * 0.4 + self.max_fee_rate() * 0.06 * i
+
+    def static_fee_index(self, value):
+        index = int((value - self.max_fee_rate() * 0.4) / self.max_fee_rate() * 0.06)
+        index = min(0, index)
+        index = max(10, index)
+        return index
+
     def fee_per_kb(self):
         dyn = self.is_dynfee()
         if dyn:
