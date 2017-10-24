@@ -1,3 +1,12 @@
+Qtum Electrum - Lightweight Qtum client
+=====================================
+
+::
+
+  Licence: MIT Licence
+  Qtum Electrum is forked from Electrum
+
+
 Electrum - Lightweight Bitcoin client
 =====================================
 
@@ -23,7 +32,7 @@ Getting started
 Electrum is a pure python application. If you want to use the
 Qt interface, install the Qt dependencies::
 
-    sudo apt-get install python3-pyqt4
+    sudo apt-get install python3-pyqt5
 
 If you downloaded the official package (tar.gz), you can run
 Electrum from its root directory, without installing it on your
@@ -50,8 +59,8 @@ Development version
 
 Check out the code from Github::
 
-    git clone git://github.com/spesmilo/electrum.git
-    cd electrum
+    git clone git@github.com:qtumproject/qtum-electrum.git
+    cd qtum-electrum
 
 Run install (this should install dependencies)::
 
@@ -59,8 +68,8 @@ Run install (this should install dependencies)::
 
 Compile the icons file for Qt::
 
-    sudo apt-get install pyqt4-dev-tools
-    pyrcc4 icons.qrc -o gui/qt/icons_rc.py -py3
+    sudo apt-get install pyqt5-dev-tools
+    pyrcc5 icons.qrc -o gui/qt/icons_rc.py -py3
 
 Compile the protobuf description file::
 
@@ -90,16 +99,18 @@ Mac OS X
 
 ::
 
-    /usr/local/lib/python3.6/site-packages/PyQt5/uic/port_v2/ascii_upper.py
-    _ascii_trans_table = str.maketrans(string.ascii_lowercase, string.ascii_uppercase)
+    # PyQt5/uic/port_v2/ascii_upper.py
+    change `string.maketrans(string.ascii_lowercase, string.ascii_uppercase)` to
+`str.maketrans(string.ascii_lowercase, string.ascii_uppercase)`
 
+    # py2app
     use py2app==0.12
 
     # On MacPorts installs: 
-    sudo python setup-release.py py2app
+    sudo python3 setup-release.py py2app
     
     # On Homebrew installs: 
-    ARCHFLAGS="-arch i386 -arch x86_64" sudo python setup-release.py py2app --includes sip
+    ARCHFLAGS="-arch i386 -arch x86_64" sudo python3 setup-release.py py2app --includes sip
     
     sudo hdiutil create -fs HFS+ -volname "Electrum" -srcfolder dist/Electrum.app dist/electrum-VERSION-macosx.dmg
 
