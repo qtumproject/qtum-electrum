@@ -256,6 +256,9 @@ class BasePlugin(PrintError):
     def settings_dialog(self):
         pass
 
+    def can_user_disable(self):
+        return True
+
 
 class DeviceNotFoundError(Exception):
     pass
