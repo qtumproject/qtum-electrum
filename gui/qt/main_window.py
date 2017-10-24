@@ -342,7 +342,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.notify_transactions()
         # update menus
         self.seed_menu.setEnabled(self.wallet.has_seed())
-        self.mpk_menu.setEnabled(self.wallet.is_deterministic())
         self.update_lock_icon()
         self.update_buttons_on_seed()
         self.update_console()
@@ -461,11 +460,13 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         file_menu.addSeparator()
         file_menu.addAction(_("&Quit"), self.close)
 
+
         wallet_menu = menubar.addMenu(_("&Wallet"))
+        wallet_menu.addAction(_("&Information"), self.show_master_public_keys)
+        wallet_menu.addSeparator()
 
         self.password_menu = wallet_menu.addAction(_("&Password"), self.change_password_dialog)
         self.seed_menu = wallet_menu.addAction(_("&Seed"), self.show_seed_dialog)
-        self.mpk_menu = wallet_menu.addAction(_("&Master Public Keys"), self.show_master_public_keys)
 
         self.private_keys_menu = wallet_menu.addMenu(_("&Private keys"))
         self.private_keys_menu.addAction(_("&Sweep"), self.sweep_key_dialog)
@@ -1822,28 +1823,41 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.set_contact(line2.text(), line1.text())
 
     def show_master_public_keys(self):
-        dialog = WindowModalDialog(self, "Master Public Keys")
+        dialog = WindowModalDialog(self, _("Wallet Information"))
+        dialog.setMinimumSize(500, 100)
         mpk_list = self.wallet.get_master_public_keys()
         vbox = QVBoxLayout()
-        mpk_text = ShowQRTextEdit()
-        mpk_text.setMaximumHeight(100)
-        mpk_text.addCopyButton(self.app)
-        def show_mpk(index):
-            mpk_text.setText(mpk_list[index])
+        wallet_type = self.wallet.storage.get('wallet_type', '')
+        grid = QGridLayout()
+        grid.addWidget(QLabel(_("Wallet type") + ':'), 0, 0)
+        grid.addWidget(QLabel(wallet_type), 0, 1)
+        grid.addWidget(QLabel(_("Script type") + ':'), 1, 0)
+        grid.addWidget(QLabel(self.wallet.txin_type), 1, 1)
+        vbox.addLayout(grid)
+        if self.wallet.is_deterministic():
+            mpk_text = ShowQRTextEdit()
+            mpk_text.setMaximumHeight(150)
+            mpk_text.addCopyButton(self.app)
 
-        # only show the combobox in case multiple accounts are available
-        if len(mpk_list) > 1:
-            def label(key):
-                if isinstance(self.wallet, Multisig_Wallet):
-                    return _("cosigner") + ' ' + str(key+1)
-                return ''
-            labels = [label(i) for i in range(len(mpk_list))]
-            on_click = lambda clayout: show_mpk(clayout.selected_index())
-            labels_clayout = ChoicesLayout(_("Master Public Keys"), labels, on_click)
-            vbox.addLayout(labels_clayout.layout())
+            def show_mpk(index):
+                mpk_text.setText(mpk_list[index])
 
-        show_mpk(0)
-        vbox.addWidget(mpk_text)
+            # only show the combobox in case multiple accounts are available
+            if len(mpk_list) > 1:
+                def label(key):
+                    if isinstance(self.wallet, Multisig_Wallet):
+                        return _("cosigner") + ' ' + str(key + 1)
+                    return ''
+
+                labels = [label(i) for i in range(len(mpk_list))]
+                on_click = lambda clayout: show_mpk(clayout.selected_index())
+                labels_clayout = ChoicesLayout(_("Master Public Keys"), labels, on_click)
+                vbox.addLayout(labels_clayout.layout())
+            else:
+                vbox.addWidget(QLabel(_("Master Public Key")))
+            show_mpk(0)
+            vbox.addWidget(mpk_text)
+        vbox.addStretch(1)
         vbox.addLayout(Buttons(CloseButton(dialog)))
         dialog.setLayout(vbox)
         dialog.exec_()
