@@ -171,7 +171,7 @@ class TxDialog(Factory.Popup):
         self.app.broadcast(self.tx)
 
     def show_qr(self):
-        from electrum.bitcoin import base_encode
-        text = str(self.tx).decode('hex')
+        from electrum.bitcoin import base_encode, bfh
+        text = bfh(str(self.tx))
         text = base_encode(text, base=43)
         self.app.qr_dialog(_("Raw Transaction"), text)
