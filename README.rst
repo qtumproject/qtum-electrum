@@ -4,7 +4,7 @@ Qtum Electrum - Lightweight Qtum client
 ::
 
   Licence: MIT Licence
-  Qtum Electrum is forked from `Electrum<https://github.com/spesmilo/electrum>`_
+  Qtum Electrum is forked from `Electrum <https://github.com/spesmilo/electrum>`_
 
 
 .. image:: https://travis-ci.org/spesmilo/electrum.svg?branch=master
