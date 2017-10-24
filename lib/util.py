@@ -448,9 +448,7 @@ def time_difference(distance_in_time, include_seconds):
 
 def block_explorer_info():
     from . import qtum
-    if qtum.SKYNET:
-        return qtum.skynet_block_explorers
-    elif qtum.TESTNET:
+    if qtum.TESTNET:
         return qtum.testnet_block_explorers
     else:
         return qtum.mainnet_block_explorers

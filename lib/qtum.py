@@ -31,7 +31,6 @@ def read_json_dict(filename):
 
 # QTUM network constants
 TESTNET = False
-SKYNET = False
 ADDRTYPE_P2PKH = 0x3a
 ADDRTYPE_P2SH = 0x32
 SECRET_KEY = 0x80
@@ -95,18 +94,6 @@ def set_testnet():
     }
 
 
-def set_skynet():
-    global SKYNET, SERVERLIST, DEFAULT_PORTS, DEFAULT_SERVERS
-    global GENESIS
-    global SEGWIT_HRP
-    SKYNET = True
-    SEGWIT_HRP = "tb"
-    GENESIS = "0000c07f635271213ea71bd68e589694b9b10b0cd2ddd195a2ab07f36cf00473"
-    SERVERLIST = 'servers_skynet.json'
-    DEFAULT_SERVERS = read_json_dict(SERVERLIST)
-    DEFAULT_PORTS = {'t': '52001', 's': '52002'}
-
-
 mainnet_block_explorers = {
     'qtum.info': ('https://qtum.info',
                   {'tx': 'tx', 'addr': 'address'}),
@@ -125,12 +112,6 @@ testnet_block_explorers = {
                        {'tx': 'tx', 'addr': 'address'}),
 }
 
-skynet_block_explorers = {
-    'qtum.info': ('https://skynet.qtum.info',
-                  {'tx': 'tx', 'addr': 'address'}),
-    'system default': ('blockchain:',
-                       {'tx': 'tx', 'addr': 'address'}),
-}
 
 ################################## transactions
 

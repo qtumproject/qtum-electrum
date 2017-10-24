@@ -348,7 +348,7 @@ class Blockchain(util.PrintError):
     def can_connect(self, header, check_height=True):
         height = header['block_height']
         if check_height and self.height() != height - 1:
-            print_error('[can_connect] check_height failed')
+            print_error('[can_connect] check_height failed', height)
             return False
         if height == 0:
             valid = hash_header(header) == qtum.GENESIS
@@ -357,16 +357,17 @@ class Blockchain(util.PrintError):
             return valid
         prev_header = self.read_header(height - 1)
         if not prev_header:
+            print_error('[can_connect] no prev_header', height)
             return False
         prev_hash = hash_header(prev_header)
         if prev_hash != header.get('prev_block_hash'):
-            print_error('[can_connect] hash check failed')
+            print_error('[can_connect] hash check failed', height)
             return False
         bits, target = self.get_target(height)
         try:
             self.verify_header(header, prev_header, bits, target)
         except Exception as e:
-            print_error('[can_connect] verify_header failed', e)
+            print_error('[can_connect] verify_header failed', e, height)
             return False
         return True
 

@@ -363,9 +363,7 @@ if __name__ == '__main__':
     config = SimpleConfig(config_options)
     cmdname = config.get('cmd')
 
-    if config.get('skynet'):
-        qtum.set_skynet()
-    elif config.get('testnet'):
+    if config.get('testnet'):
         qtum.set_testnet()
 
     # run non-RPC commands separately

@@ -77,7 +77,6 @@ setup(
             'wordlist/*.txt',
             'locale/*/LC_MESSAGES/electrum.mo',
             'servers.json',
-            'servers_skynet.json',
             'servers_testnet.json',
         ]
     },

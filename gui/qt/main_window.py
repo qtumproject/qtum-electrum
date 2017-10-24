@@ -43,7 +43,7 @@ from . import icons_rc
 
 from electrum import keystore
 from electrum.bitcoin import COIN, is_address, TYPE_ADDRESS
-from electrum.qtum import TESTNET, SKYNET
+from electrum.qtum import TESTNET
 from electrum.plugins import run_hook
 from electrum.i18n import _
 from electrum.util import (format_time, format_satoshis, PrintError,
@@ -378,8 +378,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         if TESTNET:
             title += '  -  testnet'
-        elif SKYNET:
-            title += '  -  skynet'
 
         self.setWindowTitle(title)
         self.password_menu.setEnabled(self.wallet.can_change_password())
