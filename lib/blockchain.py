@@ -161,6 +161,9 @@ class Blockchain(util.PrintError):
         _hash = hash_header(header)
         if prev_hash != header.get('prev_block_hash'):
             raise BaseException("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
+        if qtum.TESTNET:
+            return True
+
         if bits != header.get('bits'):
             raise BaseException("bits mismatch: %s vs %s, %s" %
                                 (hex(bits), hex(header.get('bits')), _hash))
