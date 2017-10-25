@@ -1,11 +1,53 @@
 {
-  "116.62.215.44": {
+  "s1.qtum.info": {
     "pruning": "-",
     "t": "50001",
     "s": "50002",
     "version": "1.1"
   },
-  "120.27.209.201": {
+  "s2.qtum.info": {
+    "pruning": "-",
+    "t": "50001",
+    "s": "50002",
+    "version": "1.1"
+  },
+  "s3.qtum.info": {
+    "pruning": "-",
+    "t": "50001",
+    "s": "50002",
+    "version": "1.1"
+  },
+  "s4.qtum.info": {
+    "pruning": "-",
+    "t": "50001",
+    "s": "50002",
+    "version": "1.1"
+  },
+  "s5.qtum.info": {
+    "pruning": "-",
+    "t": "50001",
+    "s": "50002",
+    "version": "1.1"
+  },
+  "s6.qtum.info": {
+    "pruning": "-",
+    "t": "50001",
+    "s": "50002",
+    "version": "1.1"
+  },
+  "s7.qtum.info": {
+    "pruning": "-",
+    "t": "50001",
+    "s": "50002",
+    "version": "1.1"
+  },
+  "s8.qtum.info": {
+    "pruning": "-",
+    "t": "50001",
+    "s": "50002",
+    "version": "1.1"
+  },
+  "s9.qtum.info": {
     "pruning": "-",
     "t": "50001",
     "s": "50002",

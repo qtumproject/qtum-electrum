@@ -98,7 +98,7 @@ Mac OS X
     # On Homebrew installs: 
     ARCHFLAGS="-arch i386 -arch x86_64" sudo python3 setup-release.py py2app --includes sip
     
-    sudo hdiutil create -fs HFS+ -volname "Electrum" -srcfolder dist/Electrum.app dist/electrum-VERSION-macosx.dmg
+    sudo hdiutil create -fs HFS+ -volname "Qtum Electrum" -srcfolder dist/Qtum\ Electrum.app dist/qtum-electrum-VERSION-macosx.dmg
 
 Windows
 -------
