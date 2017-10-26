@@ -266,7 +266,10 @@ class Blockchain(util.PrintError):
             return
         cursor = self.conn.cursor()
         cursor.execute('SELECT data FROM header WHERE height=?', (height, ))
-        header = cursor.fetchone()[0]
+        result = cursor.fetchone()
+        if not result or len(result) < 1:
+            return
+        header = result[0]
         cursor.close()
         return deserialize_header(header, height)
 
