@@ -336,10 +336,10 @@ class BaseWizard(object):
                 self.run('create_wallet')
 
     def create_wallet(self):
-        if any(k.may_have_password() for k in self.keystores):
-            self.request_password(run_next=self.on_password)
-        else:
-            self.on_password(None, False)
+        # if any(k.may_have_password() for k in self.keystores):
+        #     self.request_password(run_next=self.on_password)
+        # else:
+        self.on_password(None, False)
 
     def on_password(self, password, encrypt):
         self.storage.set_password(password, encrypt)
