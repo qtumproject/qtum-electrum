@@ -11,4 +11,6 @@ requests
 rsa
 six
 py2app==0.12
-
+trezor
+btchip-python
+keepkey

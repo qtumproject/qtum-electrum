@@ -198,7 +198,7 @@ class Network(util.DaemonThread):
 
         self.downloading_headers = False
 
-        dir_path = os.path.join( self.config.path, 'certs')
+        dir_path = os.path.join(self.config.path, 'certs')
         if not os.path.exists(dir_path):
             os.mkdir(dir_path)
 
