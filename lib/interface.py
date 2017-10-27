@@ -183,7 +183,7 @@ class TcpConnection(threading.Thread, util.PrintError):
 
         s = self.get_simple_socket()
         if s is None:
-            print_error('[get_socket] 5', e)
+            print_error('[get_socket] 5')
             return
 
         if self.use_ssl:

@@ -112,6 +112,7 @@ class Blockchain(util.PrintError):
         if self.conn:
             self.conn.commit()
             self.conn.close()
+        self.print_error('stopped')
 
     def parent(self):
         return blockchains[self.parent_id]
@@ -264,17 +265,25 @@ class Blockchain(util.PrintError):
         assert self.parent_id != self.checkpoint
         if height < 0:
             return
-        if height < self.checkpoint:
-            return self.parent().read_header(height)
         if height > self.height():
+            # print_error('read_header 3', height, self.checkpoint, self.parent_id)
             return
-        cursor = self.conn.cursor()
-        cursor.execute('SELECT data FROM header WHERE height=?', (height, ))
+        if height < self.checkpoint:
+            # header = self.parent().read_header(height)
+            conn = sqlite3.connect(self.parent().path(), check_same_thread=False)
+            # print_error('read_header 2', height, self.checkpoint, self.parent_id, result)
+        else:
+            conn = sqlite3.connect(self.path(), check_same_thread=False)
+        cursor = conn.cursor()
+        cursor.execute('SELECT data FROM header WHERE height=?', (height,))
         result = cursor.fetchone()
+        cursor.close()
+        conn.close()
         if not result or len(result) < 1:
+            print_error('read_header 4', height, self.checkpoint, self.parent_id, result, self.height())
+            print_error(self.path())
             return
         header = result[0]
-        cursor.close()
         return deserialize_header(header, height)
 
     def get_hash(self, height):
@@ -298,6 +307,11 @@ class Blockchain(util.PrintError):
             prev_header = self.read_header(height - 1)
         if not pprev_header:
             pprev_header = self.read_header(height - 2)
+
+        if not prev_header:
+            raise BaseException('get header failed {}'.format(height - 1))
+        if not pprev_header:
+            raise BaseException('get header failed {}'.format(height - 2))
 
         #  Limit adjustment step
         nActualSpace = prev_header.get('timestamp') - pprev_header.get('timestamp')
