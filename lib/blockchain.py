@@ -154,10 +154,12 @@ class Blockchain(util.PrintError):
             return self._size
 
     def update_size(self):
-        cursor = self.conn.cursor()
+        conn = sqlite3.connect(self.path(), check_same_thread=False)
+        cursor = conn.cursor()
         cursor.execute('SELECT COUNT(*) FROM header')
         count = int(cursor.fetchone()[0])
         cursor.close()
+        conn.close()
         self._size = count
 
     def verify_header(self, header, prev_header, bits, target):
@@ -250,7 +252,11 @@ class Blockchain(util.PrintError):
         if self.checkpoint > 0 and height < self.checkpoint:
             return
         with self.lock:
-            cursor = self.conn.cursor()
+            try:
+                cursor = self.conn.cursor()
+            except sqlite3.ProgrammingError:
+                conn = sqlite3.connect(self.path(), check_same_thread=False)
+                cursor = conn.cursor()
             cursor.execute('REPLACE INTO header (height, data) VALUES(?,?)', (height, raw_header))
             cursor.close()
             self.conn.commit()
