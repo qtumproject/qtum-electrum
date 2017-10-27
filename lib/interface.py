@@ -131,37 +131,50 @@ class TcpConnection(threading.Thread, util.PrintError):
                 is_new = True
                 s = self.get_simple_socket()
                 if s is None:
-                    return
-                # try with CA first
-                try:
-                    s = ssl.wrap_socket(s, ssl_version=ssl.PROTOCOL_TLSv1_1, cert_reqs=ssl.CERT_REQUIRED, ca_certs=ca_path, do_handshake_on_connect=True)
-                except ssl.SSLError as e:
-                    print_error(e)
-                    s = None
-                except:
+                    print_error('[get_socket]', 'get_simple_socket failed')
                     return
 
-                if s and self.check_host_name(s.getpeercert(), self.host):
-                    self.print_error("SSL certificate signed by CA")
-                    return s
+                # try with CA first
+                if os.path.exists(ca_path):
+                    try:
+                        s = ssl.wrap_socket(s, ssl_version=ssl.PROTOCOL_TLSv1_1, cert_reqs=ssl.CERT_REQUIRED,
+                                            ca_certs=ca_path, do_handshake_on_connect=True)
+                    except ssl.SSLError as e:
+                        print_error('[get_socket] 1', e)
+                        s = None
+                    except NotADirectoryError as e:
+                        print_error('[get_socket] 1.5', e)
+                        s = None
+                    except Exception as e:
+                        print_error('[get_socket] 2', e)
+                        return
+                try:
+                    if s and self.check_host_name(s.getpeercert(), self.host):
+                        self.print_error("SSL certificate signed by CA")
+                        return s
+                except Exception as e:
+                    print_error('[get_socket] 2.5', e)
+
                 # get server certificate.
                 # Do not use ssl.get_server_certificate because it does not work with proxy
                 s = self.get_simple_socket()
                 if s is None:
+                    print_error('[get_socket] 3')
                     return
                 try:
                     s = ssl.wrap_socket(s, ssl_version=ssl.PROTOCOL_TLSv1_1, cert_reqs=ssl.CERT_NONE, ca_certs=None)
                 except ssl.SSLError as e:
                     self.print_error("SSL error retrieving SSL certificate:", e)
                     return
-                except:
+                except Exception as e:
+                    print_error('[get_socket] 4', e)
                     return
 
                 dercert = s.getpeercert(True)
                 s.close()
                 cert = ssl.DER_cert_to_PEM_cert(dercert)
                 # workaround android bug
-                cert = re.sub("([^\n])-----END CERTIFICATE-----","\\1\n-----END CERTIFICATE-----",cert)
+                cert = re.sub("([^\n])-----END CERTIFICATE-----", "\\1\n-----END CERTIFICATE-----", cert)
                 temporary_path = cert_path + '.temp'
                 with open(temporary_path,"w") as f:
                     f.write(cert)
@@ -170,6 +183,7 @@ class TcpConnection(threading.Thread, util.PrintError):
 
         s = self.get_simple_socket()
         if s is None:
+            print_error('[get_socket] 5', e)
             return
 
         if self.use_ssl:
@@ -185,6 +199,7 @@ class TcpConnection(threading.Thread, util.PrintError):
             except ssl.SSLError as e:
                 self.print_error("SSL error:", e)
                 if e.errno != 1:
+                    print_error('[get_socket] 6', e)
                     return
                 if is_new:
                     rej = cert_path + '.rej'
@@ -209,10 +224,11 @@ class TcpConnection(threading.Thread, util.PrintError):
                         return
                     self.print_error("wrong certificate")
                 if e.errno == 104:
+                    print_error('[get_socket] 7', e)
                     return
                 return
             except BaseException as e:
-                self.print_error(e)
+                self.print_error('[get_socket] 8', e)
                 traceback.print_exc(file=sys.stderr)
                 return
 

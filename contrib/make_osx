@@ -1,6 +1,10 @@
 #!/bin/bash
+
 rm -rf dist
 VERSION=`git describe --tags`
-python3 setup-release.py py2app
-hdiutil create -fs HFS+ -volname "Electrum" -srcfolder dist/Qtum Electrum.app dist/qtum-electrum-$VERSION.dmg
+export PYTHONHASHSEED=22
 
+# python3 setup-release.py py2app
+pyinstaller --noconfirm --ascii contrib/osx.spec
+
+hdiutil create -fs HFS+ -volname "Qtum Electrum" -srcfolder dist/Qtum\ Electrum.app dist/qtum-electrum-$VERSION.dmg
