@@ -115,7 +115,7 @@ class TcpConnection(threading.Thread, util.PrintError):
                 s = socket.socket(res[0], socket.SOCK_STREAM)
                 s.settimeout(10)
                 s.connect(res[4])
-                s.settimeout(2)
+                s.settimeout(5)
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
                 return s
             except BaseException as _e:
