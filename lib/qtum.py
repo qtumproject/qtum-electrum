@@ -961,8 +961,8 @@ def serialize_xpub(xtype, c, cK, depth=0, fingerprint=b'\x00'*4, child_number=b'
 
 def deserialize_xkey(xkey, prv):
     xkey = DecodeBase58Check(xkey)
-    if len(xkey) != 78:
-        raise BaseException('Invalid length')
+    if not xkey or len(xkey) != 78:
+        raise BaseException('Invalid xkey', xkey)
     depth = xkey[4]
     fingerprint = xkey[5:9]
     child_number = xkey[9:13]

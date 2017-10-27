@@ -336,10 +336,10 @@ class BaseWizard(object):
                 self.run('create_wallet')
 
     def create_wallet(self):
-        if any(k.may_have_password() for k in self.keystores):
-            self.request_password(run_next=self.on_password)
-        else:
-            self.on_password(None, False)
+        # if any(k.may_have_password() for k in self.keystores):
+        #     self.request_password(run_next=self.on_password)
+        # else:
+        self.on_password(None, False)
 
     def on_password(self, password, encrypt):
         self.storage.set_password(password, encrypt)
@@ -372,7 +372,7 @@ class BaseWizard(object):
             "The type of addresses used by your wallet will depend on your seed.",
             "Segwit wallets use bech32 addresses, defined in BIP173.",
             "Please note that websites and other wallets may not support these addresses yet.",
-            "Thus, you might want to keep using a non-segwit wallet in order to be able to receive bitcoins during the transition period."
+            "Thus, you might want to keep using a non-segwit wallet in order to be able to receive qtum during the transition period."
         ])
         choices = [
             ('create_standard_seed', _('Standard')),

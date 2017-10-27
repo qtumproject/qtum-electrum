@@ -39,7 +39,7 @@ import socks
 from . import bitcoin
 from . import blockchain
 from . import util
-from .bitcoin import *
+from .qtum import *
 from .interface import Connection, Interface
 from .version import ELECTRUM_VERSION, PROTOCOL_VERSION
 
@@ -91,6 +91,7 @@ def filter_protocol(hostmap, protocol = 's'):
     return eligible
 
 def pick_random_server(hostmap = None, protocol = 's', exclude_set = set()):
+    from .qtum import DEFAULT_SERVERS
     if hostmap is None:
         hostmap = DEFAULT_SERVERS
     eligible = list(set(filter_protocol(hostmap, protocol)) - exclude_set)
@@ -352,6 +353,7 @@ class Network(util.DaemonThread):
         return list(self.interfaces.keys())
 
     def get_servers(self):
+        from .qtum import DEFAULT_SERVERS
         out = DEFAULT_SERVERS
         if self.irc_servers:
             out.update(filter_version(self.irc_servers.copy()))
@@ -922,12 +924,14 @@ class Network(util.DaemonThread):
         win = [i for i in self.interfaces.values() if i.num_requests()]
         try:
             rout, wout, xout = select.select(rin, win, [], 0.1)
-        except socket.error as e:
+        except (socket.error, OSError) as e:
+            print_error('[wait_on_sockets]', e)
+            return
             # TODO: py3, get code from e
-            code = None
-            if code == errno.EINTR:
-                return
-            raise
+            # code = None
+            # if code == errno.EINTR:
+            #     return
+            # raise
         assert not xout
         for interface in wout:
             interface.send_requests()

@@ -139,11 +139,14 @@ class Blockchain(util.PrintError):
     def fork(parent, header):
         checkpoint = header.get('block_height')
         self = Blockchain(parent.config, checkpoint, parent.checkpoint)
+        print_error('[fork]', checkpoint, parent.checkpoint)
         self.save_header(header)
         return self
 
     def height(self):
-        return self.checkpoint + self.size() - 1
+        height = self.checkpoint + self.size() - 1
+        print_error('[blockchain height]', height, self.checkpoint, self.size())
+        return height
 
     def size(self):
         with self.lock:
@@ -161,6 +164,9 @@ class Blockchain(util.PrintError):
         _hash = hash_header(header)
         if prev_hash != header.get('prev_block_hash'):
             raise BaseException("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
+        if qtum.TESTNET:
+            return True
+
         if bits != header.get('bits'):
             raise BaseException("bits mismatch: %s vs %s, %s" %
                                 (hex(bits), hex(header.get('bits')), _hash))
@@ -203,44 +209,45 @@ class Blockchain(util.PrintError):
             self.write(raw_header, height)
         self.swap_with_parent()
 
-    # todo
     def swap_with_parent(self):
-        pass
-        # if self.parent_id is None:
-        #     return
-        # parent_branch_size = self.parent().height() - self.checkpoint + 1
-        # if parent_branch_size >= self.size():
-        #     return
-        # self.print_error("swap", self.checkpoint, self.parent_id)
-        # parent_id = self.parent_id
-        # checkpoint = self.checkpoint
-        # parent = self.parent()
-        #
-        # with open(self.path(), 'rb') as f:
-        #     my_data = f.read()
-        # with open(parent.path(), 'rb') as f:
-        #     f.seek((checkpoint - parent.checkpoint)*80)
-        #     parent_data = f.read(parent_branch_size*80)
-        # self.write(parent_data, 0)
-        # parent.write(my_data, (checkpoint - parent.checkpoint)*80)
-        # # store file path
-        # for b in blockchains.values():
-        #     b.old_path = b.path()
-        # # swap parameters
-        # self.parent_id = parent.parent_id; parent.parent_id = parent_id
-        # self.checkpoint = parent.checkpoint; parent.checkpoint = checkpoint
-        # self._size = parent._size; parent._size = parent_branch_size
-        # # move files
-        # for b in blockchains.values():
-        #     if b in [self, parent]: continue
-        #     if b.old_path != b.path():
-        #         self.print_error("renaming", b.old_path, b.path())
-        #         os.rename(b.old_path, b.path())
-        # # update pointers
-        # blockchains[self.checkpoint] = self
-        # blockchains[parent.checkpoint] = parent
+        if self.parent_id is None:
+            return
+        parent_branch_size = self.parent().height() - self.checkpoint + 1
+        if parent_branch_size >= self.size():
+            return
+        self.print_error("swap", self.checkpoint, self.parent_id)
+        parent_id = self.parent_id
+        checkpoint = self.checkpoint
+        parent = self.parent()
+
+        for i in range(checkpoint, self.size()):
+            header = self.read_header(i)
+            parent.save_header(header)
+
+        # store file path
+        for b in blockchains.values():
+            b.old_path = b.path()
+        # swap parameters
+        self.parent_id = parent.parent_id
+        parent.parent_id = parent_id
+        self.checkpoint = parent.checkpoint
+        parent.checkpoint = checkpoint
+        self._size = parent._size
+        parent._size = parent_branch_size
+
+        # move files
+        for b in blockchains.values():
+            if b in [self, parent]: continue
+            if b.old_path != b.path():
+                self.print_error("renaming", b.old_path, b.path())
+                os.rename(b.old_path, b.path())
+        # update pointers
+        blockchains[self.checkpoint] = self
+        blockchains[parent.checkpoint] = parent
 
     def write(self, raw_header, height):
+        if self.checkpoint > 0 and height < self.checkpoint:
+            return
         with self.lock:
             cursor = self.conn.cursor()
             cursor.execute('REPLACE INTO header (height, data) VALUES(?,?)', (height, raw_header))
@@ -263,7 +270,10 @@ class Blockchain(util.PrintError):
             return
         cursor = self.conn.cursor()
         cursor.execute('SELECT data FROM header WHERE height=?', (height, ))
-        header = cursor.fetchone()[0]
+        result = cursor.fetchone()
+        if not result or len(result) < 1:
+            return
+        header = result[0]
         cursor.close()
         return deserialize_header(header, height)
 

@@ -654,6 +654,10 @@ class SocketPipe:
                 print_error("SSLError:", e)
                 time.sleep(0.1)
                 continue
+            except OSError as e:
+                print_error("OSError", e)
+                time.sleep(0.1)
+                continue
             except socket.error as e:
                 if e[0] in (errno.EWOULDBLOCK,errno.EAGAIN):
                     print_error("EAGAIN: retrying")
