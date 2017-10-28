@@ -33,6 +33,8 @@ from .util import *
 from electrum.i18n import _
 from electrum.util import block_explorer_URL, format_satoshis, format_time
 from electrum.plugins import run_hook
+from electrum.paymentrequest import PR_UNPAID
+
 
 class InvoiceList(MyTreeWidget):
     filter_columns = [0, 1, 2, 3]  # Date, Requestor, Description, Amount
