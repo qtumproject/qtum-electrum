@@ -222,10 +222,15 @@ class Blockchain(util.PrintError):
         parent_id = self.parent_id
         checkpoint = self.checkpoint
         parent = self.parent()
-
-        for i in range(checkpoint, self.size()):
+        print('swap', self.checkpoint, self.parent_id)
+        for i in range(checkpoint, checkpoint + self.size()):
             header = self.read_header(i)
-            parent.save_header(header)
+            parent_header = parent.read_header(i)
+            parent.write(bfh(serialize_header(header)), i)
+            if parent_header:
+                self.write(bfh(serialize_header(parent_header)), i)
+            else:
+                self.delete(i)
 
         # store file path
         for b in blockchains.values():
@@ -251,6 +256,8 @@ class Blockchain(util.PrintError):
     def write(self, raw_header, height):
         if self.checkpoint > 0 and height < self.checkpoint:
             return
+        if not raw_header:
+            self.delete(height)
         with self.lock:
             try:
                 cursor = self.conn.cursor()
@@ -260,7 +267,21 @@ class Blockchain(util.PrintError):
             cursor.execute('REPLACE INTO header (height, data) VALUES(?,?)', (height, raw_header))
             cursor.close()
             self.conn.commit()
-            self.update_size()
+            self._size += 1
+
+    def delete(self, height):
+        if self.checkpoint > 0 and height < self.checkpoint:
+            return
+        with self.lock:
+            try:
+                cursor = self.conn.cursor()
+            except sqlite3.ProgrammingError:
+                conn = sqlite3.connect(self.path(), check_same_thread=False)
+                cursor = conn.cursor()
+            cursor.execute('DELETE FROM header where height=?', (height,))
+            cursor.close()
+            self.conn.commit()
+            self._size -= 1
 
     def save_header(self, header):
         data = bfh(serialize_header(header))
