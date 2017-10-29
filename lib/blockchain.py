@@ -257,7 +257,12 @@ class Blockchain(util.PrintError):
         if self.checkpoint > 0 and height < self.checkpoint:
             return
         if not raw_header:
-            self.delete(height)
+            if height:
+                self.delete(height)
+            else:
+                self.delete_all()
+            return
+
         with self.lock:
             try:
                 cursor = self.conn.cursor()
@@ -282,6 +287,18 @@ class Blockchain(util.PrintError):
             cursor.close()
             self.conn.commit()
             self._size -= 1
+
+    def delete_all(self):
+        with self.lock:
+            try:
+                cursor = self.conn.cursor()
+            except sqlite3.ProgrammingError:
+                conn = sqlite3.connect(self.path(), check_same_thread=False)
+                cursor = conn.cursor()
+            cursor.execute('DELETE FROM header')
+            cursor.close()
+            self.conn.commit()
+            self._size = 0
 
     def save_header(self, header):
         data = bfh(serialize_header(header))
