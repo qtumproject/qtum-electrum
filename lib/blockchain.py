@@ -224,11 +224,11 @@ class Blockchain(util.PrintError):
         parent = self.parent()
         print('swap', self.checkpoint, self.parent_id)
         for i in range(checkpoint, checkpoint + self.size()):
-            header = self.read_header(i)
-            parent_header = parent.read_header(i)
-            parent.write(bfh(serialize_header(header)), i)
+            header = self.read_header(i, deserialize=False)
+            parent_header = parent.read_header(i, deserialize=False)
+            parent.write(header, i)
             if parent_header:
-                self.write(bfh(serialize_header(parent_header)), i)
+                self.write(parent_header, i)
             else:
                 self.delete(i)
 
@@ -305,7 +305,7 @@ class Blockchain(util.PrintError):
         self.write(data, header.get('block_height'))
         self.swap_with_parent()
 
-    def read_header(self, height):
+    def read_header(self, height, deserialize=True):
         assert self.parent_id != self.checkpoint
         if height < 0:
             return
@@ -328,7 +328,9 @@ class Blockchain(util.PrintError):
             print_error(self.path())
             return
         header = result[0]
-        return deserialize_header(header, height)
+        if deserialize:
+            return deserialize_header(header, height)
+        return header
 
     def get_hash(self, height):
         return hash_header(self.read_header(height))
