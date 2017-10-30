@@ -241,7 +241,7 @@ class WalletStorage(PrintError):
         return result
 
     def requires_upgrade(self):
-        return self.file_exists() and self.get_seed_version() != FINAL_SEED_VERSION
+        return self.file_exists() and self.get_seed_version() < FINAL_SEED_VERSION
 
     def upgrade(self):
         self.convert_imported()
