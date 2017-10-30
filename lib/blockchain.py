@@ -240,8 +240,8 @@ class Blockchain(util.PrintError):
         parent.parent_id = parent_id
         self.checkpoint = parent.checkpoint
         parent.checkpoint = checkpoint
-        self._size = parent._size
-        parent._size = parent_branch_size
+        self.update_size()
+        parent.update_size()
 
         # move files
         for b in blockchains.values():
