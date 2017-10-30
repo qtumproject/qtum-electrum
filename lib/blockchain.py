@@ -112,6 +112,7 @@ class Blockchain(util.PrintError):
         if self.conn:
             self.conn.commit()
             self.conn.close()
+        self.print_error('stopped')
 
     def parent(self):
         return blockchains[self.parent_id]
@@ -153,10 +154,12 @@ class Blockchain(util.PrintError):
             return self._size
 
     def update_size(self):
-        cursor = self.conn.cursor()
+        conn = sqlite3.connect(self.path(), check_same_thread=False)
+        cursor = conn.cursor()
         cursor.execute('SELECT COUNT(*) FROM header')
         count = int(cursor.fetchone()[0])
         cursor.close()
+        conn.close()
         self._size = count
 
     def verify_header(self, header, prev_header, bits, target):
@@ -219,10 +222,15 @@ class Blockchain(util.PrintError):
         parent_id = self.parent_id
         checkpoint = self.checkpoint
         parent = self.parent()
-
-        for i in range(checkpoint, self.size()):
-            header = self.read_header(i)
-            parent.save_header(header)
+        print('swap', self.checkpoint, self.parent_id)
+        for i in range(checkpoint, checkpoint + self.size()):
+            header = self.read_header(i, deserialize=False)
+            parent_header = parent.read_header(i, deserialize=False)
+            parent.write(header, i)
+            if parent_header:
+                self.write(parent_header, i)
+            else:
+                self.delete(i)
 
         # store file path
         for b in blockchains.values():
@@ -248,34 +256,80 @@ class Blockchain(util.PrintError):
     def write(self, raw_header, height):
         if self.checkpoint > 0 and height < self.checkpoint:
             return
+        if not raw_header:
+            if height:
+                self.delete(height)
+            else:
+                self.delete_all()
+            return
+
         with self.lock:
-            cursor = self.conn.cursor()
+            try:
+                cursor = self.conn.cursor()
+            except sqlite3.ProgrammingError:
+                conn = sqlite3.connect(self.path(), check_same_thread=False)
+                cursor = conn.cursor()
             cursor.execute('REPLACE INTO header (height, data) VALUES(?,?)', (height, raw_header))
             cursor.close()
             self.conn.commit()
             self.update_size()
+
+    def delete(self, height):
+        if self.checkpoint > 0 and height < self.checkpoint:
+            return
+        with self.lock:
+            try:
+                cursor = self.conn.cursor()
+            except sqlite3.ProgrammingError:
+                conn = sqlite3.connect(self.path(), check_same_thread=False)
+                cursor = conn.cursor()
+            cursor.execute('DELETE FROM header where height=?', (height,))
+            cursor.close()
+            self.conn.commit()
+            self.update_size()
+
+    def delete_all(self):
+        with self.lock:
+            try:
+                cursor = self.conn.cursor()
+            except sqlite3.ProgrammingError:
+                conn = sqlite3.connect(self.path(), check_same_thread=False)
+                cursor = conn.cursor()
+            cursor.execute('DELETE FROM header')
+            cursor.close()
+            self.conn.commit()
+            self._size = 0
 
     def save_header(self, header):
         data = bfh(serialize_header(header))
         self.write(data, header.get('block_height'))
         self.swap_with_parent()
 
-    def read_header(self, height):
+    def read_header(self, height, deserialize=True):
         assert self.parent_id != self.checkpoint
         if height < 0:
             return
-        if height < self.checkpoint:
-            return self.parent().read_header(height)
         if height > self.height():
+            # print_error('read_header 3', height, self.checkpoint, self.parent_id)
             return
-        cursor = self.conn.cursor()
-        cursor.execute('SELECT data FROM header WHERE height=?', (height, ))
+        if height < self.checkpoint:
+            # header = self.parent().read_header(height)
+            conn = sqlite3.connect(self.parent().path(), check_same_thread=False)
+            # print_error('read_header 2', height, self.checkpoint, self.parent_id, result)
+        else:
+            conn = sqlite3.connect(self.path(), check_same_thread=False)
+        cursor = conn.cursor()
+        cursor.execute('SELECT data FROM header WHERE height=?', (height,))
         result = cursor.fetchone()
+        cursor.close()
+        conn.close()
         if not result or len(result) < 1:
+            print_error('read_header 4', height, self.checkpoint, self.parent_id, result, self.height())
             return
         header = result[0]
-        cursor.close()
-        return deserialize_header(header, height)
+        if deserialize:
+            return deserialize_header(header, height)
+        return header
 
     def get_hash(self, height):
         return hash_header(self.read_header(height))
@@ -298,6 +352,11 @@ class Blockchain(util.PrintError):
             prev_header = self.read_header(height - 1)
         if not pprev_header:
             pprev_header = self.read_header(height - 2)
+
+        if not prev_header:
+            raise BaseException('get header failed {}'.format(height - 1))
+        if not pprev_header:
+            raise BaseException('get header failed {}'.format(height - 2))
 
         #  Limit adjustment step
         nActualSpace = prev_header.get('timestamp') - pprev_header.get('timestamp')
@@ -376,7 +435,7 @@ class Blockchain(util.PrintError):
         bits, target = self.get_target(height)
         try:
             self.verify_header(header, prev_header, bits, target)
-        except Exception as e:
+        except BaseException as e:
             print_error('[can_connect] verify_header failed', e, height)
             return False
         return True

@@ -428,6 +428,8 @@ class Network(util.DaemonThread):
         self.connecting = set()
         # Get a new queue - no old pending connections thanks!
         self.socket_queue = queue.Queue()
+        for _, blockchain in self.blockchains.items():
+            blockchain.close()
 
     def set_parameters(self, host, port, protocol, proxy, auto_connect):
         proxy_str = serialize_proxy(proxy)
@@ -797,7 +799,7 @@ class Network(util.DaemonThread):
         height = header.get('block_height')
         print_error('[on_get_header] {} {}'.format(height, interface.mode))
         if interface.request != height:
-            interface.print_error("unsolicited header",interface.request, height)
+            interface.print_error("unsolicited header", interface.request, height)
             self.connection_down(interface.server)
             return
 

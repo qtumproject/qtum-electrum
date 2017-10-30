@@ -115,7 +115,7 @@ class TcpConnection(threading.Thread, util.PrintError):
                 s = socket.socket(res[0], socket.SOCK_STREAM)
                 s.settimeout(10)
                 s.connect(res[4])
-                s.settimeout(2)
+                s.settimeout(5)
                 s.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
                 return s
             except BaseException as _e:
@@ -131,19 +131,18 @@ class TcpConnection(threading.Thread, util.PrintError):
                 is_new = True
                 s = self.get_simple_socket()
                 if s is None:
-                    print_error('[get_socket]', 'get_simple_socket failed')
+                    # print_error('[get_socket]', 'get_simple_socket failed')
                     return
 
                 # try with CA first
                 if os.path.exists(ca_path):
                     try:
-                        s = ssl.wrap_socket(s, ssl_version=ssl.PROTOCOL_TLSv1_1, cert_reqs=ssl.CERT_REQUIRED,
-                                            ca_certs=ca_path, do_handshake_on_connect=True)
+                        s = ssl.wrap_socket(s, ssl_version=ssl.PROTOCOL_TLSv1_1,
+                                            cert_reqs=ssl.CERT_REQUIRED,
+                                            ca_certs=ca_path,
+                                            do_handshake_on_connect=True)
                     except ssl.SSLError as e:
                         print_error('[get_socket] 1', e)
-                        s = None
-                    except NotADirectoryError as e:
-                        print_error('[get_socket] 1.5', e)
                         s = None
                     except Exception as e:
                         print_error('[get_socket] 2', e)
@@ -183,7 +182,6 @@ class TcpConnection(threading.Thread, util.PrintError):
 
         s = self.get_simple_socket()
         if s is None:
-            print_error('[get_socket] 5', e)
             return
 
         if self.use_ssl:

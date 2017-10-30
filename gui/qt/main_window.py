@@ -1354,8 +1354,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         fee = tx.get_fee()
 
         use_rbf = self.rbf_checkbox.isChecked()
-        if use_rbf:
-            tx.set_rbf(True)
+        tx.set_rbf(use_rbf)
 
         if fee < self.wallet.relayfee() * tx.estimated_size() / 1000 and tx.requires_fee(self.wallet):
             self.show_error(_("This transaction requires a higher fee, or it will not be propagated by the network"))
@@ -1687,10 +1686,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             grid.addWidget(QLabel(format_time(expires)), 4, 1)
         vbox.addLayout(grid)
         def do_export():
-            fn = self.getOpenFileName(_("Save invoice to file"), "*.bip70")
+            fn = self.getSaveFileName(_("Save invoice to file"), "*.bip70")
             if not fn:
                 return
-            with open(fn, 'w') as f:
+            with open(fn, 'wb') as f:
                 data = f.write(pr.raw)
             self.show_message(_('Invoice saved as' + ' ' + fn))
         exportButton = EnterButton(_('Save'), do_export)
@@ -1698,6 +1697,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             if self.question(_('Delete invoice?')):
                 self.invoices.remove(key)
                 self.history_list.update()
+                self.invoice_list.update()
                 d.close()
         deleteButton = EnterButton(_('Delete'), do_delete)
         vbox.addLayout(Buttons(exportButton, deleteButton, CloseButton(d)))
@@ -1707,6 +1707,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         pr = self.invoices.get(key)
         self.payment_request = pr
         self.prepare_for_payment_request()
+        pr.error = None  # this forces verify() to re-run
         if pr.verify(self.contacts):
             self.payment_request_ok()
         else:

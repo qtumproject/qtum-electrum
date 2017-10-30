@@ -898,7 +898,8 @@ class Abstract_Wallet(PrintError):
         total = sum(i.get('value') for i in inputs)
         if fee is None:
             outputs = [(TYPE_ADDRESS, recipient, total)]
-            tx = Transaction.from_io(inputs, outputs)
+            locktime = self.get_local_height()
+            tx = Transaction.from_io(inputs, outputs, locktime=locktime)
             fee = self.estimate_fee(config, tx.estimated_size())
 
         if total - fee < 0:
@@ -1048,7 +1049,8 @@ class Abstract_Wallet(PrintError):
                     continue
         if delta > 0:
             raise BaseException(_('Cannot bump fee: cound not find suitable outputs'))
-        return Transaction.from_io(inputs, outputs)
+        locktime = self.get_local_height()
+        return Transaction.from_io(inputs, outputs, locktime=locktime)
 
     def cpfp(self, tx, fee):
         txid = tx.txid()
@@ -1067,7 +1069,8 @@ class Abstract_Wallet(PrintError):
         self.add_input_info(item)
         inputs = [item]
         outputs = [(TYPE_ADDRESS, address, value - fee)]
-        return Transaction.from_io(inputs, outputs)
+        locktime = self.get_local_height()
+        return Transaction.from_io(inputs, outputs, locktime=locktime)
 
     def add_input_info(self, txin):
         address = txin['address']
