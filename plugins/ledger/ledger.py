@@ -62,7 +62,7 @@ class Ledger_Client():
         # self.handler.show_message("Computing master public key")
         try:
             if (os.getenv("LEDGER_NATIVE_SEGWIT") is not None) and self.supports_native_segwit():
-                xtype = 'segwit'
+                xtype = 'p2wpkh'
             elif bip32_path.startswith("m/49'/"):
                 if not self.supports_segwit():
                     raise Exception(
