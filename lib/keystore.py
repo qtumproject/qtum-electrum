@@ -222,22 +222,18 @@ class Xpub:
 
     def derive_pubkey(self, for_change, n):
         # m / 88' / 0' / n'
-        sub_xprv, sub_xpub = bip32_private_derivation(self.xprv, "", "/{}'".format(n))
-        return self.get_pubkey_from_xpub(sub_xpub, ())
-
-        # m / 88' / 0' / n' / for_change / 0
-        # sub_xprv, sub_xpub = bip32_private_derivation(self.xprv, "", "/{}'/{}".format(n, int(for_change)))
-        # return self.get_pubkey_from_xpub(sub_xpub, (0, ))
+        # sub_xprv, sub_xpub = bip32_private_derivation(self.xprv, "", "/{}'".format(n))
+        # return self.get_pubkey_from_xpub(sub_xpub, ())
 
         # m / 88' / 0' / 0' / for_change / n
-        # xpub = self.xpub_change if for_change else self.xpub_receive
-        # if xpub is None:
-        #     xpub = bip32_public_derivation(self.xpub, "", "/%d"%for_change)
-        #     if for_change:
-        #         self.xpub_change = xpub
-        #     else:
-        #         self.xpub_receive = xpub
-        # return self.get_pubkey_from_xpub(xpub, (n,))
+        xpub = self.xpub_change if for_change else self.xpub_receive
+        if xpub is None:
+            xpub = bip32_public_derivation(self.xpub, "", "/%d" % for_change)
+            if for_change:
+                self.xpub_change = xpub
+            else:
+                self.xpub_receive = xpub
+        return self.get_pubkey_from_xpub(xpub, (n,))
 
     @classmethod
     def get_pubkey_from_xpub(cls, xpub, sequence):
@@ -251,13 +247,13 @@ class Xpub:
         s = ''.join(map(lambda x: bitcoin.int_to_hex(x,2), (c, i)))
         return 'ff' + bh2u(bitcoin.DecodeBase58Check(self.xpub)) + s
 
-    @classmethod
-    def get_privatekey_from_xprv(self, xprv, sequence):
-        _, _, _, _, c, cK = deserialize_xprv(xprv)
-        for i in sequence:
-            cK, c = CKD_priv(cK, c, i)
-        # private_key = bh2u(cK)
-        return cK
+    # @classmethod
+    # def get_privatekey_from_xprv(self, xprv, sequence):
+    #     _, _, _, _, c, cK = deserialize_xprv(xprv)
+    #     for i in sequence:
+    #         cK, c = CKD_priv(cK, c, i)
+    #     # private_key = bh2u(cK)
+    #     return cK
 
     @classmethod
     def parse_xpubkey(self, pubkey):
@@ -336,12 +332,16 @@ class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
         self.add_xprv(xprv)
 
     def get_private_key(self, sequence, password):
-        master_xprv = self.get_master_private_key(password)
-        sub_xprv, sub_xpub = bip32_private_derivation(master_xprv, "", "/{}'".format(sequence[1]))
-        pk = self.get_privatekey_from_xprv(sub_xprv, ())
-        # _, _, _, _, c, k = deserialize_xprv(sub_xprv)
-        # pk = bip32_private_key(sequence, k, c)
+        xprv = self.get_master_private_key(password)
+        _, _, _, _, c, k = deserialize_xprv(xprv)
+        pk = bip32_private_key(sequence, k, c)
         return pk, True
+
+        # def get_private_key(self, sequence, password):
+        #     master_xprv = self.get_master_private_key(password)
+        #     sub_xprv, sub_xpub = bip32_private_derivation(master_xprv, "", "/{}'".format(sequence[1]))
+        #     pk = self.get_privatekey_from_xprv(sub_xprv, ())
+        #     return pk, True
 
 
 class Old_KeyStore(Deterministic_KeyStore):
@@ -705,7 +705,8 @@ def from_seed(seed, passphrase):
         keystore.add_seed(seed)
         keystore.passphrase = passphrase
         bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
-        keystore.add_xprv_from_seed(bip32_seed, t, "m/88'/0'")
+        keystore.add_xprv_from_seed(bip32_seed, t, "m/")
+        # keystore.add_xprv_from_seed(bip32_seed, t, "m/88'/0'")
         return keystore
     else:
         raise BaseException(t)
