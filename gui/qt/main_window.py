@@ -1354,8 +1354,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         fee = tx.get_fee()
 
         use_rbf = self.rbf_checkbox.isChecked()
-        if use_rbf:
-            tx.set_rbf(True)
+        tx.set_rbf(use_rbf)
 
         if fee < self.wallet.relayfee() * tx.estimated_size() / 1000 and tx.requires_fee(self.wallet):
             self.show_error(_("This transaction requires a higher fee, or it will not be propagated by the network"))
