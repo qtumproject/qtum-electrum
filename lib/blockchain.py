@@ -272,7 +272,7 @@ class Blockchain(util.PrintError):
             cursor.execute('REPLACE INTO header (height, data) VALUES(?,?)', (height, raw_header))
             cursor.close()
             self.conn.commit()
-            self._size += 1
+            self.update_size()
 
     def delete(self, height):
         if self.checkpoint > 0 and height < self.checkpoint:
@@ -286,7 +286,7 @@ class Blockchain(util.PrintError):
             cursor.execute('DELETE FROM header where height=?', (height,))
             cursor.close()
             self.conn.commit()
-            self._size -= 1
+            self.update_size()
 
     def delete_all(self):
         with self.lock:
@@ -325,7 +325,6 @@ class Blockchain(util.PrintError):
         conn.close()
         if not result or len(result) < 1:
             print_error('read_header 4', height, self.checkpoint, self.parent_id, result, self.height())
-            print_error(self.path())
             return
         header = result[0]
         if deserialize:
