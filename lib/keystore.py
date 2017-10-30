@@ -701,11 +701,13 @@ def bip44_derivation(account_id, segwit=False):
 def from_seed(seed, passphrase):
     t = seed_type(seed)
     if t in ['standard', 'segwit']:
-        keystore = BIP32_KeyStore({})
+        derivarion = bip44_derivation(0, t == 'segwit')
+        keystore = from_bip39_seed(seed, passphrase, derivarion)
+        # keystore = BIP32_KeyStore({})
         keystore.add_seed(seed)
         keystore.passphrase = passphrase
-        bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
-        keystore.add_xprv_from_seed(bip32_seed, t, "m/")
+        # bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
+        # keystore.add_xprv_from_seed(bip32_seed, t, "m/")
         # keystore.add_xprv_from_seed(bip32_seed, t, "m/88'/0'")
         return keystore
     else:
