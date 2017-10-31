@@ -305,9 +305,9 @@ def is_old_seed(seed):
 
 
 def seed_type(x):
-    if is_old_seed(x):
-        return 'old'
-    elif is_new_seed(x):
+    # if is_old_seed(x):
+    #     return 'old'
+    if is_new_seed(x):
         return 'standard'
     elif is_new_seed(x, version.SEED_PREFIX_SW):
         return 'segwit'
