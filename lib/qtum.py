@@ -95,8 +95,6 @@ def set_testnet():
 
 
 mainnet_block_explorers = {
-    'qtum.info': ('https://qtum.info',
-                  {'tx': 'tx', 'addr': 'address'}),
     'explorer.qtum.org': ('https://explorer.qtum.org',
                           {'tx': 'tx', 'addr': 'address'}),
     'qtumexplorer.io': ('https://qtumexplorer.io/',
@@ -106,8 +104,8 @@ mainnet_block_explorers = {
 }
 
 testnet_block_explorers = {
-    'qtum.info': ('https://testnet.qtum.info',
-                  {'tx': 'tx', 'addr': 'address'}),
+    'testnet.qtum.org': ('https://testnet.qtum.org/',
+                         {'tx': 'tx', 'addr': 'address'}),
     'system default': ('blockchain:',
                        {'tx': 'tx', 'addr': 'address'}),
 }
@@ -305,15 +303,16 @@ def is_old_seed(seed):
 
 
 def seed_type(x):
-    if is_old_seed(x):
-        return 'old'
-    elif is_new_seed(x):
+    # if is_old_seed(x):
+    #     return 'old'
+    if is_new_seed(x):
         return 'standard'
     elif is_new_seed(x, version.SEED_PREFIX_SW):
         return 'segwit'
-    elif is_new_seed(x, version.SEED_PREFIX_2FA):
-        return '2fa'
-    return 'standard'  # to compatibale with qtum mobile wallet
+    # elif is_new_seed(x, version.SEED_PREFIX_2FA):
+    #     # disable 2fa for now
+    #     return '2fa'
+    return ''
 
 is_seed = lambda x: bool(seed_type(x))
 

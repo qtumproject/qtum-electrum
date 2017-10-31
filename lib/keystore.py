@@ -599,7 +599,7 @@ def parse_xpubkey(x_pubkey):
 def from_bip39_seed(seed, passphrase, derivation):
     k = BIP32_KeyStore({})
     bip32_seed = bip39_to_seed(seed, passphrase)
-    t = 'segwit_p2sh' if derivation.startswith("m/89'") else 'standard'  # bip43
+    t = 'segwit_p2sh' if derivation.startswith("m/49'") else 'standard'  # bip43
     k.add_xprv_from_seed(bip32_seed, t, derivation)
     return k
 
@@ -693,8 +693,9 @@ is_bip32_key = lambda x: is_xprv(x) or is_xpub(x)
 
 
 def bip44_derivation(account_id, segwit=False):
-    bip = 89 if segwit else 88
-    coin = 1 if bitcoin.TESTNET else 0
+    bip = 49 if segwit else 44
+    # coin = 1 if bitcoin.TESTNET else 0
+    coin = 88
     return "m/%d'/%d'/%d'" % (bip, coin, int(account_id))
 
 

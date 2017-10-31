@@ -215,6 +215,8 @@ class Blockchain(util.PrintError):
     def swap_with_parent(self):
         if self.parent_id is None:
             return
+        self.update_size()
+        self.parent().update_size()
         parent_branch_size = self.parent().height() - self.checkpoint + 1
         if parent_branch_size >= self.size():
             return
@@ -254,6 +256,7 @@ class Blockchain(util.PrintError):
         blockchains[parent.checkpoint] = parent
 
     def write(self, raw_header, height):
+        print('{} try to write {}'.format(self.checkpoint, height))
         if self.checkpoint > 0 and height < self.checkpoint:
             return
         if not raw_header:
@@ -275,6 +278,7 @@ class Blockchain(util.PrintError):
             self.update_size()
 
     def delete(self, height):
+        print('{} try to delete {}'.format(self.checkpoint, height))
         if self.checkpoint > 0 and height < self.checkpoint:
             return
         with self.lock:
