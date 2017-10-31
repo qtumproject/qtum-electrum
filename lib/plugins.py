@@ -439,10 +439,10 @@ class DeviceMgr(ThreadJob, PrintError):
         # The user input has wrong PIN or passphrase, or cancelled input,
         # or it is not pairable
         raise DeviceUnpairableError(
-            _('Electrum cannot pair with your %s.\n\n'
-              'Before you request bitcoins to be sent to addresses in this '
+            _('Qtum Electrum cannot pair with your %s.\n\n'
+              'Before you request qtums to be sent to addresses in this '
               'wallet, ensure you can pair with your device, or that you have '
-              'its seed (and passphrase, if any).  Otherwise all bitcoins you '
+              'its seed (and passphrase, if any).  Otherwise all qtums you '
               'receive will be unspendable.') % plugin.device)
 
     def unpaired_device_infos(self, handler, plugin, devices=None):
