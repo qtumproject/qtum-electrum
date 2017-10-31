@@ -95,8 +95,6 @@ def set_testnet():
 
 
 mainnet_block_explorers = {
-    'qtum.info': ('https://qtum.info',
-                  {'tx': 'tx', 'addr': 'address'}),
     'explorer.qtum.org': ('https://explorer.qtum.org',
                           {'tx': 'tx', 'addr': 'address'}),
     'qtumexplorer.io': ('https://qtumexplorer.io/',
@@ -106,8 +104,8 @@ mainnet_block_explorers = {
 }
 
 testnet_block_explorers = {
-    'qtum.info': ('https://testnet.qtum.info',
-                  {'tx': 'tx', 'addr': 'address'}),
+    'testnet.qtum.org': ('https://testnet.qtum.org/',
+                         {'tx': 'tx', 'addr': 'address'}),
     'system default': ('blockchain:',
                        {'tx': 'tx', 'addr': 'address'}),
 }
