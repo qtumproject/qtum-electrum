@@ -599,7 +599,7 @@ def parse_xpubkey(x_pubkey):
 def from_bip39_seed(seed, passphrase, derivation):
     k = BIP32_KeyStore({})
     bip32_seed = bip39_to_seed(seed, passphrase)
-    t = 'segwit_p2sh' if derivation.startswith("m/89'") else 'standard'  # bip43
+    t = 'segwit_p2sh' if derivation.startswith("m/49'") else 'standard'  # bip43
     k.add_xprv_from_seed(bip32_seed, t, derivation)
     return k
 
