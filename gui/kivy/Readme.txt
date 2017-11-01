@@ -1,8 +1,20 @@
 Install kivy
-    see https://kivy.org/docs/installation/installation-osx.html#using-homebrew-with-pip
-    or https://kivy.org/docs/installation/installation.html
+    `sudo apt-get install python3-kivy`
 
-Before compiling, create packages: `contrib/make_packages`
+Install JDK
+    `sudo apt-get install default-jdk`
+
+Install p4a
+    `pip3 install python-for-android`
+
+Create packages
+    `contrib/make_packages`
+
+Install buildozer
+    `sudo pip3 install buildozer`
+
+Configure buildozer
+    check and edit kivy/tools/buildozer.spec
 
 Commands::
 
