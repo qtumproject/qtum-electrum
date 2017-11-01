@@ -13,7 +13,7 @@ from electrum.plugins import BasePlugin, hook
 from electrum.keystore import Hardware_KeyStore, parse_xpubkey
 from electrum.transaction import push_script, Transaction
 from ..hw_wallet import HW_PluginBase
-from electrum.util import format_satoshis_plain, print_error, is_verbose, bfh, bh2u
+from electrum.util import format_satoshis_plain, print_error, bfh, bh2u
 
 try:
     import hid
@@ -24,6 +24,7 @@ try:
     from btchip.bitcoinTransaction import bitcoinTransaction
     from btchip.btchipFirmwareWizard import checkFirmware, updateFirmware
     from btchip.btchipException import BTChipException
+    from electrum.util import is_verbose
 
     BTCHIP = True
     BTCHIP_DEBUG = is_verbose
