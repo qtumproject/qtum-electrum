@@ -66,8 +66,12 @@ Compile the protobuf description file::
 Create translations (optional)::
 
     sudo apt-get install python-pycurl gettext
-    ./contrib/make_locale
 
+    on osx:
+    brew install gettext
+    brew link gettext --force
+
+    ./contrib/make_locale
 
 
 
