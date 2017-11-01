@@ -1629,7 +1629,7 @@ class Simple_Deterministic_Wallet(Deterministic_Wallet):
     def load_keystore(self):
         self.keystore = load_keystore(self.storage, 'keystore')
         try:
-            xtype = deserialize_xpub(self.keystore.xpub)[0]
+            xtype = bitcoin.xpub_type(self.keystore.xpub)
         except:
             xtype = 'standard'
         if xtype == 'standard':
@@ -1722,7 +1722,7 @@ class Multisig_Wallet(Deterministic_Wallet):
             name = 'x%d/'%(i+1)
             self.keystores[name] = load_keystore(self.storage, name)
         self.keystore = self.keystores['x1/']
-        xtype = deserialize_xpub(self.keystore.xpub)[0]
+        xtype = bitcoin.xpub_type(self.keystore.xpub)
         if xtype == 'standard':
             self.txin_type = 'p2sh'
         elif xtype == 'segwit':
