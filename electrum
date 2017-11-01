@@ -27,7 +27,7 @@ import os
 import sys
 # from https://gist.github.com/tito/09c42fb4767721dc323d
 import threading
-
+import importlib
 
 try:
     import jnius
@@ -80,11 +80,11 @@ if not is_android:
     check_imports()
 
 # load local module as electrum
-if is_local or is_android:
-    import imp
-    imp.load_module('electrum', *imp.find_module('lib'))
-    imp.load_module('electrum_gui', *imp.find_module('gui'))
-    imp.load_module('electrum_plugins', *imp.find_module('plugins'))
+# if is_local or is_android:
+
+sys.modules['electrum'] = importlib.import_module('lib')
+sys.modules['electrum_gui'] = importlib.import_module('gui')
+sys.modules['electrum_plugins'] = importlib.import_module('plugins')
 
 from electrum import network, qtum
 from electrum import SimpleConfig, Network
@@ -109,7 +109,6 @@ def prompt_password(prompt, confirm=True):
     if not password:
         password = None
     return password
-
 
 
 def run_non_RPC(config):
@@ -213,10 +212,8 @@ def init_cmdline(config_options, server):
     if cmdname == 'signtransaction' and config.get('privkey'):
         cmd.requires_wallet = False
         cmd.requires_password = False
-
     if cmdname in ['payto', 'paytomany'] and config.get('unsigned'):
         cmd.requires_password = False
-
     if cmdname in ['payto', 'paytomany'] and config.get('broadcast'):
         cmd.requires_network = True
 
@@ -299,8 +296,7 @@ def init_plugins(config, gui_name):
     return Plugins(config, is_local or is_android, gui_name)
 
 
-if __name__ == '__main__':
-
+def run():
     # on osx, delete Process Serial Number arg generated for apps launched in Finder
     sys.argv = list(filter(lambda x: not x.startswith('-psn'), sys.argv))
 
@@ -347,7 +343,7 @@ if __name__ == '__main__':
                                                        'qtum-electrum-data')
 
     # kivy sometimes freezes when we write to sys.stderr
-    set_verbosity(config_options.get('verbose') and config_options.get('gui')!='kivy')
+    set_verbosity(config_options.get('verbose') and config_options.get('gui') != 'kivy')
 
     # check uri
     uri = config_options.get('uri')
@@ -426,7 +422,6 @@ if __name__ == '__main__':
             else:
                 init_plugins(config, 'cmdline')
                 result = run_offline_command(config, config_options)
-                # print result
     if isinstance(result, str):
         print_msg(result)
     elif type(result) is dict and result.get('error'):
@@ -434,3 +429,7 @@ if __name__ == '__main__':
     elif result is not None:
         print_msg(json_encode(result))
     sys.exit(0)
+
+
+if __name__ == '__main__':
+    run()

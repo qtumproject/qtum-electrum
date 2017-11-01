@@ -8,7 +8,7 @@ Usage:
   $ wine --version
   wine-2.0 (Debian 2.0-3+b2)
 
-2. Run "./prepare-wine.sh", it will download all dependencies. When you'll be asked, always leave default settings and press "Next >".
+2. Run "sudo ./prepare-wine.sh", it will download all dependencies. When you'll be asked, always leave default settings and press "Next >".
 3. Run "./prepare-hw.sh" to build support for hardware wallets (TREZOR)
 4. Run "./build-electrum-git.sh". Sources will be packed into three separate versions to dist/ directory:
   * Standalone compressed executable is "dist/electrum.exe"

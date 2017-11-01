@@ -173,8 +173,7 @@ class DaemonThread(threading.Thread, PrintError):
         self.print_error("stopped")
 
 
-# TODO: disable
-is_verbose = True
+is_verbose = False
 def set_verbosity(b):
     global is_verbose
     is_verbose = b

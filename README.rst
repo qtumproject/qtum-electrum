@@ -28,17 +28,9 @@ directory. To run Electrum from its root directory, just do::
 
     ./electrum
 
-You can also install Electrum on your system, by running this command::
-
-    python3 setup.py install
-
-This will download and install the Python dependencies used by
-Electrum, instead of using the 'packages' directory.
-
 If you cloned the git repository, you need to compile extra files
 before you can run Electrum. Read the next section, "Development
 Version".
-
 
 
 Development version
