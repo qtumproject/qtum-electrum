@@ -15,6 +15,7 @@ Install buildozer
 
 Configure buildozer
     check and edit kivy/tools/buildozer.spec
+    make sure p4a.source_dir is set correctly
 
 Commands::
 
