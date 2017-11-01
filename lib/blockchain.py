@@ -256,7 +256,7 @@ class Blockchain(util.PrintError):
         blockchains[parent.checkpoint] = parent
 
     def write(self, raw_header, height):
-        print('{} try to write {}'.format(self.checkpoint, height))
+        self.print_error('{} try to write {}'.format(self.checkpoint, height))
         if self.checkpoint > 0 and height < self.checkpoint:
             return
         if not raw_header:
@@ -278,7 +278,7 @@ class Blockchain(util.PrintError):
             self.update_size()
 
     def delete(self, height):
-        print('{} try to delete {}'.format(self.checkpoint, height))
+        self.print_error('{} try to delete {}'.format(self.checkpoint, height))
         if self.checkpoint > 0 and height < self.checkpoint:
             return
         with self.lock:
