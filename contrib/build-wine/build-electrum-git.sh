@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # You probably need to update only this link
-ELECTRUM_GIT_URL=https://github.com/spesmilo/electrum.git
+ELECTRUM_GIT_URL=https://github.com/qtumproject/qtum-electrum.git
 BRANCH=master
-NAME_ROOT=electrum
+NAME_ROOT=qtum-electrum
 PYTHON_VERSION=3.5.4
 
 if [ "$#" -gt 0 ]; then
@@ -28,14 +28,14 @@ cd tmp
 if [ -d "electrum-git" ]; then
     # GIT repository found, update it
     echo "Pull"
-    cd electrum-git
+    cd qtum-electrum-git
     git pull
     git checkout $BRANCH
     cd ..
 else
     # GIT repository not found, clone it
     echo "Clone"
-    git clone -b $BRANCH $ELECTRUM_GIT_URL electrum-git
+    git clone -b $BRANCH $ELECTRUM_GIT_URL qtum-electrum-git
 fi
 
 cd electrum-git
@@ -46,7 +46,7 @@ cd ..
 
 rm -rf $WINEPREFIX/drive_c/electrum
 cp -r electrum-git $WINEPREFIX/drive_c/electrum
-cp electrum-git/LICENCE .
+cp qtum-electrum-git/LICENCE .
 
 # add locale dir
 cp -r ../../../lib/locale $WINEPREFIX/drive_c/electrum/lib/
