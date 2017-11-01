@@ -309,17 +309,28 @@ class BaseWizard(object):
         self.on_keystore(k)
 
     def on_keystore(self, k):
+        has_xpub = isinstance(k, keystore.Xpub)
+        if has_xpub:
+            from .bitcoin import xpub_type
+            t1 = xpub_type(k.xpub)
         if self.wallet_type == 'standard':
+            if has_xpub and t1 not in ['standard', 'p2wpkh', 'p2wpkh-p2sh']:
+                self.show_error(_('Wrong key type') + ' %s' % t1)
+                self.run('choose_keystore')
+                return
             self.keystores.append(k)
             self.run('create_wallet')
         elif self.wallet_type == 'multisig':
+            assert has_xpub
+            if t1 not in ['standard', 'p2wsh', 'p2wsh-p2sh']:
+                self.show_error(_('Wrong key type') + ' %s' % t1)
+                self.run('choose_keystore')
+                return
             if k.xpub in map(lambda x: x.xpub, self.keystores):
                 self.show_error(_('Error: duplicate master public key'))
                 self.run('choose_keystore')
                 return
-            from .bitcoin import xpub_type
             if len(self.keystores) > 0:
-                t1 = xpub_type(k.xpub)
                 t2 = xpub_type(self.keystores[0].xpub)
                 if t1 != t2:
                     self.show_error(
