@@ -1,3 +1,7 @@
+Install kivy
+    see https://kivy.org/docs/installation/installation-osx.html#using-homebrew-with-pip
+    or https://kivy.org/docs/installation/installation.html
+
 Before compiling, create packages: `contrib/make_packages`
 
 Commands::
