@@ -1632,14 +1632,7 @@ class Simple_Deterministic_Wallet(Deterministic_Wallet):
             xtype = bitcoin.xpub_type(self.keystore.xpub)
         except:
             xtype = 'standard'
-        if xtype == 'standard':
-            self.txin_type = 'p2pkh'
-        elif xtype == 'segwit':
-            self.txin_type = 'p2wpkh'
-        elif xtype == 'segwit_p2sh':
-            self.txin_type = 'p2wpkh-p2sh'
-        else:
-            raise BaseException('unknown txin_type', xtype)
+        self.txin_type = 'p2pkh' if xtype == 'standard' else xtype
 
     def get_pubkey(self, c, i):
         return self.derive_pubkeys(c, i)
@@ -1723,14 +1716,7 @@ class Multisig_Wallet(Deterministic_Wallet):
             self.keystores[name] = load_keystore(self.storage, name)
         self.keystore = self.keystores['x1/']
         xtype = bitcoin.xpub_type(self.keystore.xpub)
-        if xtype == 'standard':
-            self.txin_type = 'p2sh'
-        elif xtype == 'segwit':
-            self.txin_type = 'p2wsh'
-        elif xtype == 'segwit_p2sh':
-            self.txin_type = 'p2wsh-p2sh'
-        else:
-            raise BaseException('unknown txin_type', xtype)
+        self.txin_type = 'p2sh' if xtype == 'standard' else 'xtype'
 
     def save_keystore(self):
         for name, k in self.keystores.items():

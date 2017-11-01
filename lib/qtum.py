@@ -56,13 +56,17 @@ RECOMMEND_CONFIRMATIONS = 10
 # native segwit: zprv, zpub
 XPRV_HEADERS = {
     'standard': 0x0488ade4,
-    'segwit_p2sh': 0x049d7878,
-    'segwit': 0x4b2430c
+    'p2wpkh-p2sh': 0x049d7878,
+    'p2wsh-p2sh': 0x295b004,
+    'p2wpkh': 0x4b2430c,
+    'p2wsh': 0x2aa7a99
 }
 XPUB_HEADERS = {
     'standard': 0x0488b21e,
-    'segwit_p2sh': 0x049d7cb2,
-    'segwit': 0x4b24746
+    'p2wpkh-p2sh': 0x049d7cb2,
+    'p2wsh-p2sh': 0x295b43e,
+    'p2wpkh': 0x4b24746,
+    'p2wsh': 0x2aa7ed3
 }
 
 
@@ -82,15 +86,19 @@ def set_testnet():
     SERVERLIST = 'servers_testnet.json'
     DEFAULT_SERVERS = read_json_dict(SERVERLIST)
     DEFAULT_PORTS = {'t': '51001', 's': '51002'}
-    XPUB_HEADERS = {
-        'standard': 0x043587CF,
-        'segwit_p2sh': 0,
-        'segwit': 0
-    }
     XPRV_HEADERS = {
         'standard': 0x04358394,
-        'segwit_p2sh': 0,
-        'segwit': 0
+        'p2wpkh-p2sh': 0x049d7878,
+        'p2wsh-p2sh': 0x295b004,
+        'p2wpkh': 0x4b2430c,
+        'p2wsh': 0x2aa7a99
+    }
+    XPUB_HEADERS = {
+        'standard': 0x043587CF,
+        'p2wpkh-p2sh': 0x049d7cb2,
+        'p2wsh-p2sh': 0x295b43e,
+        'p2wpkh': 0x4b24746,
+        'p2wsh': 0x2aa7ed3
     }
 
 
