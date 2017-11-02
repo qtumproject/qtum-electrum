@@ -24,11 +24,11 @@ source.exclude_dirs = bin, build, dist, contrib, gui/qt, gui/kivy/tools, gui/kiv
 source.exclude_patterns = Makefile,setup*
 
 # (str) Application versioning (method 1)
-version.regex = version_apk = '(.*)'
-version.filename = %(source.dir)s/contrib/versions.py
+# version.regex = version_apk = '(.*)'
+# version.filename = %(source.dir)s/lib/version.py
 
 # (str) Application versioning (method 2)
-#version = 1.9.8
+version = 0.15
 
 # (list) Application requirements
 requirements = python3crystax, android, openssl, plyer, kivy==master
@@ -70,7 +70,7 @@ android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 android.private_storage = True
 
 # (str) Android NDK directory (if empty, it will be automatically downloaded.)
-android.ndk_path =
+android.ndk_path = /root/.buildozer/android/platform/crystax-ndk-10.3.2
 
 # (str) Android SDK directory (if empty, it will be automatically downloaded.)
 android.sdk_path =
