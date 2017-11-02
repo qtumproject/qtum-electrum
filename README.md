@@ -1,36 +1,24 @@
-Qtum Electrum - Lightweight Qtum client
+[TOC]
+
+Qtum Electrum
 =====================================
 
-::
-
   Licence: MIT Licence
-  Qtum Electrum is forked from `Electrum <https://github.com/spesmilo/electrum>`_
-
-
-.. image:: https://travis-ci.org/spesmilo/electrum.svg?branch=master
-    :target: https://travis-ci.org/spesmilo/electrum
-    :alt: Build Status
-
+  Qtum Electrum is a lightweight Qtum wallet forked from [Electrum](https://github.com/spesmilo/electrum)
 
 
 Getting started
 ===============
 
-Electrum is a pure python application. If you want to use the
-Qt interface, install the Qt dependencies::
+Electrum is a pure python application. If you want to use the Qt interface, install the Qt dependencies::
 
     sudo apt-get install python3-pyqt5
 
-If you downloaded the official package (tar.gz), you can run
-Electrum from its root directory, without installing it on your
-system; all the python dependencies are included in the 'packages'
-directory. To run Electrum from its root directory, just do::
+If you downloaded the official package (tar.gz), you can run Electrum from its root directory, without installing it on your system; all the python dependencies are included in the 'packages' directory. To run Electrum from its root directory, just do::
 
     ./electrum
 
-If you cloned the git repository, you need to compile extra files
-before you can run Electrum. Read the next section, "Development
-Version".
+If you cloned the git repository, you need to compile extra files before you can run Electrum. Read the next section, "Development Version".
 
 
 Development version
@@ -80,7 +68,6 @@ This directory contains the python dependencies used by Electrum.
 Mac OS X
 --------
 
-::
 
     # PyQt5/uic/port_v2/ascii_upper.py
     change string.maketrans to str.maketrans
@@ -88,21 +75,23 @@ Mac OS X
     # py2app
     use py2app==0.12
 
-    # On MacPorts installs: 
+    # On MacPorts installs:
     sudo python3 setup-release.py py2app
-    
-    # On Homebrew installs: 
+
+    # On Homebrew installs:
     ARCHFLAGS="-arch i386 -arch x86_64" sudo python3 setup-release.py py2app --includes sip
-    
+
     sudo hdiutil create -fs HFS+ -volname "Qtum Electrum" -srcfolder dist/Qtum\ Electrum.app dist/qtum-electrum-VERSION-macosx.dmg
 
 Windows
 -------
 
-See `contrib/build-wine/README` file.
+See [contrib/build-wine/README.md](https://github.com/qtumproject/qtum-electrum/blob/master/contrib/build-wine/README.md) file.
 
 
 Android
 -------
 
-See `gui/kivy/Readme.txt` file.
+See [gui/kivy/Readme.md](https://github.com/qtumproject/qtum-electrum/blob/master/gui/kivy/Readme.md) file.
+
+
