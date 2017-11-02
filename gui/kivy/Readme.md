@@ -1,4 +1,5 @@
 ## Install kivy
+    sudo pip3 install Pillow
     sudo apt-get install python3-kivy
 
 ## Install JDK
@@ -11,11 +12,18 @@
     ./contrib/make_packages
 
 ## Install buildozer
-    sudo pip3 install buildozer
+    sudo dpkg --add-architecture i386
+    sudo apt-get update
+    sudo apt-get install build-essential ccache libncurses5:i386 libstdc++6:i386 libgtk2.0-0:i386 libpangox-1.0-0:i386 libpangoxft-1.0-0:i386 libidn11:i386 unzip zlib1g-dev zlib1g:i386
+    sudo pip3 install --upgrade buildozer
+
+## Download CrystaX NDK
+    cd ~/.buildozer/android/platform/
+    wget https://www.crystax.net/download/crystax-ndk-10.3.2-linux-x86_64.tar.xz
+    tar -xvf crystax-ndk-10.3.2-linux-x86_64.tar.xz
 
 ## Configure buildozer
-    check and edit kivy/tools/buildozer.spec
-    make sure p4a.source_dir is set correctly
+    check and edit kivy/tools/buildozer.spec make sure p4a.source_dir and android.ndk_path are set correctly
 
 ## Build
 
