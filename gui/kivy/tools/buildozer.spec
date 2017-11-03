@@ -1,10 +1,10 @@
 [app]
 
 # (str) Title of your application
-title = Qtum Electrum
+title = QElectrum
 
 # (str) Package name
-package.name = Qtum Electrum
+package.name = QElectrum
 
 # (str) Package domain (needed for android/ios packaging)
 package.domain = org.qtum
@@ -28,7 +28,7 @@ source.exclude_patterns = Makefile,setup*
 # version.filename = %(source.dir)s/lib/version.py
 
 # (str) Application versioning (method 2)
-version = 0.15
+version = 0.16
 
 # (list) Application requirements
 requirements = python3crystax, android, openssl, plyer, kivy==master
