@@ -1,10 +1,10 @@
 [app]
 
 # (str) Title of your application
-title = Qtum Electrum
+title = QElectrum
 
 # (str) Package name
-package.name = Qtum Electrum
+package.name = QElectrum
 
 # (str) Package domain (needed for android/ios packaging)
 package.domain = org.qtum
