@@ -33,7 +33,7 @@ def read_json_dict(filename):
 TESTNET = False
 ADDRTYPE_P2PKH = 0x3a
 ADDRTYPE_P2SH = 0x32
-SECRET_KEY = 0x80
+WIF_PREFIX = 0x80
 SEGWIT_HRP = "bc"
 HEADERS_URL = ""
 GENESIS = "000075aef83cf2853580f8ae8ce6f8c3096cfa21d98334d6e3f95e5582ed986c"
@@ -71,7 +71,7 @@ XPUB_HEADERS = {
 
 
 def set_testnet():
-    global ADDRTYPE_P2PKH, ADDRTYPE_P2SH, SECRET_KEY
+    global ADDRTYPE_P2PKH, ADDRTYPE_P2SH, WIF_PREFIX
     global TESTNET, SERVERLIST, DEFAULT_PORTS, DEFAULT_SERVERS
     global GENESIS, GENESIS_BITS
     global SEGWIT_HRP
@@ -80,7 +80,7 @@ def set_testnet():
     ADDRTYPE_P2PKH = 120
     ADDRTYPE_P2SH = 110
     SEGWIT_HRP = "tb"
-    SECRET_KEY = 239
+    WIF_PREFIX = 0xef
     GENESIS = "0000e803ee215c0684ca0d2f9220594d3f828617972aad66feb2ba51f5e14222"
     GENESIS_BITS = 0x1f00ffff
     SERVERLIST = 'servers_testnet.json'
@@ -561,7 +561,7 @@ SCRIPT_TYPES = {
 
 
 def serialize_privkey(secret, compressed, txin_type):
-    prefix = bytes([(SCRIPT_TYPES[txin_type] + 128) & 255])
+    prefix = bytes([(SCRIPT_TYPES[txin_type] + WIF_PREFIX) & 255])
     suffix = b'\01' if compressed else b''
     vchIn = prefix + secret + suffix
     return EncodeBase58Check(vchIn)
@@ -573,7 +573,7 @@ def deserialize_privkey(key):
     if is_minikey(key):
         return 'p2pkh', minikey_to_private_key(key), True
     elif vch:
-        txin_type = inv_dict(SCRIPT_TYPES)[vch[0] - 128]
+        txin_type = inv_dict(SCRIPT_TYPES)[vch[0] - WIF_PREFIX]
         assert len(vch) in [33, 34]
         compressed = len(vch) == 34
         return txin_type, vch[1:33], compressed
