@@ -2164,12 +2164,14 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 privkey = self.wallet.export_private_key(addr, password)[0]
                 private_keys[addr] = privkey
                 self.computing_privkeys_signal.emit()
+            self.computing_privkeys_signal.disconnect()
             self.show_privkeys_signal.emit()
 
         def show_privkeys():
             s = "\n".join( map( lambda x: x[0] + "\t"+ x[1], private_keys.items()))
             e.setText(s)
             b.setEnabled(True)
+            self.show_privkeys_signal.disconnect()
 
         self.computing_privkeys_signal.connect(
                 lambda: e.setText("Please wait... %d/%d" % (len(private_keys), len(addresses))))
