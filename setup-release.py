@@ -67,5 +67,5 @@ if sys.platform == 'darwin':
                  'QtQml', 'QtSvg', 'QtSql', 'QtTest']:
         try:
             os.remove(os.path.join(frameworks, name + '.framework'))
-        except (FileNotFoundError,) as e:
+        except (FileNotFoundError, PermissionError) as e:
             pass
