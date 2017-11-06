@@ -24,14 +24,17 @@ source.exclude_dirs = bin, build, dist, contrib, gui/qt, gui/kivy/tools, gui/kiv
 source.exclude_patterns = Makefile,setup*
 
 # (str) Application versioning (method 1)
-# version.regex = version_apk = '(.*)'
-# version.filename = %(source.dir)s/lib/version.py
+version.regex = ELECTRUM_VERSION = '(.*)'
+version.filename = %(source.dir)s/lib/version.py
 
 # (str) Application versioning (method 2)
-version = 0.16
+# version = 0.16
 
 # (list) Application requirements
 requirements = python3crystax, android, openssl, plyer, kivy==master
+
+# Kivy version to use
+osx.kivy_version = 1.10.0
 
 # (str) Presplash of the application
 #presplash.filename = %(source.dir)s/gui/kivy/theming/splash.png
@@ -64,13 +67,13 @@ android.permissions = INTERNET, WRITE_EXTERNAL_STORAGE, READ_EXTERNAL_STORAGE
 #android.sdk = 21
 
 # (str) Android NDK version to use
-#android.ndk = 9
+android.ndk = 10.3.2
 
 # (bool) Use --private data storage (True) or --dir public storage (False)
 android.private_storage = True
 
 # (str) Android NDK directory (if empty, it will be automatically downloaded.)
-android.ndk_path = /root/.buildozer/android/platform/crystax-ndk-10.3.2
+android.ndk_path = /opt/crystax-ndk-10.3.2
 
 # (str) Android SDK directory (if empty, it will be automatically downloaded.)
 android.sdk_path =
