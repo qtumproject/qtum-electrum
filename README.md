@@ -20,6 +20,16 @@ If you downloaded the official package (tar.gz), you can run Electrum from its r
 If you cloned the git repository, you need to compile extra files before you can run Electrum. Read the next section, "Development Version".
 
 
+Compatible with Qtum mobile wallet
+==================================
+
+Qtum Electrum standard wallet uses [bip44](https://github.com/bitcoin/bips/blob/master/bip-0044.mediawiki) derivation path with coin_type set to 88 which not compatible with the current qtum mobile wallet.
+
+If you want to be compatible with the qtum mobile wallet, you need choose "Qtum mobile wallet compatible" to create or restore your wallet.
+
+![](https://img.codeface.cn/150e7728f67ca748e09df0f49a00b455.png)
+
+
 Development version
 ===================
 
