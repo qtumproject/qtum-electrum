@@ -27,7 +27,7 @@ Qtum Electrum standard wallet uses [bip44](https://github.com/bitcoin/bips/blob/
 
 If you want to be compatible with the qtum mobile wallet, you need choose "Qtum mobile wallet compatible" to create or restore your wallet.
 
-![](https://img.codeface.cn/150e7728f67ca748e09df0f49a00b455.png)
+![](https://github.com/qtumproject/qtum-electrum/blob/master/snap/mobile_compatible.png)
 
 
 Development version
