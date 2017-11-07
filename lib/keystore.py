@@ -221,11 +221,8 @@ class Xpub:
         return self.xpub
 
     def derive_pubkey(self, for_change, n):
-        # m / 88' / 0' / n'
-        # sub_xprv, sub_xpub = bip32_private_derivation(self.xprv, "", "/{}'".format(n))
-        # return self.get_pubkey_from_xpub(sub_xpub, ())
 
-        # m / 88' / 0' / 0' / for_change / n
+        # m / 44'/ 88' / 0' / 0' / for_change / n
         xpub = self.xpub_change if for_change else self.xpub_receive
         if xpub is None:
             xpub = bip32_public_derivation(self.xpub, "", "/%d" % for_change)
@@ -247,13 +244,6 @@ class Xpub:
         s = ''.join(map(lambda x: bitcoin.int_to_hex(x,2), (c, i)))
         return 'ff' + bh2u(bitcoin.DecodeBase58Check(self.xpub)) + s
 
-    # @classmethod
-    # def get_privatekey_from_xprv(self, xprv, sequence):
-    #     _, _, _, _, c, cK = deserialize_xprv(xprv)
-    #     for i in sequence:
-    #         cK, c = CKD_priv(cK, c, i)
-    #     # private_key = bh2u(cK)
-    #     return cK
 
     @classmethod
     def parse_xpubkey(self, pubkey):
@@ -337,11 +327,33 @@ class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
         pk = bip32_private_key(sequence, k, c)
         return pk, True
 
-        # def get_private_key(self, sequence, password):
-        #     master_xprv = self.get_master_private_key(password)
-        #     sub_xprv, sub_xpub = bip32_private_derivation(master_xprv, "", "/{}'".format(sequence[1]))
-        #     pk = self.get_privatekey_from_xprv(sub_xprv, ())
-        #     return pk, True
+
+class Mobile_Keystore(BIP32_KeyStore):
+    def dump(self):
+        d = Deterministic_KeyStore.dump(self)
+        d['type'] = 'mobile'
+        d['xpub'] = self.xpub
+        d['xprv'] = self.xprv
+        d['derivation'] = mobile_derivation()
+        return d
+
+    def derive_pubkey(self, for_change, n):
+        master_xprv = self.get_master_private_key(None)
+        sub_xprv, sub_xpub = bip32_private_derivation(master_xprv, "", "/{}'".format(n))
+        return self.get_pubkey_from_xpub(sub_xpub, ())
+
+    @classmethod
+    def get_privatekey_from_xprv(cls, xprv, sequence):
+        _, _, _, _, c, cK = deserialize_xprv(xprv)
+        for i in sequence:
+            cK, c = CKD_priv(cK, c, i)
+        return cK
+
+    def get_private_key(self, sequence, password):
+        master_xprv = self.get_master_private_key(password)
+        sub_xprv, sub_xpub = bip32_private_derivation(master_xprv, "", "/{}'".format(sequence[1]))
+        pk = self.get_privatekey_from_xprv(sub_xprv, ())
+        return pk, True
 
 
 class Old_KeyStore(Deterministic_KeyStore):
@@ -543,9 +555,9 @@ class Hardware_KeyStore(KeyStore, Xpub):
         return False
 
 
-
 def bip39_normalize_passphrase(passphrase):
     return normalize('NFKD', passphrase or '')
+
 
 def bip39_to_seed(mnemonic, passphrase):
     import pbkdf2, hashlib, hmac
@@ -553,8 +565,9 @@ def bip39_to_seed(mnemonic, passphrase):
     mnemonic = normalize('NFKD', ' '.join(mnemonic.split()))
     passphrase = bip39_normalize_passphrase(passphrase)
     return pbkdf2.PBKDF2(mnemonic, 'mnemonic' + passphrase,
-                         iterations = PBKDF2_ROUNDS, macmodule = hmac,
-                         digestmodule = hashlib.sha512).read(64)
+                         iterations=PBKDF2_ROUNDS, macmodule=hmac,
+                         digestmodule=hashlib.sha512).read(64)
+
 
 # returns tuple (is_checksum_valid, is_wordlist_valid)
 def bip39_is_checksum_valid(mnemonic):
@@ -585,8 +598,8 @@ def bip39_is_checksum_valid(mnemonic):
     calculated_checksum = hashed >> (256 - checksum_length)
     return checksum == calculated_checksum, True
 
-# extended pubkeys
 
+# extended pubkeys
 def is_xpubkey(x_pubkey):
     return x_pubkey[0:2] == 'ff'
 
@@ -594,14 +607,6 @@ def is_xpubkey(x_pubkey):
 def parse_xpubkey(x_pubkey):
     assert x_pubkey[0:2] == 'ff'
     return BIP32_KeyStore.parse_xpubkey(x_pubkey)
-
-
-def from_bip39_seed(seed, passphrase, derivation):
-    k = BIP32_KeyStore({})
-    bip32_seed = bip39_to_seed(seed, passphrase)
-    t = 'p2wpkh-p2sh' if derivation.startswith("m/49'") else 'standard'  # bip43
-    k.add_xprv_from_seed(bip32_seed, t, derivation)
-    return k
 
 
 def xpubkey_to_address(x_pubkey):
@@ -625,14 +630,17 @@ def xpubkey_to_address(x_pubkey):
         address = public_key_to_p2pkh(bfh(pubkey))
     return pubkey, address
 
+
 def xpubkey_to_pubkey(x_pubkey):
     pubkey, address = xpubkey_to_address(x_pubkey)
     return pubkey
 
 hw_keystores = {}
 
+
 def register_keystore(hw_type, constructor):
     hw_keystores[hw_type] = constructor
+
 
 def hardware_keystore(d):
     hw_type = d['hw_type']
@@ -640,24 +648,6 @@ def hardware_keystore(d):
         constructor = hw_keystores[hw_type]
         return constructor(d)
     raise BaseException('unknown hardware type', hw_type)
-
-def load_keystore(storage, name):
-    w = storage.get('wallet_type', 'standard')
-    d = storage.get(name, {})
-    t = d.get('type')
-    if not t:
-        raise BaseException('wallet format requires update')
-    if t == 'old':
-        k = Old_KeyStore(d)
-    elif t == 'imported':
-        k = Imported_KeyStore(d)
-    elif t == 'bip32':
-        k = BIP32_KeyStore(d)
-    elif t == 'hardware':
-        k = hardware_keystore(d)
-    else:
-        raise BaseException('unknown wallet type', t)
-    return k
 
 
 def is_old_mpk(mpk):
@@ -699,20 +689,8 @@ def bip44_derivation(account_id, segwit=False):
     return "m/%d'/%d'/%d'" % (bip, coin, int(account_id))
 
 
-def from_seed(seed, passphrase, is_p2sh):
-    t = seed_type(seed)
-    if t in ['standard', 'segwit']:
-        derivarion = bip44_derivation(0, t == 'segwit')
-        keystore = from_bip39_seed(seed, passphrase, derivarion)
-        # keystore = BIP32_KeyStore({})
-        keystore.add_seed(seed)
-        keystore.passphrase = passphrase
-        # bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
-        # keystore.add_xprv_from_seed(bip32_seed, t, "m/")
-        # keystore.add_xprv_from_seed(bip32_seed, t, "m/88'/0'")
-        return keystore
-    else:
-        raise BaseException(t)
+def mobile_derivation():
+    return "m/88'/0'"
 
 
 def from_private_key_list(text):
@@ -727,10 +705,12 @@ def from_old_mpk(mpk):
     keystore.add_master_public_key(mpk)
     return keystore
 
+
 def from_xpub(xpub):
     k = BIP32_KeyStore({})
     k.xpub = xpub
     return k
+
 
 def from_xprv(xprv):
     xpub = bitcoin.xpub_from_xprv(xprv)
@@ -749,4 +729,55 @@ def from_master_key(text):
         k = from_xpub(text)
     else:
         raise BaseException('Invalid key')
+    return k
+
+
+def load_keystore(storage, name):
+    w = storage.get('wallet_type', 'standard')
+    d = storage.get(name, {})
+    t = d.get('type')
+    if not t:
+        raise BaseException('wallet format requires update')
+    if t == 'old':
+        k = Old_KeyStore(d)
+    elif t == 'imported':
+        k = Imported_KeyStore(d)
+    elif t == 'bip32':
+        k = BIP32_KeyStore(d)
+    elif t == 'hardware':
+        k = hardware_keystore(d)
+    elif t == 'mobile':
+        k = Mobile_Keystore(d)
+    else:
+        raise BaseException('unknown wallet type', t)
+    return k
+
+
+def from_seed(seed, passphrase, is_p2sh):
+    t = seed_type(seed)
+    if t in ['standard', 'segwit']:
+        derivarion = bip44_derivation(0, t == 'segwit')
+        keystore = from_bip39_seed(seed, passphrase, derivarion)
+        keystore.add_seed(seed)
+        keystore.passphrase = passphrase
+        return keystore
+    else:
+        raise BaseException(t)
+
+
+def from_bip39_seed(seed, passphrase, derivation):
+    k = BIP32_KeyStore({})
+    bip32_seed = bip39_to_seed(seed, passphrase)
+    t = 'p2wpkh-p2sh' if derivation.startswith("m/49'") else 'standard'  # bip43
+    k.add_xprv_from_seed(bip32_seed, t, derivation)
+    return k
+
+
+def from_mobile_seed(seed):
+    passphrase = ''
+    bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
+    k = Mobile_Keystore({})
+    k.add_seed(seed)
+    k.passphrase = passphrase
+    k.add_xprv_from_seed(bip32_seed, 'standard', mobile_derivation())
     return k

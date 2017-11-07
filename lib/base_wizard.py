@@ -29,7 +29,7 @@ from . import bitcoin
 from . import keystore
 from .i18n import _
 from .keystore import bip44_derivation
-from .wallet import Imported_Wallet, Standard_Wallet, Multisig_Wallet, wallet_types
+from .wallet import Imported_Wallet, Standard_Wallet, Multisig_Wallet, Mobile_Wallet, wallet_types
 
 
 class BaseWizard(object):
@@ -80,6 +80,7 @@ class BaseWizard(object):
         ])
         wallet_kinds = [
             ('standard',  _("Standard wallet")),
+            ('mobile', _("Qtum mobile wallet compatible")),
             # ('2fa', _("Wallet with two-factor authentication")),
             ('multisig',  _("Multi-signature wallet")),
             ('imported', _("Import Qtum addresses or private keys")),
@@ -95,6 +96,8 @@ class BaseWizard(object):
     def on_wallet_type(self, choice):
         self.wallet_type = choice
         if choice == 'standard':
+            action = 'choose_keystore'
+        elif choice == 'mobile':
             action = 'choose_keystore'
         elif choice == 'multisig':
             action = 'choose_multisig'
@@ -114,10 +117,16 @@ class BaseWizard(object):
         self.multisig_dialog(run_next=on_multisig)
 
     def choose_keystore(self):
-        assert self.wallet_type in ['standard', 'multisig']
+        assert self.wallet_type in ['standard', 'multisig', 'mobile']
         i = len(self.keystores)
         title = _('Add cosigner') + ' (%d of %d)'%(i+1, self.n) if self.wallet_type=='multisig' else _('Keystore')
-        if self.wallet_type =='standard' or i==0:
+        if self.wallet_type == 'mobile':
+            message = _('Do you want to create a new seed, or to restore a wallet using an existing seed?')
+            choices = [
+                ('create_standard_seed', _('Create a new seed')),
+                ('restore_from_seed', _('I already have a seed')),
+            ]
+        elif self.wallet_type == 'standard' or i == 0:
             message = _('Do you want to create a new seed, or to restore a wallet using an existing seed?')
             choices = [
                 ('choose_seed_type', _('Create a new seed')),
@@ -274,11 +283,21 @@ class BaseWizard(object):
         self.opt_bip39 = True
         self.opt_ext = True
         is_cosigning_seed = lambda x: bitcoin.seed_type(x) in ['standard', 'segwit']
-        test = bitcoin.is_seed if self.wallet_type == 'standard' else is_cosigning_seed
+        test = None
+        if self.wallet_type == 'mobile':
+            test = lambda x: len(list(x.split())) == 12
+        elif self.wallet_type == 'standard':
+            test = bitcoin.is_seed
+        else:
+            test = is_cosigning_seed
         self.restore_seed_dialog(run_next=self.on_restore_seed, test=test)
 
     def on_restore_seed(self, seed, is_bip39, is_ext):
-        self.seed_type = 'bip39' if is_bip39 else bitcoin.seed_type(seed)
+        if self.wallet_type == 'mobile':
+            self.seed_type = 'standard'
+        else:
+            self.seed_type = 'bip39' if is_bip39 else bitcoin.seed_type(seed)
+
         if self.seed_type == 'bip39':
             f = lambda passphrase: self.on_restore_bip39(seed, passphrase)
             self.passphrase_dialog(run_next=f) if is_ext else f('')
@@ -302,7 +321,10 @@ class BaseWizard(object):
         self.derivation_dialog(f)
 
     def create_keystore(self, seed, passphrase):
-        k = keystore.from_seed(seed, passphrase, self.wallet_type == 'multisig')
+        if self.wallet_type == 'mobile':
+            k = keystore.from_mobile_seed(seed)
+        else:
+            k = keystore.from_seed(seed, passphrase, self.wallet_type == 'multisig')
         self.on_keystore(k)
 
     def on_bip43(self, seed, passphrase, derivation):
@@ -310,6 +332,9 @@ class BaseWizard(object):
         self.on_keystore(k)
 
     def on_keystore(self, k):
+        if self.wallet_type == 'mobile':
+            self.keystores.append(k)
+            self.run('create_wallet')
         has_xpub = isinstance(k, keystore.Xpub)
         if has_xpub:
             from .bitcoin import xpub_type
@@ -349,7 +374,9 @@ class BaseWizard(object):
                 self.run('create_wallet')
 
     def create_wallet(self):
-        if any(k.may_have_password() for k in self.keystores):
+        if self.wallet_type == 'mobile':
+            self.on_password(None, False)
+        elif any(k.may_have_password() for k in self.keystores):
             self.request_password(run_next=self.on_password)
         else:
             self.on_password(None, False)
@@ -359,7 +386,13 @@ class BaseWizard(object):
         for k in self.keystores:
             if k.may_have_password():
                 k.update_password(None, password)
-        if self.wallet_type == 'standard':
+        if self.wallet_type == 'mobile':
+            self.storage.put('seed_type', self.seed_type)
+            keys = self.keystores[0].dump()
+            self.storage.put('keystore', keys)
+            self.wallet = Mobile_Wallet(self.storage)
+            self.run('create_addresses')
+        elif self.wallet_type == 'standard':
             self.storage.put('seed_type', self.seed_type)
             keys = self.keystores[0].dump()
             self.storage.put('keystore', keys)
