@@ -6,7 +6,7 @@ STAGING_DIR="dist"
 
 VOL_NAME="Qtum Electrum"
 TEMP_DMG_NAME="/tmp/qtum-electrum.dmg"
-DMG_NAME="${STAGING_DIR}/qtum-electrum-${VERSION}.dmg"
+DMG_NAME="${STAGING_DIR}/Qtum-electrum-osx-${VERSION}.dmg"
 
 rm -rf ${STAGING_DIR} ${TEMP_DMG_NAME}
 
