@@ -1,5 +1,5 @@
 ## Install kivy
-    [https://kivy.org/docs/installation/installation-linux.html](https://kivy.org/docs/installation/installation-linux.html)
+    https://kivy.org/docs/installation/installation-linux.html
     sudo pip3 install Pillow
     sudo add-apt-repository ppa:kivy-team/kivy
     sudo apt-get update
@@ -17,7 +17,7 @@
     ./contrib/make_packages
 
 ## Install buildozer
-    [https://github.com/kivy/buildozer#installing-buildozer-with-python3-support](https://github.com/kivy/buildozer#installing-buildozer-with-python3-support)
+    https://github.com/kivy/buildozer#installing-buildozer-with-python3-support
     sudo dpkg --add-architecture i386
     sudo apt-get update
     sudo apt-get install build-essential ccache libncurses5:i386 libstdc++6:i386 libgtk2.0-0:i386 libpangox-1.0-0:i386 libpangoxft-1.0-0:i386 libidn11:i386 unzip zlib1g-dev zlib1g:i386
@@ -34,8 +34,8 @@
 
 
 ## Enable SSL
-    [https://stackoverflow.com/questions/41944790/crystax-sqlite-3-android-mk-cannot-find-module-with-tag-openssl-1-0-2h](https://stackoverflow.com/questions/41944790/crystax-sqlite-3-android-mk-cannot-find-module-with-tag-openssl-1-0-2h)
-    [https://github.com/named-data-mobile/NFD-android/blob/master/README.md](https://github.com/named-data-mobile/NFD-android/blob/master/README.md)
+    https://stackoverflow.com/questions/41944790/crystax-sqlite-3-android-mk-cannot-find-module-with-tag-openssl-1-0-2h
+    https://github.com/named-data-mobile/NFD-android/blob/master/README.md
     pushd /opt
     git clone https://github.com/crystax/android-vendor-openssl.git
     cd crystax-ndk-10.3.2

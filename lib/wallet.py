@@ -1817,7 +1817,8 @@ wallet_constructors = {
     'standard': Standard_Wallet,
     'old': Standard_Wallet,
     'xpub': Standard_Wallet,
-    'imported': Imported_Wallet
+    'imported': Imported_Wallet,
+    'mobile': Mobile_Wallet
 }
 
 def register_constructor(wallet_type, constructor):
