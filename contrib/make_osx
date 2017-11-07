@@ -1,10 +1,33 @@
 #!/bin/bash
 
-rm -rf dist
-VERSION=`git describe --tags`
 export PYTHONHASHSEED=22
+VERSION=`git describe --tags`
+STAGING_DIR="dist"
 
-# python3 setup-release.py py2app
-pyinstaller --noconfirm --ascii contrib/osx.spec
+VOL_NAME="Qtum Electrum"
+TEMP_DMG_NAME="/tmp/qtum-electrum.dmg"
+DMG_NAME="${STAGING_DIR}/qtum-electrum-${VERSION}.dmg"
 
-hdiutil create -fs HFS+ -volname "Qtum Electrum" -srcfolder dist/Qtum\ Electrum.app dist/qtum-electrum-$VERSION.dmg
+rm -rf ${STAGING_DIR} ${TEMP_DMG_NAME}
+
+python3 setup-release.py py2app
+# pyinstaller --noconfirm --ascii contrib/osx.spec
+sleep 2
+for name in "QtBluetooth" "QtDesigner" "QtLocation" "QtMultimedia" "QtMultimediaQuick_p" "QtQml" "QtSvg" "QtSql" "QtTest"
+do
+    rm -rf "dist/${VOL_NAME}.app/Contents/Frameworks/${name}.framework"
+    echo "rm -rf dist/${VOL_NAME}.app/Contents/Frameworks/${name}.framework"
+done
+
+hdiutil create -size 300m -fs HFS+ -volname "${VOL_NAME}" -ov ${TEMP_DMG_NAME}
+
+hdiutil mount ${TEMP_DMG_NAME}
+cp -R "dist/${VOL_NAME}.app" "/Volumes/${VOL_NAME}/${VOL_NAME}.app"
+ln -s /Applications "/Volumes/${VOL_NAME}/Applications"
+
+hdiutil detach "/Volumes/${VOL_NAME}"
+sleep 2
+
+hdiutil convert ${TEMP_DMG_NAME} -format UDZO -o ${DMG_NAME}
+hdiutil internet-enable -yes ${DMG_NAME}
+rm -rf ${TEMP_DMG_NAME}

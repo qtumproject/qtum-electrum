@@ -1718,6 +1718,12 @@ class Standard_Wallet(Simple_Deterministic_Wallet):
         return bitcoin.pubkey_to_address(self.txin_type, pubkey)
 
 
+class Mobile_Wallet(Simple_Deterministic_Wallet):
+    wallet_type = 'mobile'
+
+    def pubkeys_to_address(self, pubkey):
+        return bitcoin.pubkey_to_address(self.txin_type, pubkey)
+
 class Multisig_Wallet(Deterministic_Wallet):
     # generic m of n
     gap_limit = 20
@@ -1802,7 +1808,7 @@ class Multisig_Wallet(Deterministic_Wallet):
         txin['num_sig'] = self.m
 
 
-wallet_types = ['standard', 'multisig', 'imported']
+wallet_types = ['standard', 'multisig', 'imported', 'mobile']
 
 def register_wallet_type(category):
     wallet_types.append(category)

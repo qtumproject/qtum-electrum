@@ -62,10 +62,3 @@ from distutils import dir_util
 if sys.platform == 'darwin':
     # Remove the copied py file
     os.remove(mainscript)
-    frameworks = "dist/" + name + ".app/Contents/Frameworks/"
-    for name in ['QtBluetooth', 'QtDesigner', 'QtLocation', 'QtMultimedia', 'QtMultimediaQuick_p',
-                 'QtQml', 'QtSvg', 'QtSql', 'QtTest']:
-        try:
-            os.remove(os.path.join(frameworks, name + '.framework'))
-        except (FileNotFoundError,) as e:
-            pass

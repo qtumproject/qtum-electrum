@@ -26,9 +26,10 @@ from .password_dialog import PasswordLayout, PW_NEW
 class GoBack(Exception):
     pass
 
-MSG_GENERATING_WAIT = _("Electrum is generating your addresses, please wait...")
+
+MSG_GENERATING_WAIT = _("Qtum Electrum is generating your addresses, please wait...")
 MSG_ENTER_ANYTHING = _("Please enter a seed phrase, a master key, a list of "
-                       "Bitcoin addresses, or a list of private keys")
+                       "Qtum addresses, or a list of private keys")
 MSG_ENTER_SEED_OR_MPK = _("Please enter a seed phrase or a master key (xpub or xprv):")
 MSG_COSIGNER = _("Please enter the master public key of cosigner #%d:")
 MSG_ENTER_PASSWORD = _("Choose a password to encrypt your wallet keys.") + '\n'\
@@ -365,16 +366,21 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
     @wizard_dialog
     def restore_seed_dialog(self, run_next, test):
         options = []
-        if self.opt_ext:
-            options.append('ext')
-        if self.opt_bip39:
-            options.append('bip39')
+        # if self.opt_ext:
+        #     options.append('ext')
+        # if self.opt_bip39:
+        #     options.append('bip39')
         title = _('Enter Seed')
-        message = ''.join([
-            _('Please enter your seed phrase in order to restore your wallet. \n'),
-            _('Qtum Electrum is not compatiable with qtum mobile wallet seed words yet. \n'),
-            _('You cannot restore your mobile wallet in Qtum Electrum for now.')])
-        return self.seed_input(title, message, test, None)
+        if 'mobile' == self.wallet_type:
+            message = ''.join([
+                _('Please enter your seed phrase in order to restore your wallet. \n'),
+                _('This is compatible with qtum mobile wallet. \n')])
+        else:
+            message = ''.join([
+                _('Please enter your seed phrase in order to restore your wallet. \n'),
+                _('Qtum Electrum is not compatiable with qtum mobile wallet seed words yet. \n'),
+                _('You cannot restore your mobile wallet in Qtum Electrum for now.')])
+        return self.seed_input(title, message, test, options)
 
     @wizard_dialog
     def confirm_seed_dialog(self, run_next, test):
