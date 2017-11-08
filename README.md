@@ -9,7 +9,10 @@ Qtum Electrum
 Getting started
 ===============
 
-Electrum is a pure python application. If you want to use the Qt interface, install the Qt dependencies:
+You can download latest release [here](https://github.com/qtumproject/qtum-electrum/releases).
+
+
+If you are a developer, Qtum Electrum is a pure python application. If you want to use the Qt interface, install the Qt dependencies:
 
     sudo apt-get install python3-pyqt5
 
