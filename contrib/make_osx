@@ -13,7 +13,7 @@ rm -rf ${STAGING_DIR} ${TEMP_DMG_NAME}
 python3 setup-release.py py2app
 # pyinstaller --noconfirm --ascii contrib/osx.spec
 sleep 2
-for name in "QtBluetooth" "QtDesigner" "QtLocation" "QtMultimedia" "QtMultimediaQuick_p" "QtQml" "QtSvg" "QtSql" "QtTest"
+for name in "QtBluetooth" "QtDesigner" "QtLocation" "QtMultimedia" "QtMultimediaQuick_p" "QtQml" "QtSvg" "QtSql" "QtTest" "QtWebEngineCore"
 do
     rm -rf "dist/${VOL_NAME}.app/Contents/Frameworks/${name}.framework"
     echo "rm -rf dist/${VOL_NAME}.app/Contents/Frameworks/${name}.framework"
