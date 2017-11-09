@@ -29,7 +29,7 @@ from . import bitcoin
 from . import keystore
 from .i18n import _
 from .keystore import bip44_derivation
-from .wallet import Imported_Wallet, Standard_Wallet, Multisig_Wallet, Mobile_Wallet, wallet_types
+from .wallet import Imported_Wallet, Standard_Wallet, Multisig_Wallet, Mobile_Wallet, wallet_types, Qt_Core_Wallet
 
 
 class BaseWizard(object):
@@ -81,6 +81,7 @@ class BaseWizard(object):
         wallet_kinds = [
             ('standard',  _("Standard wallet")),
             ('mobile', _("Qtum mobile wallet compatible")),
+            ('qtcore', _("Qtum Qt Core wallet compatible")),
             # ('2fa', _("Wallet with two-factor authentication")),
             ('multisig',  _("Multi-signature wallet")),
             ('imported', _("Import Qtum addresses or private keys")),
@@ -95,9 +96,9 @@ class BaseWizard(object):
 
     def on_wallet_type(self, choice):
         self.wallet_type = choice
-        if choice == 'standard':
-            action = 'choose_keystore'
-        elif choice == 'mobile':
+        if choice == 'qtcore':
+            action = 'restore_from_key'
+        elif choice in ('standard', 'mobile'):
             action = 'choose_keystore'
         elif choice == 'multisig':
             action = 'choose_multisig'
@@ -117,14 +118,20 @@ class BaseWizard(object):
         self.multisig_dialog(run_next=on_multisig)
 
     def choose_keystore(self):
-        assert self.wallet_type in ['standard', 'multisig', 'mobile']
+        assert self.wallet_type in ['standard', 'multisig', 'mobile', 'qtcore']
         i = len(self.keystores)
         title = _('Add cosigner') + ' (%d of %d)'%(i+1, self.n) if self.wallet_type=='multisig' else _('Keystore')
         if self.wallet_type == 'mobile':
             message = _('Do you want to create a new seed, or to restore a wallet using an existing seed?')
             choices = [
-                ('create_standard_seed', _('Create a new seed')),
+                ('create_mobile_seed', _('Create a new seed')),
                 ('restore_from_seed', _('I already have a seed')),
+            ]
+        elif self.wallet_type == 'qtcore':
+            message = _('Do you want to create a new wallet, or to restore a wallet using an existing key?')
+            choices = [
+                # ('create_standard_seed', _('Create a new seed')),
+                ('restore_from_key', _('Use public or private keys')),
             ]
         elif self.wallet_type == 'standard' or i == 0:
             message = _('Do you want to create a new seed, or to restore a wallet using an existing seed?')
@@ -167,7 +174,14 @@ class BaseWizard(object):
         self.terminate()
 
     def restore_from_key(self):
-        if self.wallet_type == 'standard':
+        if self.wallet_type == 'qtcore':
+            v = keystore.is_xprv
+            title = _("Create keystore from a master key")
+            message = ' '.join([
+                _("Please enter your Qtum Qt Core wallet private masterkey (xprv).")
+            ])
+            self.add_xpub_dialog(title=title, message=message, run_next=self.on_restore_from_key, is_valid=v)
+        elif self.wallet_type == 'standard':
             v = keystore.is_master_key
             title = _("Create keystore from a master key")
             message = ' '.join([
@@ -180,7 +194,10 @@ class BaseWizard(object):
             self.add_cosigner_dialog(index=i, run_next=self.on_restore_from_key, is_valid=keystore.is_bip32_key)
 
     def on_restore_from_key(self, text):
-        k = keystore.from_master_key(text)
+        if self.wallet_type == 'qtcore':
+            k = keystore.from_qt_core_master_key(text)
+        else:
+            k = keystore.from_master_key(text)
         self.on_keystore(k)
 
     def choose_hw_device(self):
@@ -332,7 +349,7 @@ class BaseWizard(object):
         self.on_keystore(k)
 
     def on_keystore(self, k):
-        if self.wallet_type == 'mobile':
+        if self.wallet_type in ('mobile', 'qtcore'):
             self.keystores.append(k)
             self.run('create_wallet')
         has_xpub = isinstance(k, keystore.Xpub)
@@ -374,7 +391,7 @@ class BaseWizard(object):
                 self.run('create_wallet')
 
     def create_wallet(self):
-        if self.wallet_type == 'mobile':
+        if self.wallet_type in ['mobile', 'qtcore']:
             self.on_password(None, False)
         elif any(k.may_have_password() for k in self.keystores):
             self.request_password(run_next=self.on_password)
@@ -386,7 +403,13 @@ class BaseWizard(object):
         for k in self.keystores:
             if k.may_have_password():
                 k.update_password(None, password)
-        if self.wallet_type == 'mobile':
+        if self.wallet_type == 'qtcore':
+            self.storage.put('seed_type', self.seed_type)
+            keys = self.keystores[0].dump()
+            self.storage.put('keystore', keys)
+            self.wallet = Qt_Core_Wallet(self.storage)
+            self.run('create_addresses')
+        elif self.wallet_type == 'mobile':
             self.storage.put('seed_type', self.seed_type)
             keys = self.keystores[0].dump()
             self.storage.put('keystore', keys)
