@@ -33,6 +33,13 @@ If you want to be compatible with the qtum mobile wallet, you need to choose "Qt
 ![](https://github.com/qtumproject/qtum-electrum/blob/master/snap/mobile_compatible.png)
 
 
+Compatible with Qtum Qt Core wallet
+==================================
+
+If you want to import private master key from [Qtum Qt Core wallet](https://github.com/qtumproject/qtum/releases/), you need to choose "Qtum Qt Core wallet compatible" to restore your wallet.
+
+![](https://github.com/qtumproject/qtum-electrum/blob/master/snap/qt_core_compatible.png)
+
 Development version
 ===================
 
