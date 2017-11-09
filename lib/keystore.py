@@ -356,6 +356,33 @@ class Mobile_Keystore(BIP32_KeyStore):
         return pk, True
 
 
+class Qt_Core_Keystore(BIP32_KeyStore):
+    def dump(self):
+        d = Deterministic_KeyStore.dump(self)
+        d['type'] = 'qtcore'
+        d['xpub'] = self.xpub
+        d['xprv'] = self.xprv
+        d['derivation'] = qt_core_derivation()
+        return d
+
+    def derive_pubkey(self, for_change, n):
+        master_xprv = self.get_master_private_key(None)
+        sub_xprv, sub_xpub = bip32_private_derivation(master_xprv, "", "/{}'".format(n))
+        return self.get_pubkey_from_xpub(sub_xpub, ())
+
+    @classmethod
+    def get_privatekey_from_xprv(cls, xprv, sequence):
+        _, _, _, _, c, cK = deserialize_xprv(xprv)
+        for i in sequence:
+            cK, c = CKD_priv(cK, c, i)
+        return cK
+
+    def get_private_key(self, sequence, password):
+        master_xprv = self.get_master_private_key(password)
+        sub_xprv, sub_xpub = bip32_private_derivation(master_xprv, "", "/{}'".format(sequence[1]))
+        pk = self.get_privatekey_from_xprv(sub_xprv, ())
+        return pk, True
+
 class Old_KeyStore(Deterministic_KeyStore):
 
     def __init__(self, d):
@@ -689,6 +716,9 @@ def bip44_derivation(account_id, segwit=False):
     return "m/%d'/%d'/%d'" % (bip, coin, int(account_id))
 
 
+def qt_core_derivation():
+    return "m/0'/0'"
+
 def mobile_derivation():
     return "m/88'/0'"
 
@@ -698,6 +728,59 @@ def from_private_key_list(text):
     for x in get_private_keys(text):
         keystore.import_key(x, None)
     return keystore
+
+
+def load_keystore(storage, name):
+    w = storage.get('wallet_type', 'standard')
+    d = storage.get(name, {})
+    t = d.get('type')
+    if not t:
+        raise BaseException('wallet format requires update')
+    if t == 'old':
+        k = Old_KeyStore(d)
+    elif t == 'imported':
+        k = Imported_KeyStore(d)
+    elif t == 'bip32':
+        k = BIP32_KeyStore(d)
+    elif t == 'hardware':
+        k = hardware_keystore(d)
+    elif t == 'mobile':
+        k = Mobile_Keystore(d)
+    elif t == 'qtcore':
+        k = Qt_Core_Keystore(d)
+    else:
+        raise BaseException('unknown wallet type', t)
+    return k
+
+
+def from_seed(seed, passphrase, is_p2sh):
+    t = seed_type(seed)
+    if t in ['standard', 'segwit']:
+        derivarion = bip44_derivation(0, t == 'segwit')
+        keystore = from_bip39_seed(seed, passphrase, derivarion)
+        keystore.add_seed(seed)
+        keystore.passphrase = passphrase
+        return keystore
+    else:
+        raise BaseException(t)
+
+
+def from_bip39_seed(seed, passphrase, derivation):
+    k = BIP32_KeyStore({})
+    bip32_seed = bip39_to_seed(seed, passphrase)
+    t = 'p2wpkh-p2sh' if derivation.startswith("m/49'") else 'standard'  # bip43
+    k.add_xprv_from_seed(bip32_seed, t, derivation)
+    return k
+
+
+def from_mobile_seed(seed):
+    passphrase = ''
+    bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
+    k = Mobile_Keystore({})
+    k.add_seed(seed)
+    k.passphrase = passphrase
+    k.add_xprv_from_seed(bip32_seed, 'standard', mobile_derivation())
+    return k
 
 
 def from_old_mpk(mpk):
@@ -732,52 +815,25 @@ def from_master_key(text):
     return k
 
 
-def load_keystore(storage, name):
-    w = storage.get('wallet_type', 'standard')
-    d = storage.get(name, {})
-    t = d.get('type')
-    if not t:
-        raise BaseException('wallet format requires update')
-    if t == 'old':
-        k = Old_KeyStore(d)
-    elif t == 'imported':
-        k = Imported_KeyStore(d)
-    elif t == 'bip32':
-        k = BIP32_KeyStore(d)
-    elif t == 'hardware':
-        k = hardware_keystore(d)
-    elif t == 'mobile':
-        k = Mobile_Keystore(d)
-    else:
-        raise BaseException('unknown wallet type', t)
+def from_qt_core_xprv(xprv):
+    k = Qt_Core_Keystore({})
+    xprv, xpub = bip32_private_derivation(xprv, "m/", qt_core_derivation())
+    k.add_xprv(xprv)
     return k
 
 
-def from_seed(seed, passphrase, is_p2sh):
-    t = seed_type(seed)
-    if t in ['standard', 'segwit']:
-        derivarion = bip44_derivation(0, t == 'segwit')
-        keystore = from_bip39_seed(seed, passphrase, derivarion)
-        keystore.add_seed(seed)
-        keystore.passphrase = passphrase
-        return keystore
-    else:
-        raise BaseException(t)
-
-
-def from_bip39_seed(seed, passphrase, derivation):
-    k = BIP32_KeyStore({})
-    bip32_seed = bip39_to_seed(seed, passphrase)
-    t = 'p2wpkh-p2sh' if derivation.startswith("m/49'") else 'standard'  # bip43
-    k.add_xprv_from_seed(bip32_seed, t, derivation)
+def from_qt_core_xpub(xpub):
+    k = Qt_Core_Keystore({})
+    k.xpub = xpub
     return k
 
 
-def from_mobile_seed(seed):
-    passphrase = ''
-    bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
-    k = Mobile_Keystore({})
-    k.add_seed(seed)
-    k.passphrase = passphrase
-    k.add_xprv_from_seed(bip32_seed, 'standard', mobile_derivation())
+def from_qt_core_master_key(text):
+    if is_xprv(text):
+        k = from_qt_core_xprv(text)
+    # not support yet
+    # elif is_xpub(text):
+    #     k = from_desktop_xpub(text)
+    else:
+        raise BaseException('Invalid key')
     return k

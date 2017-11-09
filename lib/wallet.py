@@ -1724,6 +1724,18 @@ class Mobile_Wallet(Simple_Deterministic_Wallet):
     def pubkeys_to_address(self, pubkey):
         return bitcoin.pubkey_to_address(self.txin_type, pubkey)
 
+
+class Qt_Core_Wallet(Simple_Deterministic_Wallet):
+    def __init__(self, storage):
+        Simple_Deterministic_Wallet.__init__(self, storage)
+        self.gap_limit = 300
+        self.gap_limit_for_change = 10
+
+    wallet_type = 'qtcore'
+
+    def pubkeys_to_address(self, pubkey):
+        return bitcoin.pubkey_to_address(self.txin_type, pubkey)
+
 class Multisig_Wallet(Deterministic_Wallet):
     # generic m of n
     gap_limit = 20
@@ -1808,7 +1820,7 @@ class Multisig_Wallet(Deterministic_Wallet):
         txin['num_sig'] = self.m
 
 
-wallet_types = ['standard', 'multisig', 'imported', 'mobile']
+wallet_types = ['standard', 'multisig', 'imported', 'mobile', 'qtcore']
 
 def register_wallet_type(category):
     wallet_types.append(category)
@@ -1818,7 +1830,8 @@ wallet_constructors = {
     'old': Standard_Wallet,
     'xpub': Standard_Wallet,
     'imported': Imported_Wallet,
-    'mobile': Mobile_Wallet
+    'mobile': Mobile_Wallet,
+    'qtcore': Qt_Core_Wallet,
 }
 
 def register_constructor(wallet_type, constructor):
