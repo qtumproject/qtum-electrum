@@ -25,7 +25,7 @@ set -e
 
 cd tmp
 
-if [ -d "electrum-git" ]; then
+if [ -d "qtum-electrum-git" ]; then
     # GIT repository found, update it
     echo "Pull"
     cd qtum-electrum-git
@@ -38,14 +38,14 @@ else
     git clone -b $BRANCH $ELECTRUM_GIT_URL qtum-electrum-git
 fi
 
-cd electrum-git
+cd qtum-electrum-git
 VERSION=`git describe --tags`
 echo "Last commit: $VERSION"
 
 cd ..
 
 rm -rf $WINEPREFIX/drive_c/electrum
-cp -r electrum-git $WINEPREFIX/drive_c/electrum
+cp -r qtum-electrum-git $WINEPREFIX/drive_c/electrum
 cp qtum-electrum-git/LICENCE .
 
 # add locale dir
