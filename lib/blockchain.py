@@ -53,24 +53,23 @@ def read_blockchains(config):
         if not b.is_valid():
             bad_chains.append(b.checkpoint)
         blockchains[b.checkpoint] = b
-
-    def remove_chain(cp, chains):
-        try:
-            chains[cp].close()
-            os.remove(chains[cp].path())
-            del chains[cp]
-        except (BaseException,) as e:
-            pass
-        for k in list(chains.keys()):
-            if chains[k].parent_id == cp:
-                remove_chain(b.checkpoint, chains)
-
     for bad_k in bad_chains:
         remove_chain(bad_k, blockchains)
     if len(blockchains) == 0:
         blockchains[0] = Blockchain(config, 0, None)
     return blockchains
 
+
+def remove_chain(cp, chains):
+    try:
+        chains[cp].close()
+        os.remove(chains[cp].path())
+        del chains[cp]
+    except (BaseException,) as e:
+        pass
+    for k in list(chains.keys()):
+        if chains[k].parent_id == cp:
+            remove_chain(chains[k].checkpoint, chains)
 
 def check_header(header):
     if type(header) is not dict:
@@ -144,6 +143,7 @@ class Blockchain(util.PrintError):
         if self.conn:
             self.conn.commit()
             self.conn.close()
+            self.conn = None
         self.print_error('stopped')
 
     def parent(self):
@@ -178,7 +178,6 @@ class Blockchain(util.PrintError):
 
     def height(self):
         height = self.checkpoint + self.size() - 1
-        # print_error('[blockchain height]', height, self.checkpoint, self.size())
         return height
 
     def size(self):
@@ -346,12 +345,9 @@ class Blockchain(util.PrintError):
         if height < 0:
             return
         if height > self.height():
-            # print_error('read_header 3', height, self.checkpoint, self.parent_id)
             return
         if height < self.checkpoint:
-            # header = self.parent().read_header(height)
             conn = sqlite3.connect(self.parent().path(), check_same_thread=False)
-            # print_error('read_header 2', height, self.checkpoint, self.parent_id, result)
         else:
             conn = sqlite3.connect(self.path(), check_same_thread=False)
         cursor = conn.cursor()

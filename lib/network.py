@@ -271,6 +271,13 @@ class Network(util.DaemonThread):
         result = (lh - sh) > 1
         if result:
             self.print_error('%s is lagging (%d vs %d)' % (self.default_server, sh, lh))
+            for k in list(self.blockchains.keys()):
+                if not self.blockchains[k].is_valid():
+                    for server in list(self.interfaces.keys()):
+                        interface = self.interfaces[server]
+                        if interface.blockchain and interface.blockchain is self.blockchains[k]:
+                            self.close_interface(interface)
+                    del self.blockchains[k]
         return result
 
     def set_status(self, status):
