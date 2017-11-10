@@ -22,7 +22,6 @@
 # SOFTWARE.
 import threading
 import sqlite3
-
 from . import util
 from . import qtum
 from .qtum import *
@@ -46,11 +45,30 @@ def read_blockchains(config):
         os.mkdir(fdir)
     l = filter(lambda x: x.startswith('fork_'), os.listdir(fdir))
     l = sorted(l, key = lambda x: int(x.split('_')[1]))
+    bad_chains = []
     for filename in l:
         checkpoint = int(filename.split('_')[2])
         parent_id = int(filename.split('_')[1])
         b = Blockchain(config, checkpoint, parent_id)
+        if not b.is_valid():
+            bad_chains.append(b.checkpoint)
         blockchains[b.checkpoint] = b
+
+    def remove_chain(cp, chains):
+        try:
+            chains[cp].close()
+            os.remove(chains[cp].path())
+            del chains[cp]
+        except (BaseException,) as e:
+            pass
+        for k in list(chains.keys()):
+            if chains[k].parent_id == cp:
+                remove_chain(b.checkpoint, chains)
+
+    for bad_k in bad_chains:
+        remove_chain(bad_k, blockchains)
+    if len(blockchains) == 0:
+        blockchains[0] = Blockchain(config, 0, None)
     return blockchains
 
 
@@ -101,6 +119,20 @@ class Blockchain(util.PrintError):
             self.init_db()
         finally:
             cursor.close()
+
+    def is_valid(self):
+        with self.lock:
+            cursor = self.conn.cursor()
+            cursor.execute('SELECT min(height), max(height) FROM header')
+            min_height, max_height = cursor.fetchone()
+            cursor.execute('SELECT COUNT(*) FROM header')
+            size = int(cursor.fetchone()[0])
+            cursor.close()
+            if not min_height == self.checkpoint:
+                return False
+            if not size == max_height - min_height + 1:
+                return False
+        return True
 
     def path(self):
         d = util.get_headers_dir(self.config)
