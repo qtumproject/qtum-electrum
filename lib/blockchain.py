@@ -188,14 +188,16 @@ class Blockchain(util.PrintError):
             return self._size
 
     def update_size(self):
-        conn = sqlite3.connect(self.path(), check_same_thread=False)
-        cursor = conn.cursor()
+        try:
+            cursor = self.conn.cursor()
+        except sqlite3.ProgrammingError:
+            conn = sqlite3.connect(self.path(), check_same_thread=False)
+            cursor = conn.cursor()
+            self.conn = conn
         cursor.execute('SELECT COUNT(*) FROM header')
         count = int(cursor.fetchone()[0])
         self._size = count
         cursor.close()
-        conn.close()
-
 
     def verify_header(self, header, prev_header, bits, target):
         prev_hash = hash_header(prev_header)
