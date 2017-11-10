@@ -100,6 +100,7 @@ class Blockchain(util.PrintError):
         self.checkpoint = checkpoint
         self.parent_id = parent_id
         self.lock = threading.Lock()
+        self.swaping = threading.Event()
         self.conn = None
         self.init_db()
         with self.lock:
@@ -122,12 +123,14 @@ class Blockchain(util.PrintError):
 
     def is_valid(self):
         with self.lock:
-            cursor = self.conn.cursor()
+            conn = sqlite3.connect(self.path(), check_same_thread=False)
+            cursor = conn.cursor()
             cursor.execute('SELECT min(height), max(height) FROM header')
             min_height, max_height = cursor.fetchone()
             cursor.execute('SELECT COUNT(*) FROM header')
             size = int(cursor.fetchone()[0])
             cursor.close()
+            conn.close()
             if not min_height == self.checkpoint:
                 return False
             if not size == max_height - min_height + 1:
@@ -145,6 +148,7 @@ class Blockchain(util.PrintError):
             self.conn.commit()
             self.conn.close()
             self.conn = None
+            self.swaping.clear()
         self.print_error('stopped')
 
     def parent(self):
@@ -188,12 +192,8 @@ class Blockchain(util.PrintError):
             return self._size
 
     def update_size(self):
-        try:
-            cursor = self.conn.cursor()
-        except sqlite3.ProgrammingError:
-            conn = sqlite3.connect(self.path(), check_same_thread=False)
-            cursor = conn.cursor()
-            self.conn = conn
+        conn = sqlite3.connect(self.path(), check_same_thread=False)
+        cursor = conn.cursor()
         cursor.execute('SELECT COUNT(*) FROM header')
         count = int(cursor.fetchone()[0])
         self._size = count
@@ -255,14 +255,19 @@ class Blockchain(util.PrintError):
         parent_id = self.parent_id
         checkpoint = self.checkpoint
         parent = self.parent()
-        with self.lock:
-            self.update_size()
-            parent.update_size()
-            parent_branch_size = parent._height() - self.checkpoint + 1
-            if parent_branch_size >= self._size:
-                return
-            print('swap', self.checkpoint, self.parent_id)
+        self.update_size()
+        parent.update_size()
+        parent_branch_size = parent._height() - self.checkpoint + 1
+        if parent_branch_size >= self._size:
+            return
+        if self.swaping.is_set() or parent.swaping.is_set():
+            return
+        self.swaping.set()
+        parent.swaping.set()
+        try:
+            print_error('swap', self.checkpoint, self.parent_id)
             for i in range(checkpoint, checkpoint + self._size):
+                print_error('swaping', i)
                 header = self.read_header(i, deserialize=False)
                 parent_header = parent.read_header(i, deserialize=False)
                 parent._write(header, i)
@@ -270,6 +275,9 @@ class Blockchain(util.PrintError):
                     self._write(parent_header, i)
                 else:
                     self._delete(i)
+            # update size
+            self.update_size()
+            parent.update_size()
             # store file path
             for b in blockchains.values():
                 b.old_path = b.path()
@@ -278,8 +286,6 @@ class Blockchain(util.PrintError):
             parent.parent_id = parent_id
             self.checkpoint = parent.checkpoint
             parent.checkpoint = checkpoint
-            self.update_size()
-            parent.update_size()
             # move files
             for b in blockchains.values():
                 if b in [self, parent]: continue
@@ -289,6 +295,11 @@ class Blockchain(util.PrintError):
             # update pointers
             blockchains[self.checkpoint] = self
             blockchains[parent.checkpoint] = parent
+        except (BaseException,) as e:
+            self.print_error('swap error', e)
+        self.swaping.clear()
+        parent.swaping.clear()
+        print_error('swap finished')
 
     def _write(self, raw_header, height):
         if height > self._size + self.checkpoint:
@@ -303,6 +314,8 @@ class Blockchain(util.PrintError):
         self.conn.commit()
 
     def write(self, raw_header, height):
+        if self.swaping.is_set():
+            return
         self.print_error('{} try to write {}'.format(self.checkpoint, height))
         if self.checkpoint > 0 and height < self.checkpoint:
             return
@@ -328,6 +341,8 @@ class Blockchain(util.PrintError):
         self.conn.commit()
 
     def delete(self, height):
+        if self.swaping.is_set():
+            return
         self.print_error('{} try to delete {}'.format(self.checkpoint, height))
         if self.checkpoint > 0 and height < self.checkpoint:
             return
@@ -336,6 +351,8 @@ class Blockchain(util.PrintError):
             self.update_size()
 
     def delete_all(self):
+        if self.swaping.is_set():
+            return
         with self.lock:
             try:
                 cursor = self.conn.cursor()
@@ -356,19 +373,20 @@ class Blockchain(util.PrintError):
         assert self.parent_id != self.checkpoint
         if height < 0:
             return
-        if height > self.height():
+        if height > self._height():
             return
         if height < self.checkpoint:
-            conn = sqlite3.connect(self.parent().path(), check_same_thread=False)
-        else:
-            conn = sqlite3.connect(self.path(), check_same_thread=False)
+            return self.parent().read_header(height)
+
+        conn = sqlite3.connect(self.path(), check_same_thread=False)
         cursor = conn.cursor()
         cursor.execute('SELECT data FROM header WHERE height=?', (height,))
         result = cursor.fetchone()
         cursor.close()
         conn.close()
         if not result or len(result) < 1:
-            print_error('read_header 4', height, self.checkpoint, self.parent_id, result, self.height())
+            print_error('read_header 4', height, self.checkpoint, self.parent_id, result, self._height())
+            self.update_size()
             return
         header = result[0]
         if deserialize:
