@@ -249,14 +249,14 @@ class Blockchain(util.PrintError):
         self.update_size()
         self.parent().update_size()
         parent_branch_size = self.parent().height() - self.checkpoint + 1
-        if parent_branch_size >= self.size():
+        if parent_branch_size >= self._size:
             return
         self.print_error("swap", self.checkpoint, self.parent_id)
         parent_id = self.parent_id
         checkpoint = self.checkpoint
         parent = self.parent()
         print('swap', self.checkpoint, self.parent_id)
-        for i in range(checkpoint, checkpoint + self.size()):
+        for i in range(checkpoint, checkpoint + self._size):
             header = self.read_header(i, deserialize=False)
             parent_header = parent.read_header(i, deserialize=False)
             parent.write(header, i)
@@ -264,7 +264,6 @@ class Blockchain(util.PrintError):
                 self.write(parent_header, i)
             else:
                 self.delete(i)
-
         # store file path
         for b in blockchains.values():
             b.old_path = b.path()
@@ -275,7 +274,6 @@ class Blockchain(util.PrintError):
         parent.checkpoint = checkpoint
         self.update_size()
         parent.update_size()
-
         # move files
         for b in blockchains.values():
             if b in [self, parent]: continue
@@ -296,8 +294,10 @@ class Blockchain(util.PrintError):
             else:
                 self.delete_all()
             return
-
         with self.lock:
+            self.update_size()
+            if height > self._size + self.checkpoint:
+                return
             try:
                 cursor = self.conn.cursor()
             except sqlite3.ProgrammingError:
