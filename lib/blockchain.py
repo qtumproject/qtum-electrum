@@ -246,43 +246,56 @@ class Blockchain(util.PrintError):
     def swap_with_parent(self):
         if self.parent_id is None:
             return
-        self.update_size()
-        self.parent().update_size()
-        parent_branch_size = self.parent().height() - self.checkpoint + 1
-        if parent_branch_size >= self._size:
+        with self.lock:
+            self.update_size()
+            self.parent().update_size()
+            parent_branch_size = self.parent().height() - self.checkpoint + 1
+            if parent_branch_size >= self._size:
+                return
+            self.print_error("swap", self.checkpoint, self.parent_id)
+            parent_id = self.parent_id
+            checkpoint = self.checkpoint
+            parent = self.parent()
+            print('swap', self.checkpoint, self.parent_id)
+            for i in range(checkpoint, checkpoint + self._size):
+                header = self.read_header(i, deserialize=False)
+                parent_header = parent.read_header(i, deserialize=False)
+                parent._write(header, i)
+                if parent_header:
+                    self._write(parent_header, i)
+                else:
+                    self._delete(i)
+            # store file path
+            for b in blockchains.values():
+                b.old_path = b.path()
+            # swap parameters
+            self.parent_id = parent.parent_id
+            parent.parent_id = parent_id
+            self.checkpoint = parent.checkpoint
+            parent.checkpoint = checkpoint
+            self.update_size()
+            parent.update_size()
+            # move files
+            for b in blockchains.values():
+                if b in [self, parent]: continue
+                if b.old_path != b.path():
+                    self.print_error("renaming", b.old_path, b.path())
+                    os.rename(b.old_path, b.path())
+            # update pointers
+            blockchains[self.checkpoint] = self
+            blockchains[parent.checkpoint] = parent
+
+    def _write(self, raw_header, height):
+        if height > self._size + self.checkpoint:
             return
-        self.print_error("swap", self.checkpoint, self.parent_id)
-        parent_id = self.parent_id
-        checkpoint = self.checkpoint
-        parent = self.parent()
-        print('swap', self.checkpoint, self.parent_id)
-        for i in range(checkpoint, checkpoint + self._size):
-            header = self.read_header(i, deserialize=False)
-            parent_header = parent.read_header(i, deserialize=False)
-            parent.write(header, i)
-            if parent_header:
-                self.write(parent_header, i)
-            else:
-                self.delete(i)
-        # store file path
-        for b in blockchains.values():
-            b.old_path = b.path()
-        # swap parameters
-        self.parent_id = parent.parent_id
-        parent.parent_id = parent_id
-        self.checkpoint = parent.checkpoint
-        parent.checkpoint = checkpoint
-        self.update_size()
-        parent.update_size()
-        # move files
-        for b in blockchains.values():
-            if b in [self, parent]: continue
-            if b.old_path != b.path():
-                self.print_error("renaming", b.old_path, b.path())
-                os.rename(b.old_path, b.path())
-        # update pointers
-        blockchains[self.checkpoint] = self
-        blockchains[parent.checkpoint] = parent
+        try:
+            cursor = self.conn.cursor()
+        except sqlite3.ProgrammingError:
+            conn = sqlite3.connect(self.path(), check_same_thread=False)
+            cursor = conn.cursor()
+        cursor.execute('REPLACE INTO header (height, data) VALUES(?,?)', (height, raw_header))
+        cursor.close()
+        self.conn.commit()
 
     def write(self, raw_header, height):
         self.print_error('{} try to write {}'.format(self.checkpoint, height))
@@ -296,31 +309,25 @@ class Blockchain(util.PrintError):
             return
         with self.lock:
             self.update_size()
-            if height > self._size + self.checkpoint:
-                return
-            try:
-                cursor = self.conn.cursor()
-            except sqlite3.ProgrammingError:
-                conn = sqlite3.connect(self.path(), check_same_thread=False)
-                cursor = conn.cursor()
-            cursor.execute('REPLACE INTO header (height, data) VALUES(?,?)', (height, raw_header))
-            cursor.close()
-            self.conn.commit()
+            self._write(raw_header, height)
             self.update_size()
+
+    def _delete(self, height):
+        try:
+            cursor = self.conn.cursor()
+        except sqlite3.ProgrammingError:
+            conn = sqlite3.connect(self.path(), check_same_thread=False)
+            cursor = conn.cursor()
+        cursor.execute('DELETE FROM header where height=?', (height,))
+        cursor.close()
+        self.conn.commit()
 
     def delete(self, height):
         self.print_error('{} try to delete {}'.format(self.checkpoint, height))
         if self.checkpoint > 0 and height < self.checkpoint:
             return
         with self.lock:
-            try:
-                cursor = self.conn.cursor()
-            except sqlite3.ProgrammingError:
-                conn = sqlite3.connect(self.path(), check_same_thread=False)
-                cursor = conn.cursor()
-            cursor.execute('DELETE FROM header where height=?', (height,))
-            cursor.close()
-            self.conn.commit()
+            self._delete(height)
             self.update_size()
 
     def delete_all(self):
