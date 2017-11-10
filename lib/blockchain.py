@@ -176,9 +176,11 @@ class Blockchain(util.PrintError):
         self.save_header(header)
         return self
 
+    def _height(self):
+        return self.checkpoint + self._size - 1
+
     def height(self):
-        height = self.checkpoint + self.size() - 1
-        return height
+        return self.checkpoint + self.size() - 1
 
     def size(self):
         with self.lock:
@@ -189,9 +191,10 @@ class Blockchain(util.PrintError):
         cursor = conn.cursor()
         cursor.execute('SELECT COUNT(*) FROM header')
         count = int(cursor.fetchone()[0])
+        self._size = count
         cursor.close()
         conn.close()
-        self._size = count
+
 
     def verify_header(self, header, prev_header, bits, target):
         prev_hash = hash_header(prev_header)
@@ -246,16 +249,15 @@ class Blockchain(util.PrintError):
     def swap_with_parent(self):
         if self.parent_id is None:
             return
+        parent_id = self.parent_id
+        checkpoint = self.checkpoint
+        parent = self.parent()
         with self.lock:
             self.update_size()
-            self.parent().update_size()
-            parent_branch_size = self.parent().height() - self.checkpoint + 1
+            parent.update_size()
+            parent_branch_size = parent._height() - self.checkpoint + 1
             if parent_branch_size >= self._size:
                 return
-            self.print_error("swap", self.checkpoint, self.parent_id)
-            parent_id = self.parent_id
-            checkpoint = self.checkpoint
-            parent = self.parent()
             print('swap', self.checkpoint, self.parent_id)
             for i in range(checkpoint, checkpoint + self._size):
                 header = self.read_header(i, deserialize=False)
