@@ -71,6 +71,7 @@ def remove_chain(cp, chains):
         if chains[k].parent_id == cp:
             remove_chain(chains[k].checkpoint, chains)
 
+
 def check_header(header):
     if type(header) is not dict:
         print_error('[check_header] header not dic')

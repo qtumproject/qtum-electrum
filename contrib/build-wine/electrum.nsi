@@ -16,7 +16,7 @@
 
   ;Name and file
   Name "${PRODUCT_NAME}"
-  OutFile "dist/qtum-electrum-setup.exe"
+  OutFile "dist/electrum-setup.exe"
 
   ;Default installation folder
   InstallDir "$PROGRAMFILES\${PRODUCT_NAME}"
@@ -110,7 +110,7 @@ Section
   Delete "$SMPROGRAMS\${PRODUCT_NAME}\*.*"
   
   ;Files to pack into the installer
-  File /r "dist\qtum-electrum\*.*"
+  File /r "dist\electrum\*.*"
   File "..\..\icons\electrum.ico"
 
   ;Store installation folder
