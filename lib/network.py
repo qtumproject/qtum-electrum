@@ -804,7 +804,7 @@ class Network(util.DaemonThread):
             self.connection_down(interface.server)
             return
         height = header.get('block_height')
-        print_error('[on_get_header] {} {}'.format(height, interface.mode))
+        # print_error('[on_get_header] {} {}'.format(height, interface.mode))
         if interface.request != height:
             interface.print_error("unsolicited header", interface.request, height)
             self.connection_down(interface.server)
