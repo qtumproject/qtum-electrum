@@ -27,14 +27,6 @@ from . import qtum
 from .qtum import *
 
 
-def hash_header(header):
-    if header is None:
-        return '0' * 64
-    if header.get('prev_block_hash') is None:
-        header['prev_block_hash'] = '00'*32
-    return hash_encode(Hash(bfh(serialize_header(header))))
-
-
 blockchains = {}
 
 
@@ -436,44 +428,6 @@ class Blockchain(util.PrintError):
         new_target = uint256_from_compact(nbits)
 
         return nbits, new_target
-
-    #  # bitcoin
-    # def get_target(self, index):
-    #     if bitcoin.TESTNET:
-    #         return 0, 0
-    #     if index == 0:
-    #         return GENESIS_BITS, MAX_TARGET
-    #
-    #     first = self.read_header((index-1) * 2016)
-    #     last = self.read_header(index*2016 - 1)
-    #     # bits to target
-    #     bits = last.get('bits')
-    #
-    #     bitsN = (bits >> 24) & 0xff
-    #
-    #     if not (bitsN >= 0x03 and bitsN <= 0x1d):
-    #         raise BaseException("First part of bits should be in [0x03, 0x1d]")
-    #
-    #     bitsBase = bits & 0xffffff
-    #     if not (bitsBase >= 0x8000 and bitsBase <= 0x7fffff):
-    #         raise BaseException("Second part of bits should be in [0x8000, 0x7fffff]")
-    #     target = bitsBase << (8 * (bitsN-3))
-    #     # new target
-    #     nActualTimespan = last.get('timestamp') - first.get('timestamp')
-    #     nTargetTimespan = 14 * 24 * 60 * 60
-    #     nActualTimespan = max(nActualTimespan, nTargetTimespan // 4)
-    #     nActualTimespan = min(nActualTimespan, nTargetTimespan * 4)
-    #     new_target = min(MAX_TARGET, (target * nActualTimespan) // nTargetTimespan)
-    #     # convert new target to bits
-    #     c = ("%064x" % new_target)[2:]
-    #     while c[:2] == '00' and len(c) > 6:
-    #         c = c[2:]
-    #     bitsN, bitsBase = len(c) // 2, int('0x' + c[:6], 16)
-    #     if bitsBase >= 0x800000:
-    #         bitsN += 1
-    #         bitsBase >>= 8
-    #     new_bits = bitsN << 24 | bitsBase
-    #     return new_bits, bitsBase << (8 * (bitsN - 3))
 
     def can_connect(self, header, check_height=True):
         height = header['block_height']

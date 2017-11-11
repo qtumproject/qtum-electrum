@@ -1155,6 +1155,14 @@ class Deserializer(object):
         return result
 
 
+def hash_header(header):
+    if header is None:
+        return '0' * 64
+    if header.get('prev_block_hash') is None:
+        header['prev_block_hash'] = '00' * 32
+    return hash_encode(Hash(bfh(serialize_header(header))))
+
+
 def serialize_header(res):
     sig_length = len(res.get('sig'))//2
     s = int_to_hex(res.get('version'), 4) \
