@@ -301,13 +301,14 @@ class Blockchain(util.PrintError):
         if height > self._size + self.checkpoint:
             return
         try:
+            conn = self.conn
             cursor = self.conn.cursor()
-        except sqlite3.ProgrammingError:
+        except (sqlite3.ProgrammingError, AttributeError):
             conn = sqlite3.connect(self.path(), check_same_thread=False)
             cursor = conn.cursor()
         cursor.execute('REPLACE INTO header (height, data) VALUES(?,?)', (height, raw_header))
         cursor.close()
-        self.conn.commit()
+        conn.commit()
 
     def write(self, raw_header, height):
         if self.swaping.is_set():
@@ -328,13 +329,14 @@ class Blockchain(util.PrintError):
 
     def _delete(self, height):
         try:
-            cursor = self.conn.cursor()
-        except sqlite3.ProgrammingError:
+            conn = self.conn
+            cursor = conn.cursor()
+        except (sqlite3.ProgrammingError, AttributeError):
             conn = sqlite3.connect(self.path(), check_same_thread=False)
             cursor = conn.cursor()
         cursor.execute('DELETE FROM header where height=?', (height,))
         cursor.close()
-        self.conn.commit()
+        conn.commit()
 
     def delete(self, height):
         if self.swaping.is_set():
@@ -351,13 +353,14 @@ class Blockchain(util.PrintError):
             return
         with self.lock:
             try:
+                conn = self.conn
                 cursor = self.conn.cursor()
-            except sqlite3.ProgrammingError:
+            except (sqlite3.ProgrammingError, AttributeError):
                 conn = sqlite3.connect(self.path(), check_same_thread=False)
                 cursor = conn.cursor()
             cursor.execute('DELETE FROM header')
             cursor.close()
-            self.conn.commit()
+            conn.commit()
             self._size = 0
 
     def save_header(self, header):
