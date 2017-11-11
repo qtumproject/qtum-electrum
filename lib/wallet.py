@@ -90,7 +90,7 @@ class Abstract_Wallet(PrintError):
         self.synchronizer = None
         self.verifier = None
 
-        self.gap_limit_for_change = 6 # constant
+        self.gap_limit_for_change = 10  # constant
         # saved fields
         self.use_change            = storage.get('use_change', True)
         self.multiple_change       = storage.get('multiple_change', False)
@@ -1737,30 +1737,40 @@ class Simple_Deterministic_Wallet(Deterministic_Wallet):
 
 
 class Standard_Wallet(Simple_Deterministic_Wallet):
-    gap_limit = 20
+
     wallet_type = 'standard'
+
+    def __init__(self, storage):
+        Simple_Deterministic_Wallet.__init__(self, storage)
+        self.gap_limit = 20
 
 
 class Mobile_Wallet(Simple_Deterministic_Wallet):
-    gap_limit = 10
-    gap_limit_for_change = 10
+
     wallet_type = 'mobile'
+
+    def __init__(self, storage):
+        Simple_Deterministic_Wallet.__init__(self, storage)
+        self.gap_limit = 10
+        self.gap_limit_for_change = 10
 
 
 class Qt_Core_Wallet(Simple_Deterministic_Wallet):
     wallet_type = 'qtcore'
-    gap_limit = 300
-    gap_limit_for_change = 10
+
+    def __init__(self, storage):
+        Simple_Deterministic_Wallet.__init__(self, storage)
+        self.gap_limit = 300
+        self.gap_limit_for_change = 20
 
 
 class Multisig_Wallet(Deterministic_Wallet):
-    # generic m of n
-    gap_limit = 20
 
     def __init__(self, storage):
         self.wallet_type = storage.get('wallet_type')
         self.m, self.n = multisig_type(self.wallet_type)
         Deterministic_Wallet.__init__(self, storage)
+        self.gap_limit = 20
 
     def get_pubkeys(self, c, i):
         return self.derive_pubkeys(c, i)
