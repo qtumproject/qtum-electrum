@@ -95,8 +95,6 @@ class BCDataStream(object):
         except IndexError:
             raise SerializationError("attempt to read past end of buffer")
 
-        return ''
-
     def read_boolean(self): return self.read_bytes(1)[0] != chr(0)
     def read_int16(self): return self._read_num('<h')
     def read_uint16(self): return self._read_num('<H')
@@ -613,7 +611,6 @@ class Transaction:
             return bitcoin.public_key_to_p2pk_script(addr)
         else:
             raise TypeError('Unknown output type')
-        return script
 
     @classmethod
     def get_siglist(self, txin, estimate_size=False):
