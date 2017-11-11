@@ -33,9 +33,6 @@ blockchains = {}
 def read_blockchains(config):
     global blockchains
     main_chain = Blockchain(config, 0, None)
-    if not main_chain.is_valid():
-        os.remove(main_chain.path())
-    main_chain = Blockchain(config, 0, None)
     blockchains[0] = main_chain
 
     fdir = os.path.join(util.get_headers_dir(config), 'forks')
@@ -54,8 +51,13 @@ def read_blockchains(config):
         if b.parent_id == 0 and b.height() < main_chain_height - 100:
             bad_chains.append(b.checkpoint)
         blockchains[b.checkpoint] = b
+    if not main_chain.is_valid():
+        bad_chains.append(0)
+
     for bad_k in bad_chains:
         remove_chain(bad_k, blockchains)
+    if len(blockchains) == 0:
+        blockchains[0] = Blockchain(config, 0, None)
     return blockchains
 
 
@@ -131,7 +133,7 @@ class Blockchain(util.PrintError):
             conn.close()
             if not min_height == self.checkpoint:
                 return False
-            if not size == max_height - min_height + 1:
+            if size > 0 and not size == max_height - min_height + 1:
                 return False
         return True
 
