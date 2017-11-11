@@ -39,6 +39,7 @@ blockchains = {}
 
 
 def read_blockchains(config):
+    global blockchains
     blockchains[0] = Blockchain(config, 0, None)
     fdir = os.path.join(util.get_headers_dir(config), 'forks')
     if not os.path.exists(fdir):
@@ -142,14 +143,6 @@ class Blockchain(util.PrintError):
         filename = 'blockchain_headers' if self.parent_id is None \
             else os.path.join('forks', 'fork_%d_%d'%(self.parent_id, self.checkpoint))
         return os.path.join(d, filename)
-
-    def close(self):
-        if self.conn:
-            self.conn.commit()
-            self.conn.close()
-            self.conn = None
-            self.swaping.clear()
-        self.print_error('stopped')
 
     def parent(self):
         return blockchains[self.parent_id]
@@ -264,6 +257,7 @@ class Blockchain(util.PrintError):
             return
         self.swaping.set()
         parent.swaping.set()
+        global blockchains
         try:
             print_error('swap', self.checkpoint, self.parent_id)
             for i in range(checkpoint, checkpoint + self._size):
@@ -278,28 +272,30 @@ class Blockchain(util.PrintError):
             # update size
             self.update_size()
             parent.update_size()
+
             # store file path
-            for b in blockchains.values():
-                b.old_path = b.path()
+            # for b in blockchains.values():
+            #     b.old_path = b.path()
             # swap parameters
-            self.parent_id = parent.parent_id
-            parent.parent_id = parent_id
-            self.checkpoint = parent.checkpoint
-            parent.checkpoint = checkpoint
+            # self.parent_id = parent.parent_id
+            # parent.parent_id = parent_id
+            # self.checkpoint = parent.checkpoint
+            # parent.checkpoint = checkpoint
             # move files
-            for b in blockchains.values():
-                if b in [self, parent]: continue
-                if b.old_path != b.path():
-                    self.print_error("renaming", b.old_path, b.path())
-                    os.rename(b.old_path, b.path())
+            # for b in blockchains.values():
+            #     if b in [self, parent]: continue
+            #     if b.old_path != b.path():
+            #         self.print_error("renaming", b.old_path, b.path())
+            #         os.rename(b.old_path, b.path())
             # update pointers
-            blockchains[self.checkpoint] = self
-            blockchains[parent.checkpoint] = parent
+            # blockchains[self.checkpoint] = self
+            # blockchains[parent.checkpoint] = parent
         except (BaseException,) as e:
             self.print_error('swap error', e)
         self.swaping.clear()
         parent.swaping.clear()
         print_error('swap finished')
+        parent.swap_with_parent()
 
     def _write(self, raw_header, height):
         if height > self._size + self.checkpoint:
