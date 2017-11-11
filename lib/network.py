@@ -435,8 +435,6 @@ class Network(util.DaemonThread):
         self.connecting = set()
         # Get a new queue - no old pending connections thanks!
         self.socket_queue = queue.Queue()
-        for _, blockchain in self.blockchains.items():
-            blockchain.close()
 
     def set_parameters(self, host, port, protocol, proxy, auto_connect):
         proxy_str = serialize_proxy(proxy)
