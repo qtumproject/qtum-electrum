@@ -122,7 +122,8 @@ class TcpConnection(threading.Thread, util.PrintError):
                 e = _e
                 continue
         else:
-            self.print_error("failed to connect", str(e))
+            pass
+            # self.print_error("failed to connect", str(e))
 
     def get_socket(self):
         if self.use_ssl:

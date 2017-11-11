@@ -1,3 +1,6 @@
+# Release v0.17.3
+  * fix an issue with chain fork
+
 # Release v0.17.2
   * support importing private master key for Qtum Qt Core wallet
 
