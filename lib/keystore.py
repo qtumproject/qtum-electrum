@@ -820,9 +820,10 @@ def from_master_key(text):
     return k
 
 
-def from_qt_core_xprv(xprv):
+def from_qt_core_xprv(ext_master_xprv):
     k = Qt_Core_Keystore({})
-    xprv, xpub = bip32_private_derivation(xprv, "m/", qt_core_derivation())
+    k.ext_master_xprv = ext_master_xprv
+    xprv, xpub = bip32_private_derivation(ext_master_xprv, "m/", qt_core_derivation())
     k.add_xprv(xprv)
     return k
 
