@@ -32,18 +32,22 @@ blockchains = {}
 
 def read_blockchains(config):
     global blockchains
-    blockchains[0] = Blockchain(config, 0, None)
+    main_chain = Blockchain(config, 0, None)
+    blockchains[0] = main_chain
     fdir = os.path.join(util.get_headers_dir(config), 'forks')
     if not os.path.exists(fdir):
         os.mkdir(fdir)
     l = filter(lambda x: x.startswith('fork_'), os.listdir(fdir))
     l = sorted(l, key = lambda x: int(x.split('_')[1]))
     bad_chains = []
+    main_chain_height = main_chain.height()
     for filename in l:
         checkpoint = int(filename.split('_')[2])
         parent_id = int(filename.split('_')[1])
         b = Blockchain(config, checkpoint, parent_id)
         if not b.is_valid():
+            bad_chains.append(b.checkpoint)
+        if b.parent_id == 0 and b.height() < main_chain_height - 100:
             bad_chains.append(b.checkpoint)
         blockchains[b.checkpoint] = b
     for bad_k in bad_chains:
@@ -55,11 +59,10 @@ def read_blockchains(config):
 
 def remove_chain(cp, chains):
     try:
-        chains[cp].close()
         os.remove(chains[cp].path())
         del chains[cp]
     except (BaseException,) as e:
-        pass
+        print_error('remove_chain', e)
     for k in list(chains.keys()):
         if chains[k].parent_id == cp:
             remove_chain(chains[k].checkpoint, chains)
