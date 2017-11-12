@@ -15,3 +15,4 @@ trezor
 btchip-python
 keepkey
 cython
+jnius

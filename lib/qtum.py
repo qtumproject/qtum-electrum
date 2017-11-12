@@ -455,9 +455,12 @@ def address_to_script(addr):
 
 def address_to_scripthash(addr):
     script = address_to_script(addr)
+    return script_to_scripthash(script)
+
+
+def script_to_scripthash(script):
     h = sha256(bytes.fromhex(script))[0:32]
     return bh2u(bytes(reversed(h)))
-
 
 def public_key_to_p2pk_script(pubkey):
     script = push_script(pubkey)
@@ -1153,6 +1156,14 @@ class Deserializer(object):
         result, = unpack_uint64_from(self.binary, self.cursor)
         self.cursor += 8
         return result
+
+
+def hash_header(header):
+    if header is None:
+        return '0' * 64
+    if header.get('prev_block_hash') is None:
+        header['prev_block_hash'] = '00' * 32
+    return hash_encode(Hash(bfh(serialize_header(header))))
 
 
 def serialize_header(res):

@@ -27,33 +27,33 @@ from . import qtum
 from .qtum import *
 
 
-def hash_header(header):
-    if header is None:
-        return '0' * 64
-    if header.get('prev_block_hash') is None:
-        header['prev_block_hash'] = '00'*32
-    return hash_encode(Hash(bfh(serialize_header(header))))
-
-
 blockchains = {}
 
 
 def read_blockchains(config):
     global blockchains
-    blockchains[0] = Blockchain(config, 0, None)
+    main_chain = Blockchain(config, 0, None)
+    blockchains[0] = main_chain
+
     fdir = os.path.join(util.get_headers_dir(config), 'forks')
     if not os.path.exists(fdir):
         os.mkdir(fdir)
     l = filter(lambda x: x.startswith('fork_'), os.listdir(fdir))
     l = sorted(l, key = lambda x: int(x.split('_')[1]))
     bad_chains = []
+    main_chain_height = main_chain.height()
     for filename in l:
         checkpoint = int(filename.split('_')[2])
         parent_id = int(filename.split('_')[1])
         b = Blockchain(config, checkpoint, parent_id)
         if not b.is_valid():
             bad_chains.append(b.checkpoint)
+        if b.parent_id == 0 and b.height() < main_chain_height - 100:
+            bad_chains.append(b.checkpoint)
         blockchains[b.checkpoint] = b
+    if not main_chain.is_valid():
+        bad_chains.append(0)
+
     for bad_k in bad_chains:
         remove_chain(bad_k, blockchains)
     if len(blockchains) == 0:
@@ -63,11 +63,10 @@ def read_blockchains(config):
 
 def remove_chain(cp, chains):
     try:
-        chains[cp].close()
         os.remove(chains[cp].path())
         del chains[cp]
     except (BaseException,) as e:
-        pass
+        print_error('remove_chain', e)
     for k in list(chains.keys()):
         if chains[k].parent_id == cp:
             remove_chain(chains[k].checkpoint, chains)
@@ -134,7 +133,7 @@ class Blockchain(util.PrintError):
             conn.close()
             if not min_height == self.checkpoint:
                 return False
-            if not size == max_height - min_height + 1:
+            if size > 0 and not size == max_height - min_height + 1:
                 return False
         return True
 
@@ -161,12 +160,6 @@ class Blockchain(util.PrintError):
     def get_name(self):
         return self.get_hash(self.get_checkpoint()).lstrip('00')[0:10]
 
-    def check_header(self, header):
-        header_hash = hash_header(header)
-        height = header.get('block_height')
-        real_hash = self.get_hash(height)
-        return header_hash == real_hash
-
     def fork(parent, header):
         checkpoint = header.get('block_height')
         self = Blockchain(parent.config, checkpoint, parent.checkpoint)
@@ -191,56 +184,6 @@ class Blockchain(util.PrintError):
         count = int(cursor.fetchone()[0])
         self._size = count
         cursor.close()
-
-    def verify_header(self, header, prev_header, bits, target):
-        prev_hash = hash_header(prev_header)
-        _hash = hash_header(header)
-        if prev_hash != header.get('prev_block_hash'):
-            raise BaseException("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
-        if qtum.TESTNET:
-            return True
-
-        if bits != header.get('bits'):
-            raise BaseException("bits mismatch: %s vs %s, %s" %
-                                (hex(bits), hex(header.get('bits')), _hash))
-
-        if is_pos(header):
-            pass
-            # todo
-            # 需要拿到value，计算新的target
-        else:
-            if int('0x' + _hash, 16) > target:
-                raise BaseException("insufficient proof of work: %s vs target %s" % (int('0x' + _hash, 16), target))
-
-    def read_chunk(self, data):
-        raw_headers = []
-        cursor = 0
-        while cursor < len(data):
-            raw_header, cursor = read_a_raw_header_from_chunk(data, cursor)
-            if not raw_header:
-                raise BaseException('read_chunk, no header read')
-            raw_headers.append(raw_header)
-        return raw_headers
-
-    def verify_chunk(self, index, raw_headers):
-        prev_header = None
-        pprev_header = None
-        if index != 0:
-            prev_header = self.read_header(index * CHUNK_SIZE - 1)
-            pprev_header = self.read_header(index * CHUNK_SIZE - 2)
-        for i, raw_header in enumerate(raw_headers):
-            height = index * CHUNK_SIZE + i
-            header = deserialize_header(raw_header, height)
-            bits, target = self.get_target(height, prev_header=prev_header, pprev_header=pprev_header)
-            self.verify_header(header, prev_header, bits, target)
-            pprev_header = prev_header
-            prev_header = header
-
-    def save_chunk(self, index, raw_headers):
-        for i, raw_header in enumerate(raw_headers):
-            height = index * CHUNK_SIZE + i
-            self.write(raw_header, height)
-        self.swap_with_parent()
 
     def swap_with_parent(self):
         if self.parent_id is None:
@@ -301,13 +244,14 @@ class Blockchain(util.PrintError):
         if height > self._size + self.checkpoint:
             return
         try:
+            conn = self.conn
             cursor = self.conn.cursor()
-        except sqlite3.ProgrammingError:
+        except (sqlite3.ProgrammingError, AttributeError):
             conn = sqlite3.connect(self.path(), check_same_thread=False)
             cursor = conn.cursor()
         cursor.execute('REPLACE INTO header (height, data) VALUES(?,?)', (height, raw_header))
         cursor.close()
-        self.conn.commit()
+        conn.commit()
 
     def write(self, raw_header, height):
         if self.swaping.is_set():
@@ -328,13 +272,14 @@ class Blockchain(util.PrintError):
 
     def _delete(self, height):
         try:
-            cursor = self.conn.cursor()
-        except sqlite3.ProgrammingError:
+            conn = self.conn
+            cursor = conn.cursor()
+        except (sqlite3.ProgrammingError, AttributeError):
             conn = sqlite3.connect(self.path(), check_same_thread=False)
             cursor = conn.cursor()
         cursor.execute('DELETE FROM header where height=?', (height,))
         cursor.close()
-        self.conn.commit()
+        conn.commit()
 
     def delete(self, height):
         if self.swaping.is_set():
@@ -351,13 +296,14 @@ class Blockchain(util.PrintError):
             return
         with self.lock:
             try:
+                conn = self.conn
                 cursor = self.conn.cursor()
-            except sqlite3.ProgrammingError:
+            except (sqlite3.ProgrammingError, AttributeError):
                 conn = sqlite3.connect(self.path(), check_same_thread=False)
                 cursor = conn.cursor()
             cursor.execute('DELETE FROM header')
             cursor.close()
-            self.conn.commit()
+            conn.commit()
             self._size = 0
 
     def save_header(self, header):
@@ -388,6 +334,72 @@ class Blockchain(util.PrintError):
         if deserialize:
             return deserialize_header(header, height)
         return header
+
+    def verify_header(self, header, prev_header, bits, target):
+        prev_hash = hash_header(prev_header)
+        _hash = hash_header(header)
+        if prev_hash != header.get('prev_block_hash'):
+            raise BaseException("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
+        if qtum.TESTNET:
+            return True
+
+        if bits != header.get('bits'):
+            raise BaseException("bits mismatch: %s vs %s, %s" %
+                                (hex(bits), hex(header.get('bits')), _hash))
+
+        if is_pos(header):
+            pass
+            # todo
+            # 需要拿到value，计算新的target
+        else:
+            if int('0x' + _hash, 16) > target:
+                raise BaseException("insufficient proof of work: %s vs target %s" % (int('0x' + _hash, 16), target))
+
+    def check_header(self, header):
+        header_hash = hash_header(header)
+        height = header.get('block_height')
+        real_hash = self.get_hash(height)
+        return header_hash == real_hash
+
+    def save_chunk(self, index, raw_headers):
+        if self.swaping.is_set():
+            return
+        with self.lock:
+            try:
+                conn = self.conn
+                cursor = self.conn.cursor()
+            except (sqlite3.ProgrammingError, AttributeError):
+                conn = sqlite3.connect(self.path(), check_same_thread=False)
+                cursor = conn.cursor()
+            headers = list([(index * CHUNK_SIZE + i, v) for i, v in enumerate(raw_headers)])
+            cursor.executemany('REPLACE INTO header (height, data) VALUES(?,?)', headers)
+            cursor.close()
+            conn.commit()
+            self.update_size()
+
+    def read_chunk(self, data):
+        raw_headers = []
+        cursor = 0
+        while cursor < len(data):
+            raw_header, cursor = read_a_raw_header_from_chunk(data, cursor)
+            if not raw_header:
+                raise BaseException('read_chunk, no header read')
+            raw_headers.append(raw_header)
+        return raw_headers
+
+    def verify_chunk(self, index, raw_headers):
+        prev_header = None
+        pprev_header = None
+        if index != 0:
+            prev_header = self.read_header(index * CHUNK_SIZE - 1)
+            pprev_header = self.read_header(index * CHUNK_SIZE - 2)
+        for i, raw_header in enumerate(raw_headers):
+            height = index * CHUNK_SIZE + i
+            header = deserialize_header(raw_header, height)
+            bits, target = self.get_target(height, prev_header=prev_header, pprev_header=pprev_header)
+            self.verify_header(header, prev_header, bits, target)
+            pprev_header = prev_header
+            prev_header = header
 
     def get_hash(self, height):
         return hash_header(self.read_header(height))
@@ -433,44 +445,6 @@ class Blockchain(util.PrintError):
         new_target = uint256_from_compact(nbits)
 
         return nbits, new_target
-
-    #  # bitcoin
-    # def get_target(self, index):
-    #     if bitcoin.TESTNET:
-    #         return 0, 0
-    #     if index == 0:
-    #         return GENESIS_BITS, MAX_TARGET
-    #
-    #     first = self.read_header((index-1) * 2016)
-    #     last = self.read_header(index*2016 - 1)
-    #     # bits to target
-    #     bits = last.get('bits')
-    #
-    #     bitsN = (bits >> 24) & 0xff
-    #
-    #     if not (bitsN >= 0x03 and bitsN <= 0x1d):
-    #         raise BaseException("First part of bits should be in [0x03, 0x1d]")
-    #
-    #     bitsBase = bits & 0xffffff
-    #     if not (bitsBase >= 0x8000 and bitsBase <= 0x7fffff):
-    #         raise BaseException("Second part of bits should be in [0x8000, 0x7fffff]")
-    #     target = bitsBase << (8 * (bitsN-3))
-    #     # new target
-    #     nActualTimespan = last.get('timestamp') - first.get('timestamp')
-    #     nTargetTimespan = 14 * 24 * 60 * 60
-    #     nActualTimespan = max(nActualTimespan, nTargetTimespan // 4)
-    #     nActualTimespan = min(nActualTimespan, nTargetTimespan * 4)
-    #     new_target = min(MAX_TARGET, (target * nActualTimespan) // nTargetTimespan)
-    #     # convert new target to bits
-    #     c = ("%064x" % new_target)[2:]
-    #     while c[:2] == '00' and len(c) > 6:
-    #         c = c[2:]
-    #     bitsN, bitsBase = len(c) // 2, int('0x' + c[:6], 16)
-    #     if bitsBase >= 0x800000:
-    #         bitsN += 1
-    #         bitsBase >>= 8
-    #     new_bits = bitsN << 24 | bitsBase
-    #     return new_bits, bitsBase << (8 * (bitsN - 3))
 
     def can_connect(self, header, check_height=True):
         height = header['block_height']

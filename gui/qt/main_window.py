@@ -1356,7 +1356,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         use_rbf = self.rbf_checkbox.isChecked()
         tx.set_rbf(use_rbf)
 
-        if fee < self.wallet.relayfee() * tx.estimated_size() / 1000 and tx.requires_fee(self.wallet):
+        if fee < self.wallet.relayfee() * tx.estimated_size() / 1000:
             self.show_error(_("This transaction requires a higher fee, or it will not be propagated by the network"))
             return
 
@@ -2301,7 +2301,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
             if tx_hash:
                 label = wallet.get_label(tx_hash)
-                label = label.encode('utf-8')
             else:
                 label = ""
 

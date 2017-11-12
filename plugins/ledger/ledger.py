@@ -372,13 +372,12 @@ class Ledger_KeyStore(Hardware_KeyStore):
                     tmp += txtmp.outputs[utxo[1]].amount
                     chipInputs.append({'value': tmp, 'witness': True, 'sequence': sequence})
                     redeemScripts.append(bfh(utxo[2]))
-                # FIXME: getTrustedInput fails with native segwit transactions (firmware issue)
-                # elif not p2shTransaction:
-                #    txtmp = bitcoinTransaction(bfh(utxo[0]))
-                #    trustedInput = self.get_client().getTrustedInput(txtmp, utxo[1])
-                #    trustedInput['sequence'] = sequence
-                #    chipInputs.append(trustedInput)
-                #    redeemScripts.append(txtmp.outputs[utxo[1]].script)
+                elif not p2shTransaction:
+                    txtmp = bitcoinTransaction(bfh(utxo[0]))
+                    trustedInput = self.get_client().getTrustedInput(txtmp, utxo[1])
+                    trustedInput['sequence'] = sequence
+                    chipInputs.append(trustedInput)
+                    redeemScripts.append(txtmp.outputs[utxo[1]].script)
                 else:
                     tmp = bfh(utxo[3])[::-1]
                     tmp += bfh(int_to_hex(utxo[1], 4))
@@ -408,7 +407,8 @@ class Ledger_KeyStore(Hardware_KeyStore):
                     singleInput = [chipInputs[inputIndex]]
                     self.get_client().startUntrustedTransaction(False, 0,
                                                                 singleInput, redeemScripts[inputIndex])
-                    inputSignature = self.get_client().untrustedHashSign(inputsPaths[inputIndex], pin)
+                    inputSignature = self.get_client().untrustedHashSign(inputsPaths[inputIndex], pin,
+                                                                         lockTime=tx.locktime)
                     inputSignature[0] = 0x30  # force for 1.4.9+
                     signatures.append(inputSignature)
                     inputIndex = inputIndex + 1

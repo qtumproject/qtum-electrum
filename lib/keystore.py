@@ -357,12 +357,17 @@ class Mobile_Keystore(BIP32_KeyStore):
 
 
 class Qt_Core_Keystore(BIP32_KeyStore):
+    def __init__(self, d):
+        BIP32_KeyStore.__init__(self, d)
+        self.ext_master_xprv = d.get('ext_master_xprv', '')
+
     def dump(self):
         d = Deterministic_KeyStore.dump(self)
         d['type'] = 'qtcore'
         d['xpub'] = self.xpub
         d['xprv'] = self.xprv
         d['derivation'] = qt_core_derivation()
+        d['ext_master_xprv'] = self.ext_master_xprv
         return d
 
     def derive_pubkey(self, for_change, n):
@@ -815,9 +820,10 @@ def from_master_key(text):
     return k
 
 
-def from_qt_core_xprv(xprv):
+def from_qt_core_xprv(ext_master_xprv):
     k = Qt_Core_Keystore({})
-    xprv, xpub = bip32_private_derivation(xprv, "m/", qt_core_derivation())
+    k.ext_master_xprv = ext_master_xprv
+    xprv, xpub = bip32_private_derivation(ext_master_xprv, "m/", qt_core_derivation())
     k.add_xprv(xprv)
     return k
 

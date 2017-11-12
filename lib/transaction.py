@@ -95,8 +95,6 @@ class BCDataStream(object):
         except IndexError:
             raise SerializationError("attempt to read past end of buffer")
 
-        return ''
-
     def read_boolean(self): return self.read_bytes(1)[0] != chr(0)
     def read_int16(self): return self._read_num('<h')
     def read_uint16(self): return self._read_num('<H')
@@ -440,9 +438,9 @@ def parse_witness(vds, txin):
     if txin['type'] == 'coinbase':
         pass
     elif n > 2:
-        txin['num_sig'] = n - 2
         txin['signatures'] = parse_sig(w[1:-1])
         m, n, x_pubkeys, pubkeys, witnessScript = parse_redeemScript(bfh(w[-1]))
+        txin['num_sig'] = m
         txin['x_pubkeys'] = x_pubkeys
         txin['pubkeys'] = pubkeys
         txin['witnessScript'] = witnessScript
@@ -613,7 +611,6 @@ class Transaction:
             return bitcoin.public_key_to_p2pk_script(addr)
         else:
             raise TypeError('Unknown output type')
-        return script
 
     @classmethod
     def get_siglist(self, txin, estimate_size=False):
@@ -937,29 +934,6 @@ class Transaction:
             'final': self.is_final(),
         }
         return out
-
-    def requires_fee(self, wallet):
-        # see https://en.bitcoin.it/wiki/Transaction_fees
-        #
-        # size must be smaller than 1 kbyte for free tx
-        size = len(self.serialize(-1))/2
-        if size >= 10000:
-            return True
-        # all outputs must be 0.01 BTC or larger for free tx
-        for addr, value in self.get_outputs():
-            if value < 1000000:
-                return True
-        # priority must be large enough for free tx
-        threshold = 57600000
-        weight = 0
-        for txin in self.inputs():
-            height, conf, timestamp = wallet.get_tx_height(txin["prevout_hash"])
-            weight += txin["value"] * conf
-        priority = weight / size
-        print_error(priority, threshold)
-
-        return priority < threshold
-
 
 
 def tx_from_str(txt):
