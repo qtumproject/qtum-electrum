@@ -1,15 +1,7 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-import six
 from electrum.i18n import _
 
-import PyQt5
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-import PyQt5.QtCore as QtCore
 from PyQt5.QtWidgets import QSlider, QToolTip
 
 import threading

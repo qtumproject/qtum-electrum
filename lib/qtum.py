@@ -5,11 +5,9 @@ __author__ = 'CodeFace'
 
 import hashlib
 import base64
-import re
 import hmac
 import os
 import json
-
 import ecdsa
 import pyaes
 

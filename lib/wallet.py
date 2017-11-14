@@ -26,20 +26,15 @@
 #   - Standard_Wallet: one keystore, P2PKH
 #   - Multisig_Wallet: several keystores, P2SH
 
-
 import os
-import hashlib
-import ast
 import threading
 import random
 import time
 import json
 import copy
-import re
-import stat
 import errno
 from functools import partial
-from collections import namedtuple, defaultdict
+from collections import defaultdict
 
 from .i18n import _
 from .util import NotEnoughFunds, PrintError, UserCancelled, profiler, format_satoshis
@@ -1282,7 +1277,6 @@ class Abstract_Wallet(PrintError):
         self.storage.put('payment_requests', self.receive_requests)
 
     def add_payment_request(self, req, config):
-        import os
         addr = req['address']
         amount = req.get('amount')
         message = req.get('memo')

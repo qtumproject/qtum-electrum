@@ -22,22 +22,14 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import socket
-import six
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 import PyQt5.QtCore as QtCore
+from PyQt5.QtWidgets import *
 
 from electrum.i18n import _
 from electrum.network import DEFAULT_PORTS
-from electrum.network import serialize_server, deserialize_server
 from electrum.util import print_error
 
 from .util import *
