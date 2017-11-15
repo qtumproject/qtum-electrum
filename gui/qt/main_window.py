@@ -37,10 +37,8 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
 from electrum.util import bh2u, bfh
-
 from electrum import keystore
-from electrum.bitcoin import COIN, is_address, TYPE_ADDRESS
-from electrum.qtum import TESTNET
+from electrum.qtum import COIN, is_address, TYPE_ADDRESS, TESTNET
 from electrum.plugins import run_hook
 from electrum.i18n import _
 from electrum.util import (format_time, format_satoshis, PrintError,
@@ -50,6 +48,7 @@ from electrum import Transaction
 from electrum import util, bitcoin, commands, coinchooser
 from electrum import paymentrequest
 from electrum.wallet import Multisig_Wallet
+from electrum.paymentrequest import PR_PAID
 try:
     from electrum.plot import plot_history
 except:
@@ -60,7 +59,6 @@ from .qrcodewidget import QRCodeWidget, QRDialog
 from .qrtextedit import ShowQRTextEdit, ScanQRTextEdit
 from .transaction_dialog import show_transaction
 from .fee_slider import FeeSlider
-
 from .util import *
 
 
@@ -81,9 +79,6 @@ class StatusBarButton(QPushButton):
     def keyPressEvent(self, e):
         if e.key() == Qt.Key_Return:
             self.func()
-
-
-from electrum.paymentrequest import PR_PAID
 
 
 class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
