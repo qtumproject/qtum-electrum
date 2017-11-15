@@ -118,7 +118,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.need_update = threading.Event()
 
         self.decimal_point = config.get('decimal_point', 8)
-        self.num_zeros     = int(config.get('num_zeros',0))
+        self.num_zeros = int(config.get('num_zeros', 0))
 
         self.completions = QStringListModel()
 
@@ -129,11 +129,13 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.utxo_tab = self.create_utxo_tab()
         self.console_tab = self.create_console_tab()
         self.contacts_tab = self.create_contacts_tab()
+        self.smart_contract_tab = self.create_smart_contract_tab()
 
         tabs.addTab(self.create_history_tab(), QIcon(":icons/tab_history.png"), _('History'))
         tabs.addTab(self.send_tab, QIcon(":icons/tab_send.png"), _('Send'))
         tabs.addTab(self.receive_tab, QIcon(":icons/tab_receive.png"), _('Receive'))
-        tabs.addTab(self.contacts_tab, QIcon(":icons/tab_contacts.png"), _('Contacts'))
+        # tabs.addTab(self.contacts_tab, QIcon(":icons/tab_contacts.png"), _('Contacts'))
+        tabs.addTab(self.smart_contract_tab, QIcon(":icons/tab_contacts.png"), _('Smart Contract'))
 
         def add_optional_tab(tabs, tab, icon, description, name):
             tab.tab_icon = icon
@@ -1582,6 +1584,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.utxo_list = l = UTXOList(self)
         return self.create_list_tab(l)
 
+    def create_smart_contract_tab(self):
+        from .smart_contract_list import SmartContractList
+        self.smart_contract_list = l = SmartContractList(self)
+        return self.create_list_tab(l)
+
     def create_contacts_tab(self):
         from .contact_list import ContactList
         self.contact_list = l = ContactList(self)
@@ -2937,3 +2944,18 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         if is_final:
             new_tx.set_rbf(False)
         self.show_transaction(new_tx, tx_label)
+
+    def delete_samart_contacts(self, keys):
+        pass
+
+    def create_contract_dialog(self):
+        pass
+
+    def subscribe_contract_dialog(self):
+        pass
+
+    def call_contract_dialog(self):
+        pass
+
+    def edit_contract_dialog(self):
+        pass
