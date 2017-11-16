@@ -16,3 +16,4 @@ btchip-python
 keepkey
 cython
 jnius
+ethereum-abi-utils
