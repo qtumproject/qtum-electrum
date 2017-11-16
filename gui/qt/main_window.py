@@ -38,7 +38,7 @@ from PyQt5.QtWidgets import *
 
 from electrum.util import bh2u, bfh
 from electrum import keystore
-from electrum.qtum import COIN, is_address, TYPE_ADDRESS, TESTNET
+from electrum.qtum import COIN, is_address, TYPE_ADDRESS, TESTNET, is_hash160
 from electrum.plugins import run_hook
 from electrum.i18n import _
 from electrum.util import format_time, format_satoshis, PrintError, format_satoshis_plain, NotEnoughFunds, UserCancelled
@@ -2948,7 +2948,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.show_transaction(new_tx, tx_label)
 
     def set_smart_contract(self, name, address, abi):
-        if not len(address) == 40:
+        if not is_hash160(address):
             self.show_error(_('Invalid Address'))
             self.smart_contract_list.update()
             return False

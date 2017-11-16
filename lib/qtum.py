@@ -652,6 +652,20 @@ def is_private_key(key):
         return False
 
 
+def is_hash160(addr):
+    if not addr:
+        return False
+    if not isinstance(addr, str):
+        return False
+    if not len(addr) == 40:
+        return False
+    for char in addr:
+        if (char < '0' or char > '9') and (char < 'A' or char > 'F') and (char < 'a' or char > 'f'):
+            return False
+    return True
+
+
+
 ########### end pywallet functions #######################
 
 def is_minikey(text):

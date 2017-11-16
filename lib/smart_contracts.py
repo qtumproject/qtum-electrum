@@ -8,8 +8,6 @@ import re
 import json
 
 from . import qtum
-from .util import print_error
-from .i18n import _
 
 storage_key = 'smart_contracts'
 
@@ -58,6 +56,6 @@ class SmartContracts(dict):
         for k, v in list(data.items()):
             if k == storage_key:
                 return self._validate(v)
-            if not len(k) == 40:
+            if not qtum.is_hash160(k):
                 data.pop(k)
         return data
