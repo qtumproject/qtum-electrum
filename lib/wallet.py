@@ -39,7 +39,7 @@ from collections import defaultdict
 from .i18n import _
 from .util import NotEnoughFunds, PrintError, UserCancelled, profiler, format_satoshis
 
-from .bitcoin import *
+from .qtum import *
 from .version import *
 from .keystore import load_keystore, Hardware_KeyStore
 from .storage import multisig_type
@@ -57,6 +57,7 @@ from . import paymentrequest
 from .paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED
 from .paymentrequest import InvoiceStore
 from .contacts import Contacts
+from .smart_contracts import SmartContracts
 
 from .storage import WalletStorage
 
@@ -125,6 +126,7 @@ class Abstract_Wallet(PrintError):
         # invoices and contacts
         self.invoices = InvoiceStore(self.storage)
         self.contacts = Contacts(self.storage)
+        self.smart_contracts = SmartContracts(self.storage)
 
 
     def diagnostic_name(self):

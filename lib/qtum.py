@@ -102,18 +102,18 @@ def set_testnet():
 
 mainnet_block_explorers = {
     'explorer.qtum.org': ('https://explorer.qtum.org',
-                          {'tx': 'tx', 'addr': 'address'}),
+                          {'tx': 'tx', 'addr': 'address', 'contract': 'contract'}),
     'qtumexplorer.io': ('https://qtumexplorer.io/',
-                        {'tx': 'tx', 'addr': 'address'}),
+                        {'tx': 'tx', 'addr': 'address', 'contract': 'contract'}),
     'system default': ('blockchain:',
-                       {'tx': 'tx', 'addr': 'address'}),
+                       {'tx': 'tx', 'addr': 'address', 'contract': 'contract'}),
 }
 
 testnet_block_explorers = {
     'testnet.qtum.org': ('https://testnet.qtum.org/',
-                         {'tx': 'tx', 'addr': 'address'}),
+                         {'tx': 'tx', 'addr': 'address', 'contract': 'contract'}),
     'system default': ('blockchain:',
-                       {'tx': 'tx', 'addr': 'address'}),
+                       {'tx': 'tx', 'addr': 'address', 'contract': 'contract'}),
 }
 
 

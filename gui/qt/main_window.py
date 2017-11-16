@@ -41,9 +41,7 @@ from electrum import keystore
 from electrum.qtum import COIN, is_address, TYPE_ADDRESS, TESTNET
 from electrum.plugins import run_hook
 from electrum.i18n import _
-from electrum.util import (format_time, format_satoshis, PrintError,
-                           format_satoshis_plain, NotEnoughFunds,
-                           UserCancelled)
+from electrum.util import format_time, format_satoshis, PrintError, format_satoshis_plain, NotEnoughFunds, UserCancelled
 from electrum import Transaction
 from electrum import util, bitcoin, commands, coinchooser
 from electrum import paymentrequest
@@ -60,6 +58,7 @@ from .qrtextedit import ShowQRTextEdit, ScanQRTextEdit
 from .transaction_dialog import show_transaction
 from .fee_slider import FeeSlider
 from .util import *
+from .smart_contract_dialog import ContractCreateDialog, ContractCallDialog, ContractEditDialog, ContractSubscribeDialog
 
 
 class StatusBarButton(QPushButton):
@@ -101,6 +100,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.fx = gui_object.daemon.fx
         self.invoices = wallet.invoices
         self.contacts = wallet.contacts
+        self.smart_contracts = wallet.smart_contracts
         self.tray = gui_object.tray
         self.app = gui_object.app
         self.cleaned_up = False
@@ -134,8 +134,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         tabs.addTab(self.create_history_tab(), QIcon(":icons/tab_history.png"), _('History'))
         tabs.addTab(self.send_tab, QIcon(":icons/tab_send.png"), _('Send'))
         tabs.addTab(self.receive_tab, QIcon(":icons/tab_receive.png"), _('Receive'))
-        # tabs.addTab(self.contacts_tab, QIcon(":icons/tab_contacts.png"), _('Contacts'))
         tabs.addTab(self.smart_contract_tab, QIcon(":icons/tab_contacts.png"), _('Smart Contract'))
+        tabs.addTab(self.contacts_tab, QIcon(":icons/tab_contacts.png"), _('Contacts'))
 
         def add_optional_tab(tabs, tab, icon, description, name):
             tab.tab_icon = icon
@@ -536,8 +536,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     def show_about(self):
         QMessageBox.about(self, "Qtum Electrum",
                           _("Version") +" %s" % (self.wallet.electrum_version) + "\n\n" +
-                          _("This software is based on Electrum to support Qtum. Electrum's focus is speed, with low resource usage and simplifying Bitcoin. You do not need to perform regular backups, because your wallet can be recovered from a secret phrase that you can memorize or write on paper. Startup times are instant because it operates in conjunction with high-performance servers that handle the most complicated parts of the Bitcoin system."  + "\n\n" +
-                _("Uses icons from the Icons8 icon pack (icons8.com).")))
+                          _(
+                              "This software is based on Electrum to support Qtum. Qtum Electrum's focus is speed, with low resource usage and simplifying Qtum. You do not need to perform regular backups, because your wallet can be recovered from a secret phrase that you can memorize or write on paper. Startup times are instant because it operates in conjunction with high-performance servers that handle the most complicated parts of the Bitcoin system." + "\n\n" +
+                              _("Uses icons from the Icons8 icon pack (icons8.com).")))
 
     def show_report_bug(self):
         msg = ' '.join([
@@ -723,6 +724,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.address_list.update()
         self.utxo_list.update()
         self.contact_list.update()
+        self.smart_contract_list.update()
         self.invoice_list.update()
         self.update_completions()
 
@@ -2945,17 +2947,37 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             new_tx.set_rbf(False)
         self.show_transaction(new_tx, tx_label)
 
-    def delete_samart_contacts(self, keys):
-        pass
+    def set_smart_contract(self, name, address, abi):
+        if not len(address) == 40:
+            self.show_error(_('Invalid Address'))
+            self.smart_contract_list.update()
+            return False
+        self.smart_contracts[address] = (name, 'contract', abi)
+        self.smart_contract_list.update()
+        self.history_list.update()
+        self.update_completions()
+        return True
 
-    def create_contract_dialog(self):
-        pass
+    def delete_samart_contact(self, address):
+        if not self.question(_("Remove {} from your list of smart contracts?".format(address))):
+            return
+        self.smart_contracts.pop(address)
+        self.history_list.update()
+        self.smart_contract_list.update()
+        self.update_completions()
 
-    def subscribe_contract_dialog(self):
-        pass
+    def contract_create_dialog(self):
+        d = ContractCreateDialog(self)
+        d.show()
 
-    def call_contract_dialog(self):
-        pass
+    def contract_subscribe_dialog(self):
+        d = ContractSubscribeDialog(self)
+        d.show()
 
-    def edit_contract_dialog(self):
-        pass
+    def contract_call_dialog(self, address):
+        d = ContractCallDialog(self)
+        d.show()
+
+    def contract_edit_dialog(self, address):
+        d = ContractEditDialog(self)
+        d.show()
