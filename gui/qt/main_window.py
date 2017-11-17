@@ -2997,5 +2997,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         d.show()
 
     def contract_call_dialog(self, address):
-        d = ContractCallDialog(self)
+        name, _type, interface = self.smart_contracts[address]
+        contract = {
+            'name': name,
+            'type': _type,
+            'interface': interface,
+            'address': address
+        }
+        d = ContractCallDialog(self, contract)
         d.show()
