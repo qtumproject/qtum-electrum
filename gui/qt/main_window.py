@@ -58,7 +58,7 @@ from .qrtextedit import ShowQRTextEdit, ScanQRTextEdit
 from .transaction_dialog import show_transaction
 from .fee_slider import FeeSlider
 from .util import *
-from .smart_contract_dialog import ContractCreateDialog, ContractCallDialog, ContractEditDialog, ContractSubscribeDialog
+from .smart_contract_dialog import ContractCreateDialog, ContractCallDialog, ContractEditDialog
 
 
 class StatusBarButton(QPushButton):
@@ -2947,15 +2947,23 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             new_tx.set_rbf(False)
         self.show_transaction(new_tx, tx_label)
 
-    def set_smart_contract(self, name, address, abi):
+    def set_smart_contract(self, name, address, interface, _type):
+        """
+        :param name: str
+        :param address: str
+        :param interface: list
+        :param _type: str
+        :return: bool
+        """
         if not is_hash160(address):
             self.show_error(_('Invalid Address'))
             self.smart_contract_list.update()
             return False
-        self.smart_contracts[address] = (name, 'contract', abi)
+        self.smart_contracts[address] = (name, _type, interface)
         self.smart_contract_list.update()
         self.history_list.update()
         self.update_completions()
+        self.smart_contracts.save()
         return True
 
     def delete_samart_contact(self, address):
@@ -2965,19 +2973,28 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.history_list.update()
         self.smart_contract_list.update()
         self.update_completions()
+        self.smart_contracts.save()
+        return True
 
     def contract_create_dialog(self):
         d = ContractCreateDialog(self)
         d.show()
 
     def contract_subscribe_dialog(self):
-        d = ContractSubscribeDialog(self)
+        d = ContractEditDialog(self)
+        d.show()
+
+    def contract_edit_dialog(self, address):
+        name, _type, interface = self.smart_contracts[address]
+        contract = {
+            'name': name,
+            'type': _type,
+            'interface': interface,
+            'address': address
+        }
+        d = ContractEditDialog(self, contract)
         d.show()
 
     def contract_call_dialog(self, address):
         d = ContractCallDialog(self)
-        d.show()
-
-    def contract_edit_dialog(self, address):
-        d = ContractEditDialog(self)
         d.show()
