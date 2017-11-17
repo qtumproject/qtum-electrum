@@ -9,7 +9,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 
-from .util import ButtonsLineEdit, Buttons, ButtonsTextEdit, CancelButton
+from .util import ButtonsLineEdit, Buttons, ButtonsTextEdit, CancelButton, MessageBoxMixin
 from electrum.i18n import _
 from electrum.plugins import run_hook
 from electrum.qtum import is_hash160
@@ -27,6 +27,7 @@ class ContractInfoLayout(QVBoxLayout):
             }
         self.contract = contract
         self.callback = callback
+        self.dialog = dialog
 
         self.addWidget(QLabel(_("Contract Name:")))
         self.name_e = ButtonsLineEdit()
@@ -65,12 +66,15 @@ class ContractInfoLayout(QVBoxLayout):
         try:
             interface = json.loads(interface_text)
         except json.JSONDecodeError:
+            self.dialog.show_message(_('invalid interface'))
             return
         address = self.address_e.text()
         if not is_hash160(address):
+            self.dialog.show_message(_('invalid address'))
             return
         name = self.name_e.text()
         if not name:
+            self.dialog.show_message(_('empty name'))
             return
         self.contract['interface'] = interface
         self.contract['address'] = address
@@ -87,7 +91,7 @@ class ContractCreateDialog(QDialog):
         run_hook('contract_create_dialog', self)
 
 
-class ContractEditDialog(QDialog):
+class ContractEditDialog(QDialog, MessageBoxMixin):
     def __init__(self, parent, contract=None):
         QDialog.__init__(self, parent=parent)
         self.setWindowTitle(_('Subscribe Smart Contract'))

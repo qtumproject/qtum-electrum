@@ -2967,8 +2967,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         return True
 
     def delete_samart_contact(self, address):
-        if not self.question(_("Remove {} from your list of smart contracts?".format(address))):
-            return
+        if not self.question(_("Remove {} from your list of smart contracts?".format(
+                self.smart_contracts[address][0]))):
+            return False
         self.smart_contracts.pop(address)
         self.history_list.update()
         self.smart_contract_list.update()
