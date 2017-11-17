@@ -94,7 +94,7 @@ class ContractCreateDialog(QDialog):
 class ContractEditDialog(QDialog, MessageBoxMixin):
     def __init__(self, parent, contract=None):
         QDialog.__init__(self, parent=parent)
-        self.setWindowTitle(_('Subscribe Smart Contract'))
+        self.setWindowTitle(_('Smart Contract'))
         self.setMinimumSize(700, 400)
         self.main_window = parent
         run_hook('contract_edit_dialog', self)
@@ -108,7 +108,6 @@ class ContractEditDialog(QDialog, MessageBoxMixin):
                                             contract['interface'],
                                             contract['type']):
             self.accept()
-
 
 
 class ContractCallDialog(QDialog):
