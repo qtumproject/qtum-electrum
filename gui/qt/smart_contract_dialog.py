@@ -12,7 +12,7 @@ from PyQt5.QtGui import *
 from .util import ButtonsLineEdit, Buttons, ButtonsTextEdit, CancelButton, MessageBoxMixin, EnterButton
 from electrum.i18n import _
 from electrum.plugins import run_hook
-from electrum.qtum import is_hash160
+from electrum.qtum import is_hash160, is_address, b58_address_to_hash160
 
 
 class ContractInfoLayout(QVBoxLayout):
@@ -172,7 +172,7 @@ class ContractFuncLayout(QGridLayout):
         buttons = QHBoxLayout()
         self.sender_combo = QComboBox()
         self.sender_combo.setMinimumWidth(400)
-        self.sender_combo.addItems(dialog.parent().wallet.get_addresses())
+        self.sender_combo.addItems(self.dialog.parent().wallet.get_addresses())
         buttons.addWidget(self.sender_combo)
         buttons.addStretch(1)
         self.call_button = EnterButton(_("Call"), self.do_call)
@@ -206,16 +206,40 @@ class ContractFuncLayout(QGridLayout):
             elif abi['stateMutability'] == 'nonpayable':
                 show_sendto()
 
-    def do_call(self):
-        abi_index = self.abi_signatures[self.abi_combo.currentIndex()][0]
-        abi = self.contract['interface'][abi_index]
-
-    def do_sendto(self):
+    def parse_args(self):
+        args = json.loads('[{}]'.format(self.args_e.text()))
         abi_index = self.abi_signatures[self.abi_combo.currentIndex()][0]
         if abi_index == -1:
-            pass
-        else:
-            abi = self.contract['interface'][abi_index]
+            return None, None
+        abi = self.contract['interface'][abi_index]
+        inputs = abi.get('inputs', [])
+        if not len(args) == len(inputs):
+            raise BaseException('invalid input count,expect {} got {}'.format(len(inputs), len(args)))
+        for index, _input in enumerate(inputs):
+            _type = _input.get('type', '')
+            if _type == 'address':
+                addr = args[index].lower()
+                if is_address(addr):
+                    addr = b58_address_to_hash160(addr)
+                if not is_hash160(addr):
+                    raise BaseException('invalid input:{}'.format(args[index]))
+                args[index] = addr
+            elif 'int' in _type:
+                if not isinstance(args[index], int):
+                    raise BaseException('inavlid input:{}'.format(args[index]))
+        return abi, args
+
+    def do_call(self):
+        try:
+            abi, args = self.parse_args()
+        except (BaseException,) as e:
+            self.dialog.show_message(str(e))
+
+    def do_sendto(self):
+        try:
+            abi, args = self.parse_args()
+        except (BaseException,) as e:
+            self.dialog.show_message(str(e))
 
 
 class ContractFuncDialog(QDialog):
