@@ -22,6 +22,10 @@ class SmartContractList(MyTreeWidget):
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setSortingEnabled(True)
 
+    def on_doubleclick(self, item, column):
+        address = item.data(0, Qt.UserRole)
+        self.parent.contract_func_dialog(address)
+
     def create_menu(self, position):
         menu = QMenu()
         selected = self.selectedItems()
@@ -38,7 +42,7 @@ class SmartContractList(MyTreeWidget):
             column_data = '\n'.join([item.text(column) for item in selected])
             menu.addAction(_("Copy %s") % column_title, lambda: self.parent.app.clipboard().setText(column_data))
             menu.addAction(_("Edit"), lambda: self.parent.contract_edit_dialog(address))
-            menu.addAction(_("Call"), lambda: self.parent.contract_call_dialog(address))
+            menu.addAction(_("Function"), lambda: self.parent.contract_func_dialog(address))
             menu.addAction(_("Delete"), lambda: self.parent.delete_samart_contact(address))
             URL = block_explorer_URL(self.config, 'contract', address)
             if URL:

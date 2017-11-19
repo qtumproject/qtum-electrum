@@ -100,7 +100,7 @@ class ContractEditDialog(QDialog, MessageBoxMixin):
             self.accept()
 
 
-class ContractCallLayout(QGridLayout):
+class ContractFuncLayout(QGridLayout):
     def __init__(self, dialog, contract):
         QGridLayout.__init__(self)
         self.setSpacing(8)
@@ -141,13 +141,46 @@ class ContractCallLayout(QGridLayout):
         self.addWidget(args_lb, 3, 0)
         self.addWidget(self.args_e, 3, 1, 1, -1)
 
+        self.optional_lb = QLabel(_('Optional:'))
+        self.addWidget(self.optional_lb, 4, 0)
+        self.optional_widget = QWidget()
+
+        optional_layout = QHBoxLayout()
+        optional_layout.setContentsMargins(0, 0, 0, 0)
+        optional_layout.setSpacing(0)
+        gas_limit_lb = QLabel(_('gas limit:'))
+        self.gas_limit_e = ButtonsLineEdit()
+        gas_price_lb = QLabel(_('gas price:'))
+        self.gas_price_e = ButtonsLineEdit()
+        amount_lb = QLabel(_('amount:'))
+        self.amount_e = ButtonsLineEdit()
+        optional_layout.addWidget(gas_limit_lb)
+        optional_layout.addWidget(self.gas_limit_e)
+        optional_layout.addStretch(1)
+        optional_layout.addWidget(gas_price_lb)
+        optional_layout.addWidget(self.gas_price_e)
+        optional_layout.addStretch(1)
+        optional_layout.addWidget(amount_lb)
+        optional_layout.addWidget(self.amount_e)
+        optional_layout.addStretch(0)
+        self.optional_widget.setLayout(optional_layout)
+        self.addWidget(self.optional_widget, 4, 1, 1, -1)
+
+        sender_lb = QLabel(_('Sender:'))
+        self.addWidget(sender_lb, 5, 0)
+
         buttons = QHBoxLayout()
+        self.sender_combo = QComboBox()
+        self.sender_combo.setMinimumWidth(400)
+        self.sender_combo.addItems(dialog.parent().wallet.get_addresses())
+        buttons.addWidget(self.sender_combo)
         buttons.addStretch(1)
         self.call_button = EnterButton(_("Call"), self.do_call)
         self.sendto_button = EnterButton(_("Send to"), self.do_sendto)
         buttons.addWidget(self.call_button)
         buttons.addWidget(self.sendto_button)
-        self.addLayout(buttons, 4, 1, 1, -1)
+        buttons.addStretch()
+        self.addLayout(buttons, 5, 1, 1, -1)
 
         self.update()
 
@@ -157,10 +190,12 @@ class ContractCallLayout(QGridLayout):
         self.call_button.setHidden(True)
 
         def show_call():
-            pass
+            self.optional_widget.setEnabled(False)
+            self.call_button.setHidden(False)
 
         def show_sendto():
-            pass
+            self.optional_widget.setEnabled(True)
+            self.sendto_button.setHidden(False)
 
         if abi_index == -1:
             show_sendto()
@@ -183,15 +218,15 @@ class ContractCallLayout(QGridLayout):
             abi = self.contract['interface'][abi_index]
 
 
-class ContractCallDialog(QDialog):
+class ContractFuncDialog(QDialog):
     def __init__(self, parent, contract):
         QDialog.__init__(self, parent=parent)
         self.contract = contract
         self.setWindowTitle(contract['name'])
         self.setMinimumSize(700, 200)
         self.main_window = parent
-        run_hook('contract_call_dialog', self)
-        layout = ContractCallLayout(self, contract)
+        run_hook('contract_func_dialog', self)
+        layout = ContractFuncLayout(self, contract)
         self.setLayout(layout)
 
 

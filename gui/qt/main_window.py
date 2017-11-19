@@ -58,7 +58,7 @@ from .qrtextedit import ShowQRTextEdit, ScanQRTextEdit
 from .transaction_dialog import show_transaction
 from .fee_slider import FeeSlider
 from .util import *
-from .smart_contract_dialog import ContractCreateDialog, ContractCallDialog, ContractEditDialog
+from .smart_contract_dialog import ContractCreateDialog, ContractFuncDialog, ContractEditDialog
 
 
 class StatusBarButton(QPushButton):
@@ -2996,7 +2996,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         d = ContractEditDialog(self, contract)
         d.show()
 
-    def contract_call_dialog(self, address):
+    def contract_func_dialog(self, address):
         name, _type, interface = self.smart_contracts[address]
         contract = {
             'name': name,
@@ -3004,5 +3004,5 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             'interface': interface,
             'address': address
         }
-        d = ContractCallDialog(self, contract)
+        d = ContractFuncDialog(self, contract)
         d.show()
