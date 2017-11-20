@@ -2977,6 +2977,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.smart_contracts.save()
         return True
 
+    def call_smart_contract(self, address, abi, args, sender, dialog):
+        pass
+
+    def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog):
+        pass
+
     def contract_create_dialog(self):
         d = ContractCreateDialog(self)
         d.show()

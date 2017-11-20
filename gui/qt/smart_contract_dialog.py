@@ -145,15 +145,23 @@ class ContractFuncLayout(QGridLayout):
         self.addWidget(self.optional_lb, 4, 0)
         self.optional_widget = QWidget()
 
+        float_validator = QRegExpValidator(QRegExp('^(-?\d+)(\.\d+)?$'))
+        int_validator = QIntValidator(0, 10 ** 9 - 1)
+
         optional_layout = QHBoxLayout()
         optional_layout.setContentsMargins(0, 0, 0, 0)
         optional_layout.setSpacing(0)
-        gas_limit_lb = QLabel(_('gas limit:'))
+        gas_limit_lb = QLabel(_('gas limit: '))
         self.gas_limit_e = ButtonsLineEdit()
-        gas_price_lb = QLabel(_('gas price:'))
+        self.gas_limit_e.setValidator(int_validator)
+        self.gas_limit_e.setText('250000')
+        gas_price_lb = QLabel(_('gas price: '))
         self.gas_price_e = ButtonsLineEdit()
-        amount_lb = QLabel(_('amount:'))
+        self.gas_price_e.setValidator(float_validator)
+        self.gas_price_e.setText('0.00000040')
+        amount_lb = QLabel(_('amount: '))
         self.amount_e = ButtonsLineEdit()
+        self.amount_e.setValidator(float_validator)
         optional_layout.addWidget(gas_limit_lb)
         optional_layout.addWidget(self.gas_limit_e)
         optional_layout.addStretch(1)
@@ -206,11 +214,21 @@ class ContractFuncLayout(QGridLayout):
             elif abi['stateMutability'] == 'nonpayable':
                 show_sendto()
 
+    def parse_values(self):
+        def parse_edit_value(edit, times=10 ** 8):
+            try:
+                return int(float(edit.text()) * times)
+            except ValueError:
+                return 0
+
+        return parse_edit_value(self.gas_limit_e, 1), parse_edit_value(self.gas_price_e), parse_edit_value(
+            self.amount_e)
+
     def parse_args(self):
         args = json.loads('[{}]'.format(self.args_e.text()))
         abi_index = self.abi_signatures[self.abi_combo.currentIndex()][0]
         if abi_index == -1:
-            return None, None
+            return None, []
         abi = self.contract['interface'][abi_index]
         inputs = abi.get('inputs', [])
         if not len(args) == len(inputs):
@@ -234,12 +252,19 @@ class ContractFuncLayout(QGridLayout):
             abi, args = self.parse_args()
         except (BaseException,) as e:
             self.dialog.show_message(str(e))
+            return
+        sender = self.dialog.parent().wallet.get_addresses()[self.sender_combo.currentIndex()]
+        self.dialog.do_call(abi, args, sender)
 
     def do_sendto(self):
         try:
             abi, args = self.parse_args()
         except (BaseException,) as e:
             self.dialog.show_message(str(e))
+            return
+        sender = self.dialog.parent().wallet.get_addresses()[self.sender_combo.currentIndex()]
+        gas_limit, gas_price, amount = self.parse_values()
+        self.dialog.do_sendto(abi, args, gas_limit, gas_price, amount, sender)
 
 
 class ContractFuncDialog(QDialog):
@@ -252,6 +277,14 @@ class ContractFuncDialog(QDialog):
         run_hook('contract_func_dialog', self)
         layout = ContractFuncLayout(self, contract)
         self.setLayout(layout)
+
+    def do_call(self, abi, args, sender):
+        address = self.contract['address']
+        self.parent().call_smart_contract(address, abi, args, sender, self)
+
+    def do_sendto(self, abi, ars, gas_limit, gas_price, amount, sender):
+        address = self.contract['address']
+        self.parent().sendto_smart_contract(address, abi, ars, gas_limit, gas_price, amount, sender, self)
 
 
 class ContractCreateDialog(QDialog):
