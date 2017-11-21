@@ -552,6 +552,14 @@ class Abstract_Wallet(PrintError):
         out.update(self.get_change_addresses())
         return list(out)
 
+    def get_spendable_addresses(self, min_amount=0.000000001):
+        result = []
+        for addr in self.get_addresses():
+            c, u, x = self.get_addr_balance(addr)
+            if c + x >= min_amount:
+                result.append(addr)
+        return result
+
     def get_frozen_balance(self):
         return self.get_balance(self.frozen_addresses)
 
