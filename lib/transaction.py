@@ -728,6 +728,19 @@ class Transaction:
         self._inputs.sort(key = lambda i: (i['prevout_hash'], i['prevout_n']))
         self._outputs.sort(key = lambda o: (o[2], self.pay_script(o[0], o[1])))
 
+    def qtum_sort(self, sender):
+        if not sender:
+            return
+        sender_inp = None
+        for i in range(len(self._inputs)):
+            inp = self._inputs[i]
+            if inp['address'] == sender:
+                sender_inp = inp
+                del self._inputs[i]
+                break
+        if sender_inp:
+            self._inputs.insert(0, sender_inp)
+
     def serialize_output(self, output):
         output_type, data, amount = output
         s = int_to_hex(amount, 8)
