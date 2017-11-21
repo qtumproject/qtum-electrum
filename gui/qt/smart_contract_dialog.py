@@ -107,6 +107,7 @@ class ContractFuncLayout(QGridLayout):
         self.setColumnStretch(3, 1)
         self.dialog = dialog
         self.contract = contract
+        self.senders = self.dialog.parent().wallet.get_spendable_addresses()
 
         address_lb = QLabel(_("Address:"))
         self.address_e = ButtonsLineEdit()
@@ -180,7 +181,7 @@ class ContractFuncLayout(QGridLayout):
         buttons = QHBoxLayout()
         self.sender_combo = QComboBox()
         self.sender_combo.setMinimumWidth(400)
-        self.sender_combo.addItems(self.dialog.parent().wallet.get_addresses())
+        self.sender_combo.addItems(self.senders)
         buttons.addWidget(self.sender_combo)
         buttons.addStretch(1)
         self.call_button = EnterButton(_("Call"), self.do_call)
@@ -253,7 +254,7 @@ class ContractFuncLayout(QGridLayout):
         except (BaseException,) as e:
             self.dialog.show_message(str(e))
             return
-        sender = self.dialog.parent().wallet.get_addresses()[self.sender_combo.currentIndex()]
+        sender = self.senders[self.sender_combo.currentIndex()]
         self.dialog.do_call(abi, args, sender)
 
     def do_sendto(self):
@@ -262,7 +263,7 @@ class ContractFuncLayout(QGridLayout):
         except (BaseException,) as e:
             self.dialog.show_message(str(e))
             return
-        sender = self.dialog.parent().wallet.get_addresses()[self.sender_combo.currentIndex()]
+        sender = self.senders[self.sender_combo.currentIndex()]
         gas_limit, gas_price, amount = self.parse_values()
         self.dialog.do_sendto(abi, args, gas_limit, gas_price, amount, sender)
 
