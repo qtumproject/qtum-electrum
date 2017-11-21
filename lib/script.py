@@ -13,6 +13,8 @@ import hashlib
 import sys
 import struct
 from .bignum import bn2vch
+from .transaction import opcodes
+from .util import bh2u
 
 bchr = chr
 bord = ord
@@ -844,3 +846,19 @@ SIGHASH_ALL = 1
 SIGHASH_NONE = 2
 SIGHASH_SINGLE = 3
 SIGHASH_ANYONECANPAY = 0x80
+
+
+def contract_script(gas_limit, gas_price, encoded_params, op_code, address=None):
+    if op_code == opcodes.OP_CALL:
+        # if you just want to pay to the contract, set abi_encoded_params to '00'
+        script_pubkey = CScript([b"\x04", CScriptNum(gas_limit),
+                                 CScriptNum(gas_price), bytes.fromhex(encoded_params),
+                                 bytes.fromhex(address), CScriptOp(op_code)])
+    elif op_code == opcodes.OP_CREATE:
+        script_pubkey = CScript([b"\x04", CScriptNum(gas_limit),
+                                 CScriptNum(gas_price),
+                                 bytes.fromhex(encoded_params), CScriptOp(op_code)])
+    else:
+        script_pubkey = CScript([])
+    script_pubkey = bh2u(script_pubkey)
+    return script_pubkey
