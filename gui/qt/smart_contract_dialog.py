@@ -13,6 +13,7 @@ from .util import ButtonsLineEdit, Buttons, ButtonsTextEdit, CancelButton, Messa
 from electrum.i18n import _
 from electrum.plugins import run_hook
 from electrum.qtum import is_hash160, is_address, b58_address_to_hash160
+from electrum.util import bh2u
 
 
 class ContractInfoLayout(QVBoxLayout):
@@ -237,12 +238,13 @@ class ContractFuncLayout(QGridLayout):
         for index, _input in enumerate(inputs):
             _type = _input.get('type', '')
             if _type == 'address':
-                addr = args[index].lower()
+                addr = args[index]
                 if is_address(addr):
-                    addr = b58_address_to_hash160(addr)
+                    __, hash160 = b58_address_to_hash160(addr)
+                    addr = bh2u(hash160)
                 if not is_hash160(addr):
                     raise BaseException('invalid input:{}'.format(args[index]))
-                args[index] = addr
+                args[index] = addr.lower()
             elif 'int' in _type:
                 if not isinstance(args[index], int):
                     raise BaseException('inavlid input:{}'.format(args[index]))
@@ -268,7 +270,7 @@ class ContractFuncLayout(QGridLayout):
         self.dialog.do_sendto(abi, args, gas_limit, gas_price, amount, sender)
 
 
-class ContractFuncDialog(QDialog):
+class ContractFuncDialog(QDialog, MessageBoxMixin):
     def __init__(self, parent, contract):
         QDialog.__init__(self, parent=parent)
         self.contract = contract
@@ -288,7 +290,7 @@ class ContractFuncDialog(QDialog):
         self.parent().sendto_smart_contract(address, abi, ars, gas_limit, gas_price, amount, sender, self)
 
 
-class ContractCreateDialog(QDialog):
+class ContractCreateDialog(QDialog, MessageBoxMixin):
     def __init__(self, parent):
         QDialog.__init__(self, parent=parent)
         self.setWindowTitle(_('Create Smart Contract'))
