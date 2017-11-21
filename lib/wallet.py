@@ -795,7 +795,7 @@ class Abstract_Wallet(PrintError):
         # Change <= dust threshold is added to the tx fee
         return 182 * 3 * self.relayfee() / 1000
 
-    def make_unsigned_transaction(self, inputs, outputs, config, fixed_fee=None, change_addr=None):
+    def make_unsigned_transaction(self, inputs, outputs, config, fixed_fee=None, change_addr=None, gas_fee=0):
         # check outputs
         i_max = None
         for i, o in enumerate(outputs):
@@ -836,7 +836,7 @@ class Abstract_Wallet(PrintError):
 
         # Fee estimator
         if fixed_fee is None:
-            fee_estimator = partial(self.estimate_fee, config)
+            fee_estimator = partial(self.estimate_fee, config, gas_fee)
         else:
             fee_estimator = lambda size: fixed_fee
 
@@ -845,13 +845,14 @@ class Abstract_Wallet(PrintError):
             max_change = self.max_change_outputs if self.multiple_change else 1
             coin_chooser = coinchooser.get_coin_chooser(config)
             tx = coin_chooser.make_tx(inputs, outputs, change_addrs[:max_change],
-                                      fee_estimator, self.dust_threshold())
+                                      fee_estimator, self.dust_threshold(), gas_fee)
         else:
             sendable = sum(map(lambda x:x['value'], inputs))
             _type, data, value = outputs[i_max]
             outputs[i_max] = (_type, data, 0)
             tx = Transaction.from_io(inputs, outputs[:])
             fee = fee_estimator(tx.estimated_size())
+            fee = fee + gas_fee
             amount = max(0, sendable - tx.output_value() - fee)
             outputs[i_max] = (_type, data, amount)
             tx = Transaction.from_io(inputs, outputs[:])
@@ -864,9 +865,9 @@ class Abstract_Wallet(PrintError):
         run_hook('make_unsigned_transaction', self, tx)
         return tx
 
-    def estimate_fee(self, config, size):
+    def estimate_fee(self, config, gas_fee, size):
         fee = int(config.fee_per_kb() * size / 1000.)
-        return fee
+        return fee + gas_fee
 
     def mktx(self, outputs, password, config, fee=None, change_addr=None, domain=None):
         coins = self.get_spendable_coins(domain, config)
@@ -927,7 +928,7 @@ class Abstract_Wallet(PrintError):
         if fee is None:
             outputs = [(TYPE_ADDRESS, recipient, total)]
             tx = Transaction.from_io(inputs, outputs)
-            fee = self.estimate_fee(config, tx.estimated_size())
+            fee = self.estimate_fee(config, 0, tx.estimated_size())
 
         if total - fee < 0:
             raise BaseException(_('Not enough funds on address.') + '\nTotal: %d satoshis\nFee: %d'%(total, fee))

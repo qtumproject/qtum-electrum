@@ -770,7 +770,6 @@ class Transaction:
         outputs = self.outputs()
         txins = var_int(len(inputs)) + ''.join(self.serialize_input(txin, self.input_script(txin, estimate_size)) for txin in inputs)
         txouts = var_int(len(outputs)) + ''.join(self.serialize_output(o) for o in outputs)
-        print('serialize - txouts', txouts)
         if witness and self.is_segwit():
             marker = '00'
             flag = '01'
