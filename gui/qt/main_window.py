@@ -38,15 +38,17 @@ from PyQt5.QtWidgets import *
 
 from electrum.util import bh2u, bfh
 from electrum import keystore
-from electrum.qtum import COIN, is_address, TYPE_ADDRESS, TESTNET, is_hash160
+from electrum.qtum import COIN, is_address, TYPE_ADDRESS, TYPE_SCRIPT, TESTNET, is_hash160, eth_abi_encode
 from electrum.plugins import run_hook
 from electrum.i18n import _
 from electrum.util import format_time, format_satoshis, PrintError, format_satoshis_plain, NotEnoughFunds, UserCancelled
 from electrum import Transaction
 from electrum import util, bitcoin, commands, coinchooser
 from electrum import paymentrequest
+from electrum.script import contract_script
 from electrum.wallet import Multisig_Wallet
 from electrum.paymentrequest import PR_PAID
+from electrum.transaction import opcodes, deserialize
 try:
     from electrum.plot import plot_history
 except:
@@ -2978,10 +2980,69 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         return True
 
     def call_smart_contract(self, address, abi, args, sender, dialog):
+        self.do_send()
         pass
 
     def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog):
-        pass
+        abi_encoded = eth_abi_encode(abi, args)
+        script = contract_script(gas_limit, gas_price, abi_encoded, opcodes.OP_CALL, address)
+        outputs = [(TYPE_SCRIPT, script, amount), ]
+        tx_desc = 'contract sendto {}'.format(self.smart_contracts[address][0])
+        coins = self.get_coins()
+        try:
+            tx = self.wallet.make_unsigned_transaction(coins, outputs, self.config, None,
+                                                       change_addr=sender,
+                                                       gas_fee=gas_limit * gas_price,
+                                                       sender=sender)
+            print(tx, '\n', deserialize(tx.serialize()), '\n')
+        except NotEnoughFunds:
+            dialog.show_message(_("Insufficient funds"))
+            return
+        except BaseException as e:
+            traceback.print_exc(file=sys.stdout)
+            dialog.show_message(str(e))
+            return
+
+        amount = sum(map(lambda x: x[2], outputs))
+        fee = tx.get_fee()
+
+        if fee < self.wallet.relayfee() * tx.estimated_size() / 1000:
+            dialog.show_message(
+                _("This transaction requires a higher fee, or it will not be propagated by the network"))
+            return
+
+        # confirmation dialog
+        msg = [
+            _("Amount to be sent") + ": " + self.format_amount_and_units(amount),
+            _("Mining fee") + ": " + self.format_amount_and_units(fee),
+            _("Gas fee") + ": " + self.format_amount_and_units(gas_limit * gas_price),
+        ]
+
+        confirm_rate = 2 * self.config.max_fee_rate()
+        if fee > confirm_rate * tx.estimated_size() / 1000:
+            msg.append(_('Warning') + ': ' + _("The fee for this transaction seems unusually high."))
+
+        if self.wallet.has_password():
+            msg.append("")
+            msg.append(_("Enter your password to proceed"))
+            password = self.password_dialog('\n'.join(msg))
+            if not password:
+                return
+        else:
+            msg.append(_('Proceed?'))
+            password = None
+            if not dialog.question('\n'.join(msg)):
+                return
+
+        def sign_done(success):
+            if success:
+                if not tx.is_complete():
+                    self.show_transaction(tx)
+                    self.do_clear()
+                else:
+                    self.broadcast_transaction(tx, tx_desc)
+
+        self.sign_tx_with_password(tx, sign_done, password)
 
     def contract_create_dialog(self):
         d = ContractCreateDialog(self)
