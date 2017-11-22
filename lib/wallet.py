@@ -758,7 +758,7 @@ class Abstract_Wallet(PrintError):
         is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinbase'
         if is_coinbase:
             return 'mined'
-        return tx_hash
+        return ''
 
     def get_tx_status(self, tx_hash, height, conf, timestamp):
         from .util import format_time
