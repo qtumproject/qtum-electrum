@@ -452,6 +452,8 @@ def parse_output(vds, i):
     d['type'], d['address'] = get_address_from_output_script(scriptPubKey)
     d['scriptPubKey'] = bh2u(scriptPubKey)
     d['prevout_n'] = i
+    if not d['value'] and not d['address'] and not i and not d['scriptPubKey']:
+        d['type'] = 'coinbase'
     return d
 
 
@@ -595,7 +597,7 @@ class Transaction:
 
     @classmethod
     def pay_script(cls, output_type, addr):
-        if output_type == TYPE_SCRIPT:
+        if output_type == TYPE_SCRIPT or output_type == 'coinbase':
             return addr
         elif output_type == TYPE_ADDRESS:
             return bitcoin.address_to_script(addr)

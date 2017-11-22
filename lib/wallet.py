@@ -587,7 +587,7 @@ class Abstract_Wallet(PrintError):
                     return addr
 
     def add_transaction(self, tx_hash, tx):
-        is_coinbase = tx.inputs()[0]['type'] == 'coinbase'
+        is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinbase'
         with self.transaction_lock:
             # add inputs
             self.txi[tx_hash] = d = {}
@@ -757,8 +757,9 @@ class Abstract_Wallet(PrintError):
 
     def get_tx_status(self, tx_hash, height, conf, timestamp):
         from .util import format_time
+        tx = self.transactions.get(tx_hash)
+        is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinbase'
         if conf == 0:
-            tx = self.transactions.get(tx_hash)
             if not tx:
                 return 3, 'unknown'
             is_final = tx and tx.is_final()
@@ -779,6 +780,8 @@ class Abstract_Wallet(PrintError):
                 status = 3
             else:
                 status = 4
+        elif is_coinbase:
+            status = 4 + min(conf // (COINBASE_MATURITY // RECOMMEND_CONFIRMATIONS), RECOMMEND_CONFIRMATIONS)
         else:
             status = 4 + min(conf, RECOMMEND_CONFIRMATIONS)
         time_str = format_time(timestamp) if timestamp else _("unknown")
