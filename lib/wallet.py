@@ -556,7 +556,7 @@ class Abstract_Wallet(PrintError):
         result = []
         for addr in self.get_addresses():
             c, u, x = self.get_addr_balance(addr)
-            if c + x >= min_amount:
+            if c >= min_amount:
                 result.append(addr)
         return result
 
