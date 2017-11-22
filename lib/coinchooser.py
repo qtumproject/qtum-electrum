@@ -70,9 +70,15 @@ class PRNG:
 
 Bucket = namedtuple('Bucket', ['desc', 'size', 'value', 'coins'])
 
-def strip_unneeded(bkts, sufficient_funds):
+
+def strip_unneeded(bkts, sufficient_funds, exception=None):
     '''Remove buckets that are unnecessary in achieving the spend amount'''
     bkts = sorted(bkts, key = lambda bkt: bkt.value)
+    for i in range(len(bkts)):
+        if exception and bkts[i] == exception:
+            del bkts[i]
+            bkts.append(exception)
+            break
     for i in range(len(bkts)):
         if not sufficient_funds(bkts[i + 1:]):
             return bkts[i:]
@@ -322,19 +328,21 @@ class CoinChooserQtum(CoinChooserBase):
         buckets.sort(key=lambda b: max(adj_height(coin['height'])
                                        for coin in b.coins))
         selected = []
+        sender_bucket = None
         if sender:
             for bucket in buckets:
                 if bucket.desc == sender:
+                    sender_bucket = bucket
                     selected.append(bucket)
                     if sufficient_funds(selected):
-                        return strip_unneeded(selected, sufficient_funds)
+                        return strip_unneeded(selected, sufficient_funds, sender_bucket)
                     break
             if len(selected) == 0:
-                raise BaseException('sender address has no utxo')
+                raise BaseException('choose_buckets - sender address has no utxo')
         for bucket in buckets:
             selected.append(bucket)
             if sufficient_funds(selected):
-                return strip_unneeded(selected, sufficient_funds)
+                return strip_unneeded(selected, sufficient_funds, sender_bucket)
         else:
             raise NotEnoughFunds()
 

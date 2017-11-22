@@ -740,6 +740,9 @@ class Transaction:
                 break
         if sender_inp:
             self._inputs.insert(0, sender_inp)
+        else:
+            print_error('qtum_sort', self._inputs)
+            raise BaseException('qtum_sort - sender address not in inputs')
 
     def serialize_output(self, output):
         output_type, data, amount = output

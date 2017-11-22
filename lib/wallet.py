@@ -863,7 +863,7 @@ class Abstract_Wallet(PrintError):
             tx = Transaction.from_io(inputs, outputs[:])
 
         # Sort the inputs and outputs deterministically
-        tx.BIP_LI01_sort()
+        # tx.BIP_LI01_sort()
         tx.qtum_sort(sender)
         # Timelock tx to current height.
         # Disabled until keepkey firmware update
