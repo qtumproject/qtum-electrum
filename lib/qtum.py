@@ -127,7 +127,7 @@ MAX_FEE_RATE = 1000000
 
 FEE_TARGETS = [25, 10, 5, 2]
 
-COINBASE_MATURITY = 100
+COINBASE_MATURITY = 500
 COIN = 100000000
 
 # supported types of transction outputs

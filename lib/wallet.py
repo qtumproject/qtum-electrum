@@ -845,9 +845,12 @@ class Abstract_Wallet(PrintError):
         if i_max is None:
             # Let the coin chooser select the coins to spend
             max_change = self.max_change_outputs if self.multiple_change else 1
-            coin_chooser = coinchooser.get_coin_chooser(config)
+            if sender:
+                coin_chooser = coinchooser.CoinChooserQtum()
+            else:
+                coin_chooser = coinchooser.get_coin_chooser(config)
             tx = coin_chooser.make_tx(inputs, outputs, change_addrs[:max_change],
-                                      fee_estimator, self.dust_threshold())
+                                      fee_estimator, self.dust_threshold(), sender)
         else:
             sendable = sum(map(lambda x:x['value'], inputs))
             _type, data, value = outputs[i_max]

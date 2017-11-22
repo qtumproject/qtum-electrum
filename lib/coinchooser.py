@@ -166,7 +166,7 @@ class CoinChooserBase(PrintError):
         return change
 
     def make_tx(self, coins, outputs, change_addrs, fee_estimator,
-                dust_threshold):
+                dust_threshold, sender=None):
         '''Select unspent coins to spend to pay outputs.  If the change is
         greater than dust_threshold (after adding the change output to
         the transaction) it is kept, otherwise none is sent and it is
@@ -192,7 +192,7 @@ class CoinChooserBase(PrintError):
         # Collect the coins into buckets, choose a subset of the buckets
         buckets = self.bucketize_coins(coins)
         buckets = self.choose_buckets(buckets, sufficient_funds,
-                                      self.penalty_func(tx))
+                                      self.penalty_func(tx), sender)
 
         tx.add_inputs([coin for b in buckets for coin in b.coins])
         tx_size = base_size + sum(bucket.size for bucket in buckets)
@@ -208,8 +208,9 @@ class CoinChooserBase(PrintError):
 
         return tx
 
-    def choose_buckets(self, buckets, sufficient_funds, penalty_func):
+    def choose_buckets(self, buckets, sufficient_funds, penalty_func, sender=None):
         raise NotImplemented('To be subclassed')
+
 
 class CoinChooserOldestFirst(CoinChooserBase):
     '''Maximize transaction priority. Select the oldest unspent
@@ -222,7 +223,7 @@ class CoinChooserOldestFirst(CoinChooserBase):
         return [coin['prevout_hash'] + ':' + str(coin['prevout_n'])
                 for coin in coins]
 
-    def choose_buckets(self, buckets, sufficient_funds, penalty_func):
+    def choose_buckets(self, buckets, sufficient_funds, penalty_func, sender=None):
         '''Spend the oldest buckets first.'''
         # Unconfirmed coins are young, not old
         adj_height = lambda height: 99999999 if height <= 0 else height
@@ -235,6 +236,7 @@ class CoinChooserOldestFirst(CoinChooserBase):
                 return strip_unneeded(selected, sufficient_funds)
         else:
             raise NotEnoughFunds()
+
 
 class CoinChooserRandom(CoinChooserBase):
 
@@ -266,13 +268,14 @@ class CoinChooserRandom(CoinChooserBase):
         candidates = [[buckets[n] for n in c] for c in candidates]
         return [strip_unneeded(c, sufficient_funds) for c in candidates]
 
-    def choose_buckets(self, buckets, sufficient_funds, penalty_func):
+    def choose_buckets(self, buckets, sufficient_funds, penalty_func, sender=None):
         candidates = self.bucket_candidates(buckets, sufficient_funds)
         penalties = [penalty_func(cand) for cand in candidates]
         winner = candidates[penalties.index(min(penalties))]
         self.print_error("Bucket sets:", len(buckets))
         self.print_error("Winning penalty:", min(penalties))
         return winner
+
 
 class CoinChooserPrivacy(CoinChooserRandom):
     '''Attempts to better preserve user privacy.  First, if any coin is
@@ -308,14 +311,36 @@ class CoinChooserPrivacy(CoinChooserRandom):
         return penalty
 
 
+class CoinChooserQtum(CoinChooserBase):
+    def keys(self, coins):
+        return [coin['address'] for coin in coins]
+
+    def choose_buckets(self, buckets, sufficient_funds, penalty_func, sender=None):
+        pass
+        # '''Spend the oldest buckets first.'''
+        # # Unconfirmed coins are young, not old
+        # adj_height = lambda height: 99999999 if height <= 0 else height
+        # buckets.sort(key = lambda b: max(adj_height(coin['height'])
+        #                                  for coin in b.coins))
+        # selected = []
+        # for bucket in buckets:
+        #     selected.append(bucket)
+        #     if sufficient_funds(selected):
+        #         return strip_unneeded(selected, sufficient_funds)
+        # else:
+        #     raise NotEnoughFunds()
+
+
 COIN_CHOOSERS = {'Priority': CoinChooserOldestFirst,
                  'Privacy': CoinChooserPrivacy}
+
 
 def get_name(config):
     kind = config.get('coin_chooser')
     if not kind in COIN_CHOOSERS:
         kind = 'Priority'
     return kind
+
 
 def get_coin_chooser(config):
     klass = COIN_CHOOSERS[get_name(config)]
