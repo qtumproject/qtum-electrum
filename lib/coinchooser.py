@@ -316,19 +316,27 @@ class CoinChooserQtum(CoinChooserBase):
         return [coin['address'] for coin in coins]
 
     def choose_buckets(self, buckets, sufficient_funds, penalty_func, sender=None):
-        pass
-        # '''Spend the oldest buckets first.'''
-        # # Unconfirmed coins are young, not old
-        # adj_height = lambda height: 99999999 if height <= 0 else height
-        # buckets.sort(key = lambda b: max(adj_height(coin['height'])
-        #                                  for coin in b.coins))
-        # selected = []
-        # for bucket in buckets:
-        #     selected.append(bucket)
-        #     if sufficient_funds(selected):
-        #         return strip_unneeded(selected, sufficient_funds)
-        # else:
-        #     raise NotEnoughFunds()
+        '''Spend the oldest buckets first.'''
+        # Unconfirmed coins are young, not old
+        adj_height = lambda height: 99999999 if height <= 0 else height
+        buckets.sort(key=lambda b: max(adj_height(coin['height'])
+                                       for coin in b.coins))
+        selected = []
+        if sender:
+            for bucket in buckets:
+                if bucket.desc == sender:
+                    selected.append(bucket)
+                    if sufficient_funds(selected):
+                        return strip_unneeded(selected, sufficient_funds)
+                    break
+            if len(selected) == 0:
+                raise BaseException('sender address has no utxo')
+        for bucket in buckets:
+            selected.append(bucket)
+            if sufficient_funds(selected):
+                return strip_unneeded(selected, sufficient_funds)
+        else:
+            raise NotEnoughFunds()
 
 
 COIN_CHOOSERS = {'Priority': CoinChooserOldestFirst,
