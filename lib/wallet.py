@@ -762,8 +762,12 @@ class Abstract_Wallet(PrintError):
 
     def get_tx_status(self, tx_hash, height, conf, timestamp):
         from .util import format_time
-        tx = self.transactions.get(tx_hash)
-        is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinbase'
+        is_coinbase = False
+        try:
+            tx = self.transactions.get(tx_hash)
+            is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinbase'
+        except (BaseException,) as e:
+            print_error(e)
         if conf == 0:
             if not tx:
                 return 3, 'unknown'
