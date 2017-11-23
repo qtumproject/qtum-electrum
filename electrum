@@ -68,6 +68,10 @@ def check_imports():
         import pbkdf2
         import google.protobuf
         import jsonrpclib
+        import eth_utils
+        import eth_abi
+        import cytoolz._signatures
+        import cytoolz.utils
     except ImportError as e:
         sys.exit("Error: {}. Try 'sudo pip install <module-name>'".format(e))
     # the following imports are for pyinstaller

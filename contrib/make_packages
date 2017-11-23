@@ -14,4 +14,5 @@ pip3 install protobuf -t ./packages
 pip3 install dnspython -t ./packages
 pip3 install jsonrpclib-pelix -t ./packages
 pip3 install PySocks -t ./packages
-
+pip3 install eth-abi -t ./packages
+pip3 install eth-utils -t ./packages
