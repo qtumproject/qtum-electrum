@@ -59,7 +59,7 @@ class HistoryList(MyTreeWidget):
         self.setColumnHidden(1, True)
 
     def refresh_headers(self):
-        headers = ['', '', _('Date'), _('Description') , _('Amount'), _('Balance')]
+        headers = ['', '', _('Date'), _('Description'), _('Amount'), _('Balance')]
         fx = self.parent.fx
         if fx and fx.show_history():
             headers.extend(['%s '%fx.ccy + _('Amount'), '%s '%fx.ccy + _('Balance')])
@@ -117,12 +117,6 @@ class HistoryList(MyTreeWidget):
         tx_hash = item.data(0, Qt.UserRole)
         tx = self.wallet.transactions.get(tx_hash)
         self.parent.show_transaction(tx)
-        # if self.permit_edit(item, column):
-        #     super(HistoryList, self).on_doubleclick(item, column)
-        # else:
-        #     tx_hash = item.data(0, Qt.UserRole)
-        #     tx = self.wallet.transactions.get(tx_hash)
-        #     self.parent.show_transaction(tx)
 
     def update_labels(self):
         root = self.invisibleRootItem()
