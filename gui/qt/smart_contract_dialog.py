@@ -66,16 +66,18 @@ class ContractInfoLayout(QVBoxLayout):
         interface_text = self.interface_e.text()
         try:
             interface = json.loads(interface_text)
-        except json.JSONDecodeError:
-            self.dialog.show_message(_('invalid interface'))
+        except json.JSONDecodeError as e:
+            self.dialog.show_message(_('invalid interface') + ' {}'.format(e))
             return
         address = self.address_e.text()
+        address = address.rstrip().lstrip()
         if not is_hash160(address):
-            self.dialog.show_message(_('invalid address'))
+            self.dialog.show_message(_('invalid contract address'))
             return
         name = self.name_e.text()
+        name = name.rstrip().lstrip()
         if not name:
-            self.dialog.show_message(_('empty name'))
+            self.dialog.show_message(_('empty name not allowed'))
             return
         self.contract['interface'] = interface
         self.contract['address'] = address
