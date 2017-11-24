@@ -587,7 +587,11 @@ class Abstract_Wallet(PrintError):
                     return addr
 
     def add_transaction(self, tx_hash, tx):
-        is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinbase'
+        is_coinbase = False
+        try:
+            is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinbase'
+        except (BaseException,) as e:
+            print_error('add_transaction', e)
         with self.transaction_lock:
             # add inputs
             self.txi[tx_hash] = d = {}
@@ -754,8 +758,12 @@ class Abstract_Wallet(PrintError):
                     labels.append(label)
             if labels:
                 return ', '.join(labels)
-        tx = self.transactions.get(tx_hash)
-        is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinbase'
+        is_coinbase = False
+        try:
+            tx = self.transactions.get(tx_hash)
+            is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinbase'
+        except (BaseException,) as e:
+            print_error('get_tx_status', e)
         if is_coinbase:
             return 'mined'
         return ''
