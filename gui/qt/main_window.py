@@ -2150,7 +2150,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         e.setReadOnly(True)
         vbox.addWidget(e)
 
-        defaultname = 'electrum-private-keys.csv'
+        defaultname = 'qtum-electrum-private-keys.csv'
         select_msg = _('Select file to export your private keys to')
         hbox, filename_e, csv_button = filename_field(self, self.config, defaultname, select_msg)
         vbox.addLayout(hbox)
@@ -2980,8 +2980,13 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         return True
 
     def call_smart_contract(self, address, abi, args, sender, dialog):
-        self.do_send()
-        pass
+        data = eth_abi_encode(abi, args)
+        # try:
+        #     r = self.network.synchronous_get(('blockchain.contract.call', [address, data, sender]))
+        # except BaseException as e:
+        #     dialog.show_message(str(e))
+        #     return
+        # print(r)
 
     def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog):
         abi_encoded = eth_abi_encode(abi, args)
