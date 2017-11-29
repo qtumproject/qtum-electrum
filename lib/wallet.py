@@ -798,7 +798,7 @@ class Abstract_Wallet(PrintError):
             else:
                 status = 4
         elif is_coinbase:
-            status = 4 + min(conf // (COINBASE_MATURITY // RECOMMEND_CONFIRMATIONS), RECOMMEND_CONFIRMATIONS)
+            status = 4 + max(min(conf // (COINBASE_MATURITY // RECOMMEND_CONFIRMATIONS), RECOMMEND_CONFIRMATIONS), 1)
         else:
             status = 4 + min(conf, RECOMMEND_CONFIRMATIONS)
         time_str = format_time(timestamp) if timestamp else _("unknown")
