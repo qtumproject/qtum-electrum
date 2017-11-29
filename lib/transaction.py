@@ -23,25 +23,16 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-
-
 # Note: The deserialization code originally comes from ABE.
-
-from . import bitcoin
-from .bitcoin import *
 from .util import print_error, profiler, to_string
-
 from . import bitcoin
 from .bitcoin import *
-import time
-import sys
 import struct
+from .script import CScript, CScriptNum
 
 #
 # Workalike python implementation of Bitcoin's CDataStream class.
 #
-import struct
-import random
 from .keystore import xpubkey_to_address, xpubkey_to_pubkey
 
 NO_SIGNATURE = 'ff'
@@ -198,6 +189,7 @@ class Enumeration:
 def long_hex(bytes):
     return bytes.encode('hex_codec')
 
+
 # This function comes from bitcointools, bct-LICENSE.txt.
 def short_hex(bytes):
     t = bytes.encode('hex_codec')
@@ -206,9 +198,8 @@ def short_hex(bytes):
     return t[0:4]+"..."+t[-4:]
 
 
-
 opcodes = Enumeration("Opcodes", [
-    ("OP_0", 0), ("OP_PUSHDATA1",76), "OP_PUSHDATA2", "OP_PUSHDATA4", "OP_1NEGATE", "OP_RESERVED",
+    ("OP_0", 0), ("OP_PUSHDATA1", 76), "OP_PUSHDATA2", "OP_PUSHDATA4", "OP_1NEGATE", "OP_RESERVED",
     "OP_1", "OP_2", "OP_3", "OP_4", "OP_5", "OP_6", "OP_7",
     "OP_8", "OP_9", "OP_10", "OP_11", "OP_12", "OP_13", "OP_14", "OP_15", "OP_16",
     "OP_NOP", "OP_VER", "OP_IF", "OP_NOTIF", "OP_VERIF", "OP_VERNOTIF", "OP_ELSE", "OP_ENDIF", "OP_VERIFY",
@@ -227,6 +218,9 @@ opcodes = Enumeration("Opcodes", [
     ("OP_DOUBLEBYTE_BEGIN", 0xF000),
     "OP_PUBKEY", "OP_PUBKEYHASH",
     ("OP_INVALIDOPCODE", 0xFFFF),
+    ("OP_CREATE", 0xC1),
+    ("OP_CALL", 0xC2),
+    ("OP_SPEND", 0xC3)
 ])
 
 
@@ -294,15 +288,15 @@ def safe_parse_pubkey(x):
     except:
         return x
 
+
 def parse_scriptSig(d, _bytes):
     try:
-        decoded = [ x for x in script_GetOp(_bytes) ]
+        decoded = [x for x in script_GetOp(_bytes)]
     except Exception as e:
         # coinbase transactions raise an exception
         print_error("cannot find address in input script", bh2u(_bytes))
         return
-
-    match = [ opcodes.OP_PUSHDATA4 ]
+    match = [opcodes.OP_PUSHDATA4]
     if match_decoded(decoded, match):
         item = decoded[0][1]
         if item[0] == 0:
@@ -427,6 +421,7 @@ def parse_input(vds):
 
     return d
 
+
 def parse_witness(vds, txin):
     n = vds.read_compact_size()
     if n == 0:
@@ -460,6 +455,7 @@ def parse_output(vds, i):
     d['prevout_n'] = i
     return d
 
+
 def deserialize(raw):
     vds = BCDataStream()
     vds.write(bfh(raw))
@@ -488,9 +484,6 @@ def deserialize(raw):
                     txin['address'] = bitcoin.script_to_p2wsh(txin['witnessScript'])
     d['lockTime'] = vds.read_uint32()
     return d
-
-
-# pay & redeem scripts
 
 
 def multisig_script(public_keys, m):
@@ -593,6 +586,9 @@ class Transaction:
         self.version = d['version']
         return d
 
+    # codeface 普通转账交易的构造入口
+    # outputs [(type, address, value), ]
+    # type, (addr, function name and params, gas_price, gas_limit), value
     @classmethod
     def from_io(klass, inputs, outputs, locktime=0):
         self = klass(None)
@@ -602,7 +598,7 @@ class Transaction:
         return self
 
     @classmethod
-    def pay_script(self, output_type, addr):
+    def pay_script(cls, output_type, addr):
         if output_type == TYPE_SCRIPT:
             return addr
         elif output_type == TYPE_ADDRESS:
@@ -611,6 +607,25 @@ class Transaction:
             return bitcoin.public_key_to_p2pk_script(addr)
         else:
             raise TypeError('Unknown output type')
+
+    @classmethod
+    def contract_script(cls, data):
+        op_code = data[-1]
+        if op_code == opcodes.OP_CALL:
+            gas_limit, gas_price, abi_encoded_params, address, op_code = data
+            script_pubkey = CScript([b"\x04", CScriptNum(gas_limit),
+                                     CScriptNum(gas_price), bytes.fromhex(abi_encoded_params),
+                                     bytes.fromhex(address), bytes([op_code])])
+        elif op_code == opcodes.OP_CREATE:
+            gas_limit, gas_price, bytecode, op_code = data
+            script_pubkey = CScript([b"\x04", CScriptNum(gas_limit),
+                                     CScriptNum(gas_price),
+                                     bytes.fromhex(bytecode), bytes([op_code])])
+        else:
+            script_pubkey = CScript([])
+        script_pubkey = bh2u(script_pubkey)
+        print('contract_script', script_pubkey)
+        return script_pubkey
 
     @classmethod
     def get_siglist(self, txin, estimate_size=False):
@@ -737,9 +752,12 @@ class Transaction:
         self._outputs.sort(key = lambda o: (o[2], self.pay_script(o[0], o[1])))
 
     def serialize_output(self, output):
-        output_type, addr, amount = output
+        output_type, data, amount = output
         s = int_to_hex(amount, 8)
-        script = self.pay_script(output_type, addr)
+        if output_type == TYPE_CONTRACT:
+            script = self.contract_script(data)
+        else:
+            script = self.pay_script(output_type, addr=data)
         s += var_int(len(script)//2)
         s += script
         return s
@@ -778,6 +796,7 @@ class Transaction:
         outputs = self.outputs()
         txins = var_int(len(inputs)) + ''.join(self.serialize_input(txin, self.input_script(txin, estimate_size)) for txin in inputs)
         txouts = var_int(len(outputs)) + ''.join(self.serialize_output(o) for o in outputs)
+        print('serialize - txouts', txouts)
         if witness and self.is_segwit():
             marker = '00'
             flag = '01'
@@ -919,7 +938,6 @@ class Transaction:
 
     def get_output_addresses(self):
         return [addr for addr, val in self.get_outputs()]
-
 
     def has_address(self, addr):
         return (addr in self.get_output_addresses()) or (addr in (tx.get("address") for tx in self.inputs()))

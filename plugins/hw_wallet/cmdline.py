@@ -1,4 +1,4 @@
-from electrum.util import print_msg, print_error, raw_input
+from electrum.util import print_msg, print_error
 
 
 class CmdLineHandler:
@@ -11,7 +11,7 @@ class CmdLineHandler:
         t = {'a': '7', 'b': '8', 'c': '9', 'd': '4', 'e': '5', 'f': '6', 'g': '1', 'h': '2', 'i': '3'}
         print_msg(msg)
         print_msg("a b c\nd e f\ng h i\n-----")
-        o = raw_input()
+        o = input()
         return ''.join(map(lambda x: t[x], o))
 
     def prompt_auth(self, msg):
@@ -24,7 +24,7 @@ class CmdLineHandler:
 
     def yes_no_question(self, msg):
         print_msg(msg)
-        return raw_input() in 'yY'
+        return input() in 'yY'
 
     def stop(self):
         pass

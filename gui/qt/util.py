@@ -1,14 +1,6 @@
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
-import six
 import os.path
 import time
-import traceback
 import sys
-import threading
 import platform
 from six.moves import queue
 from collections import namedtuple
@@ -213,7 +205,7 @@ class MessageBoxMixin(object):
     def msg_box(self, icon, parent, title, text, buttons=QMessageBox.Ok,
                 defaultButton=QMessageBox.NoButton):
         parent = parent or self.top_level_window()
-        d = QMessageBox(icon, title, text, buttons, parent)
+        d = QMessageBox(icon, title, str(text), buttons, parent)
         d.setWindowModality(Qt.WindowModal)
         d.setDefaultButton(defaultButton)
         return d.exec_()

@@ -91,7 +91,7 @@ if is_local or is_android:
 # sys.modules['electrum_gui'] = importlib.import_module('gui')
 # sys.modules['electrum_plugins'] = importlib.import_module('plugins')
 
-from electrum import network, qtum
+from electrum import qtum
 from electrum import SimpleConfig, Network
 from electrum.wallet import Wallet, Imported_Wallet
 from electrum.storage import WalletStorage

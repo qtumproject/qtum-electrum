@@ -22,11 +22,6 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-from __future__ import unicode_literals
-
 import os
 import re
 import socket
@@ -125,6 +120,19 @@ class TcpConnection(threading.Thread, util.PrintError):
             pass
             # self.print_error("failed to connect", str(e))
 
+    @staticmethod
+    def get_ssl_context(cert_reqs, ca_certs):
+        context = ssl.create_default_context(purpose=ssl.Purpose.SERVER_AUTH, cafile=ca_certs)
+        context.check_hostname = False
+        context.verify_mode = cert_reqs
+
+        context.options |= ssl.OP_NO_SSLv2
+        context.options |= ssl.OP_NO_SSLv3
+        context.options |= ssl.OP_NO_TLSv1
+
+        return context
+
+
     def get_socket(self):
         if self.use_ssl:
             cert_path = os.path.join(self.config_path, 'certs', self.host)
@@ -138,10 +146,8 @@ class TcpConnection(threading.Thread, util.PrintError):
                 # try with CA first
                 if os.path.exists(ca_path):
                     try:
-                        s = ssl.wrap_socket(s, ssl_version=ssl.PROTOCOL_TLSv1_1,
-                                            cert_reqs=ssl.CERT_REQUIRED,
-                                            ca_certs=ca_path,
-                                            do_handshake_on_connect=True)
+                        context = self.get_ssl_context(cert_reqs=ssl.CERT_REQUIRED, ca_certs=ca_path)
+                        s = context.wrap_socket(s, do_handshake_on_connect=True)
                     except ssl.SSLError as e:
                         print_error('[get_socket] 1', e)
                         s = None
@@ -162,7 +168,8 @@ class TcpConnection(threading.Thread, util.PrintError):
                     print_error('[get_socket] 3')
                     return
                 try:
-                    s = ssl.wrap_socket(s, ssl_version=ssl.PROTOCOL_TLSv1_1, cert_reqs=ssl.CERT_NONE, ca_certs=None)
+                    context = self.get_ssl_context(cert_reqs=ssl.CERT_NONE, ca_certs=None)
+                    s = context.wrap_socket(s)
                 except ssl.SSLError as e:
                     self.print_error("SSL error retrieving SSL certificate:", e)
                     return
@@ -187,11 +194,9 @@ class TcpConnection(threading.Thread, util.PrintError):
 
         if self.use_ssl:
             try:
-                s = ssl.wrap_socket(s,
-                                    ssl_version=ssl.PROTOCOL_TLSv1_1,
-                                    cert_reqs=ssl.CERT_REQUIRED,
-                                    ca_certs=(temporary_path if is_new else cert_path),
-                                    do_handshake_on_connect=True)
+                context = self.get_ssl_context(cert_reqs=ssl.CERT_REQUIRED,
+                                               ca_certs=(temporary_path if is_new else cert_path))
+                s = context.wrap_socket(s, do_handshake_on_connect=True)
             except socket.timeout:
                 self.print_error('timeout')
                 return
