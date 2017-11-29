@@ -2999,7 +2999,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                                                        change_addr=sender,
                                                        gas_fee=gas_limit * gas_price,
                                                        sender=sender)
-            print(tx, '\n', deserialize(tx.serialize()), '\n')
         except NotEnoughFunds:
             dialog.show_message(_("Insufficient funds"))
             return
