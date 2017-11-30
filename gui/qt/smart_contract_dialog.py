@@ -15,6 +15,8 @@ from electrum.plugins import run_hook
 from electrum.qtum import is_hash160, is_address, b58_address_to_hash160
 from electrum.util import bh2u
 
+float_validator = QRegExpValidator(QRegExp('^(-?\d+)(\.\d+)?$'))
+int_validator = QIntValidator(0, 10 ** 9 - 1)
 
 class ContractInfoLayout(QVBoxLayout):
     def __init__(self, dialog, contract, callback):
@@ -138,7 +140,8 @@ class ContractFuncLayout(QGridLayout):
 
         self.abi_combo.addItems([s[1] for s in self.abi_signatures])
         self.abi_combo.setFixedWidth(self.address_e.width())
-        self.abi_combo.setCurrentIndex(0)
+        if len(self.senders) > 0:
+            self.abi_combo.setCurrentIndex(0)
         self.addWidget(abi_lb, 2, 0)
         self.addWidget(self.abi_combo, 2, 1, 1, -1)
         self.abi_combo.currentIndexChanged.connect(self.update)
@@ -151,9 +154,6 @@ class ContractFuncLayout(QGridLayout):
         self.optional_lb = QLabel(_('Optional:'))
         self.addWidget(self.optional_lb, 4, 0)
         self.optional_widget = QWidget()
-
-        float_validator = QRegExpValidator(QRegExp('^(-?\d+)(\.\d+)?$'))
-        int_validator = QIntValidator(0, 10 ** 9 - 1)
 
         optional_layout = QHBoxLayout()
         optional_layout.setContentsMargins(0, 0, 0, 0)
@@ -253,24 +253,30 @@ class ContractFuncLayout(QGridLayout):
             elif 'int' in _type:
                 if not isinstance(args[index], int):
                     raise BaseException('inavlid input:{}'.format(args[index]))
-        return abi, args
+        if len(self.senders) > 0:
+            sender = self.senders[self.sender_combo.currentIndex()]
+        else:
+            sender = None
+        return abi, args, sender
 
     def do_call(self):
         try:
-            abi, args = self.parse_args()
+            abi, args, sender = self.parse_args()
         except (BaseException,) as e:
             self.dialog.show_message(str(e))
             return
-        sender = self.senders[self.sender_combo.currentIndex()]
         self.dialog.do_call(abi, args, sender)
 
     def do_sendto(self):
         try:
-            abi, args = self.parse_args()
+            abi, args, sender = self.parse_args()
         except (BaseException,) as e:
             self.dialog.show_message(str(e))
             return
-        sender = self.senders[self.sender_combo.currentIndex()]
+        if not sender:
+            self.dialog.show_message('no sender selected')
+            return
+
         gas_limit, gas_price, amount = self.parse_values()
         self.dialog.do_sendto(abi, args, gas_limit, gas_price, amount, sender)
 
@@ -295,10 +301,77 @@ class ContractFuncDialog(QDialog, MessageBoxMixin):
         self.parent().sendto_smart_contract(address, abi, ars, gas_limit, gas_price, amount, sender, self)
 
 
+class ContractCreateLayout(QVBoxLayout):
+    def __init__(self, dialog):
+        QVBoxLayout.__init__(self)
+        self.dialog = dialog
+        self.contract = {
+            'name': '',
+            'type': 'contract',
+            'interface': '',
+            'address': ''
+        }
+        self.senders = self.dialog.parent().wallet.get_spendable_addresses()
+
+        self.addWidget(QLabel(_("Bytecode:")))
+        self.bytecode_e = ButtonsTextEdit()
+        self.bytecode_e.setMinimumHeight(80)
+        self.bytecode_e.setMaximumHeight(80)
+        self.addWidget(self.bytecode_e)
+
+        self.addWidget(QLabel(_("Interface(ABI):")))
+        self.interface_e = ButtonsTextEdit()
+        self.interface_e.setMinimumHeight(80)
+        self.interface_e.setMaximumHeight(80)
+        self.addWidget(self.interface_e)
+
+        params_layout = QHBoxLayout()
+        args_lb = QLabel(_('Constructor:'))
+        self.args_e = QLineEdit()
+        params_layout.addWidget(args_lb)
+        params_layout.addWidget(self.args_e)
+        self.addLayout(params_layout)
+
+        optional_layout = QHBoxLayout()
+        self.addLayout(optional_layout)
+        gas_limit_lb = QLabel(_('gas limit: '))
+        self.gas_limit_e = ButtonsLineEdit()
+        self.gas_limit_e.setValidator(int_validator)
+        self.gas_limit_e.setText('250000')
+        gas_price_lb = QLabel(_('gas price: '))
+        self.gas_price_e = ButtonsLineEdit()
+        self.gas_price_e.setValidator(float_validator)
+        self.gas_price_e.setText('0.00000040')
+        sender_lb = QLabel(_('sender: '))
+        self.sender_combo = QComboBox()
+        self.sender_combo.setMinimumWidth(300)
+        self.sender_combo.addItems(self.senders)
+        optional_layout.addWidget(gas_limit_lb)
+        optional_layout.addWidget(self.gas_limit_e)
+        optional_layout.addStretch(1)
+        optional_layout.addWidget(gas_price_lb)
+        optional_layout.addWidget(self.gas_price_e)
+        optional_layout.addStretch(1)
+        optional_layout.addWidget(sender_lb)
+        optional_layout.addWidget(self.sender_combo)
+
+        self.cancel_btn = CancelButton(dialog)
+        self.create_btn = QPushButton(_('Create'))
+        self.create_btn.setDefault(True)
+        self.create_btn.clicked.connect(self.create)
+        self.addLayout(Buttons(*[self.cancel_btn, self.create_btn]))
+
+    def create(self):
+        pass
+
+
 class ContractCreateDialog(QDialog, MessageBoxMixin):
     def __init__(self, parent):
         QDialog.__init__(self, parent=parent)
         self.setWindowTitle(_('Create Smart Contract'))
         self.setMinimumSize(700, 400)
+        self.setMaximumSize(780, 500)
         self.main_window = parent
         run_hook('contract_create_dialog', self)
+        layout = ContractCreateLayout(self)
+        self.setLayout(layout)
