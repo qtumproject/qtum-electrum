@@ -13,10 +13,11 @@ from .util import ButtonsLineEdit, Buttons, ButtonsTextEdit, CancelButton, Messa
 from electrum.i18n import _
 from electrum.plugins import run_hook
 from electrum.qtum import is_hash160, is_address, b58_address_to_hash160
-from electrum.util import bh2u
+from electrum.util import bh2u, print_error
 
 float_validator = QRegExpValidator(QRegExp('^(-?\d+)(\.\d+)?$'))
 int_validator = QIntValidator(0, 10 ** 9 - 1)
+
 
 class ContractInfoLayout(QVBoxLayout):
     def __init__(self, dialog, contract, callback):
@@ -305,25 +306,22 @@ class ContractCreateLayout(QVBoxLayout):
     def __init__(self, dialog):
         QVBoxLayout.__init__(self)
         self.dialog = dialog
-        self.contract = {
-            'name': '',
-            'type': 'contract',
-            'interface': '',
-            'address': ''
-        }
         self.senders = self.dialog.parent().wallet.get_spendable_addresses()
+        self.constructor = {}
 
         self.addWidget(QLabel(_("Bytecode:")))
         self.bytecode_e = ButtonsTextEdit()
         self.bytecode_e.setMinimumHeight(80)
         self.bytecode_e.setMaximumHeight(80)
         self.addWidget(self.bytecode_e)
+        self.addStretch(1)
 
         self.addWidget(QLabel(_("Interface(ABI):")))
         self.interface_e = ButtonsTextEdit()
-        self.interface_e.setMinimumHeight(80)
         self.interface_e.setMaximumHeight(80)
+        self.interface_e.textChanged.connect(self.interface_changed)
         self.addWidget(self.interface_e)
+        self.addStretch(1)
 
         params_layout = QHBoxLayout()
         args_lb = QLabel(_('Constructor:'))
@@ -334,15 +332,15 @@ class ContractCreateLayout(QVBoxLayout):
 
         optional_layout = QHBoxLayout()
         self.addLayout(optional_layout)
-        gas_limit_lb = QLabel(_('gas limit: '))
+        gas_limit_lb = QLabel(_('gas limit:'))
         self.gas_limit_e = ButtonsLineEdit()
         self.gas_limit_e.setValidator(int_validator)
-        self.gas_limit_e.setText('250000')
-        gas_price_lb = QLabel(_('gas price: '))
+        self.gas_limit_e.setText('2500000')
+        gas_price_lb = QLabel(_('gas price:'))
         self.gas_price_e = ButtonsLineEdit()
         self.gas_price_e.setValidator(float_validator)
         self.gas_price_e.setText('0.00000040')
-        sender_lb = QLabel(_('sender: '))
+        sender_lb = QLabel(_('sender:'))
         self.sender_combo = QComboBox()
         self.sender_combo.setMinimumWidth(300)
         self.sender_combo.addItems(self.senders)
@@ -361,8 +359,72 @@ class ContractCreateLayout(QVBoxLayout):
         self.create_btn.clicked.connect(self.create)
         self.addLayout(Buttons(*[self.cancel_btn, self.create_btn]))
 
+    def parse_args(self):
+        sender = None
+        if len(self.senders) > 0:
+            sender = self.senders[self.sender_combo.currentIndex()]
+        if not sender:
+            raise BaseException('no sender selected')
+        args = json.loads('[{}]'.format(self.args_e.text()))
+        abi = self.constructor
+        inputs = abi.get('inputs', [])
+        if not len(args) == len(inputs):
+            raise BaseException('invalid input count,expect {} got {}'.format(len(inputs), len(args)))
+        for index, _input in enumerate(inputs):
+            _type = _input.get('type', '')
+            if _type == 'address':
+                addr = args[index]
+                if is_address(addr):
+                    __, hash160 = b58_address_to_hash160(addr)
+                    addr = bh2u(hash160)
+                if not is_hash160(addr):
+                    raise BaseException('invalid input:{}'.format(args[index]))
+                args[index] = addr.lower()
+            elif 'int' in _type:
+                if not isinstance(args[index], int):
+                    raise BaseException('inavlid input:{}'.format(args[index]))
+            elif _type == 'string' or _type == 'bytes':
+                args[index] = args[index].encode()
+        return abi, args, sender
+
+    def parse_values(self):
+        def parse_edit_value(edit, times=10 ** 8):
+            try:
+                return int(float(edit.text()) * times)
+            except ValueError:
+                return 0
+
+        return parse_edit_value(self.gas_limit_e, 1), parse_edit_value(self.gas_price_e)
+
     def create(self):
-        pass
+        try:
+            abi, args, sender = self.parse_args()
+        except (BaseException,) as e:
+            self.dialog.show_message(str(e))
+            return
+        gas_limit, gas_price = self.parse_values()
+        bytecode = self.bytecode_e.text()
+        self.dialog.do_create(bytecode, abi, args, gas_limit, gas_price, sender)
+
+    def interface_changed(self):
+        interface_text = self.interface_e.text()
+        try:
+            interface = json.loads(interface_text)
+            constructor = {}
+            for abi in interface:
+                if abi.get('type') == 'constructor':
+                    constructor = abi
+                    break
+            self.constructor = constructor
+            if not constructor:
+                return
+            signature = '{}'.format(', '.join(['{} {}'.format(i.get('type'), i.get('name'))
+                                               for i in constructor.get('inputs', [])]))
+            self.args_e.setPlaceholderText(signature)
+        except (BaseException,) as e:
+            self.constructor = {}
+            self.args_e.setPlaceholderText('')
+            print_error('[interface_changed]', str(e))
 
 
 class ContractCreateDialog(QDialog, MessageBoxMixin):
@@ -375,3 +437,6 @@ class ContractCreateDialog(QDialog, MessageBoxMixin):
         run_hook('contract_create_dialog', self)
         layout = ContractCreateLayout(self)
         self.setLayout(layout)
+
+    def do_create(self, bytecode, constructor, args, gas_limit, gas_price, sender):
+        self.parent().create_smart_contract(bytecode, constructor, args, gas_limit, gas_price, sender, self)

@@ -1269,5 +1269,8 @@ def eth_abi_encode(abi, args):
     if not abi:
         return "00"
     types = list([inp['type'] for inp in abi.get('inputs', [])])
-    result = function_abi_to_4byte_selector(abi) + encode_abi(types, args)
+    if abi.get('name'):
+        result = function_abi_to_4byte_selector(abi) + encode_abi(types, args)
+    else:
+        result = encode_abi(types, args)
     return bh2u(result)

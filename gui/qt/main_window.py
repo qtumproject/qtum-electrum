@@ -2988,11 +2988,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         #     return
         # print(r)
 
-    def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog):
-        abi_encoded = eth_abi_encode(abi, args)
-        script = contract_script(gas_limit, gas_price, abi_encoded, opcodes.OP_CALL, address)
-        outputs = [(TYPE_SCRIPT, script, amount), ]
-        tx_desc = 'contract sendto {}'.format(self.smart_contracts[address][0])
+    def _smart_contract_broadcast(self, outputs, desc, gas_limit, gas_price, sender, dialog):
         coins = self.get_coins()
         try:
             tx = self.wallet.make_unsigned_transaction(coins, outputs, self.config, None,
@@ -3018,7 +3014,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         # confirmation dialog
         msg = [
             _("Amount to be sent") + ": " + self.format_amount_and_units(amount),
-            _("Mining fee") + ": " + self.format_amount_and_units(fee),
+            _("Mining fee") + ": " + self.format_amount_and_units(fee - gas_limit * gas_price),
             _("Gas fee") + ": " + self.format_amount_and_units(gas_limit * gas_price),
         ]
 
@@ -3044,9 +3040,24 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                     self.show_transaction(tx)
                     self.do_clear()
                 else:
-                    self.broadcast_transaction(tx, tx_desc)
+                    self.broadcast_transaction(tx, desc)
 
         self.sign_tx_with_password(tx, sign_done, password)
+
+    def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog):
+        abi_encoded = eth_abi_encode(abi, args)
+        script = contract_script(gas_limit, gas_price, abi_encoded, opcodes.OP_CALL, address)
+        outputs = [(TYPE_SCRIPT, script, amount), ]
+        tx_desc = 'contract sendto {}'.format(self.smart_contracts[address][0])
+        self._smart_contract_broadcast(outputs, tx_desc, gas_limit, gas_price, sender, dialog)
+
+    def create_smart_contract(self, bytecode, constructor, args, gas_limit, gas_price, sender, dialog):
+        abi_encoded = ''
+        if constructor:
+            abi_encoded = eth_abi_encode(constructor, args)
+        script = contract_script(gas_limit, gas_price, bytecode + abi_encoded, opcodes.OP_CREATE)
+        outputs = [(TYPE_SCRIPT, script, 0), ]
+        self._smart_contract_broadcast(outputs, 'contract create', gas_limit, gas_price, sender, dialog)
 
     def contract_create_dialog(self):
         d = ContractCreateDialog(self)
