@@ -2988,12 +2988,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         #     return
         # print(r)
 
-    def _smart_contract_broadcast(self, outputs, desc, gas_limit, gas_price, sender, dialog):
+    def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog):
         coins = self.get_coins()
         try:
             tx = self.wallet.make_unsigned_transaction(coins, outputs, self.config, None,
                                                        change_addr=sender,
-                                                       gas_fee=gas_limit * gas_price,
+                                                       gas_fee=gas_fee,
                                                        sender=sender)
         except NotEnoughFunds:
             dialog.show_message(_("Insufficient funds"))
@@ -3003,7 +3003,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             dialog.show_message(str(e))
             return
 
-        amount = sum(map(lambda x: x[2], outputs))
+        amount = sum(map(lambda y: y[2], outputs))
         fee = tx.get_fee()
 
         if fee < self.wallet.relayfee() * tx.estimated_size() / 1000:
@@ -3014,8 +3014,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         # confirmation dialog
         msg = [
             _("Amount to be sent") + ": " + self.format_amount_and_units(amount),
-            _("Mining fee") + ": " + self.format_amount_and_units(fee - gas_limit * gas_price),
-            _("Gas fee") + ": " + self.format_amount_and_units(gas_limit * gas_price),
+            _("Mining fee") + ": " + self.format_amount_and_units(fee - gas_fee),
+            _("Gas fee") + ": " + self.format_amount_and_units(gas_fee),
         ]
 
         confirm_rate = 2 * self.config.max_fee_rate()
@@ -3049,7 +3049,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         script = contract_script(gas_limit, gas_price, abi_encoded, opcodes.OP_CALL, address)
         outputs = [(TYPE_SCRIPT, script, amount), ]
         tx_desc = 'contract sendto {}'.format(self.smart_contracts[address][0])
-        self._smart_contract_broadcast(outputs, tx_desc, gas_limit, gas_price, sender, dialog)
+        self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog)
 
     def create_smart_contract(self, bytecode, constructor, args, gas_limit, gas_price, sender, dialog):
         abi_encoded = ''
@@ -3057,7 +3057,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             abi_encoded = eth_abi_encode(constructor, args)
         script = contract_script(gas_limit, gas_price, bytecode + abi_encoded, opcodes.OP_CREATE)
         outputs = [(TYPE_SCRIPT, script, 0), ]
-        self._smart_contract_broadcast(outputs, 'contract create', gas_limit, gas_price, sender, dialog)
+        self._smart_contract_broadcast(outputs, 'contract create', gas_limit * gas_price, sender, dialog)
 
     def contract_create_dialog(self):
         d = ContractCreateDialog(self)
