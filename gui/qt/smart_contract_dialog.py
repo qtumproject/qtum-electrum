@@ -417,6 +417,7 @@ class ContractCreateLayout(QVBoxLayout):
                     break
             self.constructor = constructor
             if not constructor:
+                self.args_e.setPlaceholderText('')
                 return
             signature = '{}'.format(', '.join(['{} {}'.format(i.get('type'), i.get('name'))
                                                for i in constructor.get('inputs', [])]))
