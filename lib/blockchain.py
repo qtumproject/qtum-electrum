@@ -212,29 +212,11 @@ class Blockchain(util.PrintError):
                     self._write(parent_header, i)
                 else:
                     self._delete(i)
-            # update size
-            self.update_size()
-            parent.update_size()
-
-            # store file path
-            # for b in blockchains.values():
-            #     b.old_path = b.path()
-            # swap parameters
-            # self.parent_id = parent.parent_id
-            # parent.parent_id = parent_id
-            # self.checkpoint = parent.checkpoint
-            # parent.checkpoint = checkpoint
-            # move files
-            # for b in blockchains.values():
-            #     if b in [self, parent]: continue
-            #     if b.old_path != b.path():
-            #         self.print_error("renaming", b.old_path, b.path())
-            #         os.rename(b.old_path, b.path())
-            # update pointers
-            # blockchains[self.checkpoint] = self
-            # blockchains[parent.checkpoint] = parent
         except (BaseException,) as e:
             self.print_error('swap error', e)
+        # update size
+        self.update_size()
+        parent.update_size()
         self.swaping.clear()
         parent.swaping.clear()
         print_error('swap finished')
