@@ -30,6 +30,7 @@ import webbrowser
 import csv
 from decimal import Decimal
 import base64
+import eth_abi
 from functools import partial
 
 from PyQt5.QtCore import Qt
@@ -2981,12 +2982,19 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def call_smart_contract(self, address, abi, args, sender, dialog):
         data = eth_abi_encode(abi, args)
-        # try:
-        #     r = self.network.synchronous_get(('blockchain.contract.call', [address, data, sender]))
-        # except BaseException as e:
-        #     dialog.show_message(str(e))
-        #     return
-        # print(r)
+        try:
+            r = self.network.synchronous_get(('blockchain.contract.call', [address, data, sender]), timeout=10)
+        except BaseException as e:
+            dialog.show_message(str(e))
+            return
+        result = r.get('executionResult', {}).get('output')
+        if not result:
+            dialog.show_message(str(r))
+            return
+        outputs = abi.get('outputs', [])
+        if len(outputs) == 1:
+            result = eth_abi.decode_single(outputs[0].get('type', ''), result)
+        dialog.show_message(str(result))
 
     def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog):
         coins = self.get_coins()
