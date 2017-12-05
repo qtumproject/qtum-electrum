@@ -1050,6 +1050,7 @@ class Network(util.DaemonThread):
             self.set_parameters(host, port, protocol, proxy, auto_connect)
 
     def get_local_height(self):
+        self.blockchain().update_size()
         return self.blockchain().height()
 
     def synchronous_get(self, request, timeout=30):
