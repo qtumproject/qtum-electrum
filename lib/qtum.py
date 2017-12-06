@@ -20,7 +20,6 @@ from .util import unpack_uint16_from, unpack_uint32_from, unpack_uint64_from, un
 from . import segwit_addr
 
 
-
 def read_json_dict(filename):
     path = os.path.join(os.path.dirname(__file__), filename)
     try:
