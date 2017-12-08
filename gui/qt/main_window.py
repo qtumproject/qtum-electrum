@@ -2993,7 +2993,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             return
         outputs = abi.get('outputs', [])
         if len(outputs) == 1:
-            result = eth_abi.decode_single(outputs[0].get('type', ''), result)
+            try:
+                result = eth_abi.decode_single(outputs[0].get('type', ''), result)
+            except (BaseException,) as e:
+                pass
         dialog.show_message(str(result))
 
     def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog):
@@ -3053,19 +3056,25 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.sign_tx_with_password(tx, sign_done, password)
 
     def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog):
-        abi_encoded = eth_abi_encode(abi, args)
-        script = contract_script(gas_limit, gas_price, abi_encoded, opcodes.OP_CALL, address)
-        outputs = [(TYPE_SCRIPT, script, amount), ]
-        tx_desc = 'contract sendto {}'.format(self.smart_contracts[address][0])
-        self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog)
+        try:
+            abi_encoded = eth_abi_encode(abi, args)
+            script = contract_script(gas_limit, gas_price, abi_encoded, opcodes.OP_CALL, address)
+            outputs = [(TYPE_SCRIPT, script, amount), ]
+            tx_desc = 'contract sendto {}'.format(self.smart_contracts[address][0])
+            self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog)
+        except (BaseException,) as e:
+            dialog.show_message(str(e))
 
     def create_smart_contract(self, bytecode, constructor, args, gas_limit, gas_price, sender, dialog):
-        abi_encoded = ''
-        if constructor:
-            abi_encoded = eth_abi_encode(constructor, args)
-        script = contract_script(gas_limit, gas_price, bytecode + abi_encoded, opcodes.OP_CREATE)
-        outputs = [(TYPE_SCRIPT, script, 0), ]
-        self._smart_contract_broadcast(outputs, 'contract create', gas_limit * gas_price, sender, dialog)
+        try:
+            abi_encoded = ''
+            if constructor:
+                abi_encoded = eth_abi_encode(constructor, args)
+            script = contract_script(gas_limit, gas_price, bytecode + abi_encoded, opcodes.OP_CREATE)
+            outputs = [(TYPE_SCRIPT, script, 0), ]
+            self._smart_contract_broadcast(outputs, 'contract create', gas_limit * gas_price, sender, dialog)
+        except (BaseException,) as e:
+            dialog.show_message(str(e))
 
     def contract_create_dialog(self):
         d = ContractCreateDialog(self)
