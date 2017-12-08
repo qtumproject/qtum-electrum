@@ -39,7 +39,7 @@ from collections import defaultdict
 from .i18n import _
 from .util import NotEnoughFunds, PrintError, UserCancelled, profiler, format_satoshis
 
-from .bitcoin import *
+from .qtum import *
 from .version import *
 from .keystore import load_keystore, Hardware_KeyStore
 from .storage import multisig_type
@@ -57,6 +57,7 @@ from . import paymentrequest
 from .paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED
 from .paymentrequest import InvoiceStore
 from .contacts import Contacts
+from .smart_contracts import SmartContracts
 
 from .storage import WalletStorage
 
@@ -125,6 +126,7 @@ class Abstract_Wallet(PrintError):
         # invoices and contacts
         self.invoices = InvoiceStore(self.storage)
         self.contacts = Contacts(self.storage)
+        self.smart_contracts = SmartContracts(self.storage)
 
 
     def diagnostic_name(self):
@@ -550,6 +552,14 @@ class Abstract_Wallet(PrintError):
         out.update(self.get_change_addresses())
         return list(out)
 
+    def get_spendable_addresses(self, min_amount=0.000000001):
+        result = []
+        for addr in self.get_addresses():
+            c, u, x = self.get_addr_balance(addr)
+            if c >= min_amount:
+                result.append(addr)
+        return result
+
     def get_frozen_balance(self):
         return self.get_balance(self.frozen_addresses)
 
@@ -577,7 +587,11 @@ class Abstract_Wallet(PrintError):
                     return addr
 
     def add_transaction(self, tx_hash, tx):
-        is_coinbase = tx.inputs()[0]['type'] == 'coinbase'
+        is_coinbase = False
+        try:
+            is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinbase'
+        except (BaseException,) as e:
+            print_error('add_transaction', e)
         with self.transaction_lock:
             # add inputs
             self.txi[tx_hash] = d = {}
@@ -742,13 +756,27 @@ class Abstract_Wallet(PrintError):
                 label = self.labels.get(addr)
                 if label:
                     labels.append(label)
-            return ', '.join(labels)
+            if labels:
+                return ', '.join(labels)
+        is_coinbase = False
+        try:
+            tx = self.transactions.get(tx_hash)
+            is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinbase'
+        except (BaseException,) as e:
+            print_error('get_tx_status', e)
+        if is_coinbase:
+            return 'mined'
         return ''
 
     def get_tx_status(self, tx_hash, height, conf, timestamp):
         from .util import format_time
-        if conf == 0:
+        is_coinbase = False
+        try:
             tx = self.transactions.get(tx_hash)
+            is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinbase'
+        except (BaseException,) as e:
+            print_error('get_tx_status', e)
+        if conf == 0:
             if not tx:
                 return 3, 'unknown'
             is_final = tx and tx.is_final()
@@ -769,6 +797,8 @@ class Abstract_Wallet(PrintError):
                 status = 3
             else:
                 status = 4
+        elif is_coinbase:
+            status = 4 + max(min(conf // (COINBASE_MATURITY // RECOMMEND_CONFIRMATIONS), RECOMMEND_CONFIRMATIONS), 1)
         else:
             status = 4 + min(conf, RECOMMEND_CONFIRMATIONS)
         time_str = format_time(timestamp) if timestamp else _("unknown")
@@ -785,7 +815,9 @@ class Abstract_Wallet(PrintError):
         # Change <= dust threshold is added to the tx fee
         return 182 * 3 * self.relayfee() / 1000
 
-    def make_unsigned_transaction(self, inputs, outputs, config, fixed_fee=None, change_addr=None):
+    def make_unsigned_transaction(self, inputs, outputs, config,
+                                  fixed_fee=None, change_addr=None,
+                                  gas_fee=0, sender=None):
         # check outputs
         i_max = None
         for i, o in enumerate(outputs):
@@ -826,37 +858,42 @@ class Abstract_Wallet(PrintError):
 
         # Fee estimator
         if fixed_fee is None:
-            fee_estimator = partial(self.estimate_fee, config)
+            fee_estimator = partial(self.estimate_fee, config, gas_fee)
         else:
             fee_estimator = lambda size: fixed_fee
 
         if i_max is None:
             # Let the coin chooser select the coins to spend
             max_change = self.max_change_outputs if self.multiple_change else 1
-            coin_chooser = coinchooser.get_coin_chooser(config)
+            if sender:
+                coin_chooser = coinchooser.CoinChooserQtum()
+            else:
+                coin_chooser = coinchooser.get_coin_chooser(config)
             tx = coin_chooser.make_tx(inputs, outputs, change_addrs[:max_change],
-                                      fee_estimator, self.dust_threshold())
+                                      fee_estimator, self.dust_threshold(), sender)
         else:
             sendable = sum(map(lambda x:x['value'], inputs))
             _type, data, value = outputs[i_max]
             outputs[i_max] = (_type, data, 0)
             tx = Transaction.from_io(inputs, outputs[:])
             fee = fee_estimator(tx.estimated_size())
+            fee = fee + gas_fee
             amount = max(0, sendable - tx.output_value() - fee)
             outputs[i_max] = (_type, data, amount)
             tx = Transaction.from_io(inputs, outputs[:])
 
         # Sort the inputs and outputs deterministically
-        tx.BIP_LI01_sort()
+        # tx.BIP_LI01_sort()
+        tx.qtum_sort(sender)
         # Timelock tx to current height.
         # Disabled until keepkey firmware update
         # tx.locktime = self.get_local_height()
         run_hook('make_unsigned_transaction', self, tx)
         return tx
 
-    def estimate_fee(self, config, size):
+    def estimate_fee(self, config, gas_fee, size):
         fee = int(config.fee_per_kb() * size / 1000.)
-        return fee
+        return fee + gas_fee
 
     def mktx(self, outputs, password, config, fee=None, change_addr=None, domain=None):
         coins = self.get_spendable_coins(domain, config)
@@ -917,7 +954,7 @@ class Abstract_Wallet(PrintError):
         if fee is None:
             outputs = [(TYPE_ADDRESS, recipient, total)]
             tx = Transaction.from_io(inputs, outputs)
-            fee = self.estimate_fee(config, tx.estimated_size())
+            fee = self.estimate_fee(config, 0, tx.estimated_size())
 
         if total - fee < 0:
             raise BaseException(_('Not enough funds on address.') + '\nTotal: %d satoshis\nFee: %d'%(total, fee))

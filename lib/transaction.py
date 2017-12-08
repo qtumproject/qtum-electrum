@@ -26,9 +26,8 @@
 # Note: The deserialization code originally comes from ABE.
 from .util import print_error, profiler, to_string
 from . import bitcoin
-from .bitcoin import *
+from .qtum import *
 import struct
-from .script import CScript, CScriptNum
 
 #
 # Workalike python implementation of Bitcoin's CDataStream class.
@@ -453,6 +452,8 @@ def parse_output(vds, i):
     d['type'], d['address'] = get_address_from_output_script(scriptPubKey)
     d['scriptPubKey'] = bh2u(scriptPubKey)
     d['prevout_n'] = i
+    if not d['value'] and not d['address'] and not i and not d['scriptPubKey']:
+        d['type'] = 'coinbase'
     return d
 
 
@@ -586,9 +587,6 @@ class Transaction:
         self.version = d['version']
         return d
 
-    # codeface 普通转账交易的构造入口
-    # outputs [(type, address, value), ]
-    # type, (addr, function name and params, gas_price, gas_limit), value
     @classmethod
     def from_io(klass, inputs, outputs, locktime=0):
         self = klass(None)
@@ -599,7 +597,7 @@ class Transaction:
 
     @classmethod
     def pay_script(cls, output_type, addr):
-        if output_type == TYPE_SCRIPT:
+        if output_type == TYPE_SCRIPT or output_type == 'coinbase':
             return addr
         elif output_type == TYPE_ADDRESS:
             return bitcoin.address_to_script(addr)
@@ -607,25 +605,6 @@ class Transaction:
             return bitcoin.public_key_to_p2pk_script(addr)
         else:
             raise TypeError('Unknown output type')
-
-    @classmethod
-    def contract_script(cls, data):
-        op_code = data[-1]
-        if op_code == opcodes.OP_CALL:
-            gas_limit, gas_price, abi_encoded_params, address, op_code = data
-            script_pubkey = CScript([b"\x04", CScriptNum(gas_limit),
-                                     CScriptNum(gas_price), bytes.fromhex(abi_encoded_params),
-                                     bytes.fromhex(address), bytes([op_code])])
-        elif op_code == opcodes.OP_CREATE:
-            gas_limit, gas_price, bytecode, op_code = data
-            script_pubkey = CScript([b"\x04", CScriptNum(gas_limit),
-                                     CScriptNum(gas_price),
-                                     bytes.fromhex(bytecode), bytes([op_code])])
-        else:
-            script_pubkey = CScript([])
-        script_pubkey = bh2u(script_pubkey)
-        print('contract_script', script_pubkey)
-        return script_pubkey
 
     @classmethod
     def get_siglist(self, txin, estimate_size=False):
@@ -751,13 +730,26 @@ class Transaction:
         self._inputs.sort(key = lambda i: (i['prevout_hash'], i['prevout_n']))
         self._outputs.sort(key = lambda o: (o[2], self.pay_script(o[0], o[1])))
 
+    def qtum_sort(self, sender):
+        if not sender:
+            return
+        sender_inp = None
+        for i in range(len(self._inputs)):
+            inp = self._inputs[i]
+            if inp['address'] == sender:
+                sender_inp = inp
+                del self._inputs[i]
+                break
+        if sender_inp:
+            self._inputs.insert(0, sender_inp)
+        else:
+            print_error('qtum_sort', self._inputs)
+            raise BaseException('qtum_sort - sender address not in inputs')
+
     def serialize_output(self, output):
         output_type, data, amount = output
         s = int_to_hex(amount, 8)
-        if output_type == TYPE_CONTRACT:
-            script = self.contract_script(data)
-        else:
-            script = self.pay_script(output_type, addr=data)
+        script = self.pay_script(output_type, addr=data)
         s += var_int(len(script)//2)
         s += script
         return s
@@ -796,7 +788,6 @@ class Transaction:
         outputs = self.outputs()
         txins = var_int(len(inputs)) + ''.join(self.serialize_input(txin, self.input_script(txin, estimate_size)) for txin in inputs)
         txouts = var_int(len(outputs)) + ''.join(self.serialize_output(o) for o in outputs)
-        print('serialize - txouts', txouts)
         if witness and self.is_segwit():
             marker = '00'
             flag = '01'
