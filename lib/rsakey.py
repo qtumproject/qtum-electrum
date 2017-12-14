@@ -527,7 +527,7 @@ class RSAKey(object):
         return False
 
     def generate(bits):
-        key = Python_RSAKey()
+        key = RSAKey()
         p = getRandomPrime(bits//2, False)
         q = getRandomPrime(bits//2, False)
         t = lcm(p-1, q-1)
