@@ -38,7 +38,7 @@ from .import util
 from .util import bfh, bh2u, format_satoshis
 from .import bitcoin
 from .bitcoin import is_address,  hash_160, COIN, TYPE_ADDRESS
-from .transaction import Transaction
+from .transaction import Transaction, multisig_script
 from .import paymentrequest
 from .paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED
 from .import contacts
@@ -258,7 +258,7 @@ class Commands:
     def createmultisig(self, num, pubkeys):
         """Create multisig address"""
         assert isinstance(pubkeys, list), (type(num), type(pubkeys))
-        redeem_script = Transaction.multisig_script(pubkeys, num)
+        redeem_script = multisig_script(pubkeys, num)
         address = bitcoin.hash160_to_p2sh(hash_160(bfh(redeem_script)))
         return {'address':address, 'redeemScript':redeem_script}
 
