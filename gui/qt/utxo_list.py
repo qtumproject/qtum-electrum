@@ -69,3 +69,6 @@ class UTXOList(MyTreeWidget):
             menu.addAction(_("Details"), lambda: self.parent.show_transaction(tx))
 
         menu.exec_(self.viewport().mapToGlobal(position))
+
+    def on_permit_edit(self, item, column):
+        return False
