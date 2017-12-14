@@ -763,7 +763,7 @@ class Abstract_Wallet(PrintError):
             tx = self.transactions.get(tx_hash)
             is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinbase'
         except (BaseException,) as e:
-            print_error('get_tx_status', e)
+            print_error('get_default_label', e)
         if is_coinbase:
             return 'mined'
         return ''
