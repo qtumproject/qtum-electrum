@@ -251,7 +251,7 @@ class Ledger_KeyStore(Hardware_KeyStore):
         except Exception as e:
             self.give_error(e, True)
         finally:
-            self.handler.clear_dialog()
+            self.handler.finished()
         self.signing = False
 
         # Parse the ASN.1 signature
@@ -394,7 +394,7 @@ class Ledger_KeyStore(Hardware_KeyStore):
                 transactionOutput = outputData['outputData']
                 if outputData['confirmationNeeded']:
                     outputData['address'] = output
-                    self.handler.clear_dialog()
+                    self.handler.finished()
                     pin = self.handler.get_auth(outputData)  # does the authenticate dialog and returns pin
                     if not pin:
                         raise UserWarning()
@@ -419,7 +419,7 @@ class Ledger_KeyStore(Hardware_KeyStore):
                         transactionOutput = outputData['outputData']
                     if outputData['confirmationNeeded']:
                         outputData['address'] = output
-                        self.handler.clear_dialog()
+                        self.handler.finished()
                         pin = self.handler.get_auth(outputData)  # does the authenticate dialog and returns pin
                         if not pin:
                             raise UserWarning()
@@ -441,7 +441,7 @@ class Ledger_KeyStore(Hardware_KeyStore):
             traceback.print_exc(file=sys.stdout)
             self.give_error(e, True)
         finally:
-            self.handler.clear_dialog()
+            self.handler.finished()
 
         for i, txin in enumerate(tx.inputs()):
             signingPos = inputs[i][4]
