@@ -87,6 +87,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     payment_request_ok_signal = pyqtSignal()
     payment_request_error_signal = pyqtSignal()
+    notify_transactions_signal = pyqtSignal()
     new_fx_quotes_signal = pyqtSignal()
     new_fx_history_signal = pyqtSignal()
     network_signal = pyqtSignal(str, object)
@@ -174,6 +175,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         self.payment_request_ok_signal.connect(self.payment_request_ok)
         self.payment_request_error_signal.connect(self.payment_request_error)
+        self.notify_transactions_signal.connect(self.notify_transactions)
         self.history_list.setFocus(True)
 
         # network callbacks
@@ -284,6 +286,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 .emit(event, args)
         elif event == 'new_transaction':
             self.tx_notifications.append(args[0])
+            self.notify_transactions_signal.emit()
         elif event in ['status', 'banner', 'verified', 'fee']:
             # Handle in GUI thread
             self.network_signal.emit(event, args)
@@ -1745,6 +1748,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         qtVersion = qVersion()
 
         self.balance_label = QLabel("")
+        self.balance_label.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.balance_label.setStyleSheet("""QLabel { padding: 0 }""")
         sb.addWidget(self.balance_label)
 
         self.search_box = QLineEdit()
@@ -2330,6 +2335,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         vbox.addWidget(keys_e)
 
         addresses = self.wallet.get_unused_addresses()
+        if not addresses:
+            try:
+                addresses = self.wallet.get_receiving_addresses()
+            except AttributeError:
+                addresses = self.wallet.get_addresses()
         h, address_e = address_field(addresses)
         vbox.addLayout(h)
 
@@ -2355,8 +2365,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         if not d.exec_():
             return
 
+        from electrum.wallet import sweep
         try:
-            tx = self.wallet.sweep(get_pk(), self.network, self.config, get_address(), None)
+            tx = sweep(get_pk(), self.network, self.config, get_address(), None)
         except BaseException as e:
             self.show_message(str(e))
             return

@@ -615,8 +615,11 @@ def address_from_private_key(sec):
 
 
 def is_segwit_address(addr):
-    witver, witprog = segwit_addr.decode(SEGWIT_HRP, addr)
-    return witprog is not None
+    try:
+        witver, witprog = segwit_addr.decode(SEGWIT_HRP, addr)
+        return witprog is not None
+    except (BaseException,) as e:
+        return False
 
 
 def is_b58_address(addr):

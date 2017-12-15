@@ -372,7 +372,7 @@ def get_address_from_output_script(_bytes):
     # 65 BYTES:... CHECKSIG
     match = [ opcodes.OP_PUSHDATA4, opcodes.OP_CHECKSIG ]
     if match_decoded(decoded, match):
-        return TYPE_PUBKEY, bh2u(decoded[0][1])
+        return TYPE_PUBKEY, pubkey_to_address('p2pkh', bh2u(decoded[0][1]))
 
     # Pay-by-Bitcoin-address TxOuts look like:
     # DUP HASH160 20 BYTES:... EQUALVERIFY CHECKSIG
@@ -417,7 +417,6 @@ def parse_input(vds):
             parse_scriptSig(d, scriptSig)
         else:
             d['scriptSig'] = ''
-
     return d
 
 
@@ -607,13 +606,40 @@ class Transaction:
             raise TypeError('Unknown output type')
 
     @classmethod
+    def estimate_pubkey_size_from_x_pubkey(cls, x_pubkey):
+        try:
+            if x_pubkey[0:2] in ['02', '03']:  # compressed pubkey
+                return 0x21
+            elif x_pubkey[0:2] == '04':  # uncompressed pubkey
+                return 0x41
+            elif x_pubkey[0:2] == 'ff':  # bip32 extended pubkey
+                return 0x21
+            elif x_pubkey[0:2] == 'fe':  # old electrum extended pubkey
+                return 0x41
+        except Exception as e:
+            pass
+        return 0x21  # just guess it is compressed
+
+    @classmethod
+    def estimate_pubkey_size_for_txin(cls, txin):
+        pubkeys = txin.get('pubkeys', [])
+        x_pubkeys = txin.get('x_pubkeys', [])
+        if pubkeys and len(pubkeys) > 0:
+            return cls.estimate_pubkey_size_from_x_pubkey(pubkeys[0])
+        elif x_pubkeys and len(x_pubkeys) > 0:
+            return cls.estimate_pubkey_size_from_x_pubkey(x_pubkeys[0])
+        else:
+            return 0x21  # just guess it is compressed
+
+    @classmethod
     def get_siglist(self, txin, estimate_size=False):
         # if we have enough signatures, we use the actual pubkeys
         # otherwise, use extended pubkeys (with bip32 derivation)
         num_sig = txin.get('num_sig', 1)
         if estimate_size:
+            pubkey_size = self.estimate_pubkey_size_for_txin(txin)
+            pk_list = ["00" * pubkey_size] * len(txin.get('x_pubkeys', [None]))
             # we assume that signature will be 0x48 bytes long
-            pk_list = [ "00" * 0x21 ] * num_sig
             sig_list = [ "00" * 0x48 ] * num_sig
         else:
             pubkeys, x_pubkeys = self.get_sorted_pubkeys(txin)
@@ -629,11 +655,11 @@ class Transaction:
         return pk_list, sig_list
 
     @classmethod
-    def serialize_witness(self, txin):
+    def serialize_witness(self, txin, estimate_size=False):
         add_w = lambda x: var_int(len(x) // 2) + x
         if not self.is_segwit_input(txin):
             return '00'
-        pubkeys, sig_list = self.get_siglist(txin)
+        pubkeys, sig_list = self.get_siglist(txin, estimate_size)
         if txin['type'] in ['p2wpkh', 'p2wpkh-p2sh']:
             witness = var_int(2) + add_w(sig_list[0]) + add_w(pubkeys[0])
         elif txin['type'] in ['p2wsh', 'p2wsh-p2sh']:
@@ -642,7 +668,10 @@ class Transaction:
             witness = var_int(n) + '00' + ''.join(add_w(x) for x in sig_list) + add_w(witness_script)
         else:
             raise BaseException('wrong txin type')
-        value_field = '' if self.is_txin_complete(txin) else var_int(0xffffffff) + int_to_hex(txin['value'], 8)
+        if self.is_txin_complete(txin) or estimate_size:
+            value_field = ''
+        else:
+            value_field = var_int(0xffffffff) + int_to_hex(txin['value'], 8)
         return value_field + witness
 
     @classmethod
@@ -791,7 +820,7 @@ class Transaction:
         if witness and self.is_segwit():
             marker = '00'
             flag = '01'
-            witness = ''.join(self.serialize_witness(x) for x in inputs)
+            witness = ''.join(self.serialize_witness(x, estimate_size) for x in inputs)
             return nVersion + marker + flag + txins + txouts + witness + nLocktime
         else:
             return nVersion + txins + txouts + nLocktime
@@ -840,13 +869,25 @@ class Transaction:
         weights, but for simplicity we approximate that with (virtual_size)x4
         """
         weight = self.estimated_weight()
-        return weight // 4 + (weight % 4 > 0)
+        return self.virtual_size_from_weight(weight)
 
     @classmethod
-    def estimated_input_size(self, txin):
-        '''Return an estimated of serialized input size in bytes.'''
-        script = self.input_script(txin, True)
-        return len(self.serialize_input(txin, script)) // 2
+    def estimated_input_weight(cls, txin):
+        '''Return an estimate of serialized input weight in weight units.'''
+        script = cls.input_script(txin, True)
+        input_size = len(cls.serialize_input(txin, script)) // 2
+
+        # note: we should actually branch based on tx.is_segwit()
+        # only if none of the inputs have a witness, is the size actually 0
+        if cls.is_segwit_input(txin):
+            witness_size = len(cls.serialize_witness(txin, True)) // 2
+        else:
+            witness_size = 0
+        return 4 * input_size + witness_size
+
+    @classmethod
+    def virtual_size_from_weight(cls, weight):
+        return weight // 4 + (weight % 4 > 0)
 
     def estimated_total_size(self):
         """Return an estimated total transaction size in bytes."""
@@ -857,7 +898,8 @@ class Transaction:
         if not self.is_segwit():
             return 0
         inputs = self.inputs()
-        witness = ''.join(self.serialize_witness(x) for x in inputs)
+        estimate = not self.is_complete()
+        witness = ''.join(self.serialize_witness(x, estimate) for x in inputs)
         witness_size = len(witness) // 2 + 2  # include marker and flag
         return witness_size
 

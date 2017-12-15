@@ -246,6 +246,9 @@ class SimpleConfig(PrintError):
             fee_rate = self.get('fee_per_kb', self.max_fee_rate()/2)
         return fee_rate
 
+    def estimate_fee(self, size):
+        return int(self.fee_per_kb() * size / 1000.)
+
     def get_video_device(self):
         device = self.get("video_device", "default")
         if device == 'default':
