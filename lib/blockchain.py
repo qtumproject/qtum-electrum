@@ -135,6 +135,10 @@ class Blockchain(util.PrintError):
                 return False
             if size > 0 and not size == max_height - min_height + 1:
                 return False
+        if self.checkpoint != 0:
+            h = self.read_header(self.checkpoint)
+            if not self.parent().can_connect(h, check_height=False):
+                return False
         return True
 
     def path(self):
