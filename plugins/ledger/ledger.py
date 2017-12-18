@@ -94,7 +94,7 @@ class Ledger_Client():
             client.getVerifyPinRemainingAttempts()
             return True
         except BTChipException as e:
-            print_error('has_detached_pin_support exception', e)
+            print_error('has_detached_pin_support exception', e, e.sw)
             if e.sw == 0x6d00:
                 return False
             raise e
@@ -104,7 +104,7 @@ class Ledger_Client():
             # Invalid SET OPERATION MODE to verify the PIN status
             client.dongle.exchange(bytearray([0xe0, 0x26, 0x00, 0x00, 0x01, 0xAB]))
         except BTChipException as e:
-            print_error('is_pin_validated exception', e)
+            print_error('is_pin_validated exception', e, e.sw)
             if (e.sw == 0x6982):
                 return False
             if (e.sw == 0x6A80):
@@ -156,7 +156,7 @@ class Ledger_Client():
                 pin = pin.encode()
                 self.dongleObject.verifyPin(pin)
         except BTChipException as e:
-            print_error('perform_hw1_preflight ex2', e)
+            print('perform_hw1_preflight ex2', e)
             if (e.sw == 0x6faa):
                 raise Exception("Dongle is temporarily locked - please unplug it and replug it again")
             if ((e.sw & 0xFFF0) == 0x63c0):
@@ -168,7 +168,7 @@ class Ledger_Client():
             try:
                 self.perform_hw1_preflight()
             except BTChipException as e:
-                print_error('checkDevice', e)
+                print_error('checkDevice', e, e.sw)
                 if (e.sw == 0x6d00):
                     raise BaseException("Device not in Bitcoin mode")
                 raise e
@@ -209,7 +209,7 @@ class Ledger_KeyStore(Hardware_KeyStore):
         return self.plugin.get_client(self)
 
     def give_error(self, message, clear_client=False):
-        print_error(message)
+        print_error('give_error', message)
         if not self.signing:
             self.handler.show_error(message)
         else:
