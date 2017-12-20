@@ -45,7 +45,6 @@ $ wine --version
 ```
 
 3. Make sure `/opt` is writable by the current user.
-4. Run `build.sh`.
-5. The generated binaries are in `./dist`.
-
-
+4. Run `sudo chmod+x ./*.sh`
+5. Run `./build.sh`.
+6. The generated binaries are in `./dist`.
