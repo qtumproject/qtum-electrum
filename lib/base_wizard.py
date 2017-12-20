@@ -247,6 +247,8 @@ class BaseWizard(object):
         try:
             self.plugin.setup_device(device_info, self)
         except BaseException as e:
+            import traceback, sys
+            traceback.print_exc(file=sys.stdout)
             self.show_error(str(e))
             self.choose_hw_device()
             return

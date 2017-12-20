@@ -3,6 +3,7 @@ import hashlib
 import sys
 import traceback
 
+from electrum import qtum
 from electrum import bitcoin
 from electrum.bitcoin import TYPE_ADDRESS, int_to_hex, var_int
 from electrum.i18n import _
@@ -22,7 +23,6 @@ try:
     from btchip.btchipFirmwareWizard import checkFirmware, updateFirmware
     from btchip.btchipException import BTChipException
     from electrum.util import is_verbose
-
     BTCHIP = True
     BTCHIP_DEBUG = is_verbose
 except ImportError:
@@ -74,7 +74,14 @@ class Ledger_Client():
         fingerprint = 0
         if len(splitPath) > 1:
             prevPath = "/".join(splitPath[0:len(splitPath) - 1])
-            nodeData = self.dongleObject.getWalletPublicKey(prevPath)
+            # print('self.dongleObject.dongle', self.dongleObject.dongle)
+            # <btchip.btchipComm.HIDDongleHIDAPI object at 0x11e514fd0>
+            try:
+                nodeData = self.dongleObject.getWalletPublicKey(prevPath)
+            except BTChipException as e:
+                if e.sw == 0x6f04:
+                    raise BaseException('error 6f04, Please use Bitcoin mode on your ledger rather than Qtum mode')
+                raise e
             publicKey = compress_public_key(nodeData['publicKey'])
             h = hashlib.new('ripemd160')
             h.update(hashlib.sha256(publicKey).digest())
@@ -96,6 +103,7 @@ class Ledger_Client():
         except BTChipException as e:
             if e.sw == 0x6d00:
                 return False
+            print_error('has_detached_pin_support exception', e, e.sw)
             raise e
 
     def is_pin_validated(self, client):
@@ -103,6 +111,7 @@ class Ledger_Client():
             # Invalid SET OPERATION MODE to verify the PIN status
             client.dongle.exchange(bytearray([0xe0, 0x26, 0x00, 0x00, 0x01, 0xAB]))
         except BTChipException as e:
+            print_error('is_pin_validated exception', e, e.sw)
             if (e.sw == 0x6982):
                 return False
             if (e.sw == 0x6A80):
@@ -134,6 +143,7 @@ class Ledger_Client():
             try:
                 self.dongleObject.getOperationMode()
             except BTChipException as e:
+                print_error('perform_hw1_preflight ex1', e)
                 if (e.sw == 0x6985):
                     self.dongleObject.dongle.close()
                     self.handler.get_setup()
@@ -152,11 +162,15 @@ class Ledger_Client():
                     raise Exception('Aborted by user - please unplug the dongle and plug it again before retrying')
                 pin = pin.encode()
                 self.dongleObject.verifyPin(pin)
+                # self.dongleObject.setAlternateCoinVersion(qtum.ADDRTYPE_P2PKH, qtum.ADDRTYPE_P2SH)
         except BTChipException as e:
+            if (e.sw == 0x6700):
+                return
             if (e.sw == 0x6faa):
                 raise Exception("Dongle is temporarily locked - please unplug it and replug it again")
             if ((e.sw & 0xFFF0) == 0x63c0):
                 raise Exception("Invalid PIN - please unplug the dongle and plug it again before retrying")
+            print('perform_hw1_preflight ex2', e)
             raise e
 
     def checkDevice(self):
@@ -166,6 +180,7 @@ class Ledger_Client():
             except BTChipException as e:
                 if (e.sw == 0x6d00):
                     raise BaseException("Device not in Bitcoin mode")
+                print_error('checkDevice', e)
                 raise e
             self.preflightDone = True
 
@@ -204,7 +219,7 @@ class Ledger_KeyStore(Hardware_KeyStore):
         return self.plugin.get_client(self)
 
     def give_error(self, message, clear_client=False):
-        print_error(message)
+        print_error('give_error', message)
         if not self.signing:
             self.handler.show_error(message)
         else:
@@ -240,6 +255,7 @@ class Ledger_KeyStore(Hardware_KeyStore):
                 pin = str(pin).encode()
             signature = self.get_client().signMessageSign(pin)
         except BTChipException as e:
+            print_error('ledger sign_message', e)
             if e.sw == 0x6a80:
                 self.give_error(
                     "Unfortunately, this message cannot be signed by the Ledger wallet. Only alphanumerical messages shorter than 140 characters are supported. Please remove any extra characters (tab, carriage return) and retry.")
@@ -473,6 +489,7 @@ class LedgerPlugin(HW_PluginBase):
         try:
             self.get_client(keystore).getFirmwareVersion()
         except Exception as e:
+            print_error('btchip_is_connected', e)
             return False
         return True
 
