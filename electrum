@@ -349,7 +349,7 @@ def run():
 
     # fixme: this can probably be achieved with a runtime hook (pyinstaller)
     if is_bundle and os.path.exists(os.path.join(sys._MEIPASS, 'is_portable')):
-        config_options.get('portable') = True
+        config_options['portable'] = True
 
     if config_options.get('portable'):
         config_options['electrum_path'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
