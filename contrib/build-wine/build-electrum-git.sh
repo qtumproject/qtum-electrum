@@ -6,9 +6,6 @@ BRANCH=master
 NAME_ROOT=Qtum-electrum
 PYTHON_VERSION=3.5.4
 
-if [ "$#" -gt 0 ]; then
-    BRANCH="$1"
-fi
 
 # These settings probably don't need any change
 export WINEPREFIX=/opt/wine64
@@ -39,11 +36,15 @@ else
     git clone -b $BRANCH $ELECTRUM_GIT_URL qtum-electrum-git
 fi
 
-cd qtum-electrum-git
+pushd qtum-electrum-git
+if [ ! -z "$1" ]; then
+    git checkout $1
+fi
+
 VERSION=`git describe --tags`
 echo "Last commit: $VERSION"
-
-cd ..
+find -exec touch -d '2000-11-11T11:11:11+00:00' {} +
+popd
 
 rm -rf $WINEPREFIX/drive_c/electrum
 cp -r qtum-electrum-git $WINEPREFIX/drive_c/electrum
@@ -64,8 +65,13 @@ cd ..
 
 rm -rf dist/
 
-# build standalone version
-wine "C:/python$PYTHON_VERSION/scripts/pyinstaller.exe" --noconfirm --ascii --name $NAME_ROOT-win-$VERSION.exe -w deterministic.spec
+# build standalone version and portable versions
+wine "C:/python$PYTHON_VERSION/scripts/pyinstaller.exe" --noconfirm --ascii --name $NAME_ROOT-win-$VERSION -w deterministic.spec
+
+# set timestamps in dist, in order to make the installer reproducible
+pushd dist
+find -exec touch -d '2000-11-11T11:11:11+00:00' {} +
+popd
 
 # build NSIS installer
 # $VERSION could be passed to the electrum.nsi script, but this would require some rewriting in the script iself.
@@ -75,11 +81,6 @@ cd dist
 mv electrum-setup.exe $NAME_ROOT-win-$VERSION-setup.exe
 cd ..
 
-# build portable version
-cp portable.patch $WINEPREFIX/drive_c/electrum
-pushd $WINEPREFIX/drive_c/electrum
-patch < portable.patch 
-popd
-wine "C:/python$PYTHON_VERSION/scripts/pyinstaller.exe" --noconfirm --ascii --name $NAME_ROOT-win-$VERSION-portable.exe -w deterministic.spec
 
 echo "Done."
+md5sum dist/electrum*exe

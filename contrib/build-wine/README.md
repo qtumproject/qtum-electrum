@@ -1,19 +1,51 @@
-These scripts can be used for cross-compilation of Windows Qtum Electrum executables from Linux/Wine.
+Windows Binary Builds
+=====================
+
+These scripts can be used for cross-compilation of Windows Electrum executables from Linux/Wine.
+Produced binaries are deterministic so you should be able to generate binaries that match the official releases.
+
 
 ## Usage:
 1. Install wine
 
-        $ sudo add-apt-repository ppa:ricotz/unstable
-        $ sudo apt update
-        $ sudo apt install wine-stable
-        $ wine --version
-        wine-2.0 (Debian 2.0-3+b2)
+For example:
 
-2. Run `sudo ./prepare-wine.sh`, it will download all dependencies. When you'll be asked, always leave default settings and press "Next >".
-3. Run `./prepare-hw.sh` to build support for hardware wallets (TREZOR)
-4. Run `./build-electrum-git.sh`. Sources will be packed into three separate versions to dist/ directory:
-  * Standalone compressed executable is `dist/electrum.exe`
-  * Uncompressed binaries are in `dist/electrum`. They're useful for comparsion with other builds.
-  * NSIS-based installer of Electrum is `electrum-setup.exe`
-7. Everytime you want to rebuild new version of Electrum just change the path to ZIP file in `build-electrum.sh` and re-run the script.
+```
+$ sudo apt-get install wine-development
+$ sudo ln -sf /usr/bin/wine-development /usr/local/bin/wine
+$ wine --version
+ wine-2.0 (Debian 2.0-3+b2)
+```
+
+or
+
+```
+$ sudo add-apt-repository ppa:ricotz/unstable
+$ sudo apt update
+$ sudo apt install wine-stable
+$ wine --version
+wine-2.0.3 (Ubuntu 2.0.3-0ubuntu1~16.04~ricotz0)
+```
+
+
+2. Install the following dependencies:
+
+ - dirmngr
+ - gpg
+
+```
+sudo apt-get install dirmngr gnupg2
+```
+or
+
+```
+$ pacman -S wine gnupg
+$ wine --version
+ wine-2.21
+```
+
+3. Make sure `/opt` is writable by the current user.
+4. Run `build.sh`.
+5. The generated binaries are in `./dist`.
+
 
