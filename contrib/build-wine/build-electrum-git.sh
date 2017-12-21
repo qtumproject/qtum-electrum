@@ -53,6 +53,10 @@ cp qtum-electrum-git/LICENCE .
 # add locale dir
 cp -r ../../../lib/locale $WINEPREFIX/drive_c/electrum/lib/
 
+
+# Install frozen dependencies
+$PYTHON -m pip install -r ../../../requirements.txt
+
 # Build Qt resources
 wine $WINEPREFIX/drive_c/python$PYTHON_VERSION/Scripts/pyrcc5.exe C:/electrum/icons.qrc -o C:/electrum/gui/qt/icons_rc.py
 

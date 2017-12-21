@@ -92,11 +92,6 @@ $PYTHON -m pip install win_inet_pton
 # install websocket (python2)
 $PYTHON -m pip install websocket-client
 
-
-# Install setuptools
-#wget -O setuptools.exe "$SETUPTOOLS_URL"
-#wine setuptools.exe
-
 # Upgrade setuptools (so Electrum can be installed later)
 $PYTHON -m pip install setuptools --upgrade
 

@@ -22,9 +22,9 @@ cd tmp
 
 # Install Cython
 $PYTHON -m pip install setuptools --upgrade
-$PYTHON -m pip install cython
-$PYTHON -m pip install trezor --upgrade
-$PYTHON -m pip install keepkey --upgrade
-$PYTHON -m pip install btchip-python --upgrade
+$PYTHON -m pip install cython --upgrade
+$PYTHON -m pip install trezor==0.7.16 --upgrade
+$PYTHON -m pip install keepkey==4.0.0 --upgrade
+$PYTHON -m pip install btchip-python==0.1.23 --upgrade
 
 
