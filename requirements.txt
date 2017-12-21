@@ -16,5 +16,5 @@ qrcode==5.3
 requests==2.18.4
 six==1.11.0
 urllib3==1.22
-git+https://github.com/icodeface/eth-utils
-git+https://github.com/icodeface/eth-abi
+#git+https://github.com/icodeface/eth-utils
+#git+https://github.com/icodeface/eth-abi
