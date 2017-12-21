@@ -11,10 +11,11 @@ requests
 rsa
 six
 py2app==0.12
+pyinstaller==3.3
 trezor
-btchip-python
+btchip-python==0.1.24
 keepkey
 cython
 jnius
-eth-abi
-eth-utils
+git+https://github.com/icodeface/eth-utils
+git+https://github.com/icodeface/eth-abi
