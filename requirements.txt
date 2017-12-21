@@ -2,7 +2,6 @@ publicsuffix
 rsa
 py2app==0.12
 cython
-jnius
 certifi==2017.11.5
 chardet==3.0.4
 dnspython==1.15.0
