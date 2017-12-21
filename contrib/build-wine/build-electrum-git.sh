@@ -83,4 +83,4 @@ cd ..
 
 
 echo "Done."
-md5sum dist/electrum*exe
+sha256sum dist/Qtum-electrum*exe
