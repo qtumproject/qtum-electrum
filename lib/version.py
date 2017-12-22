@@ -1,5 +1,5 @@
-ELECTRUM_VERSION = '0.17.4'  # version of the client package
-PROTOCOL_VERSION = '1.2'  # protocol version requested
+ELECTRUM_VERSION = '0.17.4.2'  # version of the client package
+PROTOCOL_VERSION = '1.1'  # protocol version requested
 
 # The hash of the mnemonic seed must begin with this
 SEED_PREFIX      = '01'      # Standard wallet

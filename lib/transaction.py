@@ -372,7 +372,7 @@ def get_address_from_output_script(_bytes):
     # 65 BYTES:... CHECKSIG
     match = [ opcodes.OP_PUSHDATA4, opcodes.OP_CHECKSIG ]
     if match_decoded(decoded, match):
-        return TYPE_PUBKEY, pubkey_to_address('p2pkh', bh2u(decoded[0][1]))
+        return TYPE_PUBKEY, bh2u(decoded[0][1])
 
     # Pay-by-Bitcoin-address TxOuts look like:
     # DUP HASH160 20 BYTES:... EQUALVERIFY CHECKSIG
