@@ -1557,6 +1557,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         for e in [self.payto_e, self.message_e, self.amount_e, self.fiat_send_e, self.fee_e]:
             e.setText('')
             e.setFrozen(False)
+        self.fee_slider.activate()
         self.set_pay_from([])
         self.rbf_checkbox.setChecked(False)
         self.update_status()
