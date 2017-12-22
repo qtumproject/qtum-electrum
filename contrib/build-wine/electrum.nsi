@@ -6,7 +6,7 @@
 ;--------------------------------
 ;Variables
 
-  !define PRODUCT_NAME "Qtum Electrum"
+  !define PRODUCT_NAME "Qtum-Electrum"
   !define PRODUCT_WEB_SITE "https://github.com/qtumproject/qtum-electrum"
   !define PRODUCT_PUBLISHER "Qtum Team"
   !define PRODUCT_UNINST_KEY "Software\Microsoft\Windows\CurrentVersion\Uninstall\${PRODUCT_NAME}"
