@@ -27,4 +27,6 @@ $PYTHON -m pip install trezor==0.7.16 --upgrade
 $PYTHON -m pip install keepkey==4.0.0 --upgrade
 $PYTHON -m pip install btchip-python==0.1.23 --upgrade
 
+$PYTHON -m pip uninstall eth-utils
+$PYTHON -m pip uninstall eth-abi
 
