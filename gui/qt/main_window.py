@@ -30,7 +30,7 @@ import webbrowser
 import csv
 from decimal import Decimal
 import base64
-import eth_abi
+# import eth_abi
 from functools import partial
 
 from PyQt5.QtCore import Qt
@@ -133,7 +133,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.utxo_tab = self.create_utxo_tab()
         self.console_tab = self.create_console_tab()
         self.contacts_tab = self.create_contacts_tab()
-        self.smart_contract_tab = self.create_smart_contract_tab()
+        # self.smart_contract_tab = self.create_smart_contract_tab()
 
         tabs.addTab(self.create_history_tab(), QIcon(":icons/tab_history.png"), _('History'))
         tabs.addTab(self.send_tab, QIcon(":icons/tab_send.png"), _('Send'))
@@ -151,8 +151,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         add_optional_tab(tabs, self.addresses_tab, QIcon(":icons/tab_addresses.png"), _("&Addresses"), "addresses")
         add_optional_tab(tabs, self.utxo_tab, QIcon(":icons/tab_coins.png"), _("Co&ins"), "utxo")
         add_optional_tab(tabs, self.console_tab, QIcon(":icons/tab_console.png"), _("Con&sole"), "console")
-        add_optional_tab(tabs, self.smart_contract_tab, QIcon(":icons/tab_console.png"), _('Smart Contract'),
-                         'contract')
+        # add_optional_tab(tabs, self.smart_contract_tab, QIcon(":icons/tab_console.png"), _('Smart Contract'),
+        #                  'contract')
 
         tabs.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setCentralWidget(tabs)
@@ -496,7 +496,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         add_toggle_action(view_menu, self.addresses_tab)
         add_toggle_action(view_menu, self.utxo_tab)
         add_toggle_action(view_menu, self.console_tab)
-        add_toggle_action(view_menu, self.smart_contract_tab)
+        # add_toggle_action(view_menu, self.smart_contract_tab)
 
         tools_menu = menubar.addMenu(_("&Tools"))
 
