@@ -1,3 +1,6 @@
+# Release v0.17.4
+  * fix ledger issue on windows
+
 # Release v0.17.3
   * fix an issue with chain fork
 

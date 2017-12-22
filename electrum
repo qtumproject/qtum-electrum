@@ -68,8 +68,8 @@ def check_imports():
         import pbkdf2
         import google.protobuf
         import jsonrpclib
-        import eth_utils
-        import eth_abi
+        # import eth_utils
+        # import eth_abi
     except ImportError as e:
         sys.exit("Error: {}. Try 'sudo pip install <module-name>'".format(e))
     # the following imports are for pyinstaller
@@ -346,8 +346,11 @@ def run():
     config_options['cwd'] = os.getcwd()
 
     # fixme: this can probably be achieved with a runtime hook (pyinstaller)
-    if is_bundle and os.path.exists(os.path.join(sys._MEIPASS, 'is_portable')):
-        config_options['portable'] = True
+    try:
+        if is_bundle and os.path.exists(os.path.join(sys._MEIPASS, 'is_portable')):
+            config_options['portable'] = True
+    except AttributeError:
+        pass
 
     if config_options.get('portable'):
         config_options['electrum_path'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
