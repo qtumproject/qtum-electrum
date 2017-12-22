@@ -46,7 +46,7 @@ from electrum.util import format_time, format_satoshis, PrintError, format_satos
 from electrum import Transaction
 from electrum import util, bitcoin, commands, coinchooser
 from electrum import paymentrequest
-from electrum.script import contract_script
+# from electrum.script import contract_script
 from electrum.wallet import Multisig_Wallet
 from electrum.paymentrequest import PR_PAID
 from electrum.transaction import opcodes, deserialize
