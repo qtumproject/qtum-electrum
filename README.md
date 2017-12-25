@@ -66,7 +66,7 @@ Create translations (optional):
     ./contrib/make_locale
 
 Run it:
-    
+
     ./electrum
 
 
@@ -90,9 +90,7 @@ Mac OS X
     # install py2app
     sudo pip3 install py2app==0.12
 
-    sudo python3 setup-release.py py2app
-
-    sudo hdiutil create -fs HFS+ -volname "Qtum Electrum" -srcfolder dist/Qtum\ Electrum.app dist/qtum-electrum-VERSION-macosx.dmg
+    sudo ./contrib/make_osx
 
 Windows
 -------
