@@ -12,15 +12,7 @@ Getting started
 You can download latest release [here](https://github.com/qtumproject/qtum-electrum/releases).
 
 
-If you are a developer, Qtum Electrum is a pure python application. If you want to use the Qt interface, install the Qt dependencies:
-
-    sudo apt-get install python3-pyqt5
-
-If you downloaded the official package (tar.gz), you can run Electrum from its root directory, without installing it on your system; all the python dependencies are included in the 'packages' directory. To run Electrum from its root directory, just do:
-
-    ./electrum
-
-If you cloned the git repository, you need to compile extra files before you can run Electrum. Read the next section, "Development Version".
+If you are using Linux, read the "Development Version" section.
 
 
 Compatible with Qtum mobile wallet
@@ -40,12 +32,13 @@ If you want to import private master key from [Qtum Qt Core wallet](https://gith
 
 ![](https://github.com/qtumproject/qtum-electrum/blob/master/snap/qt_core_compatible.png)
 
+
 Development version
 ===================
 
 Check out the code from Github:
 
-    git clone git@github.com:qtumproject/qtum-electrum.git
+    git clone https://github.com/qtumproject/qtum-electrum.git
     cd qtum-electrum
 
 Install dependencies::
@@ -72,6 +65,8 @@ Create translations (optional):
 
     ./contrib/make_locale
 
+Run it:
+    ./electrum
 
 
 Creating Binaries
