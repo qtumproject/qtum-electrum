@@ -66,7 +66,9 @@ Create translations (optional):
     ./contrib/make_locale
 
 Run it:
+    
     ./electrum
+
 
 
 Creating Binaries
