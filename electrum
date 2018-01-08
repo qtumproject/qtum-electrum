@@ -343,6 +343,7 @@ def run():
         if config_options.get('server'):
             config_options['auto_connect'] = False
 
+    config_options['verbose'] = True
     config_options['cwd'] = os.getcwd()
 
     # fixme: this can probably be achieved with a runtime hook (pyinstaller)
