@@ -1,3 +1,7 @@
+# Release 0.17.5 : (Security update)
+ * The JSONRPC interface is password protected
+ * JSONRPC commands are disabled if the GUI is running, except 'ping', which is used to determine if a GUI is already running
+
 # Release v0.17.4
   * fix ledger issue on windows
 
