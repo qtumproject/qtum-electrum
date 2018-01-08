@@ -112,8 +112,9 @@ class QRDialog(WindowModalDialog):
 
             def copy_to_clipboard():
                 p = qscreen.grabWindow(qrw.winId())
-                p.save(filename, 'png')
-                QApplication.clipboard().setImage(QImage(filename))
+                QApplication.clipboard().setPixmap(p)
+                # p.save(filename, 'png')
+                # QApplication.clipboard().setImage(QImage(filename))
                 self.show_message(_("QR code copied to clipboard"))
 
             b = QPushButton(_("Copy"))
