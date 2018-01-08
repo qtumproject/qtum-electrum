@@ -139,8 +139,11 @@ class Daemon(DaemonThread):
     def init_server(self, config, fd, is_gui):
         host = config.get('rpchost', '127.0.0.1')
         port = config.get('rpcport', 0)
+
+        rpc_user, rpc_password = get_rpc_credentials(config)
         try:
-            server = SimpleJSONRPCServer((host, port), logRequests=False)
+            server = VerifyingJSONRPCServer((host, port), logRequests=False,
+                                            rpc_user=rpc_user, rpc_password=rpc_password)
         except Exception as e:
             self.print_error('Warning: cannot initialize RPC server on host', host, e)
             self.server = None
