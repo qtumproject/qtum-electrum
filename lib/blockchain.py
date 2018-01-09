@@ -65,8 +65,9 @@ def remove_chain(cp, chains):
     try:
         os.remove(chains[cp].path())
         del chains[cp]
+        print_error('chain removed', cp)
     except (BaseException,) as e:
-        print_error('remove_chain', e)
+        print_error('remove_chain error', e)
     for k in list(chains.keys()):
         if chains[k].parent_id == cp:
             remove_chain(chains[k].checkpoint, chains)
@@ -127,6 +128,8 @@ class Blockchain(util.PrintError):
             cursor = conn.cursor()
             cursor.execute('SELECT min(height), max(height) FROM header')
             min_height, max_height = cursor.fetchone()
+            max_height = max_height or 0
+            min_height = min_height or 0
             cursor.execute('SELECT COUNT(*) FROM header')
             size = int(cursor.fetchone()[0])
             cursor.close()
