@@ -5,9 +5,8 @@ The Kivy GUI is used with Electrum on Android devices. To generate an APK file, 
 ## 1. Install python-for-android (p4a)
 p4a is used to package Electrum, Python, SDL and a bootstrap Java app into an APK file.
 We patched p4a to add some functionality we need for Electrum. Until those changes are
-merged into p4a, you need to merge them locally (into the stable branch):
+merged into p4a, you need to merge them locally (into the master branch):
 
-1. [kivy/python-for-android#1213](https://github.com/kivy/python-for-android/pull/1213)
 2. [kivy/python-for-android#1217](https://github.com/kivy/python-for-android/pull/1217)
 
 Something like this should work:
@@ -17,33 +16,23 @@ cd /opt
 git clone https://github.com/kivy/python-for-android
 cd python-for-android
 git remote add agilewalker https://github.com/agilewalker/python-for-android
-git remote add bauerj https://github.com/bauerj/python-for-android
-git checkout stable
+git checkout a036f4442b6a23
 git fetch agilewalker
 git merge agilewalker/master
-git fetch bauerj
-git merge bauerj/add-activity
 ```
 
 ## 2. Install buildozer
-Buildozer is a frontend to p4a. Of course it needs to be patched too:
-
-1. [kivy/buildozer#612](https://github.com/kivy/python-for-android/pull/1213)
+2.1 Buildozer is a frontend to p4a. Luckily we don't need to patch it:
 
 ```sh
 cd /opt
 git clone https://github.com/kivy/buildozer
 cd buildozer
-git remote add bauerj https://github.com/bauerj/buildozer
-git fetch bauerj
-git merge bauerj/add-activity
-```
-
-You also want to install it:
-
-```sh
 sudo python3 setup.py install
 ```
+
+2.2 Download the [Crystax NDK](https://www.crystax.net/en/download) manually.
+Extract into `/opt/crystax-ndk-10.3.2`
 
 ## 3. Update the Android SDK build tools
 3.1 Start the Android SDK manager:
@@ -54,7 +43,7 @@ sudo python3 setup.py install
 
 3.3 Close the SDK manager.
 
-3.3 Reopen the SDK manager, scroll to the bottom and install the latest build tools (probably v27)
+3.4 Reopen the SDK manager, scroll to the bottom and install the latest build tools (probably v27)
 
 ## 4. Install the Support Library Repository
 Install "Android Support Library Repository" from the SDK manager.
@@ -73,8 +62,7 @@ Run `contrib/make_apk`.
 Update your Android build tools to version 27 like described above.
 
 ## Why do I get errors like  `(use -source 7 or higher to enable multi-catch statement)` while compiling?
-Use the `stable` branch of python-for-android.
-[This commit](https://github.com/kivy/python-for-android/commit/3534a761b17040755accf941f898cc66b905e8db) in master is the culprit.
+Make sure that your p4a installation includes commit a3cc78a6d1a107cd3b6bd28db8b80f89e3ecddd2.
 
 ## I changed something but I don't see any differences on the phone. What did I do wrong?
 You probably need to clear the cache: `rm -rf .buildozer/android/platform/build/{build,dists}`
