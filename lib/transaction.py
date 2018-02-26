@@ -314,8 +314,13 @@ def parse_scriptSig(d, _bytes):
                 d['type'] = 'p2wsh-p2sh'
             else:
                 print_error("unrecognized txin type", bh2u(item))
+        elif opcodes.OP_1 <= item[0] <= opcodes.OP_16:
+            # segwit embedded into p2sh
+            # witness version 1-16
+            pass
         else:
             # payto_pubkey
+            # pay-to-pubkey
             d['type'] = 'p2pk'
             d['address'] = "(pubkey)"
             d['signatures'] = [bh2u(item)]
