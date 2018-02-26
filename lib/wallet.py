@@ -157,6 +157,21 @@ def sweep(privkeys, network, config, recipient, fee=None, imax=100):
     tx.sign(keypairs)
     return tx
 
+
+class AddTransactionException(Exception):
+    pass
+
+
+class UnrelatedTransactionException(AddTransactionException):
+    def __str__(self):
+        return _("Transaction is unrelated to this wallet.")
+
+
+class NotIsMineTransactionException(AddTransactionException):
+    def __str__(self):
+        return _("Only transactions with inputs owned by the wallet can be added.")
+
+
 class Abstract_Wallet(PrintError):
     """
     Wallet classes are created to handle various address generation methods.
@@ -682,23 +697,87 @@ class Abstract_Wallet(PrintError):
                     self.print_error("found pay-to-pubkey address:", addr)
                     return addr
 
-    def add_transaction(self, tx_hash, tx):
-        is_coinbase = False
-        try:
-            is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinbase'
-        except (BaseException,) as e:
-            print_error('add_transaction', e)
+    def get_conflicting_transactions(self, tx):
+        """Returns a set of transaction hashes from the wallet history that are
+        directly conflicting with tx, i.e. they have common outpoints being
+        spent with tx. If the tx is already in wallet history, that will not be
+        reported as a conflict.
+        """
+        conflicting_txns = set()
         with self.transaction_lock:
+            for txi in tx.inputs():
+                ser = Transaction.get_outpoint_from_txin(txi)
+                if ser is None:
+                    continue
+                spending_tx_hash = self.spent_outpoints.get(ser, None)
+                if spending_tx_hash is None:
+                    continue
+                # this outpoint (ser) has already been spent, by spending_tx
+                assert spending_tx_hash in self.transactions
+                conflicting_txns |= {spending_tx_hash}
+            txid = tx.txid()
+            if txid in conflicting_txns:
+                # this tx is already in history, so it conflicts with itself
+                if len(conflicting_txns) > 1:
+                    raise Exception('Found conflicting transactions already in wallet history.')
+                conflicting_txns -= {txid}
+            return conflicting_txns
+
+    def add_transaction(self, tx_hash, tx):
+        # we need self.transaction_lock but get_tx_height will take self.lock
+        # so we need to take that too here, to enforce order of locks
+        with self.lock, self.transaction_lock:
+            # NOTE: returning if tx in self.transactions might seem like a good idea
+            # BUT we track is_mine inputs in a txn, and during subsequent calls
+            # of add_transaction tx, we might learn of more-and-more inputs of
+            # being is_mine, as we roll the gap_limit forward
+            is_coinbase = tx.inputs()[0]['type'] == 'coinbase'
+            tx_height = self.get_tx_height(tx_hash)[0]
+            is_mine = any([self.is_mine(txin['address']) for txin in tx.inputs()])
+            # do not save if tx is local and not mine
+            if tx_height == TX_HEIGHT_LOCAL and not is_mine:
+                # FIXME the test here should be for "not all is_mine"; cannot detect conflict in some cases
+                raise NotIsMineTransactionException()
+            # raise exception if unrelated to wallet
+            is_for_me = any([self.is_mine(self.get_txout_address(txo)) for txo in tx.outputs()])
+            if not is_mine and not is_for_me:
+                raise UnrelatedTransactionException()
+            # Find all conflicting transactions.
+            # In case of a conflict,
+            #     1. confirmed > mempool > local
+            #     2. this new txn has priority over existing ones
+            # When this method exits, there must NOT be any conflict, so
+            # either keep this txn and remove all conflicting (along with dependencies)
+            #     or drop this txn
+            conflicting_txns = self.get_conflicting_transactions(tx)
+            if conflicting_txns:
+                existing_mempool_txn = any(
+                    self.get_tx_height(tx_hash2)[0] in (TX_HEIGHT_UNCONFIRMED, TX_HEIGHT_UNCONF_PARENT)
+                    for tx_hash2 in conflicting_txns)
+                existing_confirmed_txn = any(
+                    self.get_tx_height(tx_hash2)[0] > 0
+                    for tx_hash2 in conflicting_txns)
+                if existing_confirmed_txn and tx_height <= 0:
+                    # this is a non-confirmed tx that conflicts with confirmed txns; drop.
+                    return False
+                if existing_mempool_txn and tx_height == TX_HEIGHT_LOCAL:
+                    # this is a local tx that conflicts with non-local txns; drop.
+                    return False
+                # keep this txn and remove all conflicting
+                to_remove = set()
+                to_remove |= conflicting_txns
+                for conflicting_tx_hash in conflicting_txns:
+                    to_remove |= self.get_depending_transactions(conflicting_tx_hash)
+                for tx_hash2 in to_remove:
+                    self.remove_transaction(tx_hash2)
             # add inputs
             self.txi[tx_hash] = d = {}
             for txi in tx.inputs():
-                addr = txi.get('address')
+                addr = self.get_txin_address(txi)
                 if txi['type'] != 'coinbase':
                     prevout_hash = txi['prevout_hash']
                     prevout_n = txi['prevout_n']
                     ser = prevout_hash + ':%d'%prevout_n
-                if addr == "(pubkey)":
-                    addr = self.find_pay_to_pubkey_address(prevout_hash, prevout_n)
                 # find value from prev output
                 if addr and self.is_mine(addr):
                     dd = self.txo.get(prevout_hash, {})
@@ -707,21 +786,17 @@ class Abstract_Wallet(PrintError):
                             if d.get(addr) is None:
                                 d[addr] = []
                             d[addr].append((ser, v))
+                            # we only track is_mine spends
+                            self.spent_outpoints[ser] = tx_hash
                             break
                     else:
                         self.pruned_txo[ser] = tx_hash
-
             # add outputs
             self.txo[tx_hash] = d = {}
             for n, txo in enumerate(tx.outputs()):
+                v = txo[2]
                 ser = tx_hash + ':%d'%n
-                _type, x, v = txo
-                if _type == TYPE_ADDRESS:
-                    addr = x
-                elif _type == TYPE_PUBKEY:
-                    addr = bitcoin.public_key_to_p2pkh(bfh(x))
-                else:
-                    addr = None
+                addr = self.get_txout_address(txo)
                 if addr and self.is_mine(addr):
                     if d.get(addr) is None:
                         d[addr] = []
@@ -736,6 +811,7 @@ class Abstract_Wallet(PrintError):
                     dd[addr].append((ser, v))
             # save
             self.transactions[tx_hash] = tx
+            return True
 
     def remove_transaction(self, tx_hash):
         with self.transaction_lock:
