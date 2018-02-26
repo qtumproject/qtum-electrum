@@ -22,7 +22,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import sys, time, threading
+import threading
 import os, json, traceback
 import shutil
 import weakref
@@ -43,6 +43,7 @@ from electrum.qtum import COIN, is_address, TYPE_ADDRESS, TYPE_SCRIPT, TESTNET, 
 from electrum.plugins import run_hook
 from electrum.i18n import _
 from electrum.util import format_time, format_satoshis, PrintError, format_satoshis_plain, NotEnoughFunds, UserCancelled
+from electrum.util import profiler
 from electrum import Transaction
 from electrum import util, bitcoin, commands, coinchooser
 from electrum import paymentrequest
@@ -328,6 +329,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.print_error('close_wallet', self.wallet.storage.path)
         run_hook('close_wallet', self.wallet)
 
+    @profiler
     def load_wallet(self, wallet):
         wallet.thread = TaskThread(self, self.on_error)
         self.wallet = wallet
