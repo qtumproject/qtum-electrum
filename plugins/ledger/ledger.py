@@ -483,6 +483,28 @@ class Ledger_KeyStore(Hardware_KeyStore):
         tx.raw = tx.serialize()
         self.signing = False
 
+    def show_address(self, sequence, txin_type):
+        self.signing = True
+        client = self.get_client()
+        address_path = self.get_derivation()[2:] + "/%d/%d" % sequence
+        self.handler.show_message(_("Showing address ..."))
+        segwit = Transaction.is_segwit_inputtype(txin_type)
+        segwitNative = txin_type == 'p2wpkh'
+        try:
+            client.getWalletPublicKey(address_path, showOnScreen=True, segwit=segwit, segwitNative=segwitNative)
+        except BTChipException as e:
+            if e.sw == 0x6985:  # cancelled by user
+                pass
+            else:
+                traceback.print_exc(file=sys.stderr)
+                self.handler.show_error(e)
+        except BaseException as e:
+            traceback.print_exc(file=sys.stderr)
+            self.handler.show_error(e)
+        finally:
+            self.handler.finished()
+        self.signing = False
+
 
 class LedgerPlugin(HW_PluginBase):
     libraries_available = BTCHIP
@@ -558,3 +580,8 @@ class LedgerPlugin(HW_PluginBase):
         if client is not None:
             client.checkDevice()
         return client
+
+    def show_address(self, wallet, address):
+        sequence = wallet.get_address_index(address)
+        txin_type = wallet.get_txin_type(address)
+        wallet.get_keystore().show_address(sequence, txin_type)
