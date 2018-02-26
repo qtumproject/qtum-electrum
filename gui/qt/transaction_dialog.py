@@ -146,11 +146,14 @@ class TxDialog(QDialog, MessageBoxMixin):
 
     def closeEvent(self, event):
         if (self.prompt_if_unsaved and not self.saved
-            and not self.question(_('This transaction is not saved. Close anyway?'), title=_("Warning"))):
+                and not self.question(_('This transaction is not saved. Close anyway?'), title=_("Warning"))):
             event.ignore()
         else:
             event.accept()
-            dialogs.remove(self)
+            try:
+                dialogs.remove(self)
+            except ValueError:
+                pass
 
     def show_qr(self):
         text = bfh(str(self.tx))
