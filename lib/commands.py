@@ -633,6 +633,15 @@ class Commands:
         out = self.wallet.get_payment_request(addr, self.config)
         return self._format_request(out)
 
+    @command('w')
+    def addtransaction(self, tx):
+        """ Add a transaction to the wallet history """
+        tx = Transaction(tx)
+        if not self.wallet.add_transaction(tx.txid(), tx):
+            return False
+        self.wallet.save_transactions()
+        return tx.txid()
+
     @command('wp')
     def signrequest(self, address, password=None):
         "Sign payment request with an OpenAlias"
