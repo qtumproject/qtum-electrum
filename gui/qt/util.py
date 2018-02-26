@@ -604,6 +604,39 @@ class TaskThread(QThread):
         self.tasks.put(None)
 
 
+class AcceptFileDragDrop:
+
+    def __init__(self, file_type=""):
+        assert isinstance(self, QWidget)
+        self.setAcceptDrops(True)
+        self.file_type = file_type
+
+    def validateEvent(self, event):
+        if not event.mimeData().hasUrls():
+            event.ignore()
+            return False
+        for url in event.mimeData().urls():
+            if not url.toLocalFile().endswith(self.file_type):
+                event.ignore()
+                return False
+        event.accept()
+        return True
+
+    def dragEnterEvent(self, event):
+        self.validateEvent(event)
+
+    def dragMoveEvent(self, event):
+        if self.validateEvent(event):
+            event.setDropAction(Qt.CopyAction)
+
+    def dropEvent(self, event):
+        if self.validateEvent(event):
+            for url in event.mimeData().urls():
+                self.onFileAdded(url.toLocalFile())
+
+    def onFileAdded(self, fn):
+        raise NotImplementedError()
+
 if __name__ == "__main__":
     app = QApplication([])
     t = WaitingDialog(None, 'testing ...', lambda: [time.sleep(1)],

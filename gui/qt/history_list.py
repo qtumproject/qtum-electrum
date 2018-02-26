@@ -52,11 +52,12 @@ TX_ICONS = [
 ]
 
 
-class HistoryList(MyTreeWidget):
+class HistoryList(MyTreeWidget, AcceptFileDragDrop):
     filter_columns = [2, 3, 4]  # Date, Description, Amount
 
     def __init__(self, parent=None):
         MyTreeWidget.__init__(self, parent, self.create_menu, [], 3)
+        AcceptFileDragDrop.__init__(self, ".txn")
         self.refresh_headers()
         self.setColumnHidden(1, True)
 
@@ -201,3 +202,11 @@ class HistoryList(MyTreeWidget):
         self.wallet.save_transactions(write=True)
         # need to update at least: history_list, utxo_list, address_list
         self.parent.need_update.set()
+
+    def onFileAdded(self, fn):
+        try:
+            with open(fn) as f:
+                tx = self.parent.tx_from_text(f.read())
+                self.parent.save_transaction_into_wallet(tx)
+        except IOError as e:
+            self.parent.show_error(e)
