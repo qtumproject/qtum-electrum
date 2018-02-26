@@ -119,6 +119,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.require_fee_update = False
         self.tx_notifications = []
         self.tl_windows = []
+        self.tx_external_keypairs = {}
 
         self.create_status_bar()
         self.need_update = threading.Event()
@@ -1191,7 +1192,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 _type, addr = self.get_payto_or_dummy()
                 outputs = [(_type, addr, amount)]
             try:
-                tx = self.wallet.make_unsigned_transaction(self.get_coins(), outputs, self.config, fee)
+                is_sweep = bool(self.tx_external_keypairs)
+                tx = self.wallet.make_unsigned_transaction(self.get_coins(), outputs, self.config, fee,
+                                                           is_sweep=is_sweep)
                 self.not_enough_funds = False
             except NotEnoughFunds:
                 self.not_enough_funds = True
@@ -1340,7 +1343,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             return
         outputs, fee, tx_desc, coins = r
         try:
-            tx = self.wallet.make_unsigned_transaction(coins, outputs, self.config, fee)
+            is_sweep = bool(self.tx_external_keypairs)
+            tx = self.wallet.make_unsigned_transaction(coins, outputs, self.config, fee, is_sweep=is_sweep)
         except NotEnoughFunds:
             self.show_message(_("Insufficient funds"))
             return
@@ -1408,7 +1412,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         the callback with a success code of True or False.
         '''
         # call hook to see if plugin needs gui interaction
-        run_hook('sign_tx', self, tx)
 
         def on_signed(result):
             callback(True)
@@ -1416,7 +1419,13 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.on_error(exc_info)
             callback(False)
 
-        task = partial(self.wallet.sign_transaction, tx, password)
+        if self.tx_external_keypairs:
+            # can sign directly
+            task = partial(Transaction.sign, tx, self.tx_external_keypairs)
+        else:
+            # call hook to see if plugin needs gui interaction
+            run_hook('sign_tx', self, tx)
+            task = partial(self.wallet.sign_transaction, tx, password)
         WaitingDialog(self, _('Signing transaction...'), task,
                       on_signed, on_failed)
 
@@ -1560,6 +1569,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.fee_slider.activate()
         self.set_pay_from([])
         self.rbf_checkbox.setChecked(False)
+        self.tx_external_keypairs = {}
         self.update_status()
         run_hook('do_clear', self)
 
@@ -2385,15 +2395,20 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         address_e.textChanged.connect(on_address)
         if not d.exec_():
             return
-
-        from electrum.wallet import sweep
+        from electrum.wallet import sweep_preparations
         try:
-            tx = sweep(get_pk(), self.network, self.config, get_address(), None)
+            self.do_clear()
+            coins, keypairs = sweep_preparations(get_pk(), self.network)
+            self.tx_external_keypairs = keypairs
+            self.spend_coins(coins)
+            self.payto_e.setText(get_address())
+            self.spend_max()
+            self.payto_e.setFrozen(True)
+            self.amount_e.setFrozen(True)
         except BaseException as e:
             self.show_message(str(e))
             return
         self.warn_if_watching_only()
-        self.show_transaction(tx)
 
     def _do_import(self, title, msg, func):
         text = text_dialog(self, title, msg + ' :', _('Import'))

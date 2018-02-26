@@ -105,12 +105,12 @@ def append_utxos_to_inputs(inputs, network, pubkey, txin_type, imax):
         inputs.append(item)
 
 
-def sweep(privkeys, network, config, recipient, fee=None, imax=100):
+def sweep_preparations(privkeys, network, imax=100):
+
     def find_utxos_for_privkey(txin_type, privkey, compressed):
         pubkey = bitcoin.public_key_from_private_key(privkey, compressed)
         append_utxos_to_inputs(inputs, network, pubkey, txin_type, imax)
         keypairs[pubkey] = privkey, compressed
-
     inputs = []
     keypairs = {}
     for sec in privkeys:
@@ -127,6 +127,11 @@ def sweep(privkeys, network, config, recipient, fee=None, imax=100):
             find_utxos_for_privkey('p2pk', privkey, compressed)
     if not inputs:
         raise BaseException(_('No inputs found. (Note that inputs need to be confirmed)'))
+    return inputs, keypairs
+
+
+def sweep(privkeys, network, config, recipient, fee=None, imax=100):
+    inputs, keypairs = sweep_preparations(privkeys, network, imax)
     total = sum(i.get('value') for i in inputs)
     if fee is None:
         outputs = [(TYPE_ADDRESS, recipient, total)]
@@ -142,10 +147,10 @@ def sweep(privkeys, network, config, recipient, fee=None, imax=100):
     locktime = network.get_local_height()
 
     tx = Transaction.from_io(inputs, outputs, locktime=locktime)
+    tx.BIP_LI01_sort()
     tx.set_rbf(True)
     tx.sign(keypairs)
     return tx
-
 
 class Abstract_Wallet(PrintError):
     """
@@ -889,7 +894,7 @@ class Abstract_Wallet(PrintError):
 
     def make_unsigned_transaction(self, inputs, outputs, config,
                                   fixed_fee=None, change_addr=None,
-                                  gas_fee=0, sender=None):
+                                  gas_fee=0, sender=None, is_sweep=False):
         # check outputs
         i_max = None
         for i, o in enumerate(outputs):
@@ -909,8 +914,9 @@ class Abstract_Wallet(PrintError):
         if fixed_fee is None and config.fee_per_kb() is None:
             raise BaseException('Dynamic fee estimates not available')
 
-        for item in inputs:
-            self.add_input_info(item)
+        if not is_sweep:
+            for item in inputs:
+                self.add_input_info(item)
 
         # change address
         if change_addr:
