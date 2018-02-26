@@ -99,8 +99,17 @@ class TxDialog(QDialog, MessageBoxMixin):
         self.broadcast_button = b = QPushButton(_("Broadcast"))
         b.clicked.connect(self.do_broadcast)
 
-        self.save_button = b = QPushButton(_("Save"))
-        b.clicked.connect(self.save)
+        self.save_button = QPushButton(_("Save"))
+        save_button_disabled = not tx.is_complete()
+        self.save_button.setDisabled(save_button_disabled)
+        if save_button_disabled:
+            self.save_button.setToolTip(_("Please sign this transaction in order to save it"))
+        else:
+            self.save_button.setToolTip("")
+        self.save_button.clicked.connect(self.save)
+
+        self.export_button = b = QPushButton(_("Export"))
+        b.clicked.connect(self.export)
 
         self.cancel_button = b = QPushButton(_("Close"))
         b.clicked.connect(self.close)
@@ -113,9 +122,9 @@ class TxDialog(QDialog, MessageBoxMixin):
         self.copy_button = CopyButton(lambda: str(self.tx), parent.app)
 
         # Action buttons
-        self.buttons = [self.sign_button, self.broadcast_button, self.cancel_button]
+        self.buttons = [self.sign_button, self.broadcast_button, self.save_button, self.cancel_button]
         # Transaction sharing buttons
-        self.sharing_buttons = [self.copy_button, self.qr_button, self.save_button]
+        self.sharing_buttons = [self.copy_button, self.qr_button, self.export_button]
 
         run_hook('transaction_dialog', self)
 
@@ -156,6 +165,8 @@ class TxDialog(QDialog, MessageBoxMixin):
             if success:
                 self.prompt_if_unsaved = True
                 self.saved = False
+            self.save_button.setDisabled(False)
+            self.save_button.setToolTip("")
             self.update()
             self.main_window.pop_top_level_window(self)
 
@@ -164,12 +175,17 @@ class TxDialog(QDialog, MessageBoxMixin):
         self.main_window.sign_tx(self.tx, sign_done)
 
     def save(self):
-        name = 'signed_%s.txn' % (self.tx.hash()[0:8]) if self.tx.is_complete() else 'unsigned.txn'
+        if self.main_window.save_transaction_into_wallet(self.tx):
+            self.save_button.setDisabled(True)
+            self.saved = True
+
+    def export(self):
+        name = 'signed_%s.txn' % (self.tx.txid()[0:8]) if self.tx.is_complete() else 'unsigned.txn'
         fileName = self.main_window.getSaveFileName(_("Select where to save your signed transaction"), name, "*.txn")
         if fileName:
             with open(fileName, "w+") as f:
                 f.write(json.dumps(self.tx.as_dict(), indent=4) + '\n')
-            self.show_message(_("Transaction saved successfully"))
+            self.show_message(_("Transaction exported successfully"))
             self.saved = True
 
     def update(self):
