@@ -389,7 +389,8 @@ class Abstract_Wallet(PrintError):
         return self.get_pubkeys(*sequence)
 
     def add_unverified_tx(self, tx_hash, tx_height):
-        if tx_height == 0 and tx_hash in self.verified_tx:
+        if tx_height in (TX_HEIGHT_UNCONFIRMED, TX_HEIGHT_UNCONF_PARENT) \
+                and tx_hash in self.verified_tx:
             self.verified_tx.pop(tx_hash)
             if self.verifier:
                 self.verifier.merkle_roots.pop(tx_hash, None)
@@ -547,7 +548,7 @@ class Abstract_Wallet(PrintError):
                         status = _("%d confirmations") % conf
                     else:
                         status = _('Not verified')
-                elif height in [-1, 0]:
+                elif height in (TX_HEIGHT_UNCONF_PARENT, TX_HEIGHT_UNCONFIRMED):
                     status = _('Unconfirmed')
                     if fee is None:
                         fee = self.tx_fees.get(tx_hash)
@@ -1165,7 +1166,7 @@ class Abstract_Wallet(PrintError):
         age = -1
         h = self.history.get(address, [])
         for tx_hash, tx_height in h:
-            if tx_height == 0:
+            if tx_height <= 0:
                 tx_age = 0
             else:
                 tx_age = self.get_local_height() - tx_height + 1
