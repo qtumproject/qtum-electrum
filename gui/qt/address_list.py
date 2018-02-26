@@ -38,17 +38,19 @@ class AddressList(MyTreeWidget):
         MyTreeWidget.__init__(self, parent, self.create_menu, [], 1)
         self.refresh_headers()
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.show_change = False
-        self.show_used = 3
-        self.change_button = QToolButton(self)
-        self.used_button = QToolButton(self)
-        self.change_button.clicked.connect(self.toggle_change)
-        self.used_button.clicked.connect(self.toggle_used)
-        self.set_change_button_text()
-        self.set_used_button_text()
+        self.show_change = 0
+        self.show_used = 0
+        self.change_button = QComboBox(self)
+        self.change_button.currentIndexChanged.connect(self.toggle_change)
+        for t in [_('Receiving'), _('Change'), _('All')]:
+            self.change_button.addItem(t)
+        self.used_button = QComboBox(self)
+        self.used_button.currentIndexChanged.connect(self.toggle_used)
+        for t in [_('All'), _('Unused'), _('Funded'), _('Used')]:
+            self.used_button.addItem(t)
 
-    def get_buttons(self):
-        return self.change_button, self.used_button
+    def get_list_header(self):
+        return QLabel(_("Filter:")), self.change_button, self.used_button
 
     def refresh_headers(self):
         headers = [ _('Address'), _('Label'), _('Balance')]
@@ -58,29 +60,28 @@ class AddressList(MyTreeWidget):
         headers.extend([_('Tx')])
         self.update_headers(headers)
 
-    def toggle_change(self):
-        self.show_change = not self.show_change
-        self.set_change_button_text()
+    def toggle_change(self, state):
+        if state == self.show_change:
+            return
+        self.show_change = state
         self.update()
 
-    def set_change_button_text(self):
-        s = [_('Receiving'), _('Change')]
-        self.change_button.setText(s[self.show_change])
-
-    def toggle_used(self):
-        self.show_used = (self.show_used + 1) % 4
-        self.set_used_button_text()
+    def toggle_used(self, state):
+        if state == self.show_used:
+            return
+        self.show_used = state
         self.update()
-
-    def set_used_button_text(self):
-        s = [_('Unused'), _('Funded'), _('Used'), _('All')]
-        self.used_button.setText(s[self.show_used])
 
     def on_update(self):
         self.wallet = self.parent.wallet
         item = self.currentItem()
         current_address = item.data(0, Qt.UserRole) if item else None
-        addr_list = self.wallet.get_change_addresses() if self.show_change else self.wallet.get_receiving_addresses()
+        if self.show_change == 0:
+            addr_list = self.wallet.get_receiving_addresses()
+        elif self.show_change == 1:
+            addr_list = self.wallet.get_change_addresses()
+        else:
+            addr_list = self.wallet.get_addresses()
         self.clear()
         for address in addr_list:
             num = len(self.wallet.history.get(address, []))
@@ -88,11 +89,11 @@ class AddressList(MyTreeWidget):
             label = self.wallet.labels.get(address, '')
             c, u, x = self.wallet.get_addr_balance(address)
             balance = c + u + x
-            if self.show_used == 0 and (balance or is_used):
+            if self.show_used == 1 and (balance or is_used):
                 continue
-            if self.show_used == 1 and balance == 0:
+            if self.show_used == 2 and balance == 0:
                 continue
-            if self.show_used == 2 and not is_used:
+            if self.show_used == 3 and not is_used:
                 continue
             balance_text = self.parent.format_amount(balance)
             fx = self.parent.fx
@@ -109,7 +110,7 @@ class AddressList(MyTreeWidget):
             address_item.setData(0, Qt.UserRole + 1, True)  # label can be edited
             if self.wallet.is_frozen(address):
                 address_item.setBackground(0, QColor('lightblue'))
-            if self.wallet.is_beyond_limit(address, self.show_change):
+            if self.wallet.is_beyond_limit(address):
                 address_item.setBackground(0, QColor('red'))
             self.addChild(address_item)
             if address == current_address:
