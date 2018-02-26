@@ -29,6 +29,7 @@ from .util import *
 from electrum.i18n import _
 from electrum.util import block_explorer_URL, format_satoshis, format_time
 from electrum.util import timestamp_to_datetime, profiler
+from electrum.wallet import TX_HEIGHT_LOCAL
 
 
 TX_ICONS = [
@@ -161,6 +162,8 @@ class HistoryList(MyTreeWidget):
         pr_key = self.wallet.invoices.paid.get(tx_hash)
 
         menu = QMenu()
+        if height == TX_HEIGHT_LOCAL:
+            menu.addAction(_("Remove"), lambda: self.remove_local_tx(tx_hash))
 
         menu.addAction(_("Copy %s")%column_title, lambda: self.parent.app.clipboard().setText(column_data))
         if column in self.editable_columns:
@@ -180,3 +183,21 @@ class HistoryList(MyTreeWidget):
         if tx_URL:
             menu.addAction(_("View on block explorer"), lambda: webbrowser.open(tx_URL))
         menu.exec_(self.viewport().mapToGlobal(position))
+
+    def remove_local_tx(self, delete_tx):
+        to_delete = {delete_tx}
+        to_delete |= self.wallet.get_depending_transactions(delete_tx)
+        question = _("Are you sure you want to remove this transaction?")
+        if len(to_delete) > 1:
+            question = _(
+                "Are you sure you want to remove this transaction and {} child transactions?".format(
+                    len(to_delete) - 1)
+            )
+        answer = QMessageBox.question(self.parent, _("Please confirm"), question, QMessageBox.Yes, QMessageBox.No)
+        if answer == QMessageBox.No:
+            return
+        for tx in to_delete:
+            self.wallet.remove_transaction(tx)
+        self.wallet.save_transactions(write=True)
+        # need to update at least: history_list, utxo_list, address_list
+        self.parent.need_update.set()

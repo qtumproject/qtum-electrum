@@ -70,6 +70,10 @@ TX_STATUS = [
     _('Local'),
 ]
 
+TX_HEIGHT_LOCAL = -2
+TX_HEIGHT_UNCONF_PARENT = -1
+TX_HEIGHT_UNCONFIRMED = 0
+
 
 def relayfee(network):
     RELAY_FEE = 5000
@@ -415,7 +419,7 @@ class Abstract_Wallet(PrintError):
                 return height, 0, False
             else:
                 # local transaction
-                return -2, 0, False
+                return TX_HEIGHT_LOCAL, 0, False
 
     def get_txpos(self, tx_hash):
         "return position, even if the tx is unverified"
@@ -880,17 +884,17 @@ class Abstract_Wallet(PrintError):
             else:
                 is_lowfee = False
 
-            if height == -2:
+            if height == TX_HEIGHT_LOCAL:
                 status = 5
-            elif height == -1:
+            elif height == TX_HEIGHT_UNCONF_PARENT:
                 status = 1
-            elif height == 0 and not is_final:
+            elif height == TX_HEIGHT_UNCONFIRMED and not is_final:
                 status = 0
             elif height < 0:
                 status = 1
-            elif height == 0 and is_lowfee:
+            elif height == TX_HEIGHT_UNCONFIRMED and is_lowfee:
                 status = 2
-            elif height == 0:
+            elif height == TX_HEIGHT_UNCONFIRMED:
                 status = 3
             else:
                 status = 4
