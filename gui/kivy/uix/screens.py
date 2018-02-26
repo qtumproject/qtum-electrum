@@ -93,6 +93,7 @@ TX_ICONS = [
     "close",
     "unconfirmed",
     "close",
+    "close",
     "clock1",
     "clock2",
     "clock3",
