@@ -135,11 +135,13 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.utxo_tab = self.create_utxo_tab()
         self.console_tab = self.create_console_tab()
         self.contacts_tab = self.create_contacts_tab()
+        self.tokens_tab = self.create_tokens_tab()
         # self.smart_contract_tab = self.create_smart_contract_tab()
 
         tabs.addTab(self.create_history_tab(), QIcon(":icons/tab_history.png"), _('History'))
         tabs.addTab(self.send_tab, QIcon(":icons/tab_send.png"), _('Send'))
         tabs.addTab(self.receive_tab, QIcon(":icons/tab_receive.png"), _('Receive'))
+        tabs.addTab(self.tokens_tab, QIcon(":icons/tab_contacts.png"), _('Tokens'))
         tabs.addTab(self.contacts_tab, QIcon(":icons/tab_contacts.png"), _('Contacts'))
 
         def add_optional_tab(tabs, tab, icon, description, name):
@@ -362,7 +364,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.setGeometry(*winpos)
         except:
             self.print_error("using default geometry")
-            self.setGeometry(100, 100, 840, 400)
+            self.setGeometry(100, 100, 860, 460)
 
     def watching_only_changed(self):
         title = 'Electrum for Qtum <Beta> %s  -  %s' % (self.wallet.electrum_version,
@@ -732,6 +734,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.address_list.update()
         self.utxo_list.update()
         self.contact_list.update()
+        # todo
         # self.smart_contract_list.update()
         self.invoice_list.update()
         self.update_completions()
@@ -2968,6 +2971,15 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         if is_final:
             new_tx.set_rbf(False)
         self.show_transaction(new_tx, tx_label)
+
+    def create_tokens_tab(self):
+        from .token_list import TokenHistoryList, TokenBalanceList
+        self.token_balance_list = tbl = TokenBalanceList(self)
+        self.token_history_list = thl = TokenHistoryList(self)
+        tbl.searchable_list = tbl
+        thl.searchable_list = thl
+
+        return None
 
     def set_smart_contract(self, name, address, interface, _type):
         """
