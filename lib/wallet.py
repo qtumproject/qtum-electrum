@@ -199,7 +199,7 @@ class Abstract_Wallet(PrintError):
         self.load_keystore()
         self.load_addresses()
         self.load_transactions()
-        self.build_reverse_history()
+        self.build_spent_outpoints()
 
         # load requests
         self.receive_requests = self.storage.get('payment_requests', {})
@@ -215,8 +215,9 @@ class Abstract_Wallet(PrintError):
         # interface.is_up_to_date() returns true when all requests have been answered and processed
         # wallet.up_to_date is true when the wallet is synchronized (stronger requirement)
         self.up_to_date = False
-        self.lock = threading.Lock()
-        self.transaction_lock = threading.Lock()
+
+        self.lock = threading.RLock()
+        self.transaction_lock = threading.RLock()
 
         self.check_history()
 
@@ -270,24 +271,25 @@ class Abstract_Wallet(PrintError):
                 self.storage.write()
 
     def clear_history(self):
-        with self.transaction_lock:
-            self.txi = {}
-            self.txo = {}
-            self.tx_fees = {}
-            self.pruned_txo = {}
-        self.save_transactions()
         with self.lock:
-            self.history = {}
-            self.tx_addr_hist = {}
+            with self.transaction_lock:
+                self.txi = {}
+                self.txo = {}
+                self.tx_fees = {}
+                self.pruned_txo = {}
+                self.spent_outpoints = {}
+                self.history = {}
+                self.verified_tx = {}
+                self.transactions = {}
+                self.save_transactions()
 
     @profiler
-    def build_reverse_history(self):
-        self.tx_addr_hist = {}
-        for addr, hist in self.history.items():
-            for tx_hash, h in hist:
-                s = self.tx_addr_hist.get(tx_hash, set())
-                s.add(addr)
-                self.tx_addr_hist[tx_hash] = s
+    def build_spent_outpoints(self):
+        self.spent_outpoints = {}
+        for txid, items in self.txi.items():
+            for addr, l in items.items():
+                for ser, v in l:
+                    self.spent_outpoints[ser] = txid
 
     @profiler
     def check_history(self):
@@ -424,7 +426,7 @@ class Abstract_Wallet(PrintError):
         return self.network.get_local_height() if self.network else self.storage.get('stored_height', 0)
 
     def get_tx_height(self, tx_hash):
-        """ return the height and timestamp of a transaction. """
+        """ Given a transaction, returns (height, conf, timestamp) """
         with self.lock:
             if tx_hash in self.verified_tx:
                 height, timestamp, pos = self.verified_tx[tx_hash]
@@ -815,12 +817,17 @@ class Abstract_Wallet(PrintError):
             return True
 
     def remove_transaction(self, tx_hash):
+        def undo_spend(outpoint_to_txid_map):
+            for addr, l in self.txi[tx_hash].items():
+                for ser, v in l:
+                    outpoint_to_txid_map.pop(ser, None)
+
         with self.transaction_lock:
             self.print_error("removing tx from history", tx_hash)
-            #tx = self.transactions.pop(tx_hash)
-            for ser, hh in list(self.pruned_txo.items()):
-                if hh == tx_hash:
-                    self.pruned_txo.pop(ser)
+            self.transactions.pop(tx_hash, None)
+            undo_spend(self.pruned_txo)
+            undo_spend(self.spent_outpoints)
+
             # add tx to pruned_txo, and undo the txi addition
             for next_tx, dd in self.txi.items():
                 for addr, l in list(dd.items()):
@@ -863,10 +870,6 @@ class Abstract_Wallet(PrintError):
         for tx_hash, tx_height in hist:
             # add it in case it was previously unconfirmed
             self.add_unverified_tx(tx_hash, tx_height)
-            # add reference in tx_addr_hist
-            s = self.tx_addr_hist.get(tx_hash, set())
-            s.add(addr)
-            self.tx_addr_hist[tx_hash] = s
             # if addr is new, we have to recompute txi and txo
             tx = self.transactions.get(tx_hash)
             if tx is not None and self.txi.get(tx_hash, {}).get(addr) is None and self.txo.get(tx_hash, {}).get(addr) is None:
