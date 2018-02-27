@@ -244,7 +244,7 @@ class WaitingDialog(WindowModalDialog):
 
 def line_dialog(parent, title, label, ok_label, default=None):
     dialog = WindowModalDialog(parent, title)
-    dialog.setMinimumWidth(500)
+    dialog.setMinimumWidth(600)
     l = QVBoxLayout()
     dialog.setLayout(l)
     l.addWidget(QLabel(label))
