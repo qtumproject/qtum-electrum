@@ -854,6 +854,10 @@ class Abstract_Wallet(PrintError):
                     self.unverified_tx.pop(tx_hash, None)
                     self.verified_tx.pop(tx_hash, None)
                     self.verifier.merkle_roots.pop(tx_hash, None)
+                    # but remove completely if not is_mine
+                    if self.txi[tx_hash] == {}:
+                        # FIXME the test here should be for "not all is_mine"; cannot detect conflict in some cases
+                        self.remove_transaction(tx_hash)
             self.history[addr] = hist
 
         for tx_hash, tx_height in hist:
