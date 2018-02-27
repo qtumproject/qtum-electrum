@@ -2,7 +2,7 @@ publicsuffix
 rsa
 py2app==0.12
 cython
-certifi==2017.11.5
+certifi==2018.1.18
 chardet==3.0.4
 dnspython==1.15.0
 ecdsa==0.13
