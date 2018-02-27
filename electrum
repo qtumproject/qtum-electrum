@@ -299,7 +299,8 @@ def get_password_for_hw_device_encrypted_storage(plugins):
     password = keystore.Xpub.get_pubkey_from_xpub(xpub, ())
     return password
 
-def run_offline_command(config, config_options):
+
+def run_offline_command(config, config_options, plugins):
     cmdname = config.get('cmd')
     cmd = known_commands[cmdname]
     password = config_options.get('password')
@@ -314,7 +315,7 @@ def run_offline_command(config, config_options):
     else:
         wallet = None
     # check password
-    if cmd.requires_password and and wallet.has_password():
+    if cmd.requires_password and wallet.has_password():
         try:
             seed = wallet.check_password(password)
         except InvalidPassword:
@@ -481,8 +482,8 @@ def run():
                 print_msg("Daemon not running; try 'electrum daemon start'")
                 sys.exit(1)
             else:
-                init_plugins(config, 'cmdline')
-                result = run_offline_command(config, config_options)
+                plugins = init_plugins(config, 'cmdline')
+                result = run_offline_command(config, config_options, plugins)
     if isinstance(result, str):
         print_msg(result)
     elif type(result) is dict and result.get('error'):
