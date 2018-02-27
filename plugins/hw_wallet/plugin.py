@@ -51,3 +51,6 @@ class HW_PluginBase(BasePlugin):
         for keystore in wallet.get_keystores():
             if isinstance(keystore, self.keystore_class):
                 self.device_manager().unpair_xpub(keystore.xpub)
+
+    def setup_device(self, device_info, wizard, purpose):
+        raise NotImplementedError()

@@ -214,7 +214,7 @@ class TrezorCompatiblePlugin(HW_PluginBase):
                                        label, language)
         wizard.loop.exit(0)
 
-    def setup_device(self, device_info, wizard):
+    def setup_device(self, device_info, wizard, purpose):
         '''Called when creating a new wallet.  Select the device to use.  If
         the device is uninitialized, go through the intialization
         process.'''
