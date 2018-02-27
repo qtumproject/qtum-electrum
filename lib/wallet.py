@@ -688,7 +688,9 @@ class Abstract_Wallet(PrintError):
 
     def get_address_history(self, addr):
         h = []
-        with self.transaction_lock:
+        # we need self.transaction_lock but get_tx_height will take self.lock
+        # so we need to take that too here, to enforce order of locks
+        with self.lock, self.transaction_lock:
             for tx_hash in self.transactions:
                 if addr in self.txi.get(tx_hash, []) or addr in self.txo.get(tx_hash, []):
                     tx_height = self.get_tx_height(tx_hash)[0]
