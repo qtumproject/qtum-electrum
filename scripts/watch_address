@@ -2,8 +2,8 @@
 
 import sys
 import time
-from electrum import SimpleConfig, Network
-from electrum.util import print_msg, json_encode
+from qtum_electrum import SimpleConfig, Network
+from qtum_electrum.util import print_msg, json_encode
 
 try:
     addr = sys.argv[1]

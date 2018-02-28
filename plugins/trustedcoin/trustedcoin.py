@@ -32,16 +32,16 @@ from hashlib import sha256
 from urllib.parse import urljoin
 from urllib.parse import quote
 
-import electrum
-from electrum import qtum
-from electrum import keystore
-from electrum.qtum import *
-from electrum.mnemonic import Mnemonic
-from electrum import version
-from electrum.wallet import Multisig_Wallet, Deterministic_Wallet, Wallet
-from electrum.i18n import _
-from electrum.plugins import BasePlugin, run_hook, hook
-from electrum.util import NotEnoughFunds
+import qtum_electrum
+from qtum_electrum import qtum
+from qtum_electrum import keystore
+from qtum_electrum.qtum import *
+from qtum_electrum.mnemonic import Mnemonic
+from qtum_electrum import version
+from qtum_electrum.wallet import Multisig_Wallet, Deterministic_Wallet, Wallet
+from qtum_electrum.i18n import _
+from qtum_electrum.plugins import BasePlugin, run_hook, hook
+from qtum_electrum.util import NotEnoughFunds
 
 # signing_xpub is hardcoded so that the wallet can be restored from seed, without TrustedCoin's server
 signing_xpub = "xpub661MyMwAqRbcGnMkaTx2594P9EDuiEqMq25PM2aeG6UmwzaohgA6uDmNsvSUV8ubqwA3Wpste1hg69XHgjUuCD5HLcEp2QPzyV1HMrPppsL"
@@ -106,7 +106,7 @@ class TrustedCoinCosignerClient(object):
         else:
             return response.text
 
-    def get_terms_of_service(self, billing_plan='electrum-per-tx-otp'):
+    def get_terms_of_service(self, billing_plan='qtum_electrum-per-tx-otp'):
         """
         Returns the TOS for the given billing plan as a plain/text unicode string.
         :param billing_plan: the plan to return the terms for
@@ -114,7 +114,7 @@ class TrustedCoinCosignerClient(object):
         payload = {'billing_plan': billing_plan}
         return self.send_request('get', 'tos', payload)
 
-    def create(self, xpubkey1, xpubkey2, email, billing_plan='electrum-per-tx-otp'):
+    def create(self, xpubkey1, xpubkey2, email, billing_plan='qtum_electrum-per-tx-otp'):
         """
         Creates a new cosigner resource.
         :param xpubkey1: a bip32 extended public key (customarily the hot key)
@@ -205,7 +205,7 @@ class Wallet_2fa(Multisig_Wallet):
         return get_user_id(self.storage)
 
     def get_max_amount(self, config, inputs, recipient, fee):
-        from electrum.transaction import Transaction
+        from qtum_electrum.transaction import Transaction
         sendable = sum(map(lambda x:x['value'], inputs))
         for i in inputs:
             self.add_input_info(i)
@@ -390,8 +390,8 @@ class TrustedCoinPlugin(BasePlugin):
         wizard.show_seed_dialog(run_next=f, seed_text=seed)
 
     def get_xkeys(self, seed, passphrase, derivation):
-        from electrum.mnemonic import Mnemonic
-        from electrum.keystore import bip32_root, bip32_private_derivation
+        from qtum_electrum.mnemonic import Mnemonic
+        from qtum_electrum.keystore import bip32_root, bip32_private_derivation
         bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
         xprv, xpub = bip32_root(bip32_seed, 'standard')
         xprv, xpub = bip32_private_derivation(xprv, "m/", derivation)

@@ -17,7 +17,7 @@ import sys
 from lib.version import ELECTRUM_VERSION as version
 
 name = "Qtum Electrum"
-mainscript = 'electrum'
+mainscript = 'qtum-electrum'
 
 if sys.version_info[:3] < (3, 4, 0):
     print("Error: " + name + " requires Python version >= 3.4.0...")
@@ -26,7 +26,7 @@ if sys.version_info[:3] < (3, 4, 0):
 if sys.platform == 'darwin':
     from plistlib import Plist
     plist = Plist.fromFile('Info.plist')
-    plist.update(dict(CFBundleIconFile='electrum.icns'))
+    plist.update(dict(CFBundleIconFile='qtum-electrum.icns'))
     shutil.copy(mainscript, 'run_electrum.py')
     mainscript = 'run_electrum.py'
     extra_options = dict(
@@ -36,7 +36,7 @@ if sys.platform == 'darwin':
                                  includes=['PyQt5.QtCore', 'PyQt5.QtGui', 'PyQt5.QtWebKit', 'PyQt5.QtNetwork', 'sip'],
                                  packages=['lib', 'gui', 'plugins'],
                                  qt_plugins=['platforms'],
-                                 iconfile='electrum.icns',
+                                 iconfile='qtum-electrum.icns',
                                  plist=plist,
                                  resources=['icons', 'cacert.pem'])),
     )

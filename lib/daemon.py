@@ -28,7 +28,6 @@ import sys
 import time
 import traceback
 
-# from jsonrpc import JSONRPCResponseManager
 import jsonrpclib
 from .jsonrpc import VerifyingJSONRPCServer
 
@@ -269,7 +268,8 @@ class Daemon(DaemonThread):
             wallet = self.wallets.get(path)
             if wallet is None:
                 return {
-                    'error': 'Wallet "%s" is not loaded. Use "electrum daemon load_wallet"' % os.path.basename(path)}
+                    'error': 'Wallet "%s" is not loaded. Use "qtum_electrum daemon load_wallet"' % os.path.basename(
+                        path)}
         else:
             wallet = None
         # arguments passed to function
@@ -306,7 +306,7 @@ class Daemon(DaemonThread):
         gui_name = config.get('gui', 'qt')
         if gui_name in ['lite', 'classic']:
             gui_name = 'qt'
-        gui = __import__('electrum_gui.' + gui_name, fromlist=['electrum_gui'])
+        gui = __import__('qtum_electrum_gui.' + gui_name, fromlist=['qtum_electrum_gui'])
         self.gui = gui.ElectrumGui(config, self, plugins)
         try:
             self.gui.main()

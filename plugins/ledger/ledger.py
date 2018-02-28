@@ -3,15 +3,15 @@ import hashlib
 import sys
 import traceback
 
-from electrum import qtum
-from electrum import bitcoin
-from electrum.bitcoin import TYPE_ADDRESS, int_to_hex, var_int
-from electrum.i18n import _
-from electrum.plugins import BasePlugin
-from electrum.keystore import Hardware_KeyStore
-from electrum.transaction import Transaction
+from qtum_electrum import qtum
+from qtum_electrum import bitcoin
+from qtum_electrum.bitcoin import TYPE_ADDRESS, int_to_hex, var_int
+from qtum_electrum.i18n import _
+from qtum_electrum.plugins import BasePlugin
+from qtum_electrum.keystore import Hardware_KeyStore
+from qtum_electrum.transaction import Transaction
 from ..hw_wallet import HW_PluginBase
-from electrum.util import print_error, bfh, bh2u
+from qtum_electrum.util import print_error, bfh, bh2u
 
 try:
     import hid
@@ -22,7 +22,7 @@ try:
     from btchip.bitcoinTransaction import bitcoinTransaction
     from btchip.btchipFirmwareWizard import checkFirmware, updateFirmware
     from btchip.btchipException import BTChipException
-    from electrum.util import is_verbose
+    from qtum_electrum.util import is_verbose
     BTCHIP = True
     BTCHIP_DEBUG = is_verbose
 except ImportError:

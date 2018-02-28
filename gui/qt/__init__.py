@@ -37,10 +37,10 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 import PyQt5.QtCore as QtCore
 
-from electrum.i18n import _, set_language
-from electrum.plugins import run_hook
-from electrum import SimpleConfig, Wallet, WalletStorage
-from electrum.util import DebugMem, UserCancelled, InvalidPassword, print_error
+from qtum_electrum.i18n import _, set_language
+from qtum_electrum.plugins import run_hook
+from qtum_electrum import SimpleConfig, Wallet, WalletStorage
+from qtum_electrum.util import DebugMem, UserCancelled, InvalidPassword, print_error
 from .installwizard import InstallWizard, GoBack
 
 
@@ -89,7 +89,7 @@ class ElectrumGui:
         if hasattr(QtCore.Qt, "AA_ShareOpenGLContexts"):
             QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
         if hasattr(QGuiApplication, 'setDesktopFileName'):
-            QGuiApplication.setDesktopFileName('electrum.desktop')
+            QGuiApplication.setDesktopFileName('qtum-electrum.desktop')
         self.config = config
         self.daemon = daemon
         self.plugins = plugins

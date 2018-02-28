@@ -6,10 +6,10 @@ import traceback
 
 from PyQt5.QtCore import *
 
-from electrum import Wallet, WalletStorage
-from electrum.util import UserCancelled, InvalidPassword
-from electrum.base_wizard import BaseWizard, HWD_SETUP_DECRYPT_WALLET
-from electrum.i18n import _
+from qtum_electrum import Wallet, WalletStorage
+from qtum_electrum.util import UserCancelled, InvalidPassword
+from qtum_electrum.base_wizard import BaseWizard, HWD_SETUP_DECRYPT_WALLET
+from qtum_electrum.i18n import _
 
 from .seed_dialog import SeedLayout, KeysLayout
 from .network_dialog import NetworkChoiceLayout
@@ -140,7 +140,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
         hbox.setStretchFactor(scroll, 1)
         outer_vbox.addLayout(hbox)
         outer_vbox.addLayout(Buttons(self.back_button, self.next_button))
-        self.set_icon(':icons/electrum.png')
+        self.set_icon(':icons/qtum_electrum.png')
         self.show()
         self.raise_()
         self.refresh_gui()  # Need for QT on MacOSX.  Lame.

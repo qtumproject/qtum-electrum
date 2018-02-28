@@ -23,10 +23,10 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from .util import *
-from electrum.i18n import _
-from electrum.util import block_explorer_URL, format_satoshis, format_time
-from electrum.util import timestamp_to_datetime, profiler, open_browser
-from electrum.wallet import TX_HEIGHT_LOCAL
+from qtum_electrum.i18n import _
+from qtum_electrum.util import block_explorer_URL, format_satoshis, format_time
+from qtum_electrum.util import timestamp_to_datetime, profiler, open_browser
+from qtum_electrum.wallet import TX_HEIGHT_LOCAL
 
 
 TX_ICONS = [

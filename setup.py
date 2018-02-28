@@ -29,12 +29,12 @@ if platform.system() in ['Linux', 'FreeBSD', 'DragonFly']:
         else:
             usr_share = os.path.expanduser('~/.local/share')
     data_files += [
-        (os.path.join(usr_share, 'applications/'), ['electrum.desktop']),
+        (os.path.join(usr_share, 'applications/'), ['qtum-electrum.desktop']),
         (os.path.join(usr_share, 'pixmaps/'), ['icons/electrum.png'])
     ]
 
 setup(
-    name="Electrum",
+    name="Qtum Electrum",
     version=version.ELECTRUM_VERSION,
     install_requires=[
         'pyaes>=0.1a1',
@@ -50,30 +50,30 @@ setup(
         # 'eth-utils'
     ],
     packages=[
-        'electrum',
-        'electrum_gui',
-        'electrum_gui.qt',
-        'electrum_plugins',
-        'electrum_plugins.audio_modem',
-        'electrum_plugins.cosigner_pool',
-        'electrum_plugins.email_requests',
-        'electrum_plugins.greenaddress_instant',
-        'electrum_plugins.hw_wallet',
-        'electrum_plugins.keepkey',
-        'electrum_plugins.labels',
-        'electrum_plugins.ledger',
-        'electrum_plugins.trezor',
-        'electrum_plugins.digitalbitbox',
-        'electrum_plugins.trustedcoin',
-        'electrum_plugins.virtualkeyboard',
+        'qtum_electrum',
+        'qtum_electrum_gui',
+        'qtum_electrum_gui.qt',
+        'qtum_electrum_plugins',
+        'qtum_electrum_plugins.audio_modem',
+        'qtum_electrum_plugins.cosigner_pool',
+        'qtum_electrum_plugins.email_requests',
+        'qtum_electrum_plugins.greenaddress_instant',
+        'qtum_electrum_plugins.hw_wallet',
+        'qtum_electrum_plugins.keepkey',
+        'qtum_electrum_plugins.labels',
+        'qtum_electrum_plugins.ledger',
+        'qtum_electrum_plugins.trezor',
+        'qtum_electrum_plugins.digitalbitbox',
+        'qtum_electrum_plugins.trustedcoin',
+        'qtum_electrum_plugins.virtualkeyboard',
     ],
     package_dir={
-        'electrum': 'lib',
-        'electrum_gui': 'gui',
-        'electrum_plugins': 'plugins',
+        'qtum_electrum': 'lib',
+        'qtum_electrum_gui': 'gui',
+        'qtum_electrum_plugins': 'plugins',
     },
     package_data={
-        'electrum': [
+        'qtum_electrum': [
             'currencies.json',
             'www/index.html',
             'wordlist/*.txt',
@@ -82,7 +82,7 @@ setup(
             'servers_testnet.json',
         ]
     },
-    scripts=['electrum'],
+    scripts=['qtum-electrum'],
     data_files=data_files,
     description="Lightweight Qtum Wallet",
     author="CodeFace",

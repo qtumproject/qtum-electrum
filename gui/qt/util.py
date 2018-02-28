@@ -10,9 +10,9 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 
-from electrum.i18n import _
-from electrum.util import FileImportFailed, FileExportFailed
-from electrum.paymentrequest import PR_UNPAID, PR_PAID, PR_UNKNOWN, PR_EXPIRED
+from qtum_electrum.i18n import _
+from qtum_electrum.util import FileImportFailed, FileExportFailed
+from qtum_electrum.paymentrequest import PR_UNPAID, PR_PAID, PR_UNKNOWN, PR_EXPIRED
 
 if platform.system() == 'Windows':
     MONOSPACE_FONT = 'Lucida Console'

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 
 import sys
-from electrum import Network
-from electrum.util import json_encode, print_msg
-from electrum import qtum
+from qtum_electrum import Network
+from qtum_electrum.util import json_encode, print_msg
+from qtum_electrum import qtum
 
 try:
     addr = sys.argv[1]

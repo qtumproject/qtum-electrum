@@ -4,9 +4,9 @@
 """
 __author__ = 'CodeFace'
 """
-from electrum.i18n import _
-from electrum.util import block_explorer_URL, open_browser
-from electrum.plugins import run_hook
+from qtum_electrum.i18n import _
+from qtum_electrum.util import block_explorer_URL, open_browser
+from qtum_electrum.plugins import run_hook
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QAbstractItemView, QMenu, QTreeWidgetItem

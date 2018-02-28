@@ -142,7 +142,7 @@ def serialize_server(host, port, protocol):
 
 
 class Network(util.DaemonThread):
-    """The Network class manages a set of connections to remote electrum
+    """The Network class manages a set of connections to remote qtum_electrum
     servers, each connected socket is handled by an Interface() object.
     Connections are initiated by a Connection() thread which stops once
     the connection succeeds or fails.

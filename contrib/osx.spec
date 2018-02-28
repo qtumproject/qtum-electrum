@@ -64,10 +64,10 @@ exe = EXE(pyz,
           debug=False,
           strip=False,
           upx=True,
-          icon=electrum+'electrum.icns',
+          icon=electrum+'qtum_electrum.icns',
           console=False)
 
 app = BUNDLE(exe,
              name='Qtum Electrum.app',
-             icon=electrum+'electrum.icns',
+             icon=electrum+'qtum_electrum.icns',
              bundle_identifier=None)

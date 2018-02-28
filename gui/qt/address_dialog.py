@@ -22,7 +22,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from electrum.i18n import _
+from qtum_electrum.i18n import _
 from PyQt5.QtCore import *
 from .util import *
 from .history_list import HistoryList
