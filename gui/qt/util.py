@@ -229,6 +229,7 @@ class WaitingDialog(WindowModalDialog):
         if isinstance(parent, MessageBoxMixin):
             parent = parent.top_level_window()
         WindowModalDialog.__init__(self, parent, _("Please wait"))
+        self.setAttribute(Qt.WA_DeleteOnClose)  # see https://github.com/spesmilo/electrum/issues/3956
         vbox = QVBoxLayout(self)
         vbox.addWidget(QLabel(message))
         self.accepted.connect(self.on_accepted)
