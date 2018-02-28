@@ -37,20 +37,18 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
-from electrum.util import bh2u, bfh
 from electrum import keystore
 from electrum.qtum import COIN, is_address, TYPE_ADDRESS, TYPE_SCRIPT, TESTNET, is_hash160, eth_abi_encode
 from electrum.plugins import run_hook
 from electrum.i18n import _
-from electrum.util import format_time, format_satoshis, PrintError, format_satoshis_plain, NotEnoughFunds, UserCancelled
-from electrum.util import profiler
+from electrum.util import (bh2u, bfh, format_time, format_satoshis, PrintError, format_satoshis_plain,
+                           NotEnoughFunds, UserCancelled, profiler, export_meta, import_meta)
 from electrum import Transaction
 from electrum import util, bitcoin, commands, coinchooser
 from electrum import paymentrequest
 # from electrum.script import contract_script
 from electrum.wallet import Multisig_Wallet, AddTransactionException
-from electrum.paymentrequest import PR_PAID
-from electrum.transaction import opcodes, deserialize
+
 try:
     from electrum.plot import plot_history
 except:
@@ -483,8 +481,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         contacts_menu = wallet_menu.addMenu(_("Contacts"))
         contacts_menu.addAction(_("&New"), self.new_contact_dialog)
         contacts_menu.addAction(_("Import"), lambda: self.contact_list.import_contacts())
+        contacts_menu.addAction(_("Export"), lambda: self.contact_list.export_contacts())
         invoices_menu = wallet_menu.addMenu(_("Invoices"))
         invoices_menu.addAction(_("Import"), lambda: self.invoice_list.import_invoices())
+        invoices_menu.addAction(_("Export"), lambda: self.invoice_list.export_invoices())
         hist_menu = wallet_menu.addMenu(_("&History"))
         hist_menu.addAction("Plot", self.plot_history_dialog).setEnabled(plot_history is not None)
         hist_menu.addAction("Export", self.export_history_dialog)
@@ -2272,33 +2272,29 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                     transaction.writerow(["%34s"%addr,pk])
             else:
                 import json
-                f.write(json.dumps(pklist, indent = 4))
+                f.write(json.dumps(pklist, indent=4))
 
     def do_import_labels(self):
-        labelsFile = self.getOpenFileName(_("Open labels file"), "*.json")
-        if not labelsFile: return
-        try:
-            f = open(labelsFile, 'r')
-            data = f.read()
-            f.close()
-            for key, value in json.loads(data).items():
-                self.wallet.set_label(key, value)
-            self.show_message(_("Your labels were imported from") + " '%s'" % str(labelsFile))
-        except (IOError, os.error) as reason:
-            self.show_critical(_("Electrum was unable to import your labels.") + "\n" + str(reason))
-        self.address_list.update()
-        self.history_list.update()
+        def import_labels(path):
+            def _validate(data):
+                return data  # TODO
+
+            def import_labels_assign(data):
+                for key, value in data.items():
+                    self.wallet.set_label(key, value)
+
+            import_meta(path, _validate, import_labels_assign)
+
+        def on_import():
+            self.need_update.set()
+
+        import_meta_gui(self, _('labels'), import_labels, on_import)
 
     def do_export_labels(self):
-        labels = self.wallet.labels
-        try:
-            fileName = self.getSaveFileName(_("Select file to save your labels"), 'electrum_labels.json', "*.json")
-            if fileName:
-                with open(fileName, 'w+') as f:
-                    json.dump(labels, f, indent=4, sort_keys=True)
-                self.show_message(_("Your labels were exported to") + " '%s'" % str(fileName))
-        except (IOError, os.error) as reason:
-            self.show_critical(_("Electrum was unable to export your labels.") + "\n" + str(reason))
+        def export_labels(filename):
+            export_meta(self.wallet.labels, filename)
+
+        export_meta_gui(self, _('labels'), export_labels)
 
     def export_history_dialog(self):
         d = WindowModalDialog(self, _('Export History'))

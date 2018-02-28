@@ -23,17 +23,16 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import webbrowser
-import six
 
 from electrum.i18n import _
 from electrum.bitcoin import is_address
-from electrum.util import block_explorer_URL, format_satoshis, format_time, age
+from electrum.util import block_explorer_URL
 from electrum.plugins import run_hook
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import (
     QAbstractItemView, QFileDialog, QMenu, QTreeWidgetItem)
-from .util import MyTreeWidget
+from .util import MyTreeWidget, import_meta_gui, export_meta_gui
 
 
 class ContactList(MyTreeWidget):
@@ -54,12 +53,10 @@ class ContactList(MyTreeWidget):
         self.parent.set_contact(item.text(0), item.text(1))
 
     def import_contacts(self):
-        wallet_folder = self.parent.get_wallet_folder()
-        filename, __ = QFileDialog.getOpenFileName(self.parent, "Select your wallet file", wallet_folder)
-        if not filename:
-            return
-        self.parent.contacts.import_file(filename)
-        self.on_update()
+        import_meta_gui(self.parent, _('contacts'), self.parent.contacts.import_file, self.on_update)
+
+    def export_contacts(self):
+        export_meta_gui(self.parent, _('contacts'), self.parent.contacts.export_file)
 
     def create_menu(self, position):
         menu = QMenu()
@@ -67,6 +64,7 @@ class ContactList(MyTreeWidget):
         if not selected:
             menu.addAction(_("New contact"), lambda: self.parent.new_contact_dialog())
             menu.addAction(_("Import file"), lambda: self.import_contacts())
+            menu.addAction(_("Export file"), lambda: self.export_contacts())
         else:
             names = [item.text(0) for item in selected]
             keys = [item.text(1) for item in selected]

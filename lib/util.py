@@ -701,3 +701,30 @@ class QueuePipe:
     def send_all(self, requests):
         for request in requests:
             self.send(request)
+
+
+def versiontuple(v):
+    return tuple(map(int, (v.split("."))))
+
+
+def import_meta(path, validater, load_meta):
+    try:
+        with open(path, 'r') as f:
+            d = validater(json.loads(f.read()))
+        load_meta(d)
+    # backwards compatibility for JSONDecodeError
+    except ValueError:
+        traceback.print_exc(file=sys.stderr)
+        raise FileImportFailed(_("Invalid JSON code."))
+    except BaseException as e:
+        traceback.print_exc(file=sys.stdout)
+        raise FileImportFailed(e)
+
+
+def export_meta(meta, file_name):
+    try:
+        with open(file_name, 'w+') as f:
+            json.dump(meta, f, indent=4, sort_keys=True)
+    except (IOError, os.error) as e:
+        traceback.print_exc(file=sys.stderr)
+        raise FileExportFailed(e)
