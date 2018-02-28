@@ -378,7 +378,10 @@ def format_satoshis(x, is_diff=False, num_zeros = 0, decimal_point = 8, whitespa
         result = " " * (15 - len(result)) + result
     return result
 
+
 def timestamp_to_datetime(timestamp):
+    if timestamp is None:
+        return None
     try:
         return datetime.fromtimestamp(timestamp)
     except:
