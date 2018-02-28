@@ -22,11 +22,9 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import webbrowser
-
 from .util import *
 from electrum.i18n import _
-from electrum.util import block_explorer_URL, format_satoshis, format_time
+from electrum.util import block_explorer_URL, format_satoshis, format_time, open_browser
 from electrum.plugins import run_hook
 from electrum.bitcoin import is_address
 
@@ -152,7 +150,7 @@ class AddressList(MyTreeWidget):
                 menu.addAction(_("Remove from wallet"), lambda: self.parent.remove_address(addr))
             addr_URL = block_explorer_URL(self.config, 'addr', addr)
             if addr_URL:
-                menu.addAction(_("View on block explorer"), lambda: webbrowser.open(addr_URL))
+                menu.addAction(_("View on block explorer"), lambda: open_browser(addr_URL))
 
             if not self.wallet.is_frozen(addr):
                 menu.addAction(_("Freeze"), lambda: self.parent.set_frozen_state([addr], True))

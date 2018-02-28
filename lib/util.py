@@ -28,15 +28,14 @@ from datetime import datetime
 from decimal import Decimal
 import traceback
 import urllib
+import urllib.request, urllib.parse, urllib.error
+import queue
 import threading
 import hmac
 from struct import Struct
+import webbrowser
 
 from .i18n import _
-
-
-import urllib.request, urllib.parse, urllib.error
-import queue
 
 
 def inv_dict(d):
@@ -748,3 +747,13 @@ def export_meta(meta, file_name):
     except (IOError, os.error) as e:
         traceback.print_exc(file=sys.stderr)
         raise FileExportFailed(e)
+
+
+def open_browser(url, new=0, autoraise=True):
+    for name in webbrowser._tryorder:
+        if name == 'MacOSX':
+            continue
+        browser = webbrowser.get(name)
+        if browser.open(url, new, autoraise):
+            return True
+    return False

@@ -22,13 +22,10 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-import webbrowser
-
 from .util import *
 from electrum.i18n import _
 from electrum.util import block_explorer_URL, format_satoshis, format_time
-from electrum.util import timestamp_to_datetime, profiler
+from electrum.util import timestamp_to_datetime, profiler, open_browser
 from electrum.wallet import TX_HEIGHT_LOCAL
 
 
@@ -182,7 +179,7 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
         if pr_key:
             menu.addAction(QIcon(":icons/seal"), _("View invoice"), lambda: self.parent.show_invoice(pr_key))
         if tx_URL:
-            menu.addAction(_("View on block explorer"), lambda: webbrowser.open(tx_URL))
+            menu.addAction(_("View on block explorer"), lambda: open_browser(tx_URL))
         menu.exec_(self.viewport().mapToGlobal(position))
 
     def remove_local_tx(self, delete_tx):

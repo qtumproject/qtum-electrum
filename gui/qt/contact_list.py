@@ -22,11 +22,9 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import webbrowser
-
 from electrum.i18n import _
 from electrum.bitcoin import is_address
-from electrum.util import block_explorer_URL
+from electrum.util import block_explorer_URL, open_browser
 from electrum.plugins import run_hook
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -79,7 +77,7 @@ class ContactList(MyTreeWidget):
             menu.addAction(_("Delete"), lambda: self.parent.delete_contacts(keys))
             URLs = [block_explorer_URL(self.config, 'addr', key) for key in filter(is_address, keys)]
             if URLs:
-                menu.addAction(_("View on block explorer"), lambda: map(webbrowser.open, URLs))
+                menu.addAction(_("View on block explorer"), lambda: map(open_browser, URLs))
 
         run_hook('create_contact_menu', menu, selected)
         menu.exec_(self.viewport().mapToGlobal(position))

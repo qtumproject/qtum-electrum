@@ -26,7 +26,6 @@ import threading
 import os, json, traceback
 import shutil
 import weakref
-import webbrowser
 import csv
 from decimal import Decimal
 import base64
@@ -42,7 +41,7 @@ from electrum.qtum import COIN, is_address, TYPE_ADDRESS, TYPE_SCRIPT, TESTNET, 
 from electrum.plugins import run_hook
 from electrum.i18n import _
 from electrum.util import (bh2u, bfh, format_time, format_satoshis, PrintError, format_satoshis_plain,
-                           NotEnoughFunds, UserCancelled, profiler, export_meta, import_meta)
+                           NotEnoughFunds, UserCancelled, profiler, export_meta, import_meta, open_browser)
 from electrum import Transaction
 from electrum import util, bitcoin, commands, coinchooser
 from electrum import paymentrequest
@@ -527,9 +526,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         help_menu = menubar.addMenu(_("&Help"))
         help_menu.addAction(_("&About"), self.show_about)
         help_menu.addAction(_("&Official website"),
-                            lambda: webbrowser.open("https://github.com/qtumproject/qtum-electrum/"))
+                            lambda: open_browser("https://github.com/qtumproject/qtum-electrum/"))
         help_menu.addSeparator()
-        help_menu.addAction(_("&Documentation"), lambda: webbrowser.open("http://docs.electrum.org/")).setShortcut(QKeySequence.HelpContents)
+        help_menu.addAction(_("&Documentation"), lambda: open_browser("http://docs.electrum.org/")).setShortcut(
+            QKeySequence.HelpContents)
         help_menu.addAction(_("&Report Bug"), self.show_report_bug)
         help_menu.addSeparator()
         # help_menu.addAction(_("&Donate to server"), self.donate_to_server)
