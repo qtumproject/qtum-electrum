@@ -214,6 +214,7 @@ class Network(util.DaemonThread):
         self.interfaces = {}
         self.auto_connect = self.config.get('auto_connect', True)
         self.connecting = set()
+        self.requested_chunks = set()
         self.socket_queue = queue.Queue()
         self.start_network(deserialize_server(self.default_server)[2],
                            deserialize_proxy(self.config.get('proxy')))
@@ -753,11 +754,12 @@ class Network(util.DaemonThread):
                 else:
                     self.switch_to_interface(self.default_server)
 
-    def request_chunk(self, interface, idx):
-        interface.print_error("requesting chunk %d" % idx)
-        self.queue_request('blockchain.block.get_chunk', [idx], interface)
-        interface.request = idx
-        interface.req_time = time.time()
+    def request_chunk(self, interface, index):
+        if index in self.requested_chunks:
+            return
+        interface.print_error("requesting chunk %d" % index)
+        self.queue_request('blockchain.block.get_chunk', [index], interface)
+        self.requested_chunks.add(index)
 
     def on_get_chunk(self, interface, response):
         '''Handle receiving a chunk of block headers'''
@@ -767,10 +769,15 @@ class Network(util.DaemonThread):
         if result is None or params is None or error is not None:
             print_error('on get chunk error', error, result, params)
             return
-        # Ignore unsolicited chunks
+
         index = params[0]
-        if interface.request != index:
+        # Ignore unsolicited chunks
+        if index not in self.requested_chunks:
+            interface.print_error("received chunk %d (unsolicited)" % index)
             return
+        else:
+            interface.print_error("received chunk %d" % index)
+        self.requested_chunks.remove(index)
         connect = interface.blockchain.connect_chunk(index, result)
         # If not finished, get the next chunk
         if not connect:
