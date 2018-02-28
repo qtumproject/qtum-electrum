@@ -21,17 +21,8 @@ class GoBack(Exception):
     pass
 
 
-MSG_GENERATING_WAIT = _("Qtum Electrum is generating your addresses, please wait...")
-MSG_ENTER_ANYTHING = _("Please enter a seed phrase, a master key, a list of "
-                       "Qtum addresses, or a list of private keys")
-MSG_ENTER_SEED_OR_MPK = _("Please enter a seed phrase or a master key (xpub or xprv):")
-MSG_COSIGNER = _("Please enter the master public key of cosigner #%d:")
 MSG_ENTER_PASSWORD = _("Choose a password to encrypt your wallet keys.") + '\n'\
                      + _("Leave this field empty if you want to disable encryption.")
-MSG_RESTORE_PASSPHRASE = \
-    _("Please enter your seed derivation passphrase. "
-      "Note: this is NOT your encryption password. "
-      "Leave this field empty if you did not use one or are unsure.")
 MSG_HW_STORAGE_ENCRYPTION = _("Set wallet file encryption.") + '\n' \
                             + _("Your wallet file does not contain secrets, mostly just metadata. ") \
                             + _("It also contains your master public key that allows watching your addresses.") + '\n\n' \
@@ -488,7 +479,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
         self.accept_signal.emit()
 
     def waiting_dialog(self, task, msg):
-        self.please_wait.setText(MSG_GENERATING_WAIT)
+        self.please_wait.setText(msg)
         self.refresh_gui()
         t = threading.Thread(target = task)
         t.start()

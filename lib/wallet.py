@@ -67,7 +67,7 @@ TX_STATUS = [
     _('Low fee'),
     _('Unconfirmed'),
     _('Not Verified'),
-    _('Local only'),
+    _('Local'),
 ]
 
 TX_HEIGHT_LOCAL = -2
