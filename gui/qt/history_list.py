@@ -22,6 +22,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import datetime
 from .util import *
 from qtum_electrum.i18n import _
 from qtum_electrum.util import block_explorer_URL, format_satoshis, format_time
@@ -57,6 +58,12 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
         AcceptFileDragDrop.__init__(self, ".txn")
         self.refresh_headers()
         self.setColumnHidden(1, True)
+        self.start_timestamp = None
+        self.end_timestamp = None
+        self.years = []
+
+    def format_date(self, d):
+        return str(datetime.date(d.year, d.month, d.day)) if d else _('None')
 
     def refresh_headers(self):
         headers = ['', '', _('Date'), _('Description'), _('Amount'), _('Balance')]
@@ -69,10 +76,89 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
         '''Replaced in address_dialog.py'''
         return self.wallet.get_addresses()
 
+    def on_combo(self, x):
+        s = self.period_combo.itemText(x)
+        x = s == _('Custom')
+        self.start_button.setEnabled(x)
+        self.end_button.setEnabled(x)
+        if s == _('All'):
+            self.start_timestamp = None
+            self.end_timestamp = None
+            self.start_button.setText("-")
+            self.end_button.setText("-")
+        else:
+            try:
+                year = int(s)
+            except:
+                return
+            start_date = datetime.datetime(year, 1, 1)
+            end_date = datetime.datetime(year + 1, 1, 1)
+            self.start_timestamp = time.mktime(start_date.timetuple())
+            self.end_timestamp = time.mktime(end_date.timetuple())
+            self.start_button.setText(_('From') + ' ' + self.format_date(start_date))
+            self.end_button.setText(_('To') + ' ' + self.format_date(end_date))
+        self.update()
+
+    def create_toolbar_buttons(self):
+        self.period_combo = QComboBox()
+        self.start_button = QPushButton('-')
+        self.start_button.pressed.connect(self.select_start_date)
+        self.start_button.setEnabled(False)
+        self.end_button = QPushButton('-')
+        self.end_button.pressed.connect(self.select_end_date)
+        self.end_button.setEnabled(False)
+        self.period_combo.addItems([_('All'), _('Custom')])
+        self.period_combo.activated.connect(self.on_combo)
+        return self.period_combo, self.start_button, self.end_button
+
+    def on_hide_toolbar(self):
+        self.start_timestamp = None
+        self.end_timestamp = None
+        self.update()
+
+    def select_start_date(self):
+        self.start_timestamp = self.select_date(self.start_button)
+        self.update()
+
+    def select_end_date(self):
+        self.end_timestamp = self.select_date(self.end_button)
+        self.update()
+
+    def select_date(self, button):
+        d = WindowModalDialog(self, _("Select date"))
+        d.setMinimumSize(600, 150)
+        d.date = None
+        vbox = QVBoxLayout()
+
+        def on_date(date):
+            d.date = date
+
+        cal = QCalendarWidget()
+        cal.setGridVisible(True)
+        cal.clicked[QDate].connect(on_date)
+        vbox.addWidget(cal)
+        vbox.addLayout(Buttons(OkButton(d), CancelButton(d)))
+        d.setLayout(vbox)
+        if d.exec_():
+            if d.date is None:
+                return None
+            date = d.date.toPyDate()
+            button.setText(self.format_date(date))
+            return time.mktime(date.timetuple())
+
     @profiler
     def on_update(self):
         self.wallet = self.parent.wallet
-        h = self.wallet.get_history(self.get_domain())
+        h = self.wallet.get_history(self.get_domain(),
+                                    from_timestamp=self.start_timestamp,
+                                    to_timestamp=self.end_timestamp)
+        if not self.years and h:
+            from datetime import date
+            start_date = timestamp_to_datetime(h[0][3]).date() or date.today()
+            end_date = timestamp_to_datetime(h[-1][3]).date() or date.today()
+            self.years = [str(i) for i in range(start_date.year, end_date.year + 1)]
+            self.period_combo.insertItems(1, self.years)
+
         item = self.currentItem()
         current_tx = item.data(0, Qt.UserRole) if item else None
         self.clear()

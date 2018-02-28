@@ -474,19 +474,26 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         wallet_menu.addSeparator()
 
+        address_menu = wallet_menu.addMenu(_("&Addresses"))
+        address_menu.addAction(_("&Filter"), lambda: self.address_list.show_toolbar(True))
+
         labels_menu = wallet_menu.addMenu(_("&Labels"))
         labels_menu.addAction(_("&Import"), self.do_import_labels)
         labels_menu.addAction(_("&Export"), self.do_export_labels)
+
+        hist_menu = wallet_menu.addMenu(_("&History"))
+        hist_menu.addAction(_("&Filter"), lambda: self.history_list.show_toolbar(True))
+        hist_menu.addAction("Plot", self.plot_history_dialog).setEnabled(plot_history is not None)
+        hist_menu.addAction("Export", self.export_history_dialog)
+
         contacts_menu = wallet_menu.addMenu(_("Contacts"))
         contacts_menu.addAction(_("&New"), self.new_contact_dialog)
         contacts_menu.addAction(_("Import"), lambda: self.contact_list.import_contacts())
         contacts_menu.addAction(_("Export"), lambda: self.contact_list.export_contacts())
+
         invoices_menu = wallet_menu.addMenu(_("Invoices"))
         invoices_menu.addAction(_("Import"), lambda: self.invoice_list.import_invoices())
         invoices_menu.addAction(_("Export"), lambda: self.invoice_list.export_invoices())
-        hist_menu = wallet_menu.addMenu(_("&History"))
-        hist_menu.addAction("Plot", self.plot_history_dialog).setEnabled(plot_history is not None)
-        hist_menu.addAction("Export", self.export_history_dialog)
 
         wallet_menu.addSeparator()
         wallet_menu.addAction(_("Find"), self.toggle_search).setShortcut(QKeySequence("Ctrl+F"))
@@ -743,7 +750,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         from .history_list import HistoryList
         self.history_list = l = HistoryList(self)
         l.searchable_list = l
-        return l
+        return self.create_list_tab(l, l.create_toolbar())
 
     def show_address(self, addr):
         from . import address_dialog
@@ -1590,26 +1597,22 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.utxo_list.update()
         self.update_fee()
 
-    def create_list_tab(self, l, list_header=None):
+    def create_list_tab(self, l, toolbar=None):
         w = QWidget()
         w.searchable_list = l
         vbox = QVBoxLayout()
         w.setLayout(vbox)
         vbox.setContentsMargins(0, 0, 0, 0)
         vbox.setSpacing(0)
-        if list_header:
-            hbox = QHBoxLayout()
-            for b in list_header:
-                hbox.addWidget(b)
-            hbox.addStretch()
-            vbox.addLayout(hbox)
+        if toolbar:
+            vbox.addLayout(toolbar)
         vbox.addWidget(l)
         return w
 
     def create_addresses_tab(self):
         from .address_list import AddressList
         self.address_list = l = AddressList(self)
-        return self.create_list_tab(l, l.get_list_header())
+        return self.create_list_tab(l, l.create_toolbar(visible=True))
 
     def create_utxo_tab(self):
         from .utxo_list import UTXOList
@@ -1843,6 +1846,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.update_lock_icon()
 
     def toggle_search(self):
+        tab = self.tabs.currentWidget()
+        # if hasattr(tab, 'searchable_list'):
+        #    tab.searchable_list.toggle_toolbar()
+        # return
         self.search_box.setHidden(not self.search_box.isHidden())
         if not self.search_box.isHidden():
             self.search_box.setFocus(1)

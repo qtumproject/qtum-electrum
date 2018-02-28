@@ -33,11 +33,10 @@ import time
 import json
 import copy
 import errno
-from functools import partial
 from collections import defaultdict
 
 from .i18n import _
-from .util import NotEnoughFunds, PrintError, UserCancelled, profiler, format_satoshis
+from .util import NotEnoughFunds, PrintError, UserCancelled, profiler, format_satoshis, timestamp_to_datetime
 
 from .qtum import *
 from .version import *
@@ -51,7 +50,6 @@ from . import bitcoin
 from . import coinchooser
 from .synchronizer import Synchronizer
 from .verifier import SPV
-from .mnemonic import Mnemonic
 
 from . import paymentrequest
 from .paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED
@@ -906,7 +904,8 @@ class Abstract_Wallet(PrintError):
         # Store fees
         self.tx_fees.update(tx_fees)
 
-    def get_history(self, domain=None):
+    def get_history(self, domain=None, from_timestamp=None, to_timestamp=None):
+
         # get domain
         if domain is None:
             domain = self.get_addresses()
@@ -937,6 +936,10 @@ class Abstract_Wallet(PrintError):
         balance = c + u + x
         h2 = []
         for tx_hash, height, conf, timestamp, delta in history:
+            if from_timestamp and (timestamp or time.time()) < from_timestamp:
+                continue
+            if to_timestamp and (timestamp or time.time()) >= to_timestamp:
+                continue
             h2.append((tx_hash, height, conf, timestamp, delta, balance))
             if balance is None or delta is None:
                 balance = None
@@ -944,11 +947,11 @@ class Abstract_Wallet(PrintError):
                 balance -= delta
         h2.reverse()
 
-        # fixme: this may happen if history is incomplete
-        if balance not in [None, 0]:
-            self.print_error("Error: history not synchronized")
-            return []
-
+        if not from_timestamp and not to_timestamp:
+            # fixme: this may happen if history is incomplete
+            if balance not in [None, 0]:
+                self.print_error("Error: history not synchronized")
+                return []
         return h2
 
     def get_label(self, tx_hash):

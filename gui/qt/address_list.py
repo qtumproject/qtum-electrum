@@ -47,8 +47,13 @@ class AddressList(MyTreeWidget):
         for t in [_('All'), _('Unused'), _('Funded'), _('Used')]:
             self.used_button.addItem(t)
 
-    def get_list_header(self):
+    def create_toolbar_buttons(self):
         return QLabel(_("Filter:")), self.change_button, self.used_button
+
+    def on_hide_toolbar(self):
+        self.show_change = 0
+        self.show_used = 0
+        self.update()
 
     def refresh_headers(self):
         headers = [ _('Address'), _('Label'), _('Balance')]
