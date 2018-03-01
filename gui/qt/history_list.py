@@ -102,9 +102,11 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
     def create_toolbar_buttons(self):
         self.period_combo = QComboBox()
         self.start_button = QPushButton('-')
+        self.start_button.setStyleSheet("border:1px groove white;border-radius:3px;padding:1px 15px;")
         self.start_button.pressed.connect(self.select_start_date)
         self.start_button.setEnabled(False)
         self.end_button = QPushButton('-')
+        self.end_button.setStyleSheet("border:1px groove white;border-radius:3px;padding:1px 15px;")
         self.end_button.pressed.connect(self.select_end_date)
         self.end_button.setEnabled(False)
         self.period_combo.addItems([_('All'), _('Custom')])

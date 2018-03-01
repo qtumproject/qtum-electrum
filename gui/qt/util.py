@@ -379,6 +379,7 @@ class ElectrumItemDelegate(QStyledItemDelegate):
     def createEditor(self, parent, option, index):
         return self.parent().createEditor(parent, option, index)
 
+
 class MyTreeWidget(QTreeWidget):
 
     def __init__(self, parent, create_menu, headers, stretch_column=None,
@@ -389,6 +390,7 @@ class MyTreeWidget(QTreeWidget):
         self.stretch_column = stretch_column
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(create_menu)
+        # self.setFocusPolicy(Qt.NoFocus)
         self.setUniformRowHeights(True)
         # extend the syntax for consistency
         self.addChild = self.addTopLevelItem
@@ -521,14 +523,18 @@ class MyTreeWidget(QTreeWidget):
     def create_toolbar(self, visible=False):
         hbox = QHBoxLayout()
         buttons = self.create_toolbar_buttons()
+        hbox.addStretch(0)
         for b in buttons:
             b.setVisible(visible)
             hbox.addWidget(b)
+            hbox.addStretch(1)
+        hbox.addStretch(40)
         hide_button = QPushButton('x')
         hide_button.setVisible(visible)
+        hide_button.setStyleSheet("border:1px groove gray;border-radius:3px;padding:1px 15px;")
         hide_button.pressed.connect(lambda: self.show_toolbar(False))
         self.toolbar_buttons = buttons + (hide_button,)
-        hbox.addStretch()
+        # hbox.addStretch()
         hbox.addWidget(hide_button)
         return hbox
 

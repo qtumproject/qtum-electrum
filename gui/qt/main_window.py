@@ -1605,6 +1605,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         vbox.setContentsMargins(0, 0, 0, 0)
         vbox.setSpacing(0)
         if toolbar:
+            toolbar.setContentsMargins(1, 0, 1, 6)
             vbox.addLayout(toolbar)
         vbox.addWidget(l)
         return w
