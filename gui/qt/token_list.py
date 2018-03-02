@@ -21,11 +21,31 @@ class TokenBalanceList(MyTreeWidget):
     def on_update(self):
         pass
 
-    def create_menu(self, position):
-        pass
-
     def on_doubleclick(self, item, column):
         pass
+
+    def create_menu(self, position):
+        menu = QMenu()
+        selected = self.selectedItems()
+        multi_select = len(selected) > 1
+        if not selected:
+            menu.addAction(_("Add Token"), lambda: self.parent.token_add_dialog())
+        elif not multi_select:
+            item = selected[0]
+            name = item.text(0)
+            address = item.text(1)
+            column = self.currentColumn()
+            column_title = self.headerItem().text(column)
+            column_data = '\n'.join([item.text(column) for item in selected])
+            # menu.addAction(_("Copy %s") % column_title, lambda: self.parent.app.clipboard().setText(column_data))
+            # menu.addAction(_("Edit"), lambda: self.parent.contract_edit_dialog(address))
+            # menu.addAction(_("Send"), lambda: self.parent.contract_func_dialog(address))
+            # menu.addAction(_("Delete"), lambda: self.parent.delete_samart_contact(address))
+            # URL = block_explorer_URL(self.config, 'contract', address)
+            # if URL:
+            #     menu.addAction(_("View on block explorer"), lambda: open_browser(URL))
+        run_hook('create_token_menu', menu, selected)
+        menu.exec_(self.viewport().mapToGlobal(position))
 
 
 class TokenHistoryList(MyTreeWidget):

@@ -60,7 +60,7 @@ from .transaction_dialog import show_transaction
 from .fee_slider import FeeSlider
 from .util import *
 
-
+from .token_dialog import TokenEditDialog
 # from .smart_contract_dialog import ContractCreateDialog, ContractFuncDialog, ContractEditDialog
 
 
@@ -105,6 +105,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.invoices = wallet.invoices
         self.contacts = wallet.contacts
         self.smart_contracts = wallet.smart_contracts
+        self.tokens = wallet.tokens
         self.tray = gui_object.tray
         self.app = gui_object.app
         self.cleaned_up = False
@@ -141,7 +142,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         tabs.addTab(self.send_tab, QIcon(":icons/tab_send.png"), _('Send'))
         tabs.addTab(self.receive_tab, QIcon(":icons/tab_receive.png"), _('Receive'))
         tabs.addTab(self.tokens_tab, QIcon(":icons/tab_contacts.png"), _('Tokens'))
-
         # tabs.addTab(self.contacts_tab, QIcon(":icons/tab_contacts.png"), _('Contacts'))
 
         def add_optional_tab(tabs, tab, icon, description, name):
@@ -462,7 +462,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         file_menu.addSeparator()
         file_menu.addAction(_("&Quit"), self.close)
 
-
         wallet_menu = menubar.addMenu(_("&Wallet"))
         wallet_menu.addAction(_("&Information"), self.show_master_public_keys)
         wallet_menu.addSeparator()
@@ -713,16 +712,16 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 icon = QIcon(":icons/status_lagging.png")
             else:
                 c, u, x = self.wallet.get_balance()
-                text =  _("Balance" ) + ": %s "%(self.format_amount_and_units(c))
+                text = _("Balance") + ": %s " % (self.format_amount_and_units(c))
                 if u:
-                    text +=  " [%s unconfirmed]"%(self.format_amount(u, True).strip())
+                    text += " [%s unconfirmed]" % (self.format_amount(u, True).strip())
                 if x:
-                    text +=  " [%s unmatured]"%(self.format_amount(x, True).strip())
+                    text += " [%s unmatured]" % (self.format_amount(x, True).strip())
 
                 # append fiat balance and price
                 if self.fx.is_enabled():
                     text += self.fx.get_fiat_status_text(c + u + x,
-                        self.base_unit(), self.get_decimal_point()) or ''
+                                                         self.base_unit(), self.get_decimal_point()) or ''
                 if not self.network.proxy:
                     icon = QIcon(":icons/status_connected.png")
                 else:
@@ -735,7 +734,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.balance_label.setText(text)
         self.status_button.setIcon( icon )
 
-
     def update_wallet(self):
         self.update_status()
         if self.wallet.up_to_date or not self.network or not self.network.is_connected():
@@ -747,7 +745,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.address_list.update()
         self.utxo_list.update()
         self.contact_list.update()
-        # todo
+        self.token_balance_list.update()
         # self.smart_contract_list.update()
         self.invoice_list.update()
         self.update_completions()
@@ -861,7 +859,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         return w
 
-
     def delete_payment_request(self, addr):
         self.wallet.remove_payment_request(addr, self.config)
         self.request_list.update()
@@ -881,7 +878,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             sig = bitcoin.base_encode(sig, base=58)
             URI += "&name=" + req['name'] + "&sig="+sig
         return str(URI)
-
 
     def sign_payment_request(self, addr):
         alias = self.config.get('alias')
@@ -926,7 +922,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         finally:
             self.request_list.update()
             self.address_list.update()
-
 
     def view_and_paste(self, title, msg, data):
         dialog = WindowModalDialog(self, title)
@@ -1252,7 +1247,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 b = False
             self.rbf_checkbox.setVisible(b)
             self.rbf_checkbox.setChecked(b)
-
 
     def from_list_delete(self, item):
         i = self.from_list.indexOfTopLevelItem(item)
@@ -1581,7 +1575,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.amount_e.setAmount(amount)
             self.amount_e.textEdited.emit("")
 
-
     def do_clear(self):
         self.is_max = False
         self.not_enough_funds = False
@@ -1759,18 +1752,20 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         console.history = self.config.get("console-history",[])
         console.history_index = len(console.history)
 
-        console.updateNamespace({'wallet' : self.wallet,
-                                 'network' : self.network,
-                                 'plugins' : self.gui_object.plugins,
+        console.updateNamespace({'wallet': self.wallet,
+                                 'network': self.network,
+                                 'plugins': self.gui_object.plugins,
                                  'window': self})
-        console.updateNamespace({'util' : util, 'bitcoin':bitcoin})
+        console.updateNamespace({'util': util, 'bitcoin': bitcoin})
 
         c = commands.Commands(self.config, self.wallet, self.network, lambda: self.console.set_json(True))
         methods = {}
+
         def mkfunc(f, method):
             return lambda *args: f(method, args, self.password_dialog)
+
         for m in dir(c):
-            if m[0]=='_' or m in ['network','wallet']: continue
+            if m[0] == '_' or m in ['network', 'wallet']: continue
             methods[m] = mkfunc(c._run, m)
 
         console.updateNamespace(methods)
@@ -2832,7 +2827,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         for widgets, name in tabs_info:
             tab = QWidget()
             grid = QGridLayout(tab)
-            grid.setColumnStretch(0,1)
+            grid.setColumnStretch(0, 1)
             for a,b in widgets:
                 i = grid.rowCount()
                 if b:
@@ -2859,7 +2854,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         run_hook('close_settings_dialog')
         if self.need_restart:
             self.show_warning(_('Please restart Electrum to activate the new GUI settings'), title=_('Success'))
-
 
     def closeEvent(self, event):
         # It seems in some rare cases this closeEvent() is called twice
@@ -3065,6 +3059,29 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         tbl.searchable_list = tbl
         return self.create_list_tab(tbl, tbl.create_toolbar(visible=False))
 
+    def set_token(self, contract_addr, bind_addr, name, symbol, decimals, balance):
+        key = '{}_{}'.format(contract_addr, bind_addr)
+        self.tokens[key] = (name, symbol, decimals, balance)
+        self.token_balance_list.update()
+
+    def delete_token(self, key):
+        if not self.question(_("Remove {} from your list of tokens?".format(
+                self.tokens[key][0]))):
+            return False
+        self.tokens.pop(key)
+        self.token_balance_list.update()
+
+    def token_add_dialog(self):
+        d = TokenEditDialog(self, None)
+        d.show()
+
+    def token_edit_dialog(self, token):
+        d = TokenEditDialog(self, token)
+        d.show()
+
+    def token_send_dialog(self):
+        pass
+
     def set_smart_contract(self, name, address, interface, _type):
         """
         :param name: str
@@ -3079,9 +3096,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             return False
         self.smart_contracts[address] = (name, _type, interface)
         self.smart_contract_list.update()
-        self.history_list.update()
-        self.update_completions()
-        self.smart_contracts.save()
         return True
 
     def delete_samart_contact(self, address):
@@ -3089,10 +3103,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 self.smart_contracts[address][0]))):
             return False
         self.smart_contracts.pop(address)
-        self.history_list.update()
         self.smart_contract_list.update()
-        self.update_completions()
-        self.smart_contracts.save()
         return True
 
     # def call_smart_contract(self, address, abi, args, sender, dialog):

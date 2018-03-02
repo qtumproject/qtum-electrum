@@ -68,6 +68,7 @@ def get_derivation_used_for_hw_device_encryption():
 # storage encryption version
 STO_EV_PLAINTEXT, STO_EV_USER_PW, STO_EV_XPUB_PW = range(0, 3)
 
+
 class WalletStorage(PrintError):
 
     def __init__(self, path):
