@@ -520,6 +520,9 @@ class MyTreeWidget(QTreeWidget):
             item.setHidden(all([item.text(column).lower().find(p) == -1
                                 for column in columns]))
 
+    def create_toolbar_buttons(self):
+        return ()
+
     def create_toolbar(self, visible=False):
         hbox = QHBoxLayout()
         buttons = self.create_toolbar_buttons()

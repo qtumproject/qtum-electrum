@@ -14,7 +14,7 @@ from .util import MyTreeWidget
 
 
 class SmartContractList(MyTreeWidget):
-    filter_columns = [0, 1]  # Key, Value
+    filter_columns = [0, 1]
 
     def __init__(self, parent):
         MyTreeWidget.__init__(self, parent, self.create_menu, [_('Name'), _('Address'), _('Type')], 1, [0])

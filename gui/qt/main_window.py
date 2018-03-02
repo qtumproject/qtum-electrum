@@ -41,7 +41,7 @@ from qtum_electrum.qtum import COIN, is_address, TYPE_ADDRESS, TYPE_SCRIPT, TEST
 from qtum_electrum.plugins import run_hook
 from qtum_electrum.i18n import _
 from qtum_electrum.util import (bh2u, bfh, format_time, format_satoshis, PrintError, format_satoshis_plain,
-                           NotEnoughFunds, UserCancelled, profiler, export_meta, import_meta, open_browser)
+                                NotEnoughFunds, UserCancelled, profiler, export_meta, import_meta, open_browser)
 from qtum_electrum import Transaction
 from qtum_electrum import util, bitcoin, commands, coinchooser
 from qtum_electrum import paymentrequest
@@ -141,7 +141,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         tabs.addTab(self.send_tab, QIcon(":icons/tab_send.png"), _('Send'))
         tabs.addTab(self.receive_tab, QIcon(":icons/tab_receive.png"), _('Receive'))
         tabs.addTab(self.tokens_tab, QIcon(":icons/tab_contacts.png"), _('Tokens'))
-        tabs.addTab(self.contacts_tab, QIcon(":icons/tab_contacts.png"), _('Contacts'))
+
+        # tabs.addTab(self.contacts_tab, QIcon(":icons/tab_contacts.png"), _('Contacts'))
 
         def add_optional_tab(tabs, tab, icon, description, name):
             tab.tab_icon = icon
@@ -154,6 +155,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         add_optional_tab(tabs, self.addresses_tab, QIcon(":icons/tab_addresses.png"), _("&Addresses"), "addresses")
         add_optional_tab(tabs, self.utxo_tab, QIcon(":icons/tab_coins.png"), _("Co&ins"), "utxo")
         add_optional_tab(tabs, self.console_tab, QIcon(":icons/tab_console.png"), _("Con&sole"), "console")
+        add_optional_tab(tabs, self.contacts_tab, QIcon(":icons/tab_contracts.png"), _("Con&tacts"), "contacts")
         # add_optional_tab(tabs, self.smart_contract_tab, QIcon(":icons/tab_console.png"), _('Smart Contract'),
         #                  'contract')
 
@@ -509,6 +511,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         add_toggle_action(view_menu, self.addresses_tab)
         add_toggle_action(view_menu, self.utxo_tab)
         add_toggle_action(view_menu, self.console_tab)
+        add_toggle_action(view_menu, self.contacts_tab)
         # add_toggle_action(view_menu, self.smart_contract_tab)
 
         tools_menu = menubar.addMenu(_("&Tools"))
@@ -3051,14 +3054,16 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.show_message(_("Transaction saved successfully"))
             return True
 
-    def create_tokens_tab(self):
-        from .token_list import TokenHistoryList, TokenBalanceList
-        self.token_balance_list = tbl = TokenBalanceList(self)
-        self.token_history_list = thl = TokenHistoryList(self)
-        tbl.searchable_list = tbl
-        thl.searchable_list = thl
+    def create_addresses_tab(self):
+        from .address_list import AddressList
+        self.address_list = l = AddressList(self)
+        return self.create_list_tab(l, l.create_toolbar(visible=True))
 
-        return None
+    def create_tokens_tab(self):
+        from .token_list import TokenBalanceList
+        self.token_balance_list = tbl = TokenBalanceList(self)
+        tbl.searchable_list = tbl
+        return self.create_list_tab(tbl, tbl.create_toolbar(visible=False))
 
     def set_smart_contract(self, name, address, interface, _type):
         """
