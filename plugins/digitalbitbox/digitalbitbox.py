@@ -4,14 +4,15 @@
 #
 
 try:
-    import electrum
-    from electrum.bitcoin import TYPE_ADDRESS, push_script, var_int, msg_magic, Hash, verify_message, \
+    import qtum_electrum
+    from qtum_electrum.bitcoin import TYPE_ADDRESS, push_script, var_int, msg_magic, Hash, verify_message, \
         pubkey_from_signature, point_to_ser, public_key_to_p2pkh, EncodeAES, DecodeAES, MyVerifyingKey
-    from electrum.transaction import Transaction
-    from electrum.i18n import _
-    from electrum.keystore import Hardware_KeyStore
+    from qtum_electrum.transaction import Transaction
+    from qtum_electrum.i18n import _
+    from qtum_electrum.keystore import Hardware_KeyStore
     from ..hw_wallet import HW_PluginBase
-    from electrum.util import print_error
+    from qtum_electrum.util import print_error
+    from qtum_electrum.base_wizard import ScriptTypeNotSupported, HWD_SETUP_NEW_WALLET
 
     import time
     import hid
@@ -642,13 +643,13 @@ class DigitalBitboxPlugin(HW_PluginBase):
         else:
             return None
 
-
-    def setup_device(self, device_info, wizard):
+    def setup_device(self, device_info, wizard, purpose):
         devmgr = self.device_manager()
         device_id = device_info.device.id_
         client = devmgr.client_by_id(device_id)
         client.handler = self.create_handler(wizard)
-        client.setupRunning = True
+        if purpose == HWD_SETUP_NEW_WALLET:
+            client.setupRunning = True
         client.get_xpub("m/44'/88'", 'standard')
 
     def is_mobile_paired(self):

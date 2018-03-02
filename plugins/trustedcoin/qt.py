@@ -31,12 +31,12 @@ from decimal import Decimal
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 
-from electrum_gui.qt.util import *
-from electrum_gui.qt.qrcodewidget import QRCodeWidget
-from electrum_gui.qt.amountedit import AmountEdit
-from electrum_gui.qt.main_window import StatusBarButton
-from electrum.i18n import _
-from electrum.plugins import hook
+from qtum_electrum_gui.qt.util import *
+from qtum_electrum_gui.qt.qrcodewidget import QRCodeWidget
+from qtum_electrum_gui.qt.amountedit import AmountEdit
+from qtum_electrum_gui.qt.main_window import StatusBarButton
+from qtum_electrum.i18n import _
+from qtum_electrum.plugins import hook
 from .trustedcoin import TrustedCoinPlugin, server
 
 
@@ -135,8 +135,9 @@ class Plugin(TrustedCoinPlugin):
 
         logo = QLabel()
         logo.setPixmap(QPixmap(":icons/trustedcoin-status.png"))
-        msg = _('This wallet is protected by TrustedCoin\'s two-factor authentication.') + '<br/>'\
-              + _("For more information, visit") + " <a href=\"https://api.trustedcoin.com/#/electrum-help\">https://api.trustedcoin.com/#/electrum-help</a>"
+        msg = _('This wallet is protected by TrustedCoin\'s two-factor authentication.') + '<br/>' \
+              + _(
+            "For more information, visit") + " <a href=\"https://api.trustedcoin.com/#/qtum_electrum-help\">https://api.trustedcoin.com/#/qtum_electrum-help</a>"
         label = QLabel(msg)
         label.setOpenExternalLinks(1)
 

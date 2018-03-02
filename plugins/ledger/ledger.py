@@ -3,15 +3,15 @@ import hashlib
 import sys
 import traceback
 
-from electrum import qtum
-from electrum import bitcoin
-from electrum.bitcoin import TYPE_ADDRESS, int_to_hex, var_int
-from electrum.i18n import _
-from electrum.plugins import BasePlugin
-from electrum.keystore import Hardware_KeyStore
-from electrum.transaction import Transaction
+from qtum_electrum import qtum
+from qtum_electrum import bitcoin
+from qtum_electrum.bitcoin import TYPE_ADDRESS, int_to_hex, var_int
+from qtum_electrum.i18n import _
+from qtum_electrum.plugins import BasePlugin
+from qtum_electrum.keystore import Hardware_KeyStore
+from qtum_electrum.transaction import Transaction
 from ..hw_wallet import HW_PluginBase
-from electrum.util import print_error, bfh, bh2u
+from qtum_electrum.util import print_error, bfh, bh2u
 
 try:
     import hid
@@ -22,7 +22,7 @@ try:
     from btchip.bitcoinTransaction import bitcoinTransaction
     from btchip.btchipFirmwareWizard import checkFirmware, updateFirmware
     from btchip.btchipException import BTChipException
-    from electrum.util import is_verbose
+    from qtum_electrum.util import is_verbose
     BTCHIP = True
     BTCHIP_DEBUG = is_verbose
 except ImportError:
@@ -187,6 +187,10 @@ class Ledger_Client():
                 raise Exception("Dongle is temporarily locked - please unplug it and replug it again")
             if ((e.sw & 0xFFF0) == 0x63c0):
                 raise Exception("Invalid PIN - please unplug the dongle and plug it again before retrying")
+            if e.sw == 0x6f00 and e.message == 'Invalid channel':
+                # based on docs 0x6f00 might be a more general error, hence we also compare message to be sure
+                raise Exception("Invalid channel.\n"
+                                "Please make sure that 'Browser support' is disabled on your device.")
             print('perform_hw1_preflight ex2', e)
             raise e
 
@@ -483,6 +487,28 @@ class Ledger_KeyStore(Hardware_KeyStore):
         tx.raw = tx.serialize()
         self.signing = False
 
+    def show_address(self, sequence, txin_type):
+        self.signing = True
+        client = self.get_client()
+        address_path = self.get_derivation()[2:] + "/%d/%d" % sequence
+        self.handler.show_message(_("Showing address ..."))
+        segwit = Transaction.is_segwit_inputtype(txin_type)
+        segwitNative = txin_type == 'p2wpkh'
+        try:
+            client.getWalletPublicKey(address_path, showOnScreen=True, segwit=segwit, segwitNative=segwitNative)
+        except BTChipException as e:
+            if e.sw == 0x6985:  # cancelled by user
+                pass
+            else:
+                traceback.print_exc(file=sys.stderr)
+                self.handler.show_error(e)
+        except BaseException as e:
+            traceback.print_exc(file=sys.stderr)
+            self.handler.show_error(e)
+        finally:
+            self.handler.finished()
+        self.signing = False
+
 
 class LedgerPlugin(HW_PluginBase):
     libraries_available = BTCHIP
@@ -530,7 +556,7 @@ class LedgerPlugin(HW_PluginBase):
             client = Ledger_Client(client)
         return client
 
-    def setup_device(self, device_info, wizard):
+    def setup_device(self, device_info, wizard, purpose):
         devmgr = self.device_manager()
         device_id = device_info.device.id_
         client = devmgr.client_by_id(device_id)
@@ -558,3 +584,8 @@ class LedgerPlugin(HW_PluginBase):
         if client is not None:
             client.checkDevice()
         return client
+
+    def show_address(self, wallet, address):
+        sequence = wallet.get_address_index(address)
+        txin_type = wallet.get_txin_type(address)
+        wallet.get_keystore().show_address(sequence, txin_type)

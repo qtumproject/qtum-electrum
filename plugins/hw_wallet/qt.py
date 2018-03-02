@@ -27,11 +27,11 @@
 import threading
 
 from PyQt5.Qt import QVBoxLayout, QLabel
-from electrum_gui.qt.password_dialog import PasswordDialog, PW_PASSPHRASE
-from electrum_gui.qt.util import *
+from qtum_electrum_gui.qt.password_dialog import PasswordDialog, PW_PASSPHRASE
+from qtum_electrum_gui.qt.util import *
 
-from electrum.i18n import _
-from electrum.util import PrintError
+from qtum_electrum.i18n import _
+from qtum_electrum.util import PrintError
 
 # The trickiest thing about this handler was getting windows properly
 # parented on MacOSX.
@@ -70,9 +70,10 @@ class QtHandlerBase(QObject, PrintError):
         self.status_signal.emit(paired)
 
     def _update_status(self, paired):
-        button = self.button
-        icon = button.icon_paired if paired else button.icon_unpaired
-        button.setIcon(QIcon(icon))
+        if hasattr(self, 'button'):
+            button = self.button
+            icon = button.icon_paired if paired else button.icon_unpaired
+            button.setIcon(QIcon(icon))
 
     def query_choice(self, msg, labels):
         self.done.clear()
@@ -170,10 +171,9 @@ class QtHandlerBase(QObject, PrintError):
         self.done.set()
 
 
-
-from electrum.plugins import hook
-from electrum.util import UserCancelled
-from electrum_gui.qt.main_window import StatusBarButton
+from qtum_electrum.plugins import hook
+from qtum_electrum.util import UserCancelled
+from qtum_electrum_gui.qt.main_window import StatusBarButton
 
 class QtPluginBase(object):
 

@@ -4,6 +4,7 @@
 build/
 dist/
 *.egg/
+.eggs/
 /electrum.py
 contrib/pyinstaller/
 Electrum.egg-info/

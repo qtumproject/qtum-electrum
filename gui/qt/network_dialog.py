@@ -28,9 +28,10 @@ from PyQt5.QtCore import *
 import PyQt5.QtCore as QtCore
 from PyQt5.QtWidgets import *
 
-from electrum.i18n import _
-from electrum.network import DEFAULT_PORTS
-from electrum.util import print_error
+from qtum_electrum.i18n import _
+from qtum_electrum.network import DEFAULT_PORTS
+from qtum_electrum.util import print_error
+from qtum_electrum.network import serialize_server, deserialize_server
 
 from .util import *
 
@@ -143,7 +144,7 @@ class ServerListWidget(QTreeWidget):
         menu.exec_(self.viewport().mapToGlobal(position))
 
     def set_server(self, s):
-        host, port, protocol = s.split(':')
+        host, port, protocol = deserialize_server(s)
         self.parent.server_host.setText(host)
         self.parent.server_port.setText(port)
         self.parent.set_server()
@@ -168,7 +169,7 @@ class ServerListWidget(QTreeWidget):
             port = d.get(protocol)
             if port:
                 x = QTreeWidgetItem([_host, port])
-                server = _host+':'+port+':'+protocol
+                server = serialize_server(_host, port, protocol)
                 x.setData(1, Qt.UserRole, server)
                 self.addTopLevelItem(x)
 
@@ -413,7 +414,7 @@ class NetworkChoiceLayout(object):
     def follow_server(self, server):
         self.network.switch_to_interface(server)
         host, port, protocol, proxy, auto_connect = self.network.get_parameters()
-        host, port, protocol = server.split(':')
+        host, port, protocol = deserialize_server(server)
         self.network.set_parameters(host, port, protocol, proxy, auto_connect)
         self.update()
 
@@ -447,7 +448,6 @@ class NetworkChoiceLayout(object):
         host, port, protocol, proxy, auto_connect = self.network.get_parameters()
         host = str(self.server_host.text())
         port = str(self.server_port.text())
-        protocol = 's' if self.ssl_cb.isChecked() else 't'
         auto_connect = self.autoconnect_cb.isChecked()
         self.network.set_parameters(host, port, protocol, proxy, auto_connect)
 

@@ -6,10 +6,13 @@ from six.moves import queue
 from collections import namedtuple
 from functools import partial
 
-from electrum.i18n import _
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
+
+from qtum_electrum.i18n import _
+from qtum_electrum.util import FileImportFailed, FileExportFailed
+from qtum_electrum.paymentrequest import PR_UNPAID, PR_PAID, PR_UNKNOWN, PR_EXPIRED
 
 if platform.system() == 'Windows':
     MONOSPACE_FONT = 'Lucida Console'
@@ -25,8 +28,6 @@ BLUE_FG = "QWidget {color:blue;}"
 BLACK_FG = "QWidget {color:black;}"
 
 dialogs = []
-
-from electrum.paymentrequest import PR_UNPAID, PR_PAID, PR_UNKNOWN, PR_EXPIRED
 
 pr_icons = {
     PR_UNPAID:":icons/unpaid.png",
@@ -205,7 +206,11 @@ class MessageBoxMixin(object):
     def msg_box(self, icon, parent, title, text, buttons=QMessageBox.Ok,
                 defaultButton=QMessageBox.NoButton):
         parent = parent or self.top_level_window()
-        d = QMessageBox(icon, title, str(text), buttons, parent)
+        if type(icon) is QPixmap:
+            d = QMessageBox(QMessageBox.Information, title, str(text), buttons, parent)
+            d.setIconPixmap(icon)
+        else:
+            d = QMessageBox(icon, title, str(text), buttons, parent)
         d.setWindowModality(Qt.WindowModal)
         d.setDefaultButton(defaultButton)
         return d.exec_()
@@ -233,6 +238,7 @@ class WaitingDialog(WindowModalDialog):
         self.accepted.connect(self.on_accepted)
         self.show()
         self.thread = TaskThread(self)
+        self.thread.finished.connect(self.deleteLater)  # see https://github.com/spesmilo/electrum/issues/3956
         self.thread.add(task, on_success, self.accept, on_error)
 
     def wait(self):
@@ -244,7 +250,7 @@ class WaitingDialog(WindowModalDialog):
 
 def line_dialog(parent, title, label, ok_label, default=None):
     dialog = WindowModalDialog(parent, title)
-    dialog.setMinimumWidth(500)
+    dialog.setMinimumWidth(600)
     l = QVBoxLayout()
     dialog.setLayout(l)
     l.addWidget(QLabel(label))
@@ -373,6 +379,7 @@ class ElectrumItemDelegate(QStyledItemDelegate):
     def createEditor(self, parent, option, index):
         return self.parent().createEditor(parent, option, index)
 
+
 class MyTreeWidget(QTreeWidget):
 
     def __init__(self, parent, create_menu, headers, stretch_column=None,
@@ -383,6 +390,7 @@ class MyTreeWidget(QTreeWidget):
         self.stretch_column = stretch_column
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(create_menu)
+        # self.setFocusPolicy(Qt.NoFocus)
         self.setUniformRowHeights(True)
         # extend the syntax for consistency
         self.addChild = self.addTopLevelItem
@@ -392,7 +400,9 @@ class MyTreeWidget(QTreeWidget):
         self.editor = None
         self.pending_update = False
         if editable_columns is None:
-            editable_columns = [stretch_column]
+            editable_columns = {stretch_column}
+        else:
+            editable_columns = set(editable_columns)
         self.editable_columns = editable_columns
         self.setItemDelegate(ElectrumItemDelegate(self))
         self.itemDoubleClicked.connect(self.on_doubleclick)
@@ -481,8 +491,12 @@ class MyTreeWidget(QTreeWidget):
             self.pending_update = True
         else:
             self.setUpdatesEnabled(False)
+            scroll_pos = self.verticalScrollBar().value()
             self.on_update()
             self.setUpdatesEnabled(True)
+            # To paint the list before resetting the scroll position
+            self.parent.app.processEvents()
+            self.verticalScrollBar().setValue(scroll_pos)
         if self.current_filter:
             self.filter(self.current_filter)
 
@@ -505,6 +519,33 @@ class MyTreeWidget(QTreeWidget):
         for item in self.get_leaves(self.invisibleRootItem()):
             item.setHidden(all([item.text(column).lower().find(p) == -1
                                 for column in columns]))
+
+    def create_toolbar(self, visible=False):
+        hbox = QHBoxLayout()
+        buttons = self.create_toolbar_buttons()
+        hbox.addStretch(0)
+        for b in buttons:
+            b.setVisible(visible)
+            hbox.addWidget(b)
+            hbox.addStretch(1)
+        hbox.addStretch(40)
+        hide_button = QPushButton('x')
+        hide_button.setVisible(visible)
+        hide_button.setStyleSheet("border:1px groove gray;border-radius:3px;padding:1px 15px;")
+        hide_button.pressed.connect(lambda: self.show_toolbar(False))
+        self.toolbar_buttons = buttons + (hide_button,)
+        # hbox.addStretch()
+        hbox.addWidget(hide_button)
+        return hbox
+
+    def on_hide_toolbar(self):
+        pass
+
+    def show_toolbar(self, x):
+        for b in self.toolbar_buttons:
+            b.setVisible(x)
+        if not x:
+            self.on_hide_toolbar()
 
 
 class ButtonsWidget(QWidget):
@@ -593,16 +634,78 @@ class TaskThread(QThread):
             except BaseException:
                 self.doneSig.emit(sys.exc_info(), task.cb_done, task.cb_error)
 
-    def on_done(self, result, cb_done, cb):
+    def on_done(self, result, cb_done, cb_result):
         # This runs in the parent's thread.
         if cb_done:
             cb_done()
-        if cb:
-            cb(result)
+        if cb_result:
+            cb_result(result)
 
     def stop(self):
         self.tasks.put(None)
 
+
+class AcceptFileDragDrop:
+
+    def __init__(self, file_type=""):
+        assert isinstance(self, QWidget)
+        self.setAcceptDrops(True)
+        self.file_type = file_type
+
+    def validateEvent(self, event):
+        if not event.mimeData().hasUrls():
+            event.ignore()
+            return False
+        for url in event.mimeData().urls():
+            if not url.toLocalFile().endswith(self.file_type):
+                event.ignore()
+                return False
+        event.accept()
+        return True
+
+    def dragEnterEvent(self, event):
+        self.validateEvent(event)
+
+    def dragMoveEvent(self, event):
+        if self.validateEvent(event):
+            event.setDropAction(Qt.CopyAction)
+
+    def dropEvent(self, event):
+        if self.validateEvent(event):
+            for url in event.mimeData().urls():
+                self.onFileAdded(url.toLocalFile())
+
+    def onFileAdded(self, fn):
+        raise NotImplementedError()
+
+
+def import_meta_gui(electrum_window, title, importer, on_success):
+    filter_ = "JSON (*.json);;All files (*)"
+    filename = electrum_window.getOpenFileName(_("Open {} file").format(title), filter_)
+    if not filename:
+        return
+    try:
+        importer(filename)
+    except FileImportFailed as e:
+        electrum_window.show_critical(str(e))
+    else:
+        electrum_window.show_message(_("Your {} were successfully imported").format(title))
+        on_success()
+
+
+def export_meta_gui(electrum_window, title, exporter):
+    filter_ = "JSON (*.json);;All files (*)"
+    filename = electrum_window.getSaveFileName(_("Select file to save your {}").format(title),
+                                               'electrum_{}.json'.format(title), filter_)
+    if not filename:
+        return
+    try:
+        exporter(filename)
+    except FileExportFailed as e:
+        electrum_window.show_critical(str(e))
+    else:
+        electrum_window.show_message(_("Your {0} were exported to '{1}'")
+                                     .format(title, str(filename)))
 
 if __name__ == "__main__":
     app = QApplication([])

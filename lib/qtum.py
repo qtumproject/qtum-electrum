@@ -103,19 +103,19 @@ def set_testnet():
 
 
 mainnet_block_explorers = {
+    'qtum.info': ('https://qtum.info',
+                  {'tx': 'tx', 'addr': 'address', 'contract': 'contract'}),
     'explorer.qtum.org': ('https://explorer.qtum.org',
                           {'tx': 'tx', 'addr': 'address', 'contract': 'contract'}),
     'qtumexplorer.io': ('https://qtumexplorer.io/',
                         {'tx': 'tx', 'addr': 'address', 'contract': 'contract'}),
-    'system default': ('blockchain:',
-                       {'tx': 'tx', 'addr': 'address', 'contract': 'contract'}),
 }
 
 testnet_block_explorers = {
+    'qtum.info': ('https://testnet.qtum.info',
+                  {'tx': 'tx', 'addr': 'address', 'contract': 'contract'}),
     'testnet.qtum.org': ('https://testnet.qtum.org/',
                          {'tx': 'tx', 'addr': 'address', 'contract': 'contract'}),
-    'system default': ('blockchain:',
-                       {'tx': 'tx', 'addr': 'address', 'contract': 'contract'}),
 }
 
 
@@ -563,25 +563,40 @@ SCRIPT_TYPES = {
 }
 
 
-def serialize_privkey(secret, compressed, txin_type):
-    prefix = bytes([(SCRIPT_TYPES[txin_type] + WIF_PREFIX) & 255])
+def serialize_privkey(secret, compressed, txin_type, internal_use=False):
+    if internal_use:
+        prefix = bytes([(SCRIPT_TYPES[txin_type] + WIF_PREFIX) & 255])
+    else:
+        prefix = bytes([WIF_PREFIX])
     suffix = b'\01' if compressed else b''
     vchIn = prefix + secret + suffix
-    return EncodeBase58Check(vchIn)
+    base58_wif = EncodeBase58Check(vchIn)
+    if internal_use:
+        return base58_wif
+    return '{}:{}'.format(txin_type, base58_wif)
 
 
 def deserialize_privkey(key):
-    # whether the pubkey is compressed should be visible from the keystore
-    vch = DecodeBase58Check(key)
     if is_minikey(key):
         return 'p2pkh', minikey_to_private_key(key), True
-    elif vch:
-        txin_type = inv_dict(SCRIPT_TYPES)[vch[0] - WIF_PREFIX]
-        assert len(vch) in [33, 34]
-        compressed = len(vch) == 34
-        return txin_type, vch[1:33], compressed
-    else:
+
+    txin_type = None
+    if ':' in key:
+        txin_type, key = key.split(sep=':', maxsplit=1)
+        assert txin_type in SCRIPT_TYPES
+    vch = DecodeBase58Check(key)
+    if not vch:
         raise BaseException("cannot deserialize", key)
+
+    if txin_type is None:
+        # keys exported in version 3.0.x encoded script type in first byte
+        txin_type = inv_dict(SCRIPT_TYPES)[vch[0] - WIF_PREFIX]
+    else:
+        assert vch[0] == WIF_PREFIX
+
+    assert len(vch) in [33, 34]
+    compressed = len(vch) == 34
+    return txin_type, vch[1:33], compressed
 
 
 def regenerate_key(pk):
@@ -718,8 +733,8 @@ def verify_message(address, sig, message):
         return False
 
 
-def encrypt_message(message, pubkey):
-    return EC_KEY.encrypt_message(message, bfh(pubkey))
+def encrypt_message(message, pubkey, magic=b'BIE1'):
+    return EC_KEY.encrypt_message(message, bfh(pubkey), magic)
 
 
 def chunks(l, n):
@@ -864,7 +879,7 @@ class EC_KEY(object):
     # ECIES encryption/decryption methods; AES-128-CBC with PKCS7 is used as the cipher; hmac-sha256 is used as the mac
 
     @classmethod
-    def encrypt_message(self, message, pubkey):
+    def encrypt_message(self, message, pubkey, magic=b'BIE1'):
         assert_bytes(message)
 
         pk = ser_to_point(pubkey)
@@ -878,20 +893,20 @@ class EC_KEY(object):
         iv, key_e, key_m = key[0:16], key[16:32], key[32:]
         ciphertext = aes_encrypt_with_iv(key_e, iv, message)
         ephemeral_pubkey = bfh(ephemeral.get_public_key(compressed=True))
-        encrypted = b'BIE1' + ephemeral_pubkey + ciphertext
+        encrypted = magic + ephemeral_pubkey + ciphertext
         mac = hmac.new(key_m, encrypted, hashlib.sha256).digest()
 
         return base64.b64encode(encrypted + mac)
 
-    def decrypt_message(self, encrypted):
+    def decrypt_message(self, encrypted, magic=b'BIE1'):
         encrypted = base64.b64decode(encrypted)
         if len(encrypted) < 85:
             raise Exception('invalid ciphertext: length')
-        magic = encrypted[:4]
+        magic_found = encrypted[:4]
         ephemeral_pubkey = encrypted[4:37]
         ciphertext = encrypted[37:-32]
         mac = encrypted[-32:]
-        if magic != b'BIE1':
+        if magic_found != magic:
             raise Exception('invalid ciphertext: invalid magic bytes')
         try:
             ephemeral_pubkey = ser_to_point(ephemeral_pubkey)

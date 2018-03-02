@@ -28,15 +28,14 @@ from datetime import datetime
 from decimal import Decimal
 import traceback
 import urllib
+import urllib.request, urllib.parse, urllib.error
+import queue
 import threading
 import hmac
 from struct import Struct
+import webbrowser
 
 from .i18n import _
-
-
-import urllib.request, urllib.parse, urllib.error
-import queue
 
 
 def inv_dict(d):
@@ -54,17 +53,53 @@ unpack_uint64_from = Struct('<Q').unpack_from
 def normalize_version(v):
     return [int(x) for x in re.sub(r'(\.0+)*$','', v).split(".")]
 
+
 class NotEnoughFunds(Exception): pass
+
 
 class InvalidPassword(Exception):
     def __str__(self):
         return _("Incorrect password")
+
+
+class FileImportFailed(Exception):
+    def __init__(self, message=''):
+        self.message = str(message)
+
+    def __str__(self):
+        return _("Failed to import from file.") + "\n" + self.message
+
+
+class FileExportFailed(Exception):
+    def __init__(self, message=''):
+        self.message = str(message)
+
+    def __str__(self):
+        return _("Failed to export to file.") + "\n" + self.message
 
 # Throw this exception to unwind the stack like when an error occurs.
 # However unlike other exceptions the user won't be informed.
 class UserCancelled(Exception):
     '''An exception that is suppressed from the user'''
     pass
+
+
+class Fiat(object):
+    def __new__(cls, value, ccy):
+        self = super(Fiat, cls).__new__(cls)
+        self.ccy = ccy
+        self.value = value
+        return self
+
+    def __repr__(self):
+        return 'Fiat(%s)' % self.__str__()
+
+    def __str__(self):
+        if self.value.is_nan():
+            return _('No Data')
+        else:
+            return "{:.2f}".format(self.value) + ' ' + self.ccy
+
 
 class MyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -233,7 +268,7 @@ def android_data_dir():
     return PythonActivity.mActivity.getFilesDir().getPath() + '/data'
 
 def android_headers_dir():
-    d = android_ext_dir() + '/org.qtum.electrum'
+    d = android_ext_dir() + '/org.qtum.qtum_electrum'
     if not os.path.exists(d):
         os.mkdir(d)
     return d
@@ -242,7 +277,7 @@ def android_check_data_dir():
     """ if needed, move old directory to sandbox """
     ext_dir = android_ext_dir()
     data_dir = android_data_dir()
-    old_electrum_dir = ext_dir + '/electrum'
+    old_electrum_dir = ext_dir + '/qtum_electrum'
     if not os.path.exists(data_dir) and os.path.exists(old_electrum_dir):
         import shutil
         new_headers_path = android_headers_dir() + '/blockchain_headers'
@@ -360,7 +395,10 @@ def format_satoshis(x, is_diff=False, num_zeros = 0, decimal_point = 8, whitespa
         result = " " * (15 - len(result)) + result
     return result
 
+
 def timestamp_to_datetime(timestamp):
+    if timestamp is None:
+        return None
     try:
         return datetime.fromtimestamp(timestamp)
     except:
@@ -434,8 +472,7 @@ def block_explorer_info():
 
 
 def block_explorer(config):
-    bbb = config.get('block_explorer', 'explorer.qtum.org')
-    print_error('[block_explorer]', bbb)
+    bbb = config.get('block_explorer', 'qtum.info')
     return bbb
 
 def block_explorer_tuple(config):
@@ -685,25 +722,38 @@ class QueuePipe:
             self.send(request)
 
 
-def check_www_dir(rdir):
-    import urllib, shutil, os
-    if not os.path.exists(rdir):
-        os.mkdir(rdir)
-    index = os.path.join(rdir, 'index.html')
-    if not os.path.exists(index):
-        print_error("copying index.html")
-        src = os.path.join(os.path.dirname(__file__), 'www', 'index.html')
-        shutil.copy(src, index)
-    files = [
-        "https://code.jquery.com/jquery-1.9.1.min.js",
-        "https://raw.githubusercontent.com/davidshimjs/qrcodejs/master/qrcode.js",
-        "https://code.jquery.com/ui/1.10.3/jquery-ui.js",
-        "https://code.jquery.com/ui/1.10.3/themes/smoothness/jquery-ui.css"
-    ]
-    for URL in files:
-        path = urllib.parse.urlsplit(URL).path
-        filename = os.path.basename(path)
-        path = os.path.join(rdir, filename)
-        if not os.path.exists(path):
-            print_error("downloading ", URL)
-            urllib.request.urlretrieve(URL, path)
+def versiontuple(v):
+    return tuple(map(int, (v.split("."))))
+
+
+def import_meta(path, validater, load_meta):
+    try:
+        with open(path, 'r') as f:
+            d = validater(json.loads(f.read()))
+        load_meta(d)
+    # backwards compatibility for JSONDecodeError
+    except ValueError:
+        traceback.print_exc(file=sys.stderr)
+        raise FileImportFailed(_("Invalid JSON code."))
+    except BaseException as e:
+        traceback.print_exc(file=sys.stdout)
+        raise FileImportFailed(e)
+
+
+def export_meta(meta, file_name):
+    try:
+        with open(file_name, 'w+') as f:
+            json.dump(meta, f, indent=4, sort_keys=True)
+    except (IOError, os.error) as e:
+        traceback.print_exc(file=sys.stderr)
+        raise FileExportFailed(e)
+
+
+def open_browser(url, new=0, autoraise=True):
+    for name in webbrowser._tryorder:
+        if name == 'MacOSX':
+            continue
+        browser = webbrowser.get(name)
+        if browser.open(url, new, autoraise):
+            return True
+    return False

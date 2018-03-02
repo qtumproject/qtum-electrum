@@ -9,7 +9,7 @@ from .util import user_dir, print_error, print_msg, print_stderr, PrintError
 
 from .bitcoin import MAX_FEE_RATE, FEE_TARGETS
 
-SYSTEM_CONFIG_PATH = "/etc/qtum-electrum.conf"
+SYSTEM_CONFIG_PATH = "/etc/qtum_electrum.conf"
 
 config = None
 
@@ -90,7 +90,7 @@ class SimpleConfig(PrintError):
                 raise BaseException('Dangling link: ' + path)
             os.mkdir(path)
 
-        self.print_error("electrum directory", path)
+        self.print_error("qtum_electrum directory", path)
         return path
 
     def fixup_config_keys(self, config, keypairs):
@@ -165,7 +165,7 @@ class SimpleConfig(PrintError):
         new_path = os.path.join(self.path, "wallets", "default_wallet")
 
         # default path in pre 1.9 versions
-        old_path = os.path.join(self.path, "electrum.dat")
+        old_path = os.path.join(self.path, "qtum_electrum.dat")
         if os.path.exists(old_path) and not os.path.exists(new_path):
             os.rename(old_path, new_path)
 

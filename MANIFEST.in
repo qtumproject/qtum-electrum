@@ -1,9 +1,9 @@
 include LICENCE RELEASE-NOTES AUTHORS
 include README.rst
 include qtum-electrum.conf.sample
-include electrum.desktop
+include qtum-electrum.desktop
 include *.py
-include electrum
+include qtum-electrum
 recursive-include lib *.py
 recursive-include gui *.py
 recursive-include plugins *.py

@@ -35,7 +35,7 @@ from functools import wraps
 from decimal import Decimal
 
 from .import util
-from .util import bfh, bh2u, format_satoshis
+from .util import bfh, bh2u, format_satoshis, json_decode, print_error
 from .import bitcoin
 from .bitcoin import is_address,  hash_160, COIN, TYPE_ADDRESS
 from .transaction import Transaction, multisig_script
@@ -84,8 +84,8 @@ def command(s):
             wallet = args[0].wallet
             password = kwargs.get('password')
             if c.requires_wallet and wallet is None:
-                raise BaseException("wallet not loaded. Use 'electrum daemon load_wallet'")
-            if c.requires_password and password is None and wallet.storage.get('use_encryption'):
+                raise BaseException("wallet not loaded. Use 'qtum_electrum daemon load_wallet'")
+            if c.requires_password and password is None and wallet.has_password():
                 return {'error': 'Password required'}
             return func(*args, **kwargs)
         return func_wrapper
@@ -153,10 +153,8 @@ class Commands:
     @command('')
     def setconfig(self, key, value):
         """Set a configuration variable. 'value' may be a string or a Python expression."""
-        try:
-            value = ast.literal_eval(value)
-        except:
-            pass
+        if key not in ('rpcuser', 'rpcpassword'):
+            value = json_decode(value)
         self.config.set_key(key, value)
         return True
 
@@ -179,7 +177,8 @@ class Commands:
         """Return the transaction history of any address. Note: This is a
         walletless server query, results are not checked by SPV.
         """
-        return self.network.synchronous_get(('blockchain.address.get_history', [address]))
+        sh = bitcoin.address_to_scripthash(address)
+        return self.network.synchronous_get(('blockchain.scripthash.get_history', [sh]))
 
     @command('w')
     def listunspent(self):
@@ -196,7 +195,8 @@ class Commands:
         """Returns the UTXO list of any address. Note: This
         is a walletless server query, results are not checked by SPV.
         """
-        return self.network.synchronous_get(('blockchain.address.listunspent', [address]))
+        sh = bitcoin.address_to_scripthash(address)
+        return self.network.synchronous_get(('blockchain.scripthash.listunspent', [sh]))
 
     @command('')
     def serialize(self, jsontx):
@@ -290,7 +290,7 @@ class Commands:
     @command('')
     def dumpprivkeys(self):
         """Deprecated."""
-        return "This command is deprecated. Use a pipe instead: 'electrum listaddresses | electrum getprivatekeys - '"
+        return "This command is deprecated. Use a pipe instead: 'qtum_electrum listaddresses | qtum_electrum getprivatekeys - '"
 
     @command('')
     def validateaddress(self, address):
@@ -318,18 +318,10 @@ class Commands:
         """Return the balance of any address. Note: This is a walletless
         server query, results are not checked by SPV.
         """
-        out = self.network.synchronous_get(('blockchain.address.get_balance', [address]))
+        sh = bitcoin.address_to_scripthash(address)
+        out = self.network.synchronous_get(('blockchain.scripthash.get_balance', [sh]))
         out["confirmed"] =  str(Decimal(out["confirmed"])/COIN)
         out["unconfirmed"] =  str(Decimal(out["unconfirmed"])/COIN)
-        return out
-
-    @command('n')
-    def getproof(self, address):
-        """Get Merkle branch of an address in the UTXO set"""
-        p = self.network.synchronous_get(('blockchain.address.get_proof', [address]))
-        out = []
-        for i,s in p:
-            out.append(i)
         return out
 
     @command('n')
@@ -345,7 +337,7 @@ class Commands:
 
     @command('')
     def version(self):
-        """Return the version of electrum."""
+        """Return the version of qtum_electrum."""
         from .version import ELECTRUM_VERSION
         return ELECTRUM_VERSION
 
@@ -635,6 +627,15 @@ class Commands:
         out = self.wallet.get_payment_request(addr, self.config)
         return self._format_request(out)
 
+    @command('w')
+    def addtransaction(self, tx):
+        """ Add a transaction to the wallet history """
+        tx = Transaction(tx)
+        if not self.wallet.add_transaction(tx.txid(), tx):
+            return False
+        self.wallet.save_transactions()
+        return tx.txid()
+
     @command('wp')
     def signrequest(self, address, password=None):
         "Sign payment request with an OpenAlias"
@@ -662,13 +663,16 @@ class Commands:
             import urllib.request
             headers = {'content-type':'application/json'}
             data = {'address':address, 'status':x.get('result')}
+            serialized_data = util.to_bytes(json.dumps(data))
             try:
-                req = urllib.request.Request(URL, json.dumps(data), headers)
+                req = urllib.request.Request(URL, serialized_data, headers)
                 response_stream = urllib.request.urlopen(req, timeout=5)
                 util.print_error('Got Response for %s' % address)
             except BaseException as e:
                 util.print_error(str(e))
-        self.network.send([('blockchain.address.subscribe', [address])], callback)
+
+        h = self.network.addr_to_scripthash(address)
+        self.network.send([('blockchain.scripthash.subscribe', [h])], callback)
         return True
 
     @command('wn')
@@ -759,10 +763,10 @@ config_variables = {
         'requests_dir': 'directory where a bip70 file will be written.',
         'ssl_privkey': 'Path to your SSL private key, needed to sign the request.',
         'ssl_chain': 'Chain of SSL certificates, needed for signed requests. Put your certificate at the top and the root CA at the end',
-        'url_rewrite': 'Parameters passed to str.replace(), in order to create the r= part of bitcoin: URIs. Example: \"(\'file:///var/www/\',\'https://electrum.org/\')\"',
+        'url_rewrite': 'Parameters passed to str.replace(), in order to create the r= part of bitcoin: URIs. Example: \"(\'file:///var/www/\',\'https://qtum_electrum.org/\')\"',
     },
     'listrequests':{
-        'url_rewrite': 'Parameters passed to str.replace(), in order to create the r= part of bitcoin: URIs. Example: \"(\'file:///var/www/\',\'https://electrum.org/\')\"',
+        'url_rewrite': 'Parameters passed to str.replace(), in order to create the r= part of bitcoin: URIs. Example: \"(\'file:///var/www/\',\'https://qtum_electrum.org/\')\"',
     }
 }
 
@@ -826,7 +830,7 @@ def add_network_options(parser):
 def add_global_options(parser):
     group = parser.add_argument_group('global options')
     group.add_argument("-v", "--verbose", action="store_true", dest="verbose", default=False, help="Show debugging information")
-    group.add_argument("-D", "--dir", dest="electrum_path", help="electrum directory")
+    group.add_argument("-D", "--dir", dest="electrum_path", help="qtum_electrum directory")
     group.add_argument("-P", "--portable", action="store_true", dest="portable", default=False, help="Use local 'electrum_data' directory")
     group.add_argument("-w", "--wallet", dest="wallet_path", help="wallet path")
     group.add_argument("--testnet", action="store_true", dest="testnet", default=False, help="Use Testnet")
@@ -834,7 +838,7 @@ def add_global_options(parser):
 def get_parser():
     # create main parser
     parser = argparse.ArgumentParser(
-        epilog="Run 'electrum help <command>' to see the help for a command")
+        epilog="Run 'qtum_electrum help <command>' to see the help for a command")
     add_global_options(parser)
     subparsers = parser.add_subparsers(dest='cmd', metavar='<command>')
     # gui

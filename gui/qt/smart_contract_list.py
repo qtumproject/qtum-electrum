@@ -4,10 +4,9 @@
 """
 __author__ = 'CodeFace'
 """
-import webbrowser
-from electrum.i18n import _
-from electrum.util import block_explorer_URL, format_satoshis, format_time, age
-from electrum.plugins import run_hook
+from qtum_electrum.i18n import _
+from qtum_electrum.util import block_explorer_URL, open_browser
+from qtum_electrum.plugins import run_hook
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QAbstractItemView, QMenu, QTreeWidgetItem
@@ -46,7 +45,7 @@ class SmartContractList(MyTreeWidget):
             menu.addAction(_("Delete"), lambda: self.parent.delete_samart_contact(address))
             URL = block_explorer_URL(self.config, 'contract', address)
             if URL:
-                menu.addAction(_("View on block explorer"), lambda: webbrowser.open(URL))
+                menu.addAction(_("View on block explorer"), lambda: open_browser(URL))
         run_hook('create_smart_contract_menu', menu, selected)
         menu.exec_(self.viewport().mapToGlobal(position))
 

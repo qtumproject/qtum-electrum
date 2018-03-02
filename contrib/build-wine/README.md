@@ -32,9 +32,10 @@ wine-2.0.3 (Ubuntu 2.0.3-0ubuntu1~16.04~ricotz0)
 
  - dirmngr
  - gpg
+ - 7z
 
 ```
-sudo apt-get install dirmngr gnupg2
+sudo apt-get install dirmngr gnupg2 p7zip-full
 ```
 or
 

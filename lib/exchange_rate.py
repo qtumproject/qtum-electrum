@@ -4,8 +4,8 @@ import requests
 import sys
 from threading import Thread
 import time
-import traceback
 import csv
+import decimal
 from decimal import Decimal
 
 from .bitcoin import COIN
@@ -379,6 +379,10 @@ class FxThread(ThreadJob):
     def ccy_amount_str(self, amount, commas):
         prec = CCY_PRECISIONS.get(self.ccy, 2)
         fmt_str = "{:%s.%df}" % ("," if commas else "", max(0, prec))
+        try:
+            rounded_amount = round(amount, prec)
+        except decimal.InvalidOperation:
+            rounded_amount = amount
         return fmt_str.format(round(amount, prec))
 
     def run(self):

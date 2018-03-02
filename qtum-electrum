@@ -25,7 +25,6 @@
 # SOFTWARE.
 import os
 import sys
-# from https://gist.github.com/tito/09c42fb4767721dc323d
 import threading
 
 # import importlib
@@ -82,27 +81,27 @@ def check_imports():
 if not is_android:
     check_imports()
 
-# load local module as electrum
+# load local module as qtum_electrum
 if is_local or is_android:
     import imp
 
-    imp.load_module('electrum', *imp.find_module('lib'))
-    imp.load_module('electrum_gui', *imp.find_module('gui'))
-    imp.load_module('electrum_plugins', *imp.find_module('plugins'))
-# sys.modules['electrum'] = importlib.import_module('lib')
-# sys.modules['electrum_gui'] = importlib.import_module('gui')
-# sys.modules['electrum_plugins'] = importlib.import_module('plugins')
+    imp.load_module('qtum_electrum', *imp.find_module('lib'))
+    imp.load_module('qtum_electrum_gui', *imp.find_module('gui'))
+    imp.load_module('qtum_electrum_plugins', *imp.find_module('plugins'))
+# sys.modules['qtum_electrum'] = importlib.import_module('lib')
+# sys.modules['qtum_electrum_gui'] = importlib.import_module('gui')
+# sys.modules['qtum_electrum_plugins'] = importlib.import_module('plugins')
 
-from electrum import qtum
-from electrum import SimpleConfig, Network
-from electrum.wallet import Wallet, Imported_Wallet
-from electrum.storage import WalletStorage
-from electrum.util import print_msg, print_stderr, json_encode, json_decode
-from electrum.util import set_verbosity, InvalidPassword, check_www_dir
-from electrum.commands import get_parser, known_commands, Commands, config_variables
-from electrum import daemon
-from electrum import keystore
-from electrum.mnemonic import Mnemonic
+from qtum_electrum import qtum
+from qtum_electrum import SimpleConfig, Network
+from qtum_electrum.wallet import Wallet, Imported_Wallet
+from qtum_electrum.storage import WalletStorage, get_derivation_used_for_hw_device_encryption
+from qtum_electrum.util import print_msg, print_stderr, json_encode, json_decode
+from qtum_electrum.util import set_verbosity, InvalidPassword
+from qtum_electrum.commands import get_parser, known_commands, Commands, config_variables
+from qtum_electrum import daemon
+from qtum_electrum import keystore
+from qtum_electrum.mnemonic import Mnemonic
 
 
 # get password routine
@@ -165,6 +164,8 @@ def run_non_RPC(config):
             print_msg("Recovering wallet...")
             wallet.synchronize()
             wallet.wait_until_synchronized()
+            wallet.stop_threads()
+            # note: we don't wait for SPV
             msg = "Recovery successful" if wallet.is_found() else "Found no history for this wallet"
         else:
             msg = "This wallet was restored offline. It may contain more addresses than displayed."
@@ -196,9 +197,12 @@ def init_daemon(config_options):
     storage = WalletStorage(config.get_wallet_path())
     if not storage.file_exists():
         print_msg("Error: Wallet file not found.")
-        print_msg("Type 'electrum create' to create a new wallet, or provide a path to a wallet with the -w option")
+        print_msg(
+            "Type 'qtum_electrum create' to create a new wallet, or provide a path to a wallet with the -w option")
         sys.exit(0)
     if storage.is_encrypted():
+        if storage.is_encrypted_with_hw_device():
+            raise NotImplementedError("CLI functionality of encrypted hw wallets")
         if config.get('password'):
             password = config.get('password')
         else:
@@ -229,7 +233,8 @@ def init_cmdline(config_options, server):
 
     if cmd.requires_wallet and not storage.file_exists():
         print_msg("Error: Wallet file not found.")
-        print_msg("Type 'electrum create' to create a new wallet, or provide a path to a wallet with the -w option")
+        print_msg(
+            "Type 'qtum_electrum create' to create a new wallet, or provide a path to a wallet with the -w option")
         sys.exit(0)
 
     # important warning
@@ -241,6 +246,9 @@ def init_cmdline(config_options, server):
     # commands needing password
     if (cmd.requires_wallet and storage.is_encrypted() and server is None)\
        or (cmd.requires_password and (storage.get('use_encryption') or storage.is_encrypted())):
+        if storage.is_encrypted_with_hw_device():
+            # this case is handled later in the control flow
+            password = None
         if config.get('password'):
             password = config.get('password')
         else:
@@ -260,19 +268,57 @@ def init_cmdline(config_options, server):
     return cmd, password
 
 
-def run_offline_command(config, config_options):
+def get_connected_hw_devices(plugins):
+    support = plugins.get_hardware_support()
+    if not support:
+        print_msg('No hardware wallet support found on your system.')
+        sys.exit(1)
+    # scan devices
+    devices = []
+    devmgr = plugins.device_manager
+    for name, description, plugin in support:
+        try:
+            u = devmgr.unpaired_device_infos(None, plugin)
+        except:
+            devmgr.print_error("error", name)
+            continue
+        devices += list(map(lambda x: (name, x), u))
+    return devices
+
+
+def get_password_for_hw_device_encrypted_storage(plugins):
+    devices = get_connected_hw_devices(plugins)
+    if len(devices) == 0:
+        print_msg("Error: No connected hw device found. Can not decrypt this wallet.")
+        sys.exit(1)
+    elif len(devices) > 1:
+        print_msg("Warning: multiple hardware devices detected. "
+                  "The first one will be used to decrypt the wallet.")
+    # FIXME we use the "first" device, in case of multiple ones
+    name, device_info = devices[0]
+    plugin = plugins.get_plugin(name)
+    derivation = get_derivation_used_for_hw_device_encryption()
+    xpub = plugin.get_xpub(device_info.device.id_, derivation, 'standard', plugin.handler)
+    password = keystore.Xpub.get_pubkey_from_xpub(xpub, ())
+    return password
+
+
+def run_offline_command(config, config_options, plugins):
     cmdname = config.get('cmd')
     cmd = known_commands[cmdname]
     password = config_options.get('password')
     if cmd.requires_wallet:
         storage = WalletStorage(config.get_wallet_path())
         if storage.is_encrypted():
+            if storage.is_encrypted_with_hw_device():
+                password = get_password_for_hw_device_encrypted_storage(plugins)
+                config_options['password'] = password
             storage.decrypt(password)
         wallet = Wallet(storage)
     else:
         wallet = None
     # check password
-    if cmd.requires_password and storage.get('use_encryption'):
+    if cmd.requires_password and wallet.has_password():
         try:
             seed = wallet.check_password(password)
         except InvalidPassword:
@@ -283,7 +329,8 @@ def run_offline_command(config, config_options):
     # arguments passed to function
     args = [config.get(x) for x in cmd.params]
     # decode json arguments
-    args = list(map(json_decode, args))
+    if cmdname not in ('setconfig',):
+        args = list(map(json_decode, args))
 
     # options
     kwargs = {}
@@ -299,7 +346,7 @@ def run_offline_command(config, config_options):
 
 
 def init_plugins(config, gui_name):
-    from electrum.plugins import Plugins
+    from qtum_electrum.plugins import Plugins
     return Plugins(config, is_local or is_android, gui_name)
 
 
@@ -407,10 +454,14 @@ def run():
                 d = daemon.Daemon(config, fd, False)
                 d.start()
                 if config.get('websocket_server'):
-                    from electrum import websockets
+                    from qtum_electrum import websockets
                     websockets.WebSocketServer(config, d.network).start()
                 if config.get('requests_dir'):
-                    check_www_dir(config.get('requests_dir'))
+                    path = os.path.join(config.get('requests_dir'), 'index.html')
+                    if not os.path.exists(path):
+                        print("Requests directory not configured.")
+                        print("You can configure it using https://github.com/spesmilo/electrum-merchant")
+                        sys.exit(1)
                 d.join()
                 sys.exit(0)
             else:
@@ -431,11 +482,11 @@ def run():
         else:
             cmd = known_commands[cmdname]
             if cmd.requires_network:
-                print_msg("Daemon not running; try 'electrum daemon start'")
+                print_msg("Daemon not running; try 'qtum-electrum daemon start'")
                 sys.exit(1)
             else:
-                init_plugins(config, 'cmdline')
-                result = run_offline_command(config, config_options)
+                plugins = init_plugins(config, 'cmdline')
+                result = run_offline_command(config, config_options, plugins)
     if isinstance(result, str):
         print_msg(result)
     elif type(result) is dict and result.get('error'):

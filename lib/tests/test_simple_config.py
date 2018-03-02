@@ -18,7 +18,7 @@ class Test_SimpleConfig(unittest.TestCase):
         # make sure "read_user_config" and "user_dir" return a temporary directory.
         self.electrum_dir = tempfile.mkdtemp()
         # Do the same for the user dir to avoid overwriting the real configuration
-        # for development machines with electrum installed :)
+        # for development machines with qtum_electrum installed :)
         self.user_dir = tempfile.mkdtemp()
 
         self.options = {"electrum_path": self.electrum_dir}
@@ -80,7 +80,7 @@ class Test_SimpleConfig(unittest.TestCase):
         self.assertEqual("b", config.get("electrum_path"))
 
     def test_simple_config_system_config_ignored_if_portable(self):
-        """If electrum is started with the "portable" flag, system
+        """If qtum-electrum is started with the "portable" flag, system
         configuration is completely ignored."""
         fake_read_system = lambda : {"some_key": "some_value"}
         fake_read_user = lambda _: {}
@@ -184,14 +184,14 @@ everything = 42
 
     def setUp(self):
         super(TestSystemConfig, self).setUp()
-        self.thefile = tempfile.mkstemp(suffix=".electrum.test.conf")[1]
+        self.thefile = tempfile.mkstemp(suffix=".qtum-electrum.test.conf")[1]
 
     def tearDown(self):
         super(TestSystemConfig, self).tearDown()
         os.remove(self.thefile)
 
     def test_read_system_config_file_does_not_exist(self):
-        somefile = "/foo/I/do/not/exist/electrum.conf"
+        somefile = "/foo/I/do/not/exist/qtum-electrum.conf"
         result = read_system_config(somefile)
         self.assertEqual({}, result)
 

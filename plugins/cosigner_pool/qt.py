@@ -32,21 +32,21 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import QPushButton
 
-from electrum import bitcoin, util
-from electrum import transaction
-from electrum.plugins import BasePlugin, hook
-from electrum.i18n import _
-from electrum.wallet import Multisig_Wallet
-from electrum.util import bh2u, bfh
+from qtum_electrum import bitcoin, util
+from qtum_electrum import transaction
+from qtum_electrum.plugins import BasePlugin, hook
+from qtum_electrum.i18n import _
+from qtum_electrum.wallet import Multisig_Wallet
+from qtum_electrum.util import bh2u, bfh
 
-from electrum_gui.qt.transaction_dialog import show_transaction
+from qtum_electrum_gui.qt.transaction_dialog import show_transaction
 
 import sys
 import traceback
 
 
 PORT = 12344
-HOST = 'cosigner.electrum.org'
+HOST = 'cosigner.qtum_electrum.org'
 server = ServerProxy('http://%s:%d'%(HOST,PORT), allow_none=True)
 
 
@@ -164,7 +164,7 @@ class Plugin(BasePlugin):
             d.cosigner_send_button.hide()
 
     def cosigner_can_sign(self, tx, cosigner_xpub):
-        from electrum.keystore import is_xpubkey, parse_xpubkey
+        from qtum_electrum.keystore import is_xpubkey, parse_xpubkey
         xpub_set = set([])
         for txin in tx.inputs():
             for x_pubkey in txin['x_pubkeys']:
@@ -196,7 +196,7 @@ class Plugin(BasePlugin):
             return
 
         wallet = window.wallet
-        if wallet.has_password():
+        if wallet.has_keystore_encryption():
             password = window.password_dialog('An encrypted transaction was retrieved from cosigning pool.\nPlease enter your password to decrypt it.')
             if not password:
                 return

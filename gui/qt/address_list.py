@@ -22,13 +22,11 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import webbrowser
-
 from .util import *
-from electrum.i18n import _
-from electrum.util import block_explorer_URL, format_satoshis, format_time
-from electrum.plugins import run_hook
-from electrum.bitcoin import is_address
+from qtum_electrum.i18n import _
+from qtum_electrum.util import block_explorer_URL, format_satoshis, format_time, open_browser
+from qtum_electrum.plugins import run_hook
+from qtum_electrum.bitcoin import is_address
 
 
 class AddressList(MyTreeWidget):
@@ -38,17 +36,24 @@ class AddressList(MyTreeWidget):
         MyTreeWidget.__init__(self, parent, self.create_menu, [], 1)
         self.refresh_headers()
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
-        self.show_change = False
-        self.show_used = 3
-        self.change_button = QToolButton(self)
-        self.used_button = QToolButton(self)
-        self.change_button.clicked.connect(self.toggle_change)
-        self.used_button.clicked.connect(self.toggle_used)
-        self.set_change_button_text()
-        self.set_used_button_text()
+        self.show_change = 0
+        self.show_used = 0
+        self.change_button = QComboBox(self)
+        self.change_button.currentIndexChanged.connect(self.toggle_change)
+        for tt in [_('All'), _('Receiving'), _('Change')]:
+            self.change_button.addItem(tt)
+        self.used_button = QComboBox(self)
+        self.used_button.currentIndexChanged.connect(self.toggle_used)
+        for t in [_('All'), _('Unused'), _('Funded'), _('Used')]:
+            self.used_button.addItem(t)
 
-    def get_buttons(self):
-        return self.change_button, self.used_button
+    def create_toolbar_buttons(self):
+        return QLabel(_("Filter:")), self.change_button, self.used_button
+
+    def on_hide_toolbar(self):
+        self.show_change = 0
+        self.show_used = 0
+        self.update()
 
     def refresh_headers(self):
         headers = [ _('Address'), _('Label'), _('Balance')]
@@ -58,41 +63,40 @@ class AddressList(MyTreeWidget):
         headers.extend([_('Tx')])
         self.update_headers(headers)
 
-    def toggle_change(self):
-        self.show_change = not self.show_change
-        self.set_change_button_text()
+    def toggle_change(self, state):
+        if state == self.show_change:
+            return
+        self.show_change = state
         self.update()
 
-    def set_change_button_text(self):
-        s = [_('Receiving'), _('Change')]
-        self.change_button.setText(s[self.show_change])
-
-    def toggle_used(self):
-        self.show_used = (self.show_used + 1) % 4
-        self.set_used_button_text()
+    def toggle_used(self, state):
+        if state == self.show_used:
+            return
+        self.show_used = state
         self.update()
-
-    def set_used_button_text(self):
-        s = [_('Unused'), _('Funded'), _('Used'), _('All')]
-        self.used_button.setText(s[self.show_used])
 
     def on_update(self):
         self.wallet = self.parent.wallet
         item = self.currentItem()
         current_address = item.data(0, Qt.UserRole) if item else None
-        addr_list = self.wallet.get_change_addresses() if self.show_change else self.wallet.get_receiving_addresses()
+        if self.show_change == 1:
+            addr_list = self.wallet.get_receiving_addresses()
+        elif self.show_change == 2:
+            addr_list = self.wallet.get_change_addresses()
+        else:
+            addr_list = self.wallet.get_addresses()
         self.clear()
         for address in addr_list:
-            num = len(self.wallet.history.get(address, []))
+            num = len(self.wallet.get_address_history(address))
             is_used = self.wallet.is_used(address)
             label = self.wallet.labels.get(address, '')
             c, u, x = self.wallet.get_addr_balance(address)
             balance = c + u + x
-            if self.show_used == 0 and (balance or is_used):
+            if self.show_used == 1 and (balance or is_used):
                 continue
-            if self.show_used == 1 and balance == 0:
+            if self.show_used == 2 and balance == 0:
                 continue
-            if self.show_used == 2 and not is_used:
+            if self.show_used == 3 and not is_used:
                 continue
             balance_text = self.parent.format_amount(balance)
             fx = self.parent.fx
@@ -109,14 +113,14 @@ class AddressList(MyTreeWidget):
             address_item.setData(0, Qt.UserRole + 1, True)  # label can be edited
             if self.wallet.is_frozen(address):
                 address_item.setBackground(0, QColor('lightblue'))
-            if self.wallet.is_beyond_limit(address, self.show_change):
+            if self.wallet.is_beyond_limit(address):
                 address_item.setBackground(0, QColor('red'))
             self.addChild(address_item)
             if address == current_address:
                 self.setCurrentItem(address_item)
 
     def create_menu(self, position):
-        from electrum.wallet import Multisig_Wallet
+        from qtum_electrum.wallet import Multisig_Wallet
         is_multisig = isinstance(self.wallet, Multisig_Wallet)
         can_delete = self.wallet.can_delete_address()
         selected = self.selectedItems()
@@ -151,7 +155,7 @@ class AddressList(MyTreeWidget):
                 menu.addAction(_("Remove from wallet"), lambda: self.parent.remove_address(addr))
             addr_URL = block_explorer_URL(self.config, 'addr', addr)
             if addr_URL:
-                menu.addAction(_("View on block explorer"), lambda: webbrowser.open(addr_URL))
+                menu.addAction(_("View on block explorer"), lambda: open_browser(addr_URL))
 
             if not self.wallet.is_frozen(addr):
                 menu.addAction(_("Freeze"), lambda: self.parent.set_frozen_state([addr], True))

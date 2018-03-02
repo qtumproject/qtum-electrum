@@ -1,4 +1,4 @@
-from electrum.util import print_msg, print_error
+from qtum_electrum.util import print_msg, print_error
 
 
 class CmdLineHandler:

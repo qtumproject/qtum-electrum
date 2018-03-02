@@ -24,8 +24,8 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 
-from electrum.plugins import BasePlugin, hook
-from electrum.i18n import _
+from qtum_electrum.plugins import BasePlugin, hook
+from qtum_electrum.i18n import _
 
 
 class HW_PluginBase(BasePlugin):
@@ -51,3 +51,6 @@ class HW_PluginBase(BasePlugin):
         for keystore in wallet.get_keystores():
             if isinstance(keystore, self.keystore_class):
                 self.device_manager().unpair_xpub(keystore.xpub)
+
+    def setup_device(self, device_info, wizard, purpose):
+        raise NotImplementedError()

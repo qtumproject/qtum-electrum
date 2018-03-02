@@ -25,6 +25,7 @@
 
 import signal
 import sys
+import traceback
 
 try:
     import PyQt5
@@ -36,10 +37,10 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtCore import *
 import PyQt5.QtCore as QtCore
 
-from electrum.i18n import _, set_language
-from electrum.plugins import run_hook
-from electrum import SimpleConfig, Wallet, WalletStorage
-from electrum.util import DebugMem, UserCancelled, InvalidPassword, print_error
+from qtum_electrum.i18n import _, set_language
+from qtum_electrum.plugins import run_hook
+from qtum_electrum import SimpleConfig, Wallet, WalletStorage
+from qtum_electrum.util import DebugMem, UserCancelled, InvalidPassword, print_error
 from .installwizard import InstallWizard, GoBack
 
 
@@ -85,6 +86,10 @@ class ElectrumGui:
         #network.add_jobs([DebugMem([Abstract_Wallet, SPV, Synchronizer,
         #                            ElectrumWindow], interval=5)])
         QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_X11InitThreads)
+        if hasattr(QtCore.Qt, "AA_ShareOpenGLContexts"):
+            QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_ShareOpenGLContexts)
+        if hasattr(QGuiApplication, 'setDesktopFileName'):
+            QGuiApplication.setDesktopFileName('qtum-electrum.desktop')
         self.config = config
         self.daemon = daemon
         self.plugins = plugins
@@ -183,6 +188,7 @@ class ElectrumGui:
             try:
                 wallet = self.daemon.load_wallet(path, None)
             except BaseException as e:
+                traceback.print_exc(file=sys.stdout)
                 d = QMessageBox(QMessageBox.Warning, _('Error'), 'Cannot load wallet:\n' + str(e))
                 d.exec_()
                 return
@@ -195,7 +201,14 @@ class ElectrumGui:
                     return
                 wallet.start_threads(self.daemon.network)
                 self.daemon.add_wallet(wallet)
-            w = self.create_window_for_wallet(wallet)
+            try:
+                w = self.create_window_for_wallet(wallet)
+            except BaseException as e:
+                traceback.print_exc(file=sys.stdout)
+                d = QMessageBox(QMessageBox.Warning, _('Error'),
+                                _('Cannot create window for wallet:') + '\n' + str(e))
+                d.exec_()
+                return
         if uri:
             w.pay_to_URI(uri)
         w.bring_to_top()
@@ -226,8 +239,7 @@ class ElectrumGui:
             return
         except GoBack:
             return
-        except:
-            import traceback
+        except BaseException:
             traceback.print_exc(file=sys.stdout)
             return
         self.timer.start()
