@@ -29,9 +29,9 @@ class TokenBalanceList(MyTreeWidget):
 
 
 class TokenHistoryList(MyTreeWidget):
-    filter_columns = [2, 3, 4]  # Date, Description, Amount
+    filter_columns = [0, 1, 2]
 
     def __init__(self, parent=None):
-        MyTreeWidget.__init__(self, parent, self.create_menu, ["Name", "Address", "Amount"], 1)
+        MyTreeWidget.__init__(self, parent, self.create_menu, ["Name", "Date", "Address", "Amount"], 2)
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setSortingEnabled(True)
