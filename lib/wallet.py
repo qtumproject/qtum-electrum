@@ -55,8 +55,8 @@ from . import paymentrequest
 from .paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED
 from .paymentrequest import InvoiceStore
 from .contacts import Contacts
+from .tokens import Tokens
 from .smart_contracts import SmartContracts
-
 from .storage import WalletStorage
 
 TX_STATUS = [
@@ -223,11 +223,10 @@ class Abstract_Wallet(PrintError):
         if self.storage.get('wallet_type') is None:
             self.storage.put('wallet_type', self.wallet_type)
 
-        # invoices and contacts
         self.invoices = InvoiceStore(self.storage)
         self.contacts = Contacts(self.storage)
         self.smart_contracts = SmartContracts(self.storage)
-
+        self.tokens = Tokens(self.storage)
 
     def diagnostic_name(self):
         return self.basename()
@@ -383,7 +382,6 @@ class Abstract_Wallet(PrintError):
 
     def get_public_keys(self, address):
         return [self.get_public_key(address)]
-
 
     def add_unverified_tx(self, tx_hash, tx_height):
         if tx_height in (TX_HEIGHT_UNCONFIRMED, TX_HEIGHT_UNCONF_PARENT) \

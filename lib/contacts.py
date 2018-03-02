@@ -20,56 +20,22 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-import sys
-import re
 import dns
-import os
-import json
-
 from . import bitcoin
 from . import dnssec
-from .util import print_error
-from .i18n import _
-from .util import export_meta, import_meta
+from .storage import ModelStorage
 
 
-class Contacts(dict):
+class Contacts(ModelStorage):
 
     def __init__(self, storage):
-        self.storage = storage
-        d = self.storage.get('contacts', {})
-        try:
-            self.update(d)
-        except:
-            return
+        ModelStorage.__init__(self, 'contacts', storage)
         # backward compatibility
         for k, v in self.items():
             _type, n = v
             if _type == 'address' and bitcoin.is_address(n):
                 self.pop(k)
                 self[n] = ('address', k)
-
-    def save(self):
-        self.storage.put('contacts', dict(self))
-
-    def import_file(self, path):
-        import_meta(path, self._validate, self.load_meta)
-
-    def load_meta(self, data):
-        self.update(data)
-        self.save()
-
-    def export_file(self, filename):
-        export_meta(self, filename)
-
-    def __setitem__(self, key, value):
-        dict.__setitem__(self, key, value)
-        self.save()
-
-    def pop(self, key):
-        if key in self.keys():
-            dict.pop(self, key)
-            self.save()
 
     def resolve(self, k):
         if bitcoin.is_address(k):
@@ -110,17 +76,10 @@ class Contacts(dict):
                 if not address:
                     continue
                 return address, name, validated
-
-    def find_regex(self, haystack, needle):
-        regex = re.compile(needle)
-        try:
-            return regex.search(haystack).groups()[0]
-        except AttributeError:
-            return None
             
     def _validate(self, data):
         for k, v in list(data.items()):
-            if k == 'contacts':
+            if k == self.name:
                 return self._validate(v)
             if not bitcoin.is_address(k):
                 data.pop(k)
