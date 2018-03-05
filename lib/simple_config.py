@@ -215,19 +215,24 @@ class SimpleConfig(PrintError):
         return fee
 
     def reverse_dynfee(self, fee_per_kb):
-        import operator
-        l = list(self.fee_estimates.items()) + [(1, self.dynfee(4))]
-        dist = map(lambda x: (x[0], abs(x[1] - fee_per_kb)), l)
-        min_target, min_value = min(dist, key=operator.itemgetter(1))
-        if fee_per_kb < self.fee_estimates.get(25)/2:
-            min_target = -1
-        return min_target
+        if self.is_dynfee() \
+                and self.fee_estimates.get(25) == self.fee_estimates.get(5) \
+                and fee_per_kb >= self.fee_estimates.get(5):
+            return 5
+        else:
+            import operator
+            l = list(self.fee_estimates.items()) + [(1, self.dynfee(4))]
+            dist = map(lambda x: (x[0], abs(x[1] - fee_per_kb)), l)
+            min_target, min_value = min(dist, key=operator.itemgetter(1))
+            if fee_per_kb < self.fee_estimates.get(25) / 2:
+                min_target = -1
+            return min_target
 
     def has_fee_estimates(self):
         return len(self.fee_estimates)==4
 
     def is_dynfee(self):
-        return self.get('dynamic_fees', True) and self.has_fee_estimates()
+        return self.get('dynamic_fees', False) and self.has_fee_estimates()
 
     def static_fee(self, i):
         return self.max_fee_rate() * 0.4 + self.max_fee_rate() * 0.06 * i
@@ -271,6 +276,7 @@ def read_system_config(path=SYSTEM_CONFIG_PATH):
 
     return result
 
+
 def read_user_config(path):
     """Parse and store the user config settings in qtum-electrum.conf into user_config[]."""
     if not path:
@@ -278,7 +284,7 @@ def read_user_config(path):
     config_path = os.path.join(path, "config")
     if not os.path.exists(config_path):
         print_error('config_path not exists')
-        return {}
+        return {'dynamic_fees': True}
     try:
         with open(config_path, "r") as f:
             data = f.read()

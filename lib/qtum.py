@@ -121,7 +121,7 @@ testnet_block_explorers = {
 
 ################################## transactions
 
-MAX_FEE_RATE = 1000000
+MAX_FEE_RATE = 1250000
 # min fee rate is set to 0.4*MAX_FEE_RATE
 
 FEE_TARGETS = [25, 10, 5, 2]
