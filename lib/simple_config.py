@@ -227,7 +227,7 @@ class SimpleConfig(PrintError):
         return len(self.fee_estimates)==4
 
     def is_dynfee(self):
-        return self.get('dynamic_fees', False) and self.has_fee_estimates()
+        return self.get('dynamic_fees', True) and self.has_fee_estimates()
 
     def static_fee(self, i):
         return self.max_fee_rate() * 0.4 + self.max_fee_rate() * 0.06 * i
