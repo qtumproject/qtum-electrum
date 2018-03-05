@@ -29,33 +29,34 @@ class TokenInfoLayout(QGridLayout):
 
         address_lb = QLabel(_("Contract Address:"))
         self.contract_addr_e = ButtonsLineEdit()
+        self.contract_addr_e.textChanged.connect(self.on_contract_addr_change)
         self.addWidget(address_lb, 1, 0)
         self.addWidget(self.contract_addr_e, 1, 1, 1, -1)
 
-        name_lb = QLabel(_('Token Name:'))
-        self.name_e = QLineEdit()
-        self.name_e.setReadOnly(True)
-        self.addWidget(name_lb, 2, 0)
-        self.addWidget(self.name_e, 2, 1, 1, -1)
-
-        symbol_lb = QLabel(_('Token Symbol:'))
-        self.symbol_e = QLineEdit()
-        self.symbol_e.setReadOnly(True)
-        self.addWidget(symbol_lb, 3, 0)
-        self.addWidget(self.symbol_e, 3, 1, 1, -1)
-
-        decimals_lb = QLabel(_('Decimals:'))
-        self.decimals_e = QLineEdit()
-        self.decimals_e.setReadOnly(True)
-        self.addWidget(decimals_lb, 4, 0)
-        self.addWidget(self.decimals_e, 4, 1, 1, -1)
-
+        # name_lb = QLabel(_('Token Name:'))
+        # self.name_e = QLineEdit()
+        # self.name_e.setReadOnly(True)
+        # self.addWidget(name_lb, 2, 0)
+        # self.addWidget(self.name_e, 2, 1, 1, -1)
+        #
+        # symbol_lb = QLabel(_('Token Symbol:'))
+        # self.symbol_e = QLineEdit()
+        # self.symbol_e.setReadOnly(True)
+        # self.addWidget(symbol_lb, 3, 0)
+        # self.addWidget(self.symbol_e, 3, 1, 1, -1)
+        #
+        # decimals_lb = QLabel(_('Decimals:'))
+        # self.decimals_e = QLineEdit()
+        # self.decimals_e.setReadOnly(True)
+        # self.addWidget(decimals_lb, 4, 0)
+        # self.addWidget(self.decimals_e, 4, 1, 1, -1)
+        #
         address_lb = QLabel(_("My Address:"))
         self.address_combo = QComboBox()
         self.address_combo.setMinimumWidth(300)
         self.address_combo.addItems(self.addresses)
-        self.addWidget(address_lb, 5, 0)
-        self.addWidget(self.address_combo, 5, 1, 1, -1)
+        self.addWidget(address_lb, 2, 0)
+        self.addWidget(self.address_combo, 2, 1, 1, -1)
 
         self.cancel_btn = CancelButton(dialog)
         self.save_btn = QPushButton(_('Save'))
@@ -63,12 +64,15 @@ class TokenInfoLayout(QGridLayout):
         self.save_btn.clicked.connect(self.save_input)
         buttons = Buttons(*[self.cancel_btn, self.save_btn])
         buttons.addStretch()
-        self.addLayout(buttons, 6, 2, 2, -1)
+        self.addLayout(buttons, 3, 2, 2, -1)
 
         self.update()
 
     def update(self):
         self.contract_addr_e.setText(self.token.contract_addr)
+
+    def on_contract_addr_change(self):
+        pass
 
     def save_input(self):
         pass
@@ -83,7 +87,7 @@ class TokenEditDialog(QDialog, MessageBoxMixin):
         """
         QDialog.__init__(self, parent=parent)
         self.main_window = parent
-        self.setMinimumSize(540, 200)
+        self.setMinimumSize(500, 100)
         if token and isinstance(token, tuple):
             self.setWindowTitle(_('Edit Token'))
         else:
