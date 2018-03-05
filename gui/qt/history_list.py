@@ -61,6 +61,7 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
         self.start_timestamp = None
         self.end_timestamp = None
         self.years = []
+        self.setSortingEnabled(True)
 
     def format_date(self, d):
         return str(datetime.date(d.year, d.month, d.day)) if d else _('None')
