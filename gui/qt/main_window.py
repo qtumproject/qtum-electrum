@@ -47,6 +47,7 @@ from qtum_electrum import util, bitcoin, commands, coinchooser
 from qtum_electrum import paymentrequest
 # from qtum_electrum.script import contract_script
 from qtum_electrum.wallet import Multisig_Wallet, AddTransactionException
+from qtum_electrum.tokens import Token
 
 try:
     from qtum_electrum.plot import plot_history
@@ -59,8 +60,7 @@ from .qrtextedit import ShowQRTextEdit, ScanQRTextEdit
 from .transaction_dialog import show_transaction
 from .fee_slider import FeeSlider
 from .util import *
-
-from .token_dialog import TokenEditDialog
+from .token_dialog import TokenAddDialog, TokenInfoDialog
 # from .smart_contract_dialog import ContractCreateDialog, ContractFuncDialog, ContractEditDialog
 
 
@@ -3048,38 +3048,45 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.show_message(_("Transaction saved successfully"))
             return True
 
-    def create_addresses_tab(self):
-        from .address_list import AddressList
-        self.address_list = l = AddressList(self)
-        return self.create_list_tab(l, l.create_toolbar(visible=True))
-
     def create_tokens_tab(self):
         from .token_list import TokenBalanceList
         self.token_balance_list = tbl = TokenBalanceList(self)
         tbl.searchable_list = tbl
         return self.create_list_tab(tbl, tbl.create_toolbar(visible=False))
 
-    def set_token(self, contract_addr, bind_addr, name, symbol, decimals, balance):
-        key = '{}_{}'.format(contract_addr, bind_addr)
-        self.tokens[key] = (name, symbol, decimals, balance)
+    def set_token(self, token):
+        """
+        :type token: Token
+        :return:
+        """
+        key = '{}_{}'.format(token.contract_addr, token.bind_addr)
+        self.tokens[key] = (token.name, token.symbol, token.decimals, token.balance)
         self.token_balance_list.update()
 
     def delete_token(self, key):
         if not self.question(_("Remove {} from your list of tokens?".format(
-                self.tokens[key][0]))):
+                self.tokens[key].name))):
             return False
         self.tokens.pop(key)
         self.token_balance_list.update()
 
     def token_add_dialog(self):
-        d = TokenEditDialog(self, None)
+        d = TokenAddDialog(self)
         d.show()
 
-    def token_edit_dialog(self, token):
-        d = TokenEditDialog(self, token)
+    def token_view_dialog(self, token):
+        """
+        :type token: Token
+        :return:
+        """
+        d = TokenInfoDialog(self, token)
         d.show()
 
-    def token_send_dialog(self):
+    def token_send_dialog(self, token):
+        """
+        :type token: Token
+        :return:
+        """
         pass
 
     def set_smart_contract(self, name, address, interface, _type):

@@ -8,7 +8,7 @@ from collections import namedtuple
 from .storage import ModelStorage
 from . import qtum
 
-Token = namedtuple('Token', ['contract_addr', 'bind_addr', 'name', 'symbol', 'decimals', 'balance'])
+Token = namedtuple('Token', 'contract_addr bind_addr name symbol decimals balance')
 
 
 class Tokens(ModelStorage):
@@ -18,6 +18,17 @@ class Tokens(ModelStorage):
 
     def __init__(self, storage):
         ModelStorage.__init__(self, 'tokens', storage)
+
+    def __getitem__(self, key):
+        contract_addr, bind_addr = key.split('_')
+        name, symbol, decimals, balance = ModelStorage.__getitem__(self, key)
+        token = Token(contract_addr, bind_addr, name, symbol, decimals, balance)
+        return token
+
+    def get(self, key, d=None):
+        if not ModelStorage.__getitem__(self, key):
+            return d
+        return self.__getitem__(key)
 
     def _validate(self, data):
         for k, v in list(data.items()):

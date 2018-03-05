@@ -19,7 +19,17 @@ class TokenBalanceList(MyTreeWidget):
         self.setSortingEnabled(True)
 
     def on_update(self):
-        pass
+        item = self.currentItem()
+        current_key = item.data(0, Qt.UserRole) if item else None
+        self.clear()
+        for key in sorted(self.parent.tokens.keys()):
+            token = self.parent.tokens[key]
+            item = QTreeWidgetItem([token.name, token.bind_addr, str(token.balance)])
+            item.setData(0, Qt.UserRole, token.contract_addr)
+            self.addTopLevelItem(item)
+            if key == current_key:
+                self.setCurrentItem(item)
+        run_hook('update_tokens_tab', self)
 
     def on_doubleclick(self, item, column):
         pass
@@ -33,17 +43,20 @@ class TokenBalanceList(MyTreeWidget):
         elif not multi_select:
             item = selected[0]
             name = item.text(0)
-            address = item.text(1)
+            bind_addr = item.text(1)
+            contract_addr = item.data(0, Qt.UserRole)
+            key = '{}_{}'.format(contract_addr, bind_addr)
+            token = self.parent.tokens.get(key, None)
             column = self.currentColumn()
             column_title = self.headerItem().text(column)
             column_data = '\n'.join([item.text(column) for item in selected])
-            # menu.addAction(_("Copy %s") % column_title, lambda: self.parent.app.clipboard().setText(column_data))
-            # menu.addAction(_("Edit"), lambda: self.parent.contract_edit_dialog(address))
-            # menu.addAction(_("Send"), lambda: self.parent.contract_func_dialog(address))
-            # menu.addAction(_("Delete"), lambda: self.parent.delete_samart_contact(address))
-            # URL = block_explorer_URL(self.config, 'contract', address)
-            # if URL:
-            #     menu.addAction(_("View on block explorer"), lambda: open_browser(URL))
+            menu.addAction(_("Copy %s") % column_title, lambda: self.parent.app.clipboard().setText(column_data))
+            menu.addAction(_("View Info"), lambda: self.parent.token_view_dialog(token))
+            menu.addAction(_("Send"), lambda: self.parent.token_send_dialog(token))
+            menu.addAction(_("Delete"), lambda: self.parent.delete_token(key))
+            URL = block_explorer_URL(self.config, 'addr', bind_addr)
+            if URL:
+                menu.addAction(_("View on block explorer"), lambda: open_browser(URL))
         run_hook('create_token_menu', menu, selected)
         menu.exec_(self.viewport().mapToGlobal(position))
 
