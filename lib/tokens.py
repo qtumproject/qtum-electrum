@@ -25,6 +25,13 @@ class Tokens(ModelStorage):
         token = Token(contract_addr, bind_addr, name, symbol, decimals, balance)
         return token
 
+    def __setitem__(self, key, token):
+        """
+        :type key: str
+        :type token: Token
+        """
+        return ModelStorage.__setitem__(self, key, (token.name, token.symbol, token.decimals, token.balance))
+
     def get(self, key, d=None):
         if not ModelStorage.__getitem__(self, key):
             return d
