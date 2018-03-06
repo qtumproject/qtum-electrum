@@ -52,8 +52,7 @@ class TokenAddLayout(QGridLayout):
             bind_addr = self.addresses[self.address_combo.currentIndex()]
             if not is_hash160(contract_addr):
                 raise BaseException('invalid contrace address:{}'.format(contract_addr))
-            token = Token(contract_addr, bind_addr, 'Test', 'T', 8, 10)
-            self.callback(token)
+            self.callback(contract_addr, bind_addr)
             self.dialog.reject()
         except (BaseException,) as e:
             self.dialog.show_message(str(e))
@@ -72,8 +71,20 @@ class TokenAddDialog(QDialog, MessageBoxMixin):
         layout = TokenAddLayout(self, callback=self.save)
         self.setLayout(layout)
 
-    def save(self, token):
-        self.parent().set_token(token)
+    def save(self, contract_addr, bind_addr):
+        try:
+            r = self.parent().network.synchronous_get(('blockchain.token.get_info', [contract_addr]), timeout=10)
+            name = r.get('name')
+            decimals = r.get('decimals')
+            symbol = r.get('symbol')
+            if not name or not symbol or not decimals or not isinstance(decimals, int):
+                self.show_message('token info not valid: {} {} {}'.format(name, symbol, decimals))
+                return
+            token = Token(contract_addr, bind_addr, name, symbol, decimals, 0)
+            self.parent().set_token(token)
+        except BaseException as e:
+            self.show_message(str(e))
+            return
 
 
 class TokenInfoLayout(QGridLayout):
