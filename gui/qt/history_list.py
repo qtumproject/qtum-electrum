@@ -188,6 +188,8 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
             v_str = self.parent.format_amount(value, True, whitespaces=True)
             balance_str = self.parent.format_amount(balance, whitespaces=True)
             label = self.wallet.get_label(tx_hash)
+            if value and 0 < value < 4 * 10 ** 7 and label == 'mined':
+                label = 'contract gas change'
             entry = ['', tx_hash, status_str, label, v_str, balance_str]
             if fx and fx.show_history():
                 date = timestamp_to_datetime(time.time() if conf <= 0 else timestamp)
