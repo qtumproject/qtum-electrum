@@ -1016,12 +1016,6 @@ class Abstract_Wallet(PrintError):
         status_str = TX_STATUS[status] if status < 5 else time_str
         return status, status_str
 
-    def update_token_balance(self, key, balance):
-        token = self.tokens[key]
-        if token:
-            token = token._replace(balance=balance / 10 ** token.decimals)
-            self.tokens[key] = token
-
     def relayfee(self):
         return relayfee(self.network)
 

@@ -200,8 +200,11 @@ class Synchronizer(ThreadJob):
             contract_addr = params[0]
             bind_addr = hash160_to_p2pkh(binascii.a2b_hex(params[1][-40:]))
             key = '{}_{}'.format(contract_addr, bind_addr)
-            self.wallet.update_token_balance(key, result)
-            self.network.trigger_callback('on_token')
+            token = self.wallet.tokens[key]
+            if token and token.balance != result / 10 ** token.decimals:
+                token = token._replace(balance=result / 10 ** token.decimals)
+                self.wallet.tokens[key] = token
+                self.network.trigger_callback('on_token')
         except (BaseException,) as e:
             print('token_balance_response err', e)
 
