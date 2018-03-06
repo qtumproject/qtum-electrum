@@ -45,6 +45,7 @@ class Synchronizer(ThreadJob):
         self.wallet = wallet
         self.network = network
         self.new_addresses = set()
+        self.new_tokens = set()
         # Entries are (tx_hash, tx_height) tuples
         self.requested_tx = {}
         self.requested_histories = {}
@@ -159,7 +160,36 @@ class Synchronizer(ThreadJob):
             self.requested_tx[tx_hash] = tx_height
         self.network.send(requests, self.tx_response)
 
+    def add_token(self, token):
+        with self.lock:
+            self.new_tokens.add(token)
+
+    def subscribe_tokens(self, tokens):
+        """
+        :type tokens: set(Token)
+        """
+        if tokens:
+            self.network.subscribe_tokens(tokens, self.on_token_status)
+
+    def on_token_status(self, response):
+        params, result = self.parse_response(response)
+        if not params:
+            return
+        print('on_token_status', params, result)
+        try:
+            contract_addr = params[0]
+            bind_addr = hash160_to_p2pkh(binascii.a2b_hex(params[1][-40:]))
+            key = '{}_{}'.format(contract_addr, bind_addr)
+            token = self.wallet.tokens[key]
+            if token:
+                self.get_token_balance(token)
+        except (BaseException,) as e:
+            print('on_token_status err', e)
+
     def get_token_balance(self, token):
+        """
+        :type token: Token
+        """
         self.network.request_token_balance(token, self.token_balance_response)
 
     def token_balance_response(self, response):
@@ -170,9 +200,8 @@ class Synchronizer(ThreadJob):
             contract_addr = params[0]
             bind_addr = hash160_to_p2pkh(binascii.a2b_hex(params[1][-40:]))
             key = '{}_{}'.format(contract_addr, bind_addr)
-            token = self.wallet.tokens[key]
-            token = token._replace(balance=result / 10 ** token.decimals)
-            self.wallet.tokens[key] = token
+            self.wallet.update_token_balance(key, result)
+            self.network.trigger_callback('on_token')
         except (BaseException,) as e:
             print('token_balance_response err', e)
 
@@ -193,9 +222,12 @@ class Synchronizer(ThreadJob):
             self.print_error("missing tx", self.requested_tx)
         self.subscribe_to_addresses(set(self.wallet.get_addresses()))
 
+        tokens = set()
         for key in self.wallet.tokens.keys():
             token = self.wallet.tokens[key]
             self.get_token_balance(token)
+            tokens.add(token)
+        self.subscribe_tokens(tokens)
 
     def run(self):
         '''Called from the network proxy thread main loop.'''
@@ -207,6 +239,14 @@ class Synchronizer(ThreadJob):
             addresses = self.new_addresses
             self.new_addresses = set()
         self.subscribe_to_addresses(addresses)
+
+        # subscribe to new tokens
+        with self.lock:
+            tokens = self.new_tokens
+            self.new_tokens = set()
+        self.subscribe_tokens(tokens)
+        for token in tokens:
+            self.get_token_balance(token)
 
         # 3. Detect if situation has changed
         up_to_date = self.is_up_to_date()

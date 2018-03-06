@@ -90,6 +90,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     notify_transactions_signal = pyqtSignal()
     new_fx_quotes_signal = pyqtSignal()
     new_fx_history_signal = pyqtSignal()
+    new_fx_token_signal = pyqtSignal()
     network_signal = pyqtSignal(str, object)
     alias_received_signal = pyqtSignal()
     computing_privkeys_signal = pyqtSignal()
@@ -197,8 +198,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.console.showMessage(self.network.banner)
             self.network.register_callback(self.on_quotes, ['on_quotes'])
             self.network.register_callback(self.on_history, ['on_history'])
+            self.network.register_callback(self.on_token, ['on_token'])
+
             self.new_fx_quotes_signal.connect(self.on_fx_quotes)
             self.new_fx_history_signal.connect(self.on_fx_history)
+            self.new_fx_token_signal.connect(self.on_fx_token)
 
         # update fee slider in case we missed the callback
         self.fee_slider.update()
@@ -227,6 +231,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         # History tab needs updating if it used spot
         if self.fx.history_used_spot:
             self.history_list.update()
+
+    def on_token(self, b):
+        self.new_fx_token_signal.emit()
+
+    def on_fx_token(self):
+        self.token_balance_list.update()
 
     def toggle_tab(self, tab):
         show = not self.config.get('show_{}_tab'.format(tab.tab_name), False)

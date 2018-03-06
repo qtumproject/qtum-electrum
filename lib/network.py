@@ -638,6 +638,13 @@ class Network(util.DaemonThread):
         h = self.addr_to_scripthash(address)
         self.send([('blockchain.scripthash.get_history', [h])], self.overload_cb(callback))
 
+    def subscribe_tokens(self, tokens, callback):
+        msgs = [(
+            'blockchain.contract.hash160.subscribe',
+            [token.contract_addr, bh2u(b58_address_to_hash160(token.bind_addr))[1]])
+            for token in tokens]
+        self.send(msgs, callback)
+
     def request_token_balance(self, token, callback):
         """
         :type token: Token
