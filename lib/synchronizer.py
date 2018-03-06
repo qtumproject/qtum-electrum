@@ -23,10 +23,11 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import hashlib
+import binascii
 from threading import Lock
-
 from .transaction import Transaction
 from .util import ThreadJob, bh2u
+from .qtum import hash160_to_p2pkh
 
 
 class Synchronizer(ThreadJob):
@@ -158,6 +159,23 @@ class Synchronizer(ThreadJob):
             self.requested_tx[tx_hash] = tx_height
         self.network.send(requests, self.tx_response)
 
+    def get_token_balance(self, token):
+        self.network.request_token_balance(token, self.token_balance_response)
+
+    def token_balance_response(self, response):
+        params, result = self.parse_response(response)
+        if not params:
+            return
+        try:
+            contract_addr = params[0]
+            bind_addr = hash160_to_p2pkh(binascii.a2b_hex(params[1][-40:]))
+            key = '{}_{}'.format(contract_addr, bind_addr)
+            token = self.wallet.tokens[key]
+            token = token._replace(balance=result / 10 ** token.decimals)
+            self.wallet.tokens[key] = token
+        except (BaseException,) as e:
+            print('token_balance_response err', e)
+
     def initialize(self):
         '''Check the initial state of the wallet.  Subscribe to all its
         addresses, and request any transactions in its address history
@@ -174,6 +192,10 @@ class Synchronizer(ThreadJob):
         if self.requested_tx:
             self.print_error("missing tx", self.requested_tx)
         self.subscribe_to_addresses(set(self.wallet.get_addresses()))
+
+        for key in self.wallet.tokens.keys():
+            token = self.wallet.tokens[key]
+            self.get_token_balance(token)
 
     def run(self):
         '''Called from the network proxy thread main loop.'''

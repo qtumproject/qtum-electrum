@@ -638,6 +638,18 @@ class Network(util.DaemonThread):
         h = self.addr_to_scripthash(address)
         self.send([('blockchain.scripthash.get_history', [h])], self.overload_cb(callback))
 
+    def request_token_balance(self, token, callback):
+        """
+        :type token: Token
+        :param callback:
+        :return:
+        """
+        __, hash160 = b58_address_to_hash160(token.bind_addr)
+        hash160 = bh2u(hash160)
+        datahex = '70a08231{}'.format(hash160.zfill(64))
+        self.send([('blockchain.contract.call', [token.contract_addr, datahex, '', 'int'])],
+                  callback)
+
     def send(self, messages, callback):
         '''Messages is a list of (method, params) tuples'''
         messages = list(messages)
