@@ -32,7 +32,11 @@ class TokenBalanceList(MyTreeWidget):
         run_hook('update_tokens_tab', self)
 
     def on_doubleclick(self, item, column):
-        pass
+        bind_addr = item.text(1)
+        contract_addr = item.data(0, Qt.UserRole)
+        key = '{}_{}'.format(contract_addr, bind_addr)
+        token = self.parent.tokens.get(key, None)
+        self.parent.token_send_dialog(token)
 
     def create_menu(self, position):
         menu = QMenu()
@@ -57,7 +61,7 @@ class TokenBalanceList(MyTreeWidget):
             URL = block_explorer_URL(self.config, {'addr': bind_addr, 'contract': contract_addr})
             if URL:
                 menu.addAction(_("View on block explorer"), lambda: open_browser(URL))
-        run_hook('create_token_menu', menu, selected)
+        run_hook('create_tokens_menu', menu, selected)
         menu.exec_(self.viewport().mapToGlobal(position))
 
 

@@ -26,31 +26,26 @@
 #   - Standard_Wallet: one keystore, P2PKH
 #   - Multisig_Wallet: several keystores, P2SH
 
-import os
 import threading
 import random
 import time
-import json
 import copy
 import errno
 from collections import defaultdict
 
 from .i18n import _
 from .util import NotEnoughFunds, PrintError, UserCancelled, profiler, format_satoshis, timestamp_to_datetime
-
 from .qtum import *
 from .version import *
 from .keystore import load_keystore, Hardware_KeyStore
 from .storage import multisig_type, STO_EV_PLAINTEXT, STO_EV_USER_PW, STO_EV_XPUB_PW
-
-from . import transaction
-from .transaction import Transaction
 from .plugins import run_hook
+from . import transaction
 from . import bitcoin
 from . import coinchooser
+from .transaction import Transaction
 from .synchronizer import Synchronizer
 from .verifier import SPV
-
 from . import paymentrequest
 from .paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED
 from .paymentrequest import InvoiceStore
@@ -1041,7 +1036,6 @@ class Abstract_Wallet(PrintError):
                 if i_max is not None:
                     raise BaseException("More than one output set to spend max")
                 i_max = i
-
         # Avoid index-out-of-range with inputs[0] below
         if not inputs:
             raise NotEnoughFunds()
@@ -1071,7 +1065,7 @@ class Abstract_Wallet(PrintError):
 
         # Fee estimator
         if fixed_fee is None:
-            fee_estimator = config.estimate_fee
+            fee_estimator = lambda size: config.estimate_fee(size) + gas_fee
         else:
             fee_estimator = lambda size: fixed_fee
 

@@ -710,6 +710,10 @@ def export_meta_gui(electrum_window, title, exporter):
         electrum_window.show_message(_("Your {0} were exported to '{1}'")
                                      .format(title, str(filename)))
 
+
+float_validator = QRegExpValidator(QRegExp('^(-?\d+)(\.\d+)?$'))
+int_validator = QIntValidator(0, 10 ** 9 - 1)
+
 if __name__ == "__main__":
     app = QApplication([])
     t = WaitingDialog(None, 'testing ...', lambda: [time.sleep(1)],

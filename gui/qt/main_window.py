@@ -23,14 +23,14 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import threading
-import os, json, traceback
+import os
+import traceback
 import shutil
 import weakref
 import csv
 from decimal import Decimal
 import base64
 # import eth_abi
-from functools import partial
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import *
@@ -45,7 +45,7 @@ from qtum_electrum.util import (bh2u, bfh, format_time, format_satoshis, PrintEr
 from qtum_electrum import Transaction
 from qtum_electrum import util, bitcoin, commands, coinchooser
 from qtum_electrum import paymentrequest
-# from qtum_electrum.script import contract_script
+from qtum_electrum.transaction import opcodes, contract_script
 from qtum_electrum.wallet import Multisig_Wallet, AddTransactionException
 from qtum_electrum.tokens import Token
 
@@ -60,7 +60,7 @@ from .qrtextedit import ShowQRTextEdit, ScanQRTextEdit
 from .transaction_dialog import show_transaction
 from .fee_slider import FeeSlider
 from .util import *
-from .token_dialog import TokenAddDialog, TokenInfoDialog
+from .token_dialog import TokenAddDialog, TokenInfoDialog, TokenSendDialog
 # from .smart_contract_dialog import ContractCreateDialog, ContractFuncDialog, ContractEditDialog
 
 
@@ -3077,7 +3077,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     def token_view_dialog(self, token):
         """
         :type token: Token
-        :return:
         """
         d = TokenInfoDialog(self, token)
         d.show()
@@ -3085,16 +3084,84 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     def token_send_dialog(self, token):
         """
         :type token: Token
-        :return:
         """
-        pass
+        d = TokenSendDialog(self, token)
+        d.show()
+
+    def do_token_pay(self, token, pay_to, amount, gas_limit, gas_price, dialog):
+        try:
+            datahex = 'a9059cbb{}{:064x}'.format(pay_to.zfill(64), amount)
+            script = contract_script(gas_limit, gas_price, datahex, token.contract_addr, opcodes.OP_CALL)
+            # print('do_token_pay', script)
+            outputs = [(TYPE_SCRIPT, script, 0), ]
+            tx_desc = 'pay out {} {}'.format(amount / (10 ** token.decimals), token.symbol)
+            self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, token.bind_addr, dialog)
+        except (BaseException,) as e:
+            traceback.print_exc(file=sys.stderr)
+            dialog.show_message(str(e))
+
+    def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog):
+        coins = self.get_coins()
+        try:
+            tx = self.wallet.make_unsigned_transaction(coins, outputs, self.config, None,
+                                                       change_addr=sender,
+                                                       gas_fee=gas_fee,
+                                                       sender=sender)
+        except NotEnoughFunds:
+            dialog.show_message(_("Insufficient funds"))
+            return
+        except BaseException as e:
+            traceback.print_exc(file=sys.stdout)
+            dialog.show_message(str(e))
+            return
+
+        amount = sum(map(lambda y: y[2], outputs))
+        fee = tx.get_fee()
+
+        if fee < self.wallet.relayfee() * tx.estimated_size() / 1000:
+            dialog.show_message(
+                _("This transaction requires a higher fee, or it will not be propagated by the network"))
+            return
+
+        # confirmation dialog
+        msg = [
+            _("Amount to be sent") + ": " + self.format_amount_and_units(amount),
+            _("Mining fee") + ": " + self.format_amount_and_units(fee - gas_fee),
+            _("Gas fee") + ": " + self.format_amount_and_units(gas_fee),
+        ]
+
+        confirm_rate = 2 * self.config.max_fee_rate()
+        if fee > confirm_rate * tx.estimated_size() / 1000:
+            msg.append(_('Warning') + ': ' + _("The fee for this transaction seems unusually high."))
+
+        if self.wallet.has_password():
+            msg.append("")
+            msg.append(_("Enter your password to proceed"))
+            password = self.password_dialog('\n'.join(msg))
+            if not password:
+                return
+        else:
+            msg.append(_('Proceed?'))
+            password = None
+            if not dialog.question('\n'.join(msg)):
+                return
+
+        def sign_done(success):
+            if success:
+                if not tx.is_complete():
+                    self.show_transaction(tx)
+                    self.do_clear()
+                else:
+                    self.broadcast_transaction(tx, desc)
+
+        self.sign_tx_with_password(tx, sign_done, password)
 
     def set_smart_contract(self, name, address, interface, _type):
         """
-        :param name: str
-        :param address: str
-        :param interface: list
-        :param _type: str
+        :type name: str
+        :type address: str
+        :type interface: list
+        :type _type: str
         :return: bool
         """
         if not is_hash160(address):
@@ -3132,66 +3199,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     #             pass
     #     dialog.show_message(str(result))
     #
-    # def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog):
-    #     coins = self.get_coins()
-    #     try:
-    #         tx = self.wallet.make_unsigned_transaction(coins, outputs, self.config, None,
-    #                                                    change_addr=sender,
-    #                                                    gas_fee=gas_fee,
-    #                                                    sender=sender)
-    #     except NotEnoughFunds:
-    #         dialog.show_message(_("Insufficient funds"))
-    #         return
-    #     except BaseException as e:
-    #         traceback.print_exc(file=sys.stdout)
-    #         dialog.show_message(str(e))
-    #         return
-    #
-    #     amount = sum(map(lambda y: y[2], outputs))
-    #     fee = tx.get_fee()
-    #
-    #     if fee < self.wallet.relayfee() * tx.estimated_size() / 1000:
-    #         dialog.show_message(
-    #             _("This transaction requires a higher fee, or it will not be propagated by the network"))
-    #         return
-    #
-    #     # confirmation dialog
-    #     msg = [
-    #         _("Amount to be sent") + ": " + self.format_amount_and_units(amount),
-    #         _("Mining fee") + ": " + self.format_amount_and_units(fee - gas_fee),
-    #         _("Gas fee") + ": " + self.format_amount_and_units(gas_fee),
-    #     ]
-    #
-    #     confirm_rate = 2 * self.config.max_fee_rate()
-    #     if fee > confirm_rate * tx.estimated_size() / 1000:
-    #         msg.append(_('Warning') + ': ' + _("The fee for this transaction seems unusually high."))
-    #
-    #     if self.wallet.has_password():
-    #         msg.append("")
-    #         msg.append(_("Enter your password to proceed"))
-    #         password = self.password_dialog('\n'.join(msg))
-    #         if not password:
-    #             return
-    #     else:
-    #         msg.append(_('Proceed?'))
-    #         password = None
-    #         if not dialog.question('\n'.join(msg)):
-    #             return
-    #
-    #     def sign_done(success):
-    #         if success:
-    #             if not tx.is_complete():
-    #                 self.show_transaction(tx)
-    #                 self.do_clear()
-    #             else:
-    #                 self.broadcast_transaction(tx, desc)
-    #
-    #     self.sign_tx_with_password(tx, sign_done, password)
+
     #
     # def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog):
     #     try:
     #         abi_encoded = eth_abi_encode(abi, args)
-    #         script = contract_script(gas_limit, gas_price, abi_encoded, opcodes.OP_CALL, address)
+    #         script = contract_script(gas_limit, gas_price, abi_encoded, address, opcodes.OP_CALL)
     #         outputs = [(TYPE_SCRIPT, script, amount), ]
     #         tx_desc = 'contract sendto {}'.format(self.smart_contracts[address][0])
     #         self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog)
