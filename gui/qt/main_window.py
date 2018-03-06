@@ -23,14 +23,14 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import threading
-import os, json, traceback
+import os
+import traceback
 import shutil
 import weakref
 import csv
 from decimal import Decimal
 import base64
 # import eth_abi
-from functools import partial
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import *
@@ -41,12 +41,13 @@ from qtum_electrum.qtum import COIN, is_address, TYPE_ADDRESS, TYPE_SCRIPT, TEST
 from qtum_electrum.plugins import run_hook
 from qtum_electrum.i18n import _
 from qtum_electrum.util import (bh2u, bfh, format_time, format_satoshis, PrintError, format_satoshis_plain,
-                           NotEnoughFunds, UserCancelled, profiler, export_meta, import_meta, open_browser)
+                                NotEnoughFunds, UserCancelled, profiler, export_meta, import_meta, open_browser)
 from qtum_electrum import Transaction
 from qtum_electrum import util, bitcoin, commands, coinchooser
 from qtum_electrum import paymentrequest
-# from qtum_electrum.script import contract_script
+from qtum_electrum.transaction import opcodes, contract_script
 from qtum_electrum.wallet import Multisig_Wallet, AddTransactionException
+from qtum_electrum.tokens import Token
 
 try:
     from qtum_electrum.plot import plot_history
@@ -59,8 +60,7 @@ from .qrtextedit import ShowQRTextEdit, ScanQRTextEdit
 from .transaction_dialog import show_transaction
 from .fee_slider import FeeSlider
 from .util import *
-
-
+from .token_dialog import TokenAddDialog, TokenInfoDialog, TokenSendDialog
 # from .smart_contract_dialog import ContractCreateDialog, ContractFuncDialog, ContractEditDialog
 
 
@@ -90,6 +90,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     notify_transactions_signal = pyqtSignal()
     new_fx_quotes_signal = pyqtSignal()
     new_fx_history_signal = pyqtSignal()
+    new_fx_token_signal = pyqtSignal()
     network_signal = pyqtSignal(str, object)
     alias_received_signal = pyqtSignal()
     computing_privkeys_signal = pyqtSignal()
@@ -105,6 +106,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.invoices = wallet.invoices
         self.contacts = wallet.contacts
         self.smart_contracts = wallet.smart_contracts
+        self.tokens = wallet.tokens
         self.tray = gui_object.tray
         self.app = gui_object.app
         self.cleaned_up = False
@@ -134,12 +136,14 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.utxo_tab = self.create_utxo_tab()
         self.console_tab = self.create_console_tab()
         self.contacts_tab = self.create_contacts_tab()
+        self.tokens_tab = self.create_tokens_tab()
         # self.smart_contract_tab = self.create_smart_contract_tab()
 
         tabs.addTab(self.create_history_tab(), QIcon(":icons/tab_history.png"), _('History'))
         tabs.addTab(self.send_tab, QIcon(":icons/tab_send.png"), _('Send'))
         tabs.addTab(self.receive_tab, QIcon(":icons/tab_receive.png"), _('Receive'))
-        tabs.addTab(self.contacts_tab, QIcon(":icons/tab_contacts.png"), _('Contacts'))
+        tabs.addTab(self.tokens_tab, QIcon(":icons/tab_contacts.png"), _('Tokens'))
+        # tabs.addTab(self.contacts_tab, QIcon(":icons/tab_contacts.png"), _('Contacts'))
 
         def add_optional_tab(tabs, tab, icon, description, name):
             tab.tab_icon = icon
@@ -152,6 +156,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         add_optional_tab(tabs, self.addresses_tab, QIcon(":icons/tab_addresses.png"), _("&Addresses"), "addresses")
         add_optional_tab(tabs, self.utxo_tab, QIcon(":icons/tab_coins.png"), _("Co&ins"), "utxo")
         add_optional_tab(tabs, self.console_tab, QIcon(":icons/tab_console.png"), _("Con&sole"), "console")
+        add_optional_tab(tabs, self.contacts_tab, QIcon(":icons/tab_contracts.png"), _("Con&tacts"), "contacts")
         # add_optional_tab(tabs, self.smart_contract_tab, QIcon(":icons/tab_console.png"), _('Smart Contract'),
         #                  'contract')
 
@@ -193,8 +198,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.console.showMessage(self.network.banner)
             self.network.register_callback(self.on_quotes, ['on_quotes'])
             self.network.register_callback(self.on_history, ['on_history'])
+            self.network.register_callback(self.on_token, ['on_token'])
+
             self.new_fx_quotes_signal.connect(self.on_fx_quotes)
             self.new_fx_history_signal.connect(self.on_fx_history)
+            self.new_fx_token_signal.connect(self.on_fx_token)
 
         # update fee slider in case we missed the callback
         self.fee_slider.update()
@@ -223,6 +231,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         # History tab needs updating if it used spot
         if self.fx.history_used_spot:
             self.history_list.update()
+
+    def on_token(self, b):
+        self.new_fx_token_signal.emit()
+
+    def on_fx_token(self):
+        self.token_balance_list.update()
 
     def toggle_tab(self, tab):
         show = not self.config.get('show_{}_tab'.format(tab.tab_name), False)
@@ -362,7 +376,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.setGeometry(*winpos)
         except:
             self.print_error("using default geometry")
-            self.setGeometry(100, 100, 840, 400)
+            self.setGeometry(100, 100, 860, 460)
 
     def watching_only_changed(self):
         title = 'Electrum for Qtum <Beta> %s  -  %s' % (self.wallet.electrum_version,
@@ -458,7 +472,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         file_menu.addSeparator()
         file_menu.addAction(_("&Quit"), self.close)
 
-
         wallet_menu = menubar.addMenu(_("&Wallet"))
         wallet_menu.addAction(_("&Information"), self.show_master_public_keys)
         wallet_menu.addSeparator()
@@ -507,6 +520,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         add_toggle_action(view_menu, self.addresses_tab)
         add_toggle_action(view_menu, self.utxo_tab)
         add_toggle_action(view_menu, self.console_tab)
+        add_toggle_action(view_menu, self.contacts_tab)
         # add_toggle_action(view_menu, self.smart_contract_tab)
 
         tools_menu = menubar.addMenu(_("&Tools"))
@@ -708,16 +722,16 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 icon = QIcon(":icons/status_lagging.png")
             else:
                 c, u, x = self.wallet.get_balance()
-                text =  _("Balance" ) + ": %s "%(self.format_amount_and_units(c))
+                text = _("Balance") + ": %s " % (self.format_amount_and_units(c))
                 if u:
-                    text +=  " [%s unconfirmed]"%(self.format_amount(u, True).strip())
+                    text += " [%s unconfirmed]" % (self.format_amount(u, True).strip())
                 if x:
-                    text +=  " [%s unmatured]"%(self.format_amount(x, True).strip())
+                    text += " [%s unmatured]" % (self.format_amount(x, True).strip())
 
                 # append fiat balance and price
                 if self.fx.is_enabled():
                     text += self.fx.get_fiat_status_text(c + u + x,
-                        self.base_unit(), self.get_decimal_point()) or ''
+                                                         self.base_unit(), self.get_decimal_point()) or ''
                 if not self.network.proxy:
                     icon = QIcon(":icons/status_connected.png")
                 else:
@@ -730,7 +744,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.balance_label.setText(text)
         self.status_button.setIcon( icon )
 
-
     def update_wallet(self):
         self.update_status()
         if self.wallet.up_to_date or not self.network or not self.network.is_connected():
@@ -742,6 +755,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.address_list.update()
         self.utxo_list.update()
         self.contact_list.update()
+        self.token_balance_list.update()
         # self.smart_contract_list.update()
         self.invoice_list.update()
         self.update_completions()
@@ -855,7 +869,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         return w
 
-
     def delete_payment_request(self, addr):
         self.wallet.remove_payment_request(addr, self.config)
         self.request_list.update()
@@ -875,7 +888,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             sig = bitcoin.base_encode(sig, base=58)
             URI += "&name=" + req['name'] + "&sig="+sig
         return str(URI)
-
 
     def sign_payment_request(self, addr):
         alias = self.config.get('alias')
@@ -920,7 +932,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         finally:
             self.request_list.update()
             self.address_list.update()
-
 
     def view_and_paste(self, title, msg, data):
         dialog = WindowModalDialog(self, title)
@@ -1246,7 +1257,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 b = False
             self.rbf_checkbox.setVisible(b)
             self.rbf_checkbox.setChecked(b)
-
 
     def from_list_delete(self, item):
         i = self.from_list.indexOfTopLevelItem(item)
@@ -1575,7 +1585,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.amount_e.setAmount(amount)
             self.amount_e.textEdited.emit("")
 
-
     def do_clear(self):
         self.is_max = False
         self.not_enough_funds = False
@@ -1753,18 +1762,20 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         console.history = self.config.get("console-history",[])
         console.history_index = len(console.history)
 
-        console.updateNamespace({'wallet' : self.wallet,
-                                 'network' : self.network,
-                                 'plugins' : self.gui_object.plugins,
+        console.updateNamespace({'wallet': self.wallet,
+                                 'network': self.network,
+                                 'plugins': self.gui_object.plugins,
                                  'window': self})
-        console.updateNamespace({'util' : util, 'bitcoin':bitcoin})
+        console.updateNamespace({'util': util, 'bitcoin': bitcoin})
 
         c = commands.Commands(self.config, self.wallet, self.network, lambda: self.console.set_json(True))
         methods = {}
+
         def mkfunc(f, method):
             return lambda *args: f(method, args, self.password_dialog)
+
         for m in dir(c):
-            if m[0]=='_' or m in ['network','wallet']: continue
+            if m[0] == '_' or m in ['network', 'wallet']: continue
             methods[m] = mkfunc(c._run, m)
 
         console.updateNamespace(methods)
@@ -2826,7 +2837,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         for widgets, name in tabs_info:
             tab = QWidget()
             grid = QGridLayout(tab)
-            grid.setColumnStretch(0,1)
+            grid.setColumnStretch(0, 1)
             for a,b in widgets:
                 i = grid.rowCount()
                 if b:
@@ -2853,7 +2864,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         run_hook('close_settings_dialog')
         if self.need_restart:
             self.show_warning(_('Please restart Electrum to activate the new GUI settings'), title=_('Success'))
-
 
     def closeEvent(self, event):
         # It seems in some rare cases this closeEvent() is called twice
@@ -3048,12 +3058,120 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.show_message(_("Transaction saved successfully"))
             return True
 
+    def create_tokens_tab(self):
+        from .token_list import TokenBalanceList
+        self.token_balance_list = tbl = TokenBalanceList(self)
+        tbl.searchable_list = tbl
+        return self.create_list_tab(tbl, tbl.create_toolbar(visible=False))
+
+    def set_token(self, token):
+        """
+        :type token: Token
+        :return:
+        """
+        key = '{}_{}'.format(token.contract_addr, token.bind_addr)
+        self.tokens[key] = token
+        self.token_balance_list.update()
+
+    def delete_token(self, key):
+        if not self.question(_("Remove {} from your list of tokens?".format(
+                self.tokens[key].name))):
+            return False
+        self.tokens.pop(key)
+        self.token_balance_list.update()
+
+    def token_add_dialog(self):
+        d = TokenAddDialog(self)
+        d.show()
+
+    def token_view_dialog(self, token):
+        """
+        :type token: Token
+        """
+        d = TokenInfoDialog(self, token)
+        d.show()
+
+    def token_send_dialog(self, token):
+        """
+        :type token: Token
+        """
+        d = TokenSendDialog(self, token)
+        d.show()
+
+    def do_token_pay(self, token, pay_to, amount, gas_limit, gas_price, dialog):
+        try:
+            datahex = 'a9059cbb{}{:064x}'.format(pay_to.zfill(64), amount)
+            script = contract_script(gas_limit, gas_price, datahex, token.contract_addr, opcodes.OP_CALL)
+            # print('do_token_pay', script)
+            outputs = [(TYPE_SCRIPT, script, 0), ]
+            tx_desc = 'pay out {} {}'.format(amount / (10 ** token.decimals), token.symbol)
+            self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, token.bind_addr, dialog)
+        except (BaseException,) as e:
+            traceback.print_exc(file=sys.stderr)
+            dialog.show_message(str(e))
+
+    def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog):
+        coins = self.get_coins()
+        try:
+            tx = self.wallet.make_unsigned_transaction(coins, outputs, self.config, None,
+                                                       change_addr=sender,
+                                                       gas_fee=gas_fee,
+                                                       sender=sender)
+        except NotEnoughFunds:
+            dialog.show_message(_("Insufficient funds"))
+            return
+        except BaseException as e:
+            traceback.print_exc(file=sys.stdout)
+            dialog.show_message(str(e))
+            return
+
+        amount = sum(map(lambda y: y[2], outputs))
+        fee = tx.get_fee()
+
+        if fee < self.wallet.relayfee() * tx.estimated_size() / 1000:
+            dialog.show_message(
+                _("This transaction requires a higher fee, or it will not be propagated by the network"))
+            return
+
+        # confirmation dialog
+        msg = [
+            _("Amount to be sent") + ": " + self.format_amount_and_units(amount),
+            _("Mining fee") + ": " + self.format_amount_and_units(fee - gas_fee),
+            _("Gas fee") + ": " + self.format_amount_and_units(gas_fee),
+        ]
+
+        confirm_rate = 2 * self.config.max_fee_rate()
+        if fee > confirm_rate * tx.estimated_size() / 1000:
+            msg.append(_('Warning') + ': ' + _("The fee for this transaction seems unusually high."))
+
+        if self.wallet.has_password():
+            msg.append("")
+            msg.append(_("Enter your password to proceed"))
+            password = self.password_dialog('\n'.join(msg))
+            if not password:
+                return
+        else:
+            msg.append(_('Proceed?'))
+            password = None
+            if not dialog.question('\n'.join(msg)):
+                return
+
+        def sign_done(success):
+            if success:
+                if not tx.is_complete():
+                    self.show_transaction(tx)
+                    self.do_clear()
+                else:
+                    self.broadcast_transaction(tx, desc)
+
+        self.sign_tx_with_password(tx, sign_done, password)
+
     def set_smart_contract(self, name, address, interface, _type):
         """
-        :param name: str
-        :param address: str
-        :param interface: list
-        :param _type: str
+        :type name: str
+        :type address: str
+        :type interface: list
+        :type _type: str
         :return: bool
         """
         if not is_hash160(address):
@@ -3062,9 +3180,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             return False
         self.smart_contracts[address] = (name, _type, interface)
         self.smart_contract_list.update()
-        self.history_list.update()
-        self.update_completions()
-        self.smart_contracts.save()
         return True
 
     def delete_samart_contact(self, address):
@@ -3072,10 +3187,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 self.smart_contracts[address][0]))):
             return False
         self.smart_contracts.pop(address)
-        self.history_list.update()
         self.smart_contract_list.update()
-        self.update_completions()
-        self.smart_contracts.save()
         return True
 
     # def call_smart_contract(self, address, abi, args, sender, dialog):
@@ -3097,66 +3209,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     #             pass
     #     dialog.show_message(str(result))
     #
-    # def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog):
-    #     coins = self.get_coins()
-    #     try:
-    #         tx = self.wallet.make_unsigned_transaction(coins, outputs, self.config, None,
-    #                                                    change_addr=sender,
-    #                                                    gas_fee=gas_fee,
-    #                                                    sender=sender)
-    #     except NotEnoughFunds:
-    #         dialog.show_message(_("Insufficient funds"))
-    #         return
-    #     except BaseException as e:
-    #         traceback.print_exc(file=sys.stdout)
-    #         dialog.show_message(str(e))
-    #         return
-    #
-    #     amount = sum(map(lambda y: y[2], outputs))
-    #     fee = tx.get_fee()
-    #
-    #     if fee < self.wallet.relayfee() * tx.estimated_size() / 1000:
-    #         dialog.show_message(
-    #             _("This transaction requires a higher fee, or it will not be propagated by the network"))
-    #         return
-    #
-    #     # confirmation dialog
-    #     msg = [
-    #         _("Amount to be sent") + ": " + self.format_amount_and_units(amount),
-    #         _("Mining fee") + ": " + self.format_amount_and_units(fee - gas_fee),
-    #         _("Gas fee") + ": " + self.format_amount_and_units(gas_fee),
-    #     ]
-    #
-    #     confirm_rate = 2 * self.config.max_fee_rate()
-    #     if fee > confirm_rate * tx.estimated_size() / 1000:
-    #         msg.append(_('Warning') + ': ' + _("The fee for this transaction seems unusually high."))
-    #
-    #     if self.wallet.has_password():
-    #         msg.append("")
-    #         msg.append(_("Enter your password to proceed"))
-    #         password = self.password_dialog('\n'.join(msg))
-    #         if not password:
-    #             return
-    #     else:
-    #         msg.append(_('Proceed?'))
-    #         password = None
-    #         if not dialog.question('\n'.join(msg)):
-    #             return
-    #
-    #     def sign_done(success):
-    #         if success:
-    #             if not tx.is_complete():
-    #                 self.show_transaction(tx)
-    #                 self.do_clear()
-    #             else:
-    #                 self.broadcast_transaction(tx, desc)
-    #
-    #     self.sign_tx_with_password(tx, sign_done, password)
+
     #
     # def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog):
     #     try:
     #         abi_encoded = eth_abi_encode(abi, args)
-    #         script = contract_script(gas_limit, gas_price, abi_encoded, opcodes.OP_CALL, address)
+    #         script = contract_script(gas_limit, gas_price, abi_encoded, address, opcodes.OP_CALL)
     #         outputs = [(TYPE_SCRIPT, script, amount), ]
     #         tx_desc = 'contract sendto {}'.format(self.smart_contracts[address][0])
     #         self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog)

@@ -36,7 +36,7 @@ import base64
 import zlib
 
 from .i18n import _
-from .util import PrintError, profiler, InvalidPassword
+from .util import PrintError, profiler, InvalidPassword, export_meta, import_meta, print_error
 from .plugins import run_hook, plugin_loaders
 from .keystore import bip44_derivation
 from . import bitcoin
@@ -67,6 +67,7 @@ def get_derivation_used_for_hw_device_encryption():
 
 # storage encryption version
 STO_EV_PLAINTEXT, STO_EV_USER_PW, STO_EV_XPUB_PW = range(0, 3)
+
 
 class WalletStorage(PrintError):
 
@@ -475,3 +476,49 @@ class WalletStorage(PrintError):
                     msg += "\nPlease open this file with Electrum 1.9.8, and move your coins to a new wallet."
             raise BaseException(msg)
         return seed_version
+
+
+class ModelStorage(dict):
+
+    def __init__(self, name, wallet_storage):
+        dict.__init__(self)
+        self.storage = wallet_storage
+        self.name = name
+        d = self.storage.get(name, {})
+        try:
+            self.update(d)
+        except BaseException as e:
+            print_error('ModelStorage init error', self.name, e)
+            return
+
+    def __setitem__(self, key, value):
+        dict.__setitem__(self, key, value)
+        self.save()
+
+    def save(self):
+        self.storage.put(self.name, dict(self))
+
+    def pop(self, key):
+        if key in self.keys():
+            dict.pop(self, key)
+            self.save()
+
+    def load_meta(self, data):
+        self.update(data)
+        self.save()
+
+    def import_file(self, path):
+        import_meta(path, self._validate, self.load_meta)
+
+    def export_file(self, filename):
+        export_meta(self, filename)
+
+    def find_regex(self, haystack, needle):
+        regex = re.compile(needle)
+        try:
+            return regex.search(haystack).groups()[0]
+        except AttributeError:
+            return None
+
+    def _validate(self, data):
+        raise NotImplementedError

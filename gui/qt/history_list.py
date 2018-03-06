@@ -62,6 +62,7 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
         self.end_timestamp = None
         self.years = []
         self.setSortingEnabled(True)
+        self.create_toolbar_buttons()
 
     def format_date(self, d):
         return str(datetime.date(d.year, d.month, d.day)) if d else _('None')
@@ -112,6 +113,8 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
         self.end_button.setEnabled(False)
         self.period_combo.addItems([_('All'), _('Custom')])
         self.period_combo.activated.connect(self.on_combo)
+
+    def get_toolbar_buttons(self):
         return self.period_combo, self.start_button, self.end_button
 
     def on_hide_toolbar(self):
@@ -249,7 +252,7 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
             column_title = self.headerItem().text(column)
             column_data = item.text(column)
 
-        tx_URL = block_explorer_URL(self.config, 'tx', tx_hash)
+        tx_URL = block_explorer_URL(self.config, {'tx': tx_hash})
         height, conf, timestamp = self.wallet.get_tx_height(tx_hash)
         tx = self.wallet.transactions.get(tx_hash)
         is_relevant, is_mine, v, fee = self.wallet.get_wallet_delta(tx)

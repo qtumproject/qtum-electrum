@@ -159,6 +159,7 @@ class ContractFuncLayout(QGridLayout):
         optional_layout = QHBoxLayout()
         optional_layout.setContentsMargins(0, 0, 0, 0)
         optional_layout.setSpacing(0)
+
         gas_limit_lb = QLabel(_('gas limit: '))
         self.gas_limit_e = ButtonsLineEdit()
         self.gas_limit_e.setValidator(int_validator)

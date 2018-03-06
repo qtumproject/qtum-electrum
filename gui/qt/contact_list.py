@@ -75,7 +75,7 @@ class ContactList(MyTreeWidget):
                 menu.addAction(_("Edit %s")%column_title, lambda: self.editItem(item, column))
             menu.addAction(_("Pay to"), lambda: self.parent.payto_contacts(keys))
             menu.addAction(_("Delete"), lambda: self.parent.delete_contacts(keys))
-            URLs = [block_explorer_URL(self.config, 'addr', key) for key in filter(is_address, keys)]
+            URLs = [block_explorer_URL(self.config, {'addr': key}) for key in filter(is_address, keys)]
             if URLs:
                 menu.addAction(_("View on block explorer"), lambda: map(open_browser, URLs))
 

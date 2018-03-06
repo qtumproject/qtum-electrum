@@ -521,9 +521,12 @@ class MyTreeWidget(QTreeWidget):
             item.setHidden(all([item.text(column).lower().find(p) == -1
                                 for column in columns]))
 
+    def get_toolbar_buttons(self):
+        return ()
+
     def create_toolbar(self, visible=False):
         hbox = QHBoxLayout()
-        buttons = self.create_toolbar_buttons()
+        buttons = self.get_toolbar_buttons()
         hbox.addStretch(0)
         for b in buttons:
             b.setVisible(visible)
@@ -707,6 +710,10 @@ def export_meta_gui(electrum_window, title, exporter):
     else:
         electrum_window.show_message(_("Your {0} were exported to '{1}'")
                                      .format(title, str(filename)))
+
+
+float_validator = QRegExpValidator(QRegExp('^(-?\d+)(\.\d+)?$'))
+int_validator = QIntValidator(0, 10 ** 9 - 1)
 
 if __name__ == "__main__":
     app = QApplication([])

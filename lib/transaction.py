@@ -545,6 +545,7 @@ def deserialize(raw):
     d['lockTime'] = vds.read_uint32()
     return d
 
+
 def multisig_script(public_keys, m):
     n = len(public_keys)
     assert n <= 15
@@ -553,6 +554,33 @@ def multisig_script(public_keys, m):
     op_n = format(opcodes.OP_1 + n - 1, 'x')
     keylist = [op_push(len(k)//2) + k for k in public_keys]
     return op_m + ''.join(keylist) + op_n + 'ae'
+
+
+def contract_encode_number(n):
+    bchr = lambda x: bytes([x])
+    r = bytearray(0)
+    if n == 0:
+        return bytes(r)
+    neg = n < 0
+    absvalue = -n if neg else n
+    while absvalue:
+        r.append(absvalue & 0xff)
+        absvalue >>= 8
+    if r[-1] & 0x80:
+        r.append(0x80 if neg else 0)
+    elif neg:
+        r[-1] |= 0x80
+    return bytes(bchr(len(r)) + r)
+
+
+def contract_script(gas_limit, gas_price, datahex, contract_addr, opcode):
+    script = '0104'
+    script += bh2u(contract_encode_number(gas_limit))
+    script += bh2u(contract_encode_number(gas_price))
+    script += push_script(datahex)
+    script += push_script(contract_addr)
+    script += bh2u(bytes([opcode]))
+    return script
 
 
 class Transaction:

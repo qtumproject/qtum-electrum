@@ -478,14 +478,23 @@ def block_explorer(config):
 def block_explorer_tuple(config):
     return block_explorer_info().get(block_explorer(config))
 
-def block_explorer_URL(config, kind, item):
+
+def block_explorer_URL(config, params):
+    """
+    :param config:
+    :type params: dict
+    :return: str
+    """
     be_tuple = block_explorer_tuple(config)
     if not be_tuple:
         return
-    kind_str = be_tuple[1].get(kind)
-    if not kind_str:
-        return
-    url_parts = [be_tuple[0], kind_str, item]
+    url_parts = [be_tuple[0], ]
+    for k, v in params.items():
+        kind_str = be_tuple[1].get(k)
+        if not kind_str:
+            continue
+        url_parts.append(kind_str)
+        url_parts.append(v)
     return "/".join(url_parts)
 
 # URL decode

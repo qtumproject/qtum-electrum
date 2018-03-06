@@ -4,7 +4,7 @@ from binascii import hexlify, unhexlify
 
 from qtum_electrum.util import bfh, bh2u
 from qtum_electrum.bitcoin import (b58_address_to_hash160, xpub_from_pubkey,
-                              TYPE_ADDRESS, TYPE_SCRIPT, NetworkConstants)
+                                   TYPE_ADDRESS, TYPE_SCRIPT, NetworkConstants)
 from qtum_electrum.i18n import _
 from qtum_electrum.plugins import BasePlugin
 from qtum_electrum.transaction import deserialize

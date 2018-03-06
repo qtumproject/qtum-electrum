@@ -23,16 +23,11 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import hashlib
-import os.path
-import re
 import sys
-import threading
 import time
 import traceback
-import json
 import requests
 import urllib.parse
-
 
 try:
     from . import paymentrequest_pb2 as pb2
@@ -44,9 +39,8 @@ from . import transaction
 from . import x509
 from . import rsakey
 from . import util
-from .util import print_error, bh2u, bfh
-from .util import export_meta, import_meta
-
+from .util import print_error, bh2u, bfh, export_meta, import_meta
+from .storage import ModelStorage
 from .bitcoin import TYPE_ADDRESS
 
 REQUEST_HEADERS = {'Accept': 'application/bitcoin-paymentrequest', 'User-Agent': 'Electrum'}
@@ -56,20 +50,17 @@ ca_path = requests.certs.where()
 ca_list = None
 ca_keyID = None
 
+
 def load_ca_list():
     global ca_list, ca_keyID
     if ca_list is None:
         ca_list, ca_keyID = x509.load_certificates(ca_path)
-
-
 
 # status of payment requests
 PR_UNPAID  = 0
 PR_EXPIRED = 1
 PR_UNKNOWN = 2     # sent but not propagated
 PR_PAID    = 3     # send and propagated
-
-
 
 def get_payment_request(url):
     u = urllib.parse.urlparse(url)
@@ -441,7 +432,6 @@ def make_request(config, req):
     if key_path and cert_path:
         sign_request_with_x509(pr, key_path, cert_path)
     return pr
-
 
 
 class InvoiceStore(object):

@@ -14,7 +14,7 @@ from .util import MyTreeWidget
 
 
 class SmartContractList(MyTreeWidget):
-    filter_columns = [0, 1]  # Key, Value
+    filter_columns = [0, 1]
 
     def __init__(self, parent):
         MyTreeWidget.__init__(self, parent, self.create_menu, [_('Name'), _('Address'), _('Type')], 1, [0])
@@ -43,7 +43,7 @@ class SmartContractList(MyTreeWidget):
             menu.addAction(_("Edit"), lambda: self.parent.contract_edit_dialog(address))
             menu.addAction(_("Function"), lambda: self.parent.contract_func_dialog(address))
             menu.addAction(_("Delete"), lambda: self.parent.delete_samart_contact(address))
-            URL = block_explorer_URL(self.config, 'contract', address)
+            URL = block_explorer_URL(self.config, {'contract': address})
             if URL:
                 menu.addAction(_("View on block explorer"), lambda: open_browser(URL))
         run_hook('create_smart_contract_menu', menu, selected)
