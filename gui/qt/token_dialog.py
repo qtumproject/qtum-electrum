@@ -8,7 +8,7 @@ from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from .util import ButtonsLineEdit, Buttons, CancelButton, MessageBoxMixin, int_validator, float_validator
-from qtum_electrum.qtum import is_hash160, is_b58_address, b58_address_to_hash160, bh2u
+from qtum_electrum.qtum import is_hash160, is_b58_address, b58_address_to_hash160, bh2u, ADDRTYPE_P2PKH
 from qtum_electrum.i18n import _
 from qtum_electrum.tokens import Token
 
@@ -25,6 +25,11 @@ class TokenAddLayout(QGridLayout):
         self.callback = callback
         self.dialog = dialog
         self.addresses = self.dialog.parent().wallet.get_addresses()
+
+        addr_type, __ = b58_address_to_hash160(self.addresses[0])
+        if not addr_type == ADDRTYPE_P2PKH:
+            self.dialog.show_message('only P2PKH address supports QRC20 Token')
+            return
 
         address_lb = QLabel(_("Contract Address:"))
         self.contract_addr_e = ButtonsLineEdit()
@@ -80,6 +85,8 @@ class TokenAddDialog(QDialog, MessageBoxMixin):
             if not name or not symbol or not decimals or not isinstance(decimals, int):
                 self.show_message('token info not valid: {} {} {}'.format(name, symbol, decimals))
                 return
+            __, hash160 = b58_address_to_hash160(bind_addr)
+            bind_addr = bh2u(hash160)
             token = Token(contract_addr, bind_addr, name, symbol, decimals, 0)
             self.parent().set_token(token)
         except BaseException as e:

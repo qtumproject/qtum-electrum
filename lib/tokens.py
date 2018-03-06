@@ -52,6 +52,11 @@ class Tokens(ModelStorage):
                 data.pop(k)
                 continue
 
+            addr_type, __ = qtum.b58_address_to_hash160(bind_addr)
+            if not addr_type == qtum.ADDRTYPE_P2PKH:
+                data.pop(k)
+                continue
+
             if not len(v) == 4:
                 data.pop(k)
                 continue
