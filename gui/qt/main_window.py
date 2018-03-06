@@ -143,6 +143,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         tabs.addTab(self.send_tab, QIcon(":icons/tab_send.png"), _('Send'))
         tabs.addTab(self.receive_tab, QIcon(":icons/tab_receive.png"), _('Receive'))
         tabs.addTab(self.tokens_tab, QIcon(":icons/tab_contacts.png"), _('Tokens'))
+
         # tabs.addTab(self.contacts_tab, QIcon(":icons/tab_contacts.png"), _('Contacts'))
 
         def add_optional_tab(tabs, tab, icon, description, name):

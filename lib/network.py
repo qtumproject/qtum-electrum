@@ -641,7 +641,7 @@ class Network(util.DaemonThread):
     def subscribe_tokens(self, tokens, callback):
         msgs = [(
             'blockchain.contract.hash160.subscribe',
-            [token.contract_addr, bh2u(b58_address_to_hash160(token.bind_addr))[1]])
+            [token.contract_addr, bh2u(b58_address_to_hash160(token.bind_addr)[1])])
             for token in tokens]
         self.send(msgs, callback)
 
