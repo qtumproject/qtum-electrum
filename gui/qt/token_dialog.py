@@ -4,6 +4,7 @@
 """
 __author__ = 'CodeFace'
 """
+from decimal import Decimal, ConversionSyntax
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
@@ -91,7 +92,6 @@ class TokenAddDialog(QDialog, MessageBoxMixin):
             self.parent().set_token(token)
         except BaseException as e:
             self.show_message(str(e))
-            return
 
 
 class TokenInfoLayout(QGridLayout):
@@ -237,7 +237,7 @@ class TokenSendLayout(QGridLayout):
 
     def parse_values(self):
         def parse_edit_value(edit, times=10 ** 8):
-            return int(float(edit.text()) * times)
+            return int(Decimal(edit.text()) * times)
 
         return parse_edit_value(self.gas_limit_e, 1), parse_edit_value(self.gas_price_e), parse_edit_value(
             self.amount_e, 10 ** self.token.decimals)
@@ -245,9 +245,13 @@ class TokenSendLayout(QGridLayout):
     def send(self):
         try:
             gas_limit, gas_price, amount = self.parse_values()
+        except ConversionSyntax as e:
+            self.show_message('invalid input value', e)
+            return
         except (BaseException,) as e:
             self.dialog.show_message(e)
             return
+        print('send', amount)
         address_to = self.address_to_e.text().rstrip().lstrip()
         if is_b58_address(address_to):
             __, hash160 = b58_address_to_hash160(address_to)

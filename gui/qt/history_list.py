@@ -167,7 +167,6 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
             if timestamp_to_datetime(h[-1][3]):
                 end_date = timestamp_to_datetime(h[-1][3]).date()
             else:
-                print('history list on update h[-1]', h[-1])
                 end_date = date.today()
 
             self.years = [str(i) for i in range(start_date.year, end_date.year + 1)]

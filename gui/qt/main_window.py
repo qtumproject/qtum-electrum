@@ -1362,9 +1362,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         return outputs, fee, label, coins
 
     def do_preview(self):
-        self.do_send(preview = True)
+        self.do_send(preview=True)
 
-    def do_send(self, preview = False):
+    def do_send(self, preview=False):
         if run_hook('abort_send', self):
             return
         r = self.read_send_tab()
@@ -3103,7 +3103,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         try:
             datahex = 'a9059cbb{}{:064x}'.format(pay_to.zfill(64), amount)
             script = contract_script(gas_limit, gas_price, datahex, token.contract_addr, opcodes.OP_CALL)
-            # print('do_token_pay', script)
             outputs = [(TYPE_SCRIPT, script, 0), ]
             tx_desc = 'pay out {} {}'.format(amount / (10 ** token.decimals), token.symbol)
             self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, token.bind_addr, dialog)
@@ -3136,13 +3135,13 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         # confirmation dialog
         msg = [
-            _("Amount to be sent") + ": " + self.format_amount_and_units(amount),
+            _(desc),
             _("Mining fee") + ": " + self.format_amount_and_units(fee - gas_fee),
             _("Gas fee") + ": " + self.format_amount_and_units(gas_fee),
         ]
 
         confirm_rate = 2 * self.config.max_fee_rate()
-        if fee > confirm_rate * tx.estimated_size() / 1000:
+        if fee - gas_fee > confirm_rate * tx.estimated_size() / 1000:
             msg.append(_('Warning') + ': ' + _("The fee for this transaction seems unusually high."))
 
         if self.wallet.has_password():
