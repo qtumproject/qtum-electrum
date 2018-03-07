@@ -201,6 +201,8 @@ class Network(util.DaemonThread):
 
         # subscriptions and requests
         self.subscribed_addresses = set()
+        self.subscribed_tokens = set()
+
         self.h2addr = {}
         # Requests from client we've not seen a response to
         self.unanswered_requests = {}
@@ -304,7 +306,8 @@ class Network(util.DaemonThread):
         return message_id
 
     def send_subscriptions(self):
-        self.print_error('sending subscriptions to', self.interface.server, len(self.unanswered_requests), len(self.subscribed_addresses))
+        self.print_error('sending subscriptions to', self.interface.server, len(self.unanswered_requests),
+                         len(self.subscribed_addresses), len(self.subscribed_tokens))
         self.sub_cache.clear()
         # Resend unanswered requests
         requests = self.unanswered_requests.values()
@@ -324,6 +327,9 @@ class Network(util.DaemonThread):
         self.queue_request('blockchain.relayfee', [])
         for h in self.subscribed_addresses:
             self.queue_request('blockchain.scripthash.subscribe', [h])
+        for hash160, contract_addr in self.subscribed_tokens:
+            self.queue_request('blockchain.hash160.contract.subscribe', [hash160, contract_addr])
+
 
     def get_status_value(self, key):
         if key == 'status':
@@ -592,6 +598,8 @@ class Network(util.DaemonThread):
                 # add it to the list; avoids double-sends on reconnection
                 if method == 'blockchain.scripthash.subscribe':
                     self.subscribed_addresses.add(params[0])
+                elif method == 'blockchain.hash160.contract.subscribe':
+                    self.subscribed_tokens.add((params[0], params[1]))
             else:
                 if not response:  # Closed remotely / misbehaving
                     self.connection_down(interface.server)
@@ -606,6 +614,8 @@ class Network(util.DaemonThread):
                 elif method == 'blockchain.scripthash.subscribe':
                     response['params'] = [params[0]]  # addr
                     response['result'] = params[1]
+                elif method == 'blockchain.hash160.contract.subscribe':
+                    print_error('process_responses', response)
                 callbacks = self.subscriptions.get(k, [])
 
             # update cache if it's a subscription
@@ -640,8 +650,8 @@ class Network(util.DaemonThread):
 
     def subscribe_tokens(self, tokens, callback):
         msgs = [(
-            'blockchain.contract.hash160.subscribe',
-            [token.contract_addr, bh2u(b58_address_to_hash160(token.bind_addr)[1])])
+            'blockchain.hash160.contract.subscribe',
+            [bh2u(b58_address_to_hash160(token.bind_addr)[1]), token.contract_addr])
             for token in tokens]
         self.send(msgs, callback)
 

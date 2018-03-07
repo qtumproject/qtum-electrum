@@ -57,7 +57,7 @@ class Synchronizer(ThreadJob):
         if response.get('error'):
             self.print_error("response error:", response)
             return None, None
-        return response['params'], response['result']
+        return response['params'], response.get('result')
 
     def is_up_to_date(self):
         return (not self.requested_tx and not self.requested_histories
@@ -175,10 +175,9 @@ class Synchronizer(ThreadJob):
         params, result = self.parse_response(response)
         if not params:
             return
-        print('on_token_status', params, result)
         try:
-            contract_addr = params[0]
-            bind_addr = hash160_to_p2pkh(binascii.a2b_hex(params[1][-40:]))
+            bind_addr = hash160_to_p2pkh(binascii.a2b_hex(params[0]))
+            contract_addr = params[1]
             key = '{}_{}'.format(contract_addr, bind_addr)
             token = self.wallet.tokens[key]
             if token:
@@ -248,8 +247,6 @@ class Synchronizer(ThreadJob):
             tokens = self.new_tokens
             self.new_tokens = set()
         self.subscribe_tokens(tokens)
-        for token in tokens:
-            self.get_token_balance(token)
 
         # 3. Detect if situation has changed
         up_to_date = self.is_up_to_date()
