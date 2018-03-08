@@ -4,11 +4,11 @@
 """
 __author__ = 'CodeFace'
 """
-from decimal import Decimal, ConversionSyntax
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
-from .util import ButtonsLineEdit, Buttons, CancelButton, MessageBoxMixin, int_validator, float_validator
+from .util import ButtonsLineEdit, Buttons, CancelButton, MessageBoxMixin
+from .amountedit import AmountEdit
 from qtum_electrum.qtum import is_hash160, is_b58_address, b58_address_to_hash160, bh2u, ADDRTYPE_P2PKH
 from qtum_electrum.i18n import _
 from qtum_electrum.tokens import Token
@@ -200,7 +200,7 @@ class TokenSendLayout(QGridLayout):
         self.addWidget(self.address_to_e, 2, 1, 1, -1)
 
         amount_lb = QLabel(_("Amount:"))
-        self.amount_e = QLineEdit()
+        self.amount_e = AmountEdit(lambda: self.token.symbol, False, None, self.token.decimals, 0)
         self.addWidget(amount_lb, 3, 0)
         self.addWidget(self.amount_e, 3, 1, 1, -1)
 
@@ -211,12 +211,10 @@ class TokenSendLayout(QGridLayout):
         optional_layout.setContentsMargins(0, 0, 0, 0)
         optional_layout.setSpacing(0)
         gas_limit_lb = QLabel(_('gas limit: '))
-        self.gas_limit_e = ButtonsLineEdit()
-        self.gas_limit_e.setValidator(int_validator)
+        self.gas_limit_e = AmountEdit(lambda: '', True, None, 0, 0)
         self.gas_limit_e.setText('250000')
         gas_price_lb = QLabel(_('gas price: '))
-        self.gas_price_e = ButtonsLineEdit()
-        self.gas_price_e.setValidator(float_validator)
+        self.gas_price_e = AmountEdit(lambda: '', False, None, 8, 0)
         self.gas_price_e.setText('0.00000040')
         optional_layout.addWidget(gas_limit_lb)
         optional_layout.addWidget(self.gas_limit_e)
@@ -237,7 +235,7 @@ class TokenSendLayout(QGridLayout):
 
     def parse_values(self):
         def parse_edit_value(edit, times=10 ** 8):
-            return int(Decimal(edit.text()) * times)
+            return int(edit.get_amount() * times)
 
         return parse_edit_value(self.gas_limit_e, 1), parse_edit_value(self.gas_price_e), parse_edit_value(
             self.amount_e, 10 ** self.token.decimals)
@@ -245,13 +243,9 @@ class TokenSendLayout(QGridLayout):
     def send(self):
         try:
             gas_limit, gas_price, amount = self.parse_values()
-        except ConversionSyntax as e:
-            self.show_message('invalid input value', e)
-            return
         except (BaseException,) as e:
             self.dialog.show_message(e)
             return
-        print('send', amount)
         address_to = self.address_to_e.text().rstrip().lstrip()
         if is_b58_address(address_to):
             __, hash160 = b58_address_to_hash160(address_to)

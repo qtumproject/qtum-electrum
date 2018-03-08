@@ -15,21 +15,24 @@ class MyLineEdit(QLineEdit):
         self.setFrame(not b)
         self.frozen.emit()
 
+
 class AmountEdit(MyLineEdit):
     shortcut = pyqtSignal()
 
-    def __init__(self, base_unit, is_int = False, parent=None):
+    def __init__(self, base_unit, is_int=False, parent=None, decimal_p=8, width=140):
         QLineEdit.__init__(self, parent)
         # This seems sufficient for hundred-BTC amounts with 8 decimals
-        self.setFixedWidth(140)
+        if width:
+            self.setFixedWidth(140)
         self.base_unit = base_unit
+        self.decimal_p = decimal_p
         self.textChanged.connect(self.numbify)
         self.is_int = is_int
         self.is_shortcut = False
         self.help_palette = QPalette()
 
     def decimal_point(self):
-        return 8
+        return self.decimal_p
 
     def numbify(self):
         text = self.text().strip()
@@ -38,12 +41,12 @@ class AmountEdit(MyLineEdit):
             return
         pos = self.cursorPosition()
         chars = '0123456789'
-        if not self.is_int: chars +='.'
+        if not self.is_int: chars += '.'
         s = ''.join([i for i in text if i in chars])
         if not self.is_int:
             if '.' in s:
                 p = s.find('.')
-                s = s.replace('.','')
+                s = s.replace('.', '')
                 s = s[:p] + '.' + s[p:p+self.decimal_point()]
         self.setText(s)
         # setText sets Modified to False.  Instead we want to remember
@@ -99,6 +102,7 @@ class BTCAmountEdit(AmountEdit):
             self.setText(" ") # Space forces repaint in case units changed
         else:
             self.setText(format_satoshis_plain(amount, self.decimal_point()))
+
 
 class BTCkBEdit(BTCAmountEdit):
     def _base_unit(self):
