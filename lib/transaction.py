@@ -519,7 +519,7 @@ def parse_output(vds, i):
     d['scriptPubKey'] = bh2u(scriptPubKey)
     d['prevout_n'] = i
     if not d['value'] and not d['address'] and not i and not d['scriptPubKey']:
-        d['type'] = 'coinbase'
+        d['type'] = 'coinstake'
     return d
 
 

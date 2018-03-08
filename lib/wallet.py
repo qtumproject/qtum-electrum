@@ -966,22 +966,22 @@ class Abstract_Wallet(PrintError):
                     labels.append(label)
             if labels:
                 return ', '.join(labels)
-        is_coinbase = False
         try:
             tx = self.transactions.get(tx_hash)
-            is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinbase'
+            if tx.outputs()[0][0] == 'coinstake':
+                return 'stake mined'
+            elif tx.inputs()[0]['type'] == 'coinbase':
+                return 'coinbase'
         except (BaseException,) as e:
             print_error('get_default_label', e)
-        if is_coinbase:
-            return 'mined'
         return ''
 
     def get_tx_status(self, tx_hash, height, conf, timestamp):
         from .util import format_time
-        is_coinbase = False
+        is_mined = False
         try:
             tx = self.transactions.get(tx_hash)
-            is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinbase'
+            is_mined = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinstake'
         except (BaseException,) as e:
             print_error('get_tx_status', e)
         if conf == 0:
@@ -1011,7 +1011,7 @@ class Abstract_Wallet(PrintError):
                 status = 3
             else:
                 status = 4
-        elif is_coinbase:
+        elif is_mined:
             status = 5 + max(min(conf // (COINBASE_MATURITY // RECOMMEND_CONFIRMATIONS), RECOMMEND_CONFIRMATIONS), 1)
         else:
             status = 5 + min(conf, RECOMMEND_CONFIRMATIONS)
