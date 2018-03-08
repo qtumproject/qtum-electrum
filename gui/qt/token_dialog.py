@@ -246,6 +246,9 @@ class TokenSendLayout(QGridLayout):
         except (BaseException,) as e:
             self.dialog.show_message(e)
             return
+        if self.token.balance < amount:
+            self.dialog.show_message('token not enough')
+            return
         address_to = self.address_to_e.text().rstrip().lstrip()
         if is_b58_address(address_to):
             __, hash160 = b58_address_to_hash160(address_to)
