@@ -95,7 +95,7 @@ class Plugins(DaemonThread):
     def load_plugin(self, name):
         if name in self.plugins:
             return self.plugins[name]
-        full_name = 'electrum_plugins.' + name + '.' + self.gui_name
+        full_name = 'qtum_electrum_plugins.' + name + '.' + self.gui_name
         loader = pkgutil.find_loader(full_name)
         if not loader:
             raise RuntimeError("%s implementation for %s plugin not found"
@@ -540,7 +540,7 @@ class DeviceMgr(ThreadJob, PrintError):
                                  .format(str(f), str(e)))
             else:
                 devices.extend(new_devices)
-    
+
         # Now find out what was disconnected
         pairs = [(dev.path, dev.id_) for dev in devices]
         disconnected_ids = []

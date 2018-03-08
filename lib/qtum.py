@@ -29,6 +29,9 @@ def read_json_dict(filename):
     return r
 
 
+BITCOIN_ADDRTYPE_P2PKH = 0
+BITCOIN_ADDRTYPE_P2SH = 5
+
 # QTUM network constants
 TESTNET = False
 ADDRTYPE_P2PKH = 0x3a
@@ -1270,6 +1273,14 @@ def compact_from_uint256(target):
         bitsBase >>= 8
     new_bits = bitsN << 24 | bitsBase
     return new_bits
+
+
+def qtum_addr_to_bitcoin_addr(qtum_addr):
+    addr_type, hash160 = b58_address_to_hash160(qtum_addr)
+    if addr_type == ADDRTYPE_P2PKH:
+        return hash160_to_b58_address(hash160, addrtype=BITCOIN_ADDRTYPE_P2PKH)
+    elif addr_type == ADDRTYPE_P2SH:
+        return hash160_to_b58_address(hash160, addr_type=BITCOIN_ADDRTYPE_P2SH)
 
 
 def eth_abi_encode(abi, args):

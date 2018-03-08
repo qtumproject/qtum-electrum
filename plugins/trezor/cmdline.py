@@ -10,3 +10,6 @@ class Plugin(TrezorPlugin):
         if not isinstance(keystore, self.keystore_class):
             return
         keystore.handler = self.handler
+
+    def create_handler(self, window):
+        return self.handler
