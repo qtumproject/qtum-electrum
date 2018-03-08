@@ -201,9 +201,9 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
             if has_invoice:
                 item.setIcon(3, QIcon(":icons/seal"))
             for i in range(len(entry)):
-                if i>3:
-                    item.setTextAlignment(i, Qt.AlignRight)
-                if i!=2:
+                if i > 3:
+                    item.setTextAlignment(i, Qt.AlignRight | Qt.AlignVCenter)
+                if i != 2:
                     item.setFont(i, QFont(MONOSPACE_FONT))
             if value and value < 0:
                 item.setForeground(3, QBrush(QColor("#BC1E1E")))

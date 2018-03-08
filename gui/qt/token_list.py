@@ -7,7 +7,7 @@ __author__ = 'CodeFace'
 from .util import *
 from qtum_electrum.i18n import _
 from qtum_electrum.plugins import run_hook
-from qtum_electrum.util import block_explorer_URL, format_satoshis, format_time, open_browser
+from qtum_electrum.util import block_explorer_URL, format_satoshis, open_browser
 
 
 class TokenBalanceList(MyTreeWidget):
@@ -24,8 +24,13 @@ class TokenBalanceList(MyTreeWidget):
         self.clear()
         for key in sorted(self.parent.tokens.keys()):
             token = self.parent.tokens[key]
-            item = QTreeWidgetItem([token.name, token.bind_addr, str(token.balance)])
+            balance_str = format_satoshis(token.balance, is_diff=False, num_zeros=0,
+                                          decimal_point=token.decimals, whitespaces=True)
+            item = QTreeWidgetItem([token.name, token.bind_addr, balance_str])
             item.setData(0, Qt.UserRole, token.contract_addr)
+            item.setTextAlignment(0, Qt.AlignLeft | Qt.AlignVCenter)
+            item.setTextAlignment(2, Qt.AlignRight | Qt.AlignVCenter)
+            item.setFont(2, QFont(MONOSPACE_FONT))
             self.addTopLevelItem(item)
             if key == current_key:
                 self.setCurrentItem(item)
