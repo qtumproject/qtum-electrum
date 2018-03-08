@@ -63,7 +63,7 @@ class TokenBalanceList(MyTreeWidget):
             menu.addAction(_("View Info"), lambda: self.parent.token_view_dialog(token))
             menu.addAction(_("Send"), lambda: self.parent.token_send_dialog(token))
             menu.addAction(_("Delete"), lambda: self.parent.delete_token(key))
-            URL = block_explorer_URL(self.config, {'addr': bind_addr, 'contract': contract_addr})
+            URL = block_explorer_URL(self.config, {'addr': bind_addr, 'token': contract_addr})
             if URL:
                 menu.addAction(_("View on block explorer"), lambda: open_browser(URL))
         run_hook('create_tokens_menu', menu, selected)
