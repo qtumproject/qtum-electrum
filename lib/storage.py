@@ -484,7 +484,7 @@ class ModelStorage(dict):
         dict.__init__(self)
         self.storage = wallet_storage
         self.name = name
-        d = self.storage.get(name, {})
+        d = self.validate(self.storage.get(name, {}))
         try:
             self.update(d)
         except BaseException as e:
@@ -508,7 +508,7 @@ class ModelStorage(dict):
         self.save()
 
     def import_file(self, path):
-        import_meta(path, self._validate, self.load_meta)
+        import_meta(path, self.validate, self.load_meta)
 
     def export_file(self, filename):
         export_meta(self, filename)
@@ -520,5 +520,5 @@ class ModelStorage(dict):
         except AttributeError:
             return None
 
-    def _validate(self, data):
+    def validate(self, data):
         raise NotImplementedError

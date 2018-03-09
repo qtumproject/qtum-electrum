@@ -76,11 +76,11 @@ class Contacts(ModelStorage):
                 if not address:
                     continue
                 return address, name, validated
-            
-    def _validate(self, data):
+
+    def validate(self, data):
         for k, v in list(data.items()):
             if k == self.name:
-                return self._validate(v)
+                return self.validate(v)
             if not bitcoin.is_address(k):
                 data.pop(k)
             else:

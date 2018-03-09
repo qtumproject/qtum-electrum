@@ -11,6 +11,9 @@ from . import qtum
 Token = namedtuple('Token', 'contract_addr bind_addr name symbol decimals balance')
 
 
+# bind_addr is base58 type
+
+
 class Tokens(ModelStorage):
 
     # key: contract_addr + _ + bind_addr
@@ -37,10 +40,10 @@ class Tokens(ModelStorage):
             return d
         return self.__getitem__(key)
 
-    def _validate(self, data):
+    def validate(self, data):
         for k, v in list(data.items()):
             if k == self.name:
-                return self._validate(v)
+                return self.validate(v)
 
             kk = k.split('_')
             if not len(kk) == 2:
@@ -48,7 +51,7 @@ class Tokens(ModelStorage):
                 continue
 
             contract_addr, bind_addr = kk
-            if not qtum.is_hash160(contract_addr) or not len(bind_addr) == 34:
+            if not len(bind_addr) == 34 or not qtum.is_hash160(contract_addr):
                 data.pop(k)
                 continue
 
@@ -60,3 +63,4 @@ class Tokens(ModelStorage):
             if not len(v) == 4:
                 data.pop(k)
                 continue
+        return data

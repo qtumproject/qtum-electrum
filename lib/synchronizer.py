@@ -227,7 +227,6 @@ class Synchronizer(ThreadJob):
         tokens = set()
         for key in self.wallet.tokens.keys():
             token = self.wallet.tokens[key]
-            self.get_token_balance(token)
             tokens.add(token)
         self.subscribe_tokens(tokens)
 

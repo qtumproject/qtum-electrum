@@ -86,8 +86,6 @@ class TokenAddDialog(QDialog, MessageBoxMixin):
             if not name or not symbol or not decimals or not isinstance(decimals, int):
                 self.show_message('token info not valid: {} {} {}'.format(name, symbol, decimals))
                 return
-            __, hash160 = b58_address_to_hash160(bind_addr)
-            bind_addr = bh2u(hash160)
             token = Token(contract_addr, bind_addr, name, symbol, decimals, 0)
             self.parent().set_token(token)
         except BaseException as e:
