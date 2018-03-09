@@ -36,6 +36,7 @@ class AddressList(MyTreeWidget):
         MyTreeWidget.__init__(self, parent, self.create_menu, [], 1)
         self.refresh_headers()
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
+        self.setSortingEnabled(True)
         self.show_change = 0
         self.show_used = 0
         self.change_button = QComboBox(self)

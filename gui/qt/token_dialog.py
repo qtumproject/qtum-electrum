@@ -25,7 +25,7 @@ class TokenAddLayout(QGridLayout):
         self.setColumnStretch(3, 1)
         self.callback = callback
         self.dialog = dialog
-        self.addresses = self.dialog.parent().wallet.get_addresses()
+        self.addresses = self.dialog.parent().wallet.get_addresses_sort_by_balance()
 
         addr_type, __ = b58_address_to_hash160(self.addresses[0])
         if not addr_type == ADDRTYPE_P2PKH:
