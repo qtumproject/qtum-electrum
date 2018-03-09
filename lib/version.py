@@ -1,4 +1,4 @@
-ELECTRUM_VERSION = '0.17.6'  # version of the client package
+ELECTRUM_VERSION = '0.18.0'  # version of the client package
 PROTOCOL_VERSION = '1.3'  # protocol version requested
 
 # The hash of the mnemonic seed must begin with this
