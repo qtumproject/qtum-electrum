@@ -1530,6 +1530,12 @@ class Abstract_Wallet(PrintError):
         if self.synchronizer:
             self.synchronizer.add(address)
 
+    def add_token(self, token):
+        key = '{}_{}'.format(token.contract_addr, token.bind_addr)
+        self.tokens[key] = token
+        if self.synchronizer:
+            self.synchronizer.add_token(token)
+
     def has_password(self):
         return self.has_keystore_encryption() or self.has_storage_encryption()
 

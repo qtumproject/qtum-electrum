@@ -3070,8 +3070,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         :type token: Token
         :return:
         """
-        key = '{}_{}'.format(token.contract_addr, token.bind_addr)
-        self.tokens[key] = token
+        self.wallet.add_token(token)
         self.token_balance_list.update()
 
     def delete_token(self, key):
