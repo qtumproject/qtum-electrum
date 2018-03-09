@@ -284,7 +284,7 @@ def read_user_config(path):
     config_path = os.path.join(path, "config")
     if not os.path.exists(config_path):
         print_error('config_path not exists')
-        return {'dynamic_fees': True}
+        return {}
     try:
         with open(config_path, "r") as f:
             data = f.read()
