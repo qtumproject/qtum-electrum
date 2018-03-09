@@ -753,7 +753,8 @@ class Abstract_Wallet(PrintError):
             return conflicting_txns
 
     def add_transaction(self, tx_hash, tx):
-        assert tx_hash, tx_hash
+        if not tx_hash:
+            raise AssertionError('unable to add none tx_hash tx')
         assert tx, tx
         assert tx.is_complete()
         # we need self.transaction_lock but get_tx_height will take self.lock

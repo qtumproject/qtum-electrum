@@ -306,5 +306,5 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
             with open(fn) as f:
                 tx = self.parent.tx_from_text(f.read())
                 self.parent.save_transaction_into_wallet(tx)
-        except IOError as e:
+        except (IOError, AssertionError) as e:
             self.parent.show_error(e)
