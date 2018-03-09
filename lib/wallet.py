@@ -193,6 +193,7 @@ class Abstract_Wallet(PrintError):
         self.load_addresses()
         self.load_transactions()
         self.build_spent_outpoints()
+        self.test_addresses_sanity()
 
         # load requests
         self.receive_requests = self.storage.get('payment_requests', {})
@@ -316,6 +317,12 @@ class Abstract_Wallet(PrintError):
         if type(d) != dict: d={}
         self.receiving_addresses = d.get('receiving', [])
         self.change_addresses = d.get('change', [])
+
+    def test_addresses_sanity(self):
+        addrs = self.get_receiving_addresses()
+        if len(addrs) > 0:
+            if not is_address(addrs[0]):
+                raise Exception('The addresses in this wallet are not qtum addresses.')
 
     def synchronize(self):
         pass
