@@ -686,7 +686,7 @@ class Network(util.DaemonThread):
         for messages, callback in sends:
             for method, params in messages:
                 r = None
-                if method.endswith('.subscribe'):
+                if method.endswith('.subscribe') and not method.endswith('contract.subscribe'):
                     k = self.get_index(method, params)
                     # add callback to list
                     l = self.subscriptions.get(k, [])
