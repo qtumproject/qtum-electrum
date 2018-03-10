@@ -30,10 +30,7 @@ import sys
 import threading
 import time
 import traceback
-
 import requests
-
-from .util import print_error
 
 ca_path = requests.certs.where()
 
@@ -149,23 +146,23 @@ class TcpConnection(threading.Thread, util.PrintError):
                         context = self.get_ssl_context(cert_reqs=ssl.CERT_REQUIRED, ca_certs=ca_path)
                         s = context.wrap_socket(s, do_handshake_on_connect=True)
                     except ssl.SSLError as e:
-                        print_error('[get_socket] 1', e)
+                        self.print_error('[get_socket] 1', e)
                         s = None
                     except Exception as e:
-                        print_error('[get_socket] 2', e)
+                        self.print_error('[get_socket] 2', e)
                         return
                 try:
                     if s and self.check_host_name(s.getpeercert(), self.host):
                         self.print_error("SSL certificate signed by CA")
                         return s
                 except Exception as e:
-                    print_error('[get_socket] 2.5', e)
+                    self.print_error('[get_socket] 2.5', e)
 
                 # get server certificate.
                 # Do not use ssl.get_server_certificate because it does not work with proxy
                 s = self.get_simple_socket()
                 if s is None:
-                    print_error('[get_socket] 3')
+                    self.print_error('[get_socket] 3')
                     return
                 try:
                     context = self.get_ssl_context(cert_reqs=ssl.CERT_NONE, ca_certs=None)
@@ -174,7 +171,7 @@ class TcpConnection(threading.Thread, util.PrintError):
                     self.print_error("SSL error retrieving SSL certificate:", e)
                     return
                 except Exception as e:
-                    print_error('[get_socket] 4', e)
+                    self.print_error('[get_socket] 4', e)
                     return
 
                 dercert = s.getpeercert(True)
@@ -203,7 +200,7 @@ class TcpConnection(threading.Thread, util.PrintError):
             except ssl.SSLError as e:
                 self.print_error("SSL error:", e)
                 if e.errno != 1:
-                    print_error('[get_socket] 6', e)
+                    self.print_error('[get_socket] 6', e)
                     return
                 if is_new:
                     rej = cert_path + '.rej'
@@ -228,7 +225,7 @@ class TcpConnection(threading.Thread, util.PrintError):
                         return
                     self.print_error("wrong certificate")
                 if e.errno == 104:
-                    print_error('[get_socket] 7', e)
+                    self.print_error('[get_socket] 7', e)
                     return
                 return
             except BaseException as e:

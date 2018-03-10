@@ -172,6 +172,7 @@ class Synchronizer(ThreadJob):
             self.network.subscribe_tokens(tokens, self.on_token_status)
 
     def on_token_status(self, response):
+        self.print_error('on_token_status', response)
         params, result = self.parse_response(response)
         if not params:
             return
