@@ -1,20 +1,13 @@
-from PyQt5.QtGui import *
-from qtum_electrum.i18n import _
-
-
 import datetime
 from collections import defaultdict
-
-from qtum_electrum.util import format_satoshis
-from qtum_electrum.bitcoin import COIN
 
 import matplotlib
 matplotlib.use('Qt5Agg')
 import matplotlib.pyplot as plt
 import matplotlib.dates as md
-from matplotlib.patches import Ellipse
-from matplotlib.offsetbox import AnchoredOffsetbox, TextArea, DrawingArea, HPacker
 
+from .i18n import _
+from .bitcoin import COIN
 
 def plot_history(wallet, history):
     hist_in = defaultdict(int)
