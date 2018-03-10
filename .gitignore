@@ -11,6 +11,7 @@ Electrum.egg-info/
 Qtum_Electrum.egg-info/
 gui/qt/icons_rc.py
 locale/
+app.fil
 .devlocaltmp/
 *_trial_temp
 packages
