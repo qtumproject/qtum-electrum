@@ -517,7 +517,10 @@ def base_decode(v, length, base):
         chars = __b43chars
     long_value = 0
     for (i, c) in enumerate(v[::-1]):
-        long_value += chars.find(bytes([c])) * (base**i)
+        digit = chars.find(bytes([c]))
+        if digit == -1:
+            raise ValueError('Forbidden character {} for base {}'.format(c, base))
+        long_value += digit * (base ** i)
     result = bytearray()
     while long_value >= 256:
         div, mod = divmod(long_value, 256)
@@ -537,6 +540,9 @@ def base_decode(v, length, base):
     return bytes(result)
 
 
+class InvalidChecksum(Exception):
+    pass
+
 def EncodeBase58Check(vchIn):
     hash = Hash(vchIn)
     return base_encode(vchIn + hash[0:4], base=58)
@@ -549,7 +555,7 @@ def DecodeBase58Check(psz):
     hash = Hash(key)
     cs32 = hash[0:4]
     if cs32 != csum:
-        return None
+        raise InvalidChecksum('expected {}, actual {}'.format(bh2u(cs32), bh2u(csum)))
     else:
         return key
 
@@ -587,8 +593,9 @@ def deserialize_privkey(key):
     if ':' in key:
         txin_type, key = key.split(sep=':', maxsplit=1)
         assert txin_type in SCRIPT_TYPES
-    vch = DecodeBase58Check(key)
-    if not vch:
+    try:
+        vch = DecodeBase58Check(key)
+    except BaseException:
         neutered_privkey = str(key)[:3] + '..' + str(key)[-2:]
         raise BaseException("cannot deserialize", neutered_privkey)
 
