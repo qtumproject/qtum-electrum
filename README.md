@@ -87,6 +87,7 @@ Mac OS X
     # edit PyQt5/uic/port_v2/ascii_upper.py
     change string.maketrans to str.maketrans
 
+    brew install libffi
     brew install libusb
 
     # install py2app
