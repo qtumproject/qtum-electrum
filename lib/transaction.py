@@ -685,14 +685,14 @@ class Transaction:
 
     @classmethod
     def pay_script(cls, output_type, addr):
-        if output_type == TYPE_SCRIPT or output_type == 'coinbase':
+        if output_type == TYPE_SCRIPT:
             return addr
         elif output_type == TYPE_ADDRESS:
             return bitcoin.address_to_script(addr)
-        elif output_type == TYPE_PUBKEY:
+        elif output_type == TYPE_PUBKEY or output_type == 'coinstake':
             return bitcoin.public_key_to_p2pk_script(addr)
         else:
-            raise TypeError('Unknown output type')
+            raise TypeError('Unknown output type {} {}'.format(output_type, addr))
 
     @classmethod
     def estimate_pubkey_size_from_x_pubkey(cls, x_pubkey):

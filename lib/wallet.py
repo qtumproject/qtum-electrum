@@ -751,7 +751,11 @@ class Abstract_Wallet(PrintError):
                 # this outpoint (ser) has already been spent, by spending_tx
                 assert spending_tx_hash in self.transactions
                 conflicting_txns |= {spending_tx_hash}
-            txid = tx.txid()
+            try:
+                txid = tx.txid()
+            except (BaseException,) as e:
+                print('tx.txid() error', e, tx)
+                return set()
             if txid in conflicting_txns:
                 # this tx is already in history, so it conflicts with itself
                 if len(conflicting_txns) > 1:
@@ -770,7 +774,7 @@ class Abstract_Wallet(PrintError):
             # BUT we track is_mine inputs in a txn, and during subsequent calls
             # of add_transaction tx, we might learn of more-and-more inputs of
             # being is_mine, as we roll the gap_limit forward
-            is_coinbase = tx.inputs()[0]['type'] == 'coinbase'
+            is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinstake'
             tx_height = self.get_tx_height(tx_hash)[0]
             is_mine = any([self.is_mine(txin['address']) for txin in tx.inputs()])
             # do not save if tx is local and not mine
