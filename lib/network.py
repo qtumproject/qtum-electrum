@@ -571,6 +571,8 @@ class Network(util.DaemonThread):
 
     def get_index(self, method, params):
         """ hashable index for subscriptions and cache"""
+        if method == 'blockchain.hash160.contract.subscribe':
+            return '{}:{}:{}'.format(method, params[0], params[1])
         return str(method) + (':' + str(params[0]) if params else '')
 
     def process_responses(self, interface):
@@ -599,6 +601,7 @@ class Network(util.DaemonThread):
                 if method == 'blockchain.scripthash.subscribe':
                     self.subscribed_addresses.add(params[0])
                 elif method == 'blockchain.hash160.contract.subscribe':
+                    print_error('process_responses 1', response)
                     self.subscribed_tokens.add((params[0], params[1]))
             else:
                 if not response:  # Closed remotely / misbehaving
@@ -615,7 +618,7 @@ class Network(util.DaemonThread):
                     response['params'] = [params[0]]  # addr
                     response['result'] = params[1]
                 elif method == 'blockchain.hash160.contract.subscribe':
-                    print_error('process_responses', response)
+                    print_error('process_responses 2', response)
                 callbacks = self.subscriptions.get(k, [])
 
             # update cache if it's a subscription
@@ -686,7 +689,7 @@ class Network(util.DaemonThread):
         for messages, callback in sends:
             for method, params in messages:
                 r = None
-                if method.endswith('.subscribe') and not method.endswith('contract.subscribe'):
+                if method.endswith('.subscribe'):
                     k = self.get_index(method, params)
                     # add callback to list
                     l = self.subscriptions.get(k, [])
@@ -695,7 +698,7 @@ class Network(util.DaemonThread):
                     self.subscriptions[k] = l
                     # check cached response for subscriptions
                     r = self.sub_cache.get(k)
-                if r is not None:
+                if r is not None and not method.endswith('contract.subscribe'):
                     self.print_error("cache hit", k)
                     callback(r)
                 else:
