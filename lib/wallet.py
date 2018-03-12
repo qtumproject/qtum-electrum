@@ -2171,5 +2171,4 @@ class Wallet(object):
             return Multisig_Wallet
         if wallet_type in wallet_constructors:
             return wallet_constructors[wallet_type]
-        raise RuntimeError("Unknown wallet type: " + wallet_type)
-
+        raise RuntimeError("Unknown wallet type: " + str(wallet_type))
