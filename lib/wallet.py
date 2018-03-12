@@ -324,7 +324,7 @@ class Abstract_Wallet(PrintError):
             if not is_address(addrs[0]):
                 raise Exception('The addresses in this wallet are not qtum addresses.')
 
-    def synchronize(self):
+    def synchronize(self, create_new=False):
         pass
 
     def is_deterministic(self):
@@ -1905,10 +1905,12 @@ class Deterministic_Wallet(Abstract_Wallet):
             self.add_address(address)
             return address
 
-    def synchronize_sequence(self, for_change):
+    def synchronize_sequence(self, for_change, create_new=False):
         limit = self.gap_limit_for_change if for_change else self.gap_limit
         while True:
             addresses = self.get_change_addresses() if for_change else self.get_receiving_addresses()
+            if not create_new and self.wallet_type in ['mobile', 'qtcore']:
+                break
             if len(addresses) < limit:
                 self.create_new_address(for_change)
                 continue
@@ -1917,10 +1919,10 @@ class Deterministic_Wallet(Abstract_Wallet):
             else:
                 self.create_new_address(for_change)
 
-    def synchronize(self):
+    def synchronize(self, create_new=False):
         with self.lock:
-            self.synchronize_sequence(False)
-            self.synchronize_sequence(True)
+            self.synchronize_sequence(False, create_new)
+            self.synchronize_sequence(True, create_new)
 
     def is_beyond_limit(self, address):
         is_change, i = self.get_address_index(address)
@@ -1950,7 +1952,7 @@ class Deterministic_Wallet(Abstract_Wallet):
         return self.txin_type
 
 
-class Simple_Deterministic_Wallet(Deterministic_Wallet):
+class Simple_Deterministic_Wallet(Simple_Wallet, Deterministic_Wallet):
     """ Deterministic Wallet with a single pubkey per address """
 
     def __init__(self, storage):
@@ -1985,32 +1987,6 @@ class Simple_Deterministic_Wallet(Deterministic_Wallet):
     def derive_pubkeys(self, c, i):
         return self.keystore.derive_pubkey(c, i)
 
-    def get_keystore(self):
-        return self.keystore
-
-    def get_keystores(self):
-        return [self.keystore]
-
-    def is_watching_only(self):
-        return self.keystore.is_watching_only()
-
-    def can_change_password(self):
-        return self.keystore.can_change_password()
-
-    def update_password(self, old_pw, new_pw, encrypt=False):
-        if old_pw is None and self.has_password():
-            raise InvalidPassword()
-        self.keystore.update_password(old_pw, new_pw)
-        self.save_keystore()
-        self.storage.set_password(new_pw, encrypt)
-        self.storage.write()
-
-    def save_keystore(self):
-        self.storage.put('keystore', self.keystore.dump())
-
-    def pubkeys_to_address(self, pubkey):
-        return bitcoin.pubkey_to_address(self.txin_type, pubkey)
-
 
 class Standard_Wallet(Simple_Deterministic_Wallet):
 
@@ -2028,7 +2004,7 @@ class Mobile_Wallet(Simple_Deterministic_Wallet):
     def __init__(self, storage):
         Simple_Deterministic_Wallet.__init__(self, storage)
         self.gap_limit = 10
-        self.gap_limit_for_change = 10
+        self.gap_limit_for_change = 0
 
 
 class Qt_Core_Wallet(Simple_Deterministic_Wallet):

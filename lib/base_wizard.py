@@ -134,7 +134,7 @@ class BaseWizard(object):
         if self.wallet_type == 'mobile':
             message = _('Do you want to create a new seed, or to restore a wallet using an existing seed?')
             choices = [
-                ('create_mobile_seed', _('Create a new seed')),
+                # ('create_mobile_seed', _('Create a new seed')),
                 ('restore_from_seed', _('I already have a seed')),
             ]
         elif self.wallet_type == 'qtcore':
@@ -440,7 +440,8 @@ class BaseWizard(object):
         # wallet.get_available_storage_encryption_version()
 
         if self.wallet_type in ['mobile', 'qtcore']:
-            self.on_password(None, False)
+            self.on_password(None, encrypt_storage=False, encrypt_keystore=False)
+
         elif self.wallet_type == 'standard' and isinstance(self.keystores[0], keystore.Hardware_KeyStore):
             # offer encrypting with a pw derived from the hw device
             k = self.keystores[0]
@@ -474,9 +475,12 @@ class BaseWizard(object):
 
     def on_password(self, password, *, encrypt_storage,
                     storage_enc_version=STO_EV_USER_PW, encrypt_keystore):
+
         self.storage.set_keystore_encryption(bool(password) and encrypt_keystore)
+
         if encrypt_storage:
             self.storage.set_password(password, enc_version=storage_enc_version)
+
         for k in self.keystores:
             if k.may_have_password():
                 k.update_password(None, password)
@@ -572,9 +576,10 @@ class BaseWizard(object):
 
     def create_addresses(self):
         def task():
-            self.wallet.synchronize()
+            self.wallet.synchronize(create_new=True)
             self.wallet.storage.write()
             self.terminate()
 
+        print('first run')
         msg = _("Qtum Electrum is generating your addresses, please wait.")
         self.waiting_dialog(task, msg)
