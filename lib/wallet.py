@@ -1987,6 +1987,9 @@ class Simple_Deterministic_Wallet(Simple_Wallet, Deterministic_Wallet):
     def derive_pubkeys(self, c, i):
         return self.keystore.derive_pubkey(c, i)
 
+    def pubkeys_to_address(self, pubkey):
+        return bitcoin.pubkey_to_address(self.txin_type, pubkey)
+
 
 class Standard_Wallet(Simple_Deterministic_Wallet):
 
@@ -2012,7 +2015,7 @@ class Qt_Core_Wallet(Simple_Deterministic_Wallet):
 
     def __init__(self, storage):
         Simple_Deterministic_Wallet.__init__(self, storage)
-        self.gap_limit = 300
+        self.gap_limit = 200
         self.gap_limit_for_change = 20
 
 
