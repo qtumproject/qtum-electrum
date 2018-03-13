@@ -24,8 +24,9 @@ class TokenBalanceList(MyTreeWidget):
         self.clear()
         for key in sorted(self.parent.tokens.keys()):
             token = self.parent.tokens[key]
-            balance_str = format_satoshis(token.balance, is_diff=False, num_zeros=0,
-                                          decimal_point=token.decimals, whitespaces=True)
+            balance_str = '{}'.format(token.balance / 10 ** token.decimals)
+            # balance_str = format_satoshis(token.balance, is_diff=False, num_zeros=0,
+            #                               decimal_point=token.decimals, whitespaces=True)
             item = QTreeWidgetItem([token.name, token.bind_addr, balance_str])
             item.setData(0, Qt.UserRole, token.contract_addr)
             item.setTextAlignment(0, Qt.AlignLeft | Qt.AlignVCenter)
