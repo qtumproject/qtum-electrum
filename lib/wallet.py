@@ -959,7 +959,7 @@ class Abstract_Wallet(PrintError):
             height, conf, timestamp = self.get_tx_height(tx_hash)
             history.append((tx_hash, height, conf, timestamp, delta))
 
-        history.sort(key=lambda x: self.get_txpos(x[0])[0])
+        history.sort(key=lambda x: self.get_txpos(x[0]))
         history.reverse()
 
         # 3. add balance
