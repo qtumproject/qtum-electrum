@@ -32,6 +32,8 @@ import time
 import copy
 import errno
 from collections import defaultdict
+import traceback
+import sys
 
 from .i18n import _
 from .util import NotEnoughFunds, PrintError, UserCancelled, profiler, format_satoshis, timestamp_to_datetime
@@ -386,6 +388,9 @@ class Abstract_Wallet(PrintError):
         return [self.get_public_key(address)]
 
     def add_unverified_tx(self, tx_hash, tx_height):
+        if isinstance(tx_height, tuple):
+            print('catch you add_unverified_tx', tx_height)
+            traceback.print_exc(file=sys.stderr)
         if tx_height in (TX_HEIGHT_UNCONFIRMED, TX_HEIGHT_UNCONF_PARENT) \
                 and tx_hash in self.verified_tx:
             self.verified_tx.pop(tx_hash)
@@ -402,6 +407,9 @@ class Abstract_Wallet(PrintError):
         with self.lock:
             self.verified_tx[tx_hash] = info  # (tx_height, timestamp, pos)
         height, conf, timestamp = self.get_tx_height(tx_hash)
+        if isinstance(height, tuple):
+            print('catch you add_verified_tx', height)
+            traceback.print_exc(file=sys.stderr)
         self.network.trigger_callback('verified', tx_hash, height, conf, timestamp)
 
     def get_unverified_txs(self):
@@ -445,10 +453,16 @@ class Abstract_Wallet(PrintError):
         with self.lock:
             if tx_hash in self.verified_tx:
                 height, timestamp, pos = self.verified_tx[tx_hash]
+                if isinstance(height, tuple):
+                    print('catch you verified_tx', self.verified_tx)
+                    traceback.print_exc(file=sys.stdout)
                 return height, pos
             elif tx_hash in self.unverified_tx:
                 height = self.unverified_tx[tx_hash]
-                return (height, 0) if height > 0 else (1e9 - height), 0
+                if isinstance(height, tuple):
+                    print('catch you unverified_tx', self.unverified_tx)
+                    traceback.print_exc(file=sys.stdout)
+                return (height, 0) if height > 0 else (1e9 - height, 0)
             else:
                 return (1e9 + 1, 0)
 
@@ -2006,6 +2020,7 @@ class Mobile_Wallet(Simple_Deterministic_Wallet):
 
     def __init__(self, storage):
         Simple_Deterministic_Wallet.__init__(self, storage)
+        self.use_change = False
         self.gap_limit = 10
         self.gap_limit_for_change = 0
 
@@ -2016,7 +2031,9 @@ class Qt_Core_Wallet(Simple_Deterministic_Wallet):
     def __init__(self, storage):
         Simple_Deterministic_Wallet.__init__(self, storage)
         self.gap_limit = 200
-        self.gap_limit_for_change = 20
+        self.gap_limit_for_change = 0
+        self.use_change = False
+
 
 
 class Multisig_Wallet(Deterministic_Wallet):
