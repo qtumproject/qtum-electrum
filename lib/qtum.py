@@ -117,8 +117,8 @@ mainnet_block_explorers = {
 testnet_block_explorers = {
     'qtum.info': ('https://testnet.qtum.info',
                   {'tx': 'tx', 'addr': 'address', 'contract': 'contract'}),
-    'testnet.qtum.org': ('https://testnet.qtum.org/',
-                         {'tx': 'tx', 'addr': 'address', 'contract': 'contract'}),
+    'explorer.qtum.org': ('https://testnet.qtum.org/',
+                          {'tx': 'tx', 'addr': 'address', 'contract': 'contract'}),
 }
 
 
