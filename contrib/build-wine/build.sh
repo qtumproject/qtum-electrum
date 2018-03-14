@@ -15,7 +15,6 @@ rm "$here"/dist/* -rf
 
 # $here/prepare-wine.sh && \
 # $here/prepare-eth-abi.sh && \
-$here/prepare-hw.sh || exit 1
 
 echo "Resetting modification time in C:\Python..."
 # (Because of some bugs in pyinstaller)
