@@ -67,7 +67,7 @@ Create translations (optional):
 
 Run it:
 
-    ./electrum
+    ./qtum-electrum
 
 
 
