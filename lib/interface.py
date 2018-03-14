@@ -270,6 +270,7 @@ class Interface(util.PrintError):
         self.last_request = time.time()
         self.last_ping = 0
         self.closed_remotely = False
+        self.server_version = []
 
     def diagnostic_name(self):
         return self.host

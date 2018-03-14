@@ -65,7 +65,7 @@ class NodesListWidget(QTreeWidget):
     def __init__(self, parent):
         QTreeWidget.__init__(self)
         self.parent = parent
-        self.setHeaderLabels([_('Connected Node'), _('Height')])
+        self.setHeaderLabels([_('Connected Node'), _('Version'), _('Height')])
         self.setContextMenuPolicy(Qt.CustomContextMenu)
         self.customContextMenuRequested.connect(self.create_menu)
 
@@ -103,26 +103,31 @@ class NodesListWidget(QTreeWidget):
         for k, items in chains.items():
             b = network.blockchains[k]
             name = b.get_name()
-            if n_chains >1:
-                x = QTreeWidgetItem([name + '@%d'%b.get_checkpoint(), '%d'%b.height()])
+            if n_chains > 1:
+                x = QTreeWidgetItem([name + '@%d' % b.get_checkpoint(), '', '%d' % b.height()])
                 x.setData(0, Qt.UserRole, 1)
                 x.setData(1, Qt.UserRole, b.checkpoint)
             else:
                 x = self
             for i in items:
+                if isinstance(i.server_version, list):
+                    version_str = ':'.join(i.server_version)
+                else:
+                    version_str = ''
                 star = ' *' if i == network.interface else ''
-                item = QTreeWidgetItem([i.host + star, '%d'%i.tip])
+                item = QTreeWidgetItem([i.host + star, version_str, '%d' % i.tip])
                 item.setData(0, Qt.UserRole, 0)
                 item.setData(1, Qt.UserRole, i.server)
                 x.addChild(item)
-            if n_chains>1:
+            if n_chains > 1:
                 self.addTopLevelItem(x)
                 x.setExpanded(True)
 
         h = self.header()
         h.setStretchLastSection(False)
         h.setSectionResizeMode(0, QHeaderView.Stretch)
-        h.setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        h.setSectionResizeMode(1, QHeaderView.Stretch)
+        h.setSectionResizeMode(2, QHeaderView.ResizeToContents)
 
 
 class ServerListWidget(QTreeWidget):
