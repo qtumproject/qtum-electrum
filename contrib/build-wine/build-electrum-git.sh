@@ -46,22 +46,22 @@ echo "Last commit: $VERSION"
 find -exec touch -d '2000-11-11T11:11:11+00:00' {} +
 popd
 
-rm -rf $WINEPREFIX/drive_c/electrum
-cp -r qtum-electrum-git $WINEPREFIX/drive_c/electrum
+rm -rf $WINEPREFIX/drive_c/qtum-electrum
+cp -r qtum-electrum-git $WINEPREFIX/drive_c/qtum-electrum
 cp qtum-electrum-git/LICENCE .
 
 # add locale dir
-cp -r ../../../lib/locale $WINEPREFIX/drive_c/electrum/lib/
+cp -r ../../../lib/locale $WINEPREFIX/drive_c/qtum-electrum/lib/
 
 
 # Install frozen dependencies
 $PYTHON -m pip install -r ../../../requirements.txt
 
 # Build Qt resources
-wine $WINEPREFIX/drive_c/python$PYTHON_VERSION/Scripts/pyrcc5.exe C:/electrum/icons.qrc -o C:/electrum/gui/qt/icons_rc.py
+wine $WINEPREFIX/drive_c/python$PYTHON_VERSION/Scripts/pyrcc5.exe C:/qtum-electrum/icons.qrc -o C:/qtum-electrum/gui/qt/icons_rc.py
 
 
-pushd $WINEPREFIX/drive_c/electrum
+pushd $WINEPREFIX/drive_c/qtum-electrum
 $PYTHON setup.py install
 popd
 
