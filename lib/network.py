@@ -28,7 +28,7 @@ import socket
 import threading
 import time
 from collections import defaultdict
-
+import re
 import socks
 
 from . import bitcoin
