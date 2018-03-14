@@ -738,6 +738,7 @@ class Network(util.DaemonThread):
         interface.mode = 'default'
         interface.request = None
         self.interfaces[server] = interface
+        self.queue_request('server.version', [ELECTRUM_VERSION, PROTOCOL_VERSION], interface)
         self.queue_request('blockchain.headers.subscribe', [], interface)
         if server == self.default_server:
             self.switch_to_interface(server)
