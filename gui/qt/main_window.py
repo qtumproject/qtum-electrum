@@ -425,7 +425,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             try:
                 shutil.copy2(path, new_path)
                 self.show_message(_("A copy of your wallet file was created in")+" '%s'" % str(new_path), title=_("Wallet backup created"))
-            except (IOError, os.error) as reason:
+            except (BaseException,) as reason:
                 self.show_critical(_("Electrum was unable to copy your wallet file to the specified location.") + "\n" + str(reason), title=_("Unable to create backup"))
 
     def update_recently_visited(self, filename):
