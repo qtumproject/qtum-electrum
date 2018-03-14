@@ -91,7 +91,7 @@ $PYTHON -m pip install pip --upgrade
 $PYTHON -m pip install pywin32-ctypes==0.1.2
 
 # Install PyQt
-$PYTHON -m pip install PyQt5
+$PYTHON -m pip install PyQt5 -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 ## Install pyinstaller
 $PYTHON -m pip install https://github.com/ecdsa/pyinstaller/archive/fix_2952.zip
@@ -105,7 +105,7 @@ verify_hash $ZBAR_FILENAME "$ZBAR_SHA256"
 wine "$PWD/$ZBAR_FILENAME" /S
 
 # install Cryptodome
-$PYTHON -m pip install pycryptodomex
+$PYTHON -m pip install pycryptodomex -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # install PySocks
 $PYTHON -m pip install win_inet_pton
