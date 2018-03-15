@@ -208,7 +208,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
                         pw = False
                 else:
                     msg = _("This file is already open in memory.") + "\n" \
-                          + + _("Press 'Next' to create/focus window.")
+                          + _("Press 'Next' to create/focus window.")
                     pw = False
             else:
                 msg = _('Cannot read file')
