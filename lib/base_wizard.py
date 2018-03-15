@@ -580,6 +580,5 @@ class BaseWizard(object):
             self.wallet.storage.write()
             self.terminate()
 
-        print('first run')
         msg = _("Qtum Electrum is generating your addresses, please wait.")
         self.waiting_dialog(task, msg)
