@@ -14,6 +14,9 @@ class CmdLineHandler:
         o = input()
         return ''.join(map(lambda x: t[x], o))
 
+    def show_error(self, msg):
+        print_msg(msg)
+
     def prompt_auth(self, msg):
         import getpass
         print_msg(msg)

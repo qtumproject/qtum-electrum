@@ -50,6 +50,9 @@ class GuiMixin(object):
         else:
             msg = _("Enter your current %s PIN:")
         pin = self.handler.get_pin(msg % self.device)
+        if len(pin) > 9:
+            self.handler.show_error(_('The PIN cannot be longer than 9 characters.'))
+            pin = None  # to cancel below
         if not pin:
             return self.proto.Cancel()
         return self.proto.PinMatrixAck(pin=pin)
