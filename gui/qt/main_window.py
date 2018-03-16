@@ -510,6 +510,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         invoices_menu.addAction(_("Import"), lambda: self.invoice_list.import_invoices())
         invoices_menu.addAction(_("Export"), lambda: self.invoice_list.export_invoices())
 
+        token_menu = wallet_menu.addMenu(_("Token"))
+        token_menu.addAction(_("Add Token"), lambda: self.token_add_dialog())
+
         wallet_menu.addSeparator()
         wallet_menu.addAction(_("Find"), self.toggle_search).setShortcut(QKeySequence("Ctrl+F"))
 
