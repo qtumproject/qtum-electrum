@@ -467,7 +467,7 @@ class DeviceMgr(ThreadJob, PrintError):
         devices = [dev for dev in devices if not self.xpub_by_id(dev.id_)]
         infos = []
         for device in devices:
-            if not device.product_key in plugin.DEVICE_IDS:
+            if device.product_key not in plugin.DEVICE_IDS:
                 continue
             client = self.create_client(device, handler, plugin)
             if not client:
