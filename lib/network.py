@@ -601,7 +601,6 @@ class Network(util.DaemonThread):
                 if method == 'blockchain.scripthash.subscribe':
                     self.subscribed_addresses.add(params[0])
                 elif method == 'blockchain.hash160.contract.subscribe':
-                    print_error('process_responses 1', response)
                     self.subscribed_tokens.add((params[0], params[1]))
             else:
                 if not response:  # Closed remotely / misbehaving
