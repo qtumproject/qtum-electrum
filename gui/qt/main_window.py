@@ -41,7 +41,8 @@ from qtum_electrum.qtum import COIN, is_address, TYPE_ADDRESS, TYPE_SCRIPT, TEST
 from qtum_electrum.plugins import run_hook
 from qtum_electrum.i18n import _
 from qtum_electrum.util import (bh2u, bfh, format_time, format_satoshis, PrintError, format_satoshis_plain,
-                                NotEnoughFunds, UserCancelled, profiler, export_meta, import_meta, open_browser)
+                                NotEnoughFunds, UserCancelled, profiler, export_meta, import_meta, open_browser,
+                                InvalidPassword)
 from qtum_electrum import Transaction
 from qtum_electrum import util, bitcoin, commands, coinchooser
 from qtum_electrum import paymentrequest
@@ -1846,12 +1847,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             return
         try:
             self.wallet.update_password(old_password, new_password, encrypt_file)
-        except BaseException as e:
+        except InvalidPassword as e:
             self.show_error(str(e))
             return
-        except:
+        except (BaseException,) as e:
             traceback.print_exc(file=sys.stdout)
-            self.show_error(_('Failed to update password'))
+            self.show_error('{}:{}'.format(_('Failed to update password'), e))
             return
         msg = _('Password was updated successfully') if self.wallet.has_password() else _(
             'Password is disabled, this wallet is not protected')
