@@ -551,15 +551,15 @@ class Network(util.DaemonThread):
             if error is None:
                 self.donation_address = result
         elif method == 'blockchain.estimatefee':
-            if error is None and result > 0:
+            if error is None and result is not None and result > 0:
                 i = params[0]
                 fee = int(result*COIN)
                 self.config.fee_estimates[i] = fee
                 self.print_error("fee_estimates[%d]" % i, fee)
                 self.notify('fee')
         elif method == 'blockchain.relayfee':
-            if error is None:
-                self.relay_fee = int(result * COIN) if result is not None else None
+            if error is None and result is not None and result > 0:
+                self.relay_fee = int(result * COIN)
                 self.print_error("relayfee", self.relay_fee)
         elif method == 'blockchain.block.get_chunk':
             self.on_get_chunk(interface, response)
