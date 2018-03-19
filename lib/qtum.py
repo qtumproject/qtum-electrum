@@ -391,16 +391,16 @@ def hash160_to_segwit_addr(h160):
     return segwit_addr.encode(SEGWIT_HRP, 0, h160)
 
 
-def hash_to_segwit_addr(h):
-    return segwit_addr.encode(SEGWIT_HRP, 0, h)
+def hash_to_segwit_addr(h, witver):
+    return segwit_addr.encode(SEGWIT_HRP, witver, h)
 
 
 def public_key_to_p2wpkh(public_key):
-    return hash_to_segwit_addr(hash_160(public_key))
+    return hash_to_segwit_addr(hash_160(public_key), witver=0)
 
 
 def script_to_p2wsh(script):
-    return hash_to_segwit_addr(sha256(bfh(script)))
+    return hash_to_segwit_addr(sha256(bfh(script)), witver=0)
 
 
 def p2wpkh_nested_script(pubkey):
@@ -417,7 +417,7 @@ def pubkey_to_address(txin_type, pubkey):
     if txin_type == 'p2pkh':
         return public_key_to_p2pkh(bfh(pubkey))
     elif txin_type == 'p2wpkh':
-        return hash_to_segwit_addr(hash_160(bfh(pubkey)))
+        return public_key_to_p2wpkh(bfh(pubkey))
     elif txin_type == 'p2wpkh-p2sh':
         scriptSig = p2wpkh_nested_script(pubkey)
         return hash160_to_p2sh(hash_160(bfh(scriptSig)))
