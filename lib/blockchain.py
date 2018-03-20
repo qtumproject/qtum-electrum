@@ -226,6 +226,7 @@ class Blockchain(util.PrintError):
         parent.swap_with_parent()
 
     def _write(self, raw_header, height):
+        self.print_error('{} try to write {}'.format(self.checkpoint, height))
         if height > self._size + self.checkpoint:
             return
         try:
@@ -241,7 +242,6 @@ class Blockchain(util.PrintError):
     def write(self, raw_header, height):
         if self.swaping.is_set():
             return
-        self.print_error('{} try to write {}'.format(self.checkpoint, height))
         if self.checkpoint > 0 and height < self.checkpoint:
             return
         if not raw_header:
@@ -256,6 +256,7 @@ class Blockchain(util.PrintError):
             self.update_size()
 
     def _delete(self, height):
+        self.print_error('{} try to delete {}'.format(self.checkpoint, height))
         try:
             conn = self.conn
             cursor = conn.cursor()
@@ -347,6 +348,7 @@ class Blockchain(util.PrintError):
         return header_hash == real_hash
 
     def save_chunk(self, index, raw_headers):
+        print_error('{} try to save chunk {}'.format(self.checkpoint, index * CHUNK_SIZE))
         if self.swaping.is_set():
             return
         with self.lock:
@@ -361,6 +363,7 @@ class Blockchain(util.PrintError):
             cursor.close()
             conn.commit()
             self.update_size()
+        self.swap_with_parent()
 
     def read_chunk(self, data):
         raw_headers = []
@@ -434,7 +437,7 @@ class Blockchain(util.PrintError):
     def can_connect(self, header, check_height=True):
         height = header['block_height']
         if check_height and self.height() != height - 1:
-            print_error('[can_connect] check_height failed', height)
+            print_error('[can_connect] check_height failed', height, self.height())
             return False
         if height == 0:
             valid = hash_header(header) == qtum.GENESIS
