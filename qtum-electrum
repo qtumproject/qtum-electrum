@@ -67,8 +67,8 @@ def check_imports():
         import pbkdf2
         import google.protobuf
         import jsonrpclib
-        # import eth_utils
-        # import eth_abi
+        import eth_utils
+        import eth_abi
     except ImportError as e:
         sys.exit("Error: {}. Try 'sudo pip install <module-name>'".format(e))
     # the following imports are for pyinstaller
@@ -407,7 +407,7 @@ def run():
                                                        'qtum-electrum-data')
 
     # kivy sometimes freezes when we write to sys.stderr
-    set_verbosity(config_options.get('verbose') and config_options.get('gui') != 'kivy')
+    set_verbosity(True)
 
     # check uri
     uri = config_options.get('uri')
