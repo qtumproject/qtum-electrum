@@ -30,7 +30,7 @@ import weakref
 import csv
 from decimal import Decimal
 import base64
-# import eth_abi
+import eth_abi
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import *
@@ -62,7 +62,7 @@ from .transaction_dialog import show_transaction
 from .fee_slider import FeeSlider
 from .util import *
 from .token_dialog import TokenAddDialog, TokenInfoDialog, TokenSendDialog
-# from .smart_contract_dialog import ContractCreateDialog, ContractFuncDialog, ContractEditDialog
+from .smart_contract_dialog import ContractCreateDialog, ContractFuncDialog, ContractEditDialog
 
 
 class StatusBarButton(QPushButton):
@@ -138,7 +138,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.console_tab = self.create_console_tab()
         self.contacts_tab = self.create_contacts_tab()
         self.tokens_tab = self.create_tokens_tab()
-        # self.smart_contract_tab = self.create_smart_contract_tab()
+        self.smart_contract_tab = self.create_smart_contract_tab()
 
         tabs.addTab(self.create_history_tab(), QIcon(":icons/tab_history.png"), _('History'))
         tabs.addTab(self.send_tab, QIcon(":icons/tab_send.png"), _('Send'))
@@ -159,8 +159,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         add_optional_tab(tabs, self.utxo_tab, QIcon(":icons/tab_coins.png"), _("Co&ins"), "utxo")
         add_optional_tab(tabs, self.console_tab, QIcon(":icons/tab_console.png"), _("Con&sole"), "console")
         add_optional_tab(tabs, self.contacts_tab, QIcon(":icons/tab_contracts.png"), _("Con&tacts"), "contacts")
-        # add_optional_tab(tabs, self.smart_contract_tab, QIcon(":icons/tab_console.png"), _('Smart Contract'),
-        #                  'contract')
+        add_optional_tab(tabs, self.smart_contract_tab, QIcon(":icons/tab_console.png"), _('Smart Contract'),
+                         'contract')
 
         tabs.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setCentralWidget(tabs)
@@ -526,7 +526,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         add_toggle_action(view_menu, self.utxo_tab)
         add_toggle_action(view_menu, self.console_tab)
         add_toggle_action(view_menu, self.contacts_tab)
-        # add_toggle_action(view_menu, self.smart_contract_tab)
+        add_toggle_action(view_menu, self.smart_contract_tab)
 
         tools_menu = menubar.addMenu(_("&Tools"))
 
@@ -3197,74 +3197,72 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.smart_contract_list.update()
         return True
 
-    # def call_smart_contract(self, address, abi, args, sender, dialog):
-    #     data = eth_abi_encode(abi, args)
-    #     try:
-    #         r = self.network.synchronous_get(('blockchain.contract.call', [address, data, sender]), timeout=10)
-    #     except BaseException as e:
-    #         dialog.show_message(str(e))
-    #         return
-    #     result = r.get('executionResult', {}).get('output')
-    #     if not result:
-    #         dialog.show_message(str(r))
-    #         return
-    #     outputs = abi.get('outputs', [])
-    #     if len(outputs) == 1:
-    #         try:
-    #             result = eth_abi.decode_single(outputs[0].get('type', ''), result)
-    #         except (BaseException,) as e:
-    #             pass
-    #     dialog.show_message(str(result))
-    #
+    def call_smart_contract(self, address, abi, args, sender, dialog):
+        data = eth_abi_encode(abi, args)
+        try:
+            r = self.network.synchronous_get(('blockchain.contract.call', [address, data, sender]), timeout=10)
+        except BaseException as e:
+            dialog.show_message(str(e))
+            return
+        result = r.get('executionResult', {}).get('output')
+        if not result:
+            dialog.show_message(str(r))
+            return
+        outputs = abi.get('outputs', [])
+        if len(outputs) == 1:
+            try:
+                result = eth_abi.decode_single(outputs[0].get('type', ''), result)
+            except (BaseException,) as e:
+                pass
+        dialog.show_message(str(result))
 
-    #
-    # def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog):
-    #     try:
-    #         abi_encoded = eth_abi_encode(abi, args)
-    #         script = contract_script(gas_limit, gas_price, abi_encoded, address, opcodes.OP_CALL)
-    #         outputs = [(TYPE_SCRIPT, script, amount), ]
-    #         tx_desc = 'contract sendto {}'.format(self.smart_contracts[address][0])
-    #         self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog)
-    #     except (BaseException,) as e:
-    #         dialog.show_message(str(e))
-    #
-    # def create_smart_contract(self, bytecode, constructor, args, gas_limit, gas_price, sender, dialog):
-    #     try:
-    #         abi_encoded = ''
-    #         if constructor:
-    #             abi_encoded = eth_abi_encode(constructor, args)
-    #         script = contract_script(gas_limit, gas_price, bytecode + abi_encoded, opcodes.OP_CREATE)
-    #         outputs = [(TYPE_SCRIPT, script, 0), ]
-    #         self._smart_contract_broadcast(outputs, 'contract create', gas_limit * gas_price, sender, dialog)
-    #     except (BaseException,) as e:
-    #         dialog.show_message(str(e))
-    #
-    # def contract_create_dialog(self):
-    #     d = ContractCreateDialog(self)
-    #     d.show()
-    #
-    # def contract_subscribe_dialog(self):
-    #     d = ContractEditDialog(self)
-    #     d.show()
-    #
-    # def contract_edit_dialog(self, address):
-    #     name, _type, interface = self.smart_contracts[address]
-    #     contract = {
-    #         'name': name,
-    #         'type': _type,
-    #         'interface': interface,
-    #         'address': address
-    #     }
-    #     d = ContractEditDialog(self, contract)
-    #     d.show()
-    #
-    # def contract_func_dialog(self, address):
-    #     name, _type, interface = self.smart_contracts[address]
-    #     contract = {
-    #         'name': name,
-    #         'type': _type,
-    #         'interface': interface,
-    #         'address': address
-    #     }
-    #     d = ContractFuncDialog(self, contract)
-    #     d.show()
+    def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog):
+        try:
+            abi_encoded = eth_abi_encode(abi, args)
+            script = contract_script(gas_limit, gas_price, abi_encoded, address, opcodes.OP_CALL)
+            outputs = [(TYPE_SCRIPT, script, amount), ]
+            tx_desc = 'contract sendto {}'.format(self.smart_contracts[address][0])
+            self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog)
+        except (BaseException,) as e:
+            dialog.show_message(str(e))
+
+    def create_smart_contract(self, bytecode, constructor, args, gas_limit, gas_price, sender, dialog):
+        try:
+            abi_encoded = ''
+            if constructor:
+                abi_encoded = eth_abi_encode(constructor, args)
+            script = contract_script(gas_limit, gas_price, bytecode + abi_encoded, opcodes.OP_CREATE)
+            outputs = [(TYPE_SCRIPT, script, 0), ]
+            self._smart_contract_broadcast(outputs, 'contract create', gas_limit * gas_price, sender, dialog)
+        except (BaseException,) as e:
+            dialog.show_message(str(e))
+
+    def contract_create_dialog(self):
+        d = ContractCreateDialog(self)
+        d.show()
+
+    def contract_subscribe_dialog(self):
+        d = ContractEditDialog(self)
+        d.show()
+
+    def contract_edit_dialog(self, address):
+        name, _type, interface = self.smart_contracts[address]
+        contract = {
+            'name': name,
+            'type': _type,
+            'interface': interface,
+            'address': address
+        }
+        d = ContractEditDialog(self, contract)
+        d.show()
+
+    def contract_func_dialog(self, address):
+        name, _type, interface = self.smart_contracts[address]
+        contract = {
+            'name': name,
+            'type': _type,
+            'interface': interface,
+            'address': address
+        }
+        d = ContractFuncDialog(self, contract)
+        d.show()
