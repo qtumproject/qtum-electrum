@@ -2,7 +2,6 @@
 """
 __author__ = 'CodeFace'
 """
-
 import hashlib
 import base64
 import hmac
@@ -10,8 +9,8 @@ import os
 import json
 import ecdsa
 import pyaes
-# from eth_abi import encode_abi
-# from eth_utils import function_signature_to_4byte_selector, function_abi_to_4byte_selector
+from eth_abi import encode_abi
+from eth_utils import function_signature_to_4byte_selector, function_abi_to_4byte_selector
 
 from .util import bfh, bh2u, to_string
 from . import version
@@ -1304,12 +1303,11 @@ def eth_abi_encode(abi, args):
     :param args: list
     :return: str
     """
-    pass
-    # if not abi:
-    #     return "00"
-    # types = list([inp['type'] for inp in abi.get('inputs', [])])
-    # if abi.get('name'):
-    #     result = function_abi_to_4byte_selector(abi) + encode_abi(types, args)
-    # else:
-    #     result = encode_abi(types, args)
-    # return bh2u(result)
+    if not abi:
+        return "00"
+    types = list([inp['type'] for inp in abi.get('inputs', [])])
+    if abi.get('name'):
+        result = function_abi_to_4byte_selector(abi) + encode_abi(types, args)
+    else:
+        result = encode_abi(types, args)
+    return bh2u(result)

@@ -580,7 +580,10 @@ def contract_script(gas_limit, gas_price, datahex, contract_addr, opcode):
     script += bh2u(contract_encode_number(gas_limit))
     script += bh2u(contract_encode_number(gas_price))
     script += push_script(datahex)
-    script += push_script(contract_addr)
+
+    if opcode == opcodes.OP_CALL:
+        script += push_script(contract_addr)
+
     script += bh2u(bytes([opcode]))
     return script
 

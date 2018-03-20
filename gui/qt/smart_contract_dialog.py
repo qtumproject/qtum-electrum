@@ -25,7 +25,6 @@ class ContractInfoLayout(QVBoxLayout):
         if not contract:
             contract = {
                 'name': '',
-                'type': 'contract',
                 'interface': '',
                 'address': ''
             }
@@ -56,7 +55,6 @@ class ContractInfoLayout(QVBoxLayout):
 
     def update(self):
         name = self.contract.get('name', '')
-        _type = self.contract.get('type', 'contract')
         address = self.contract.get('address', '')
         interface = self.contract.get('interface', '')
         if isinstance(interface, list):
@@ -104,8 +102,7 @@ class ContractEditDialog(QDialog, MessageBoxMixin):
     def save(self, contract):
         if self.parent().set_smart_contract(contract['name'],
                                             contract['address'],
-                                            contract['interface'],
-                                            contract['type']):
+                                            contract['interface']):
             self.accept()
 
 

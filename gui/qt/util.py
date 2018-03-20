@@ -200,8 +200,19 @@ class MessageBoxMixin(object):
                             title or _('Critical Error'), msg)
 
     def show_message(self, msg, parent=None, title=None):
+
+        def adjust_text(text, max_line_len=20):
+            length = len(text)
+            nrow = length // max_line_len + 1
+            if nrow < 2:
+                return text
+            words_arr = []
+            for i in range(nrow):
+                words_arr.append(text[i * max_line_len: min((i + 1) * max_line_len, length)])
+            return '\n'.join(words_arr)
+
         return self.msg_box(QMessageBox.Information, parent,
-                            title or _('Information'), msg)
+                            title or _('Information'), adjust_text(msg))
 
     def msg_box(self, icon, parent, title, text, buttons=QMessageBox.Ok,
                 defaultButton=QMessageBox.NoButton):
