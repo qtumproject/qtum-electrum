@@ -404,7 +404,7 @@ def run():
                                                        'qtum-electrum-data')
 
     # kivy sometimes freezes when we write to sys.stderr
-    set_verbosity(config_options.get('verbose') and config_options.get('gui') != 'kivy')
+    set_verbosity(True)
 
     # check uri
     uri = config_options.get('uri')
