@@ -90,6 +90,17 @@ exe_standalone = EXE(
       console=False)
       # The console True makes an annoying black box pop up, but it does make Electrum output command line commands, with this turned off no output will be given but commands can still be used
 
+exe_debug = EXE(
+      pyz,
+      a.scripts,
+      a.binaries,
+      a.datas + [('is_verbose', )],
+      name=os.path.join('build\\pyi.win32\\electrum', cmdline_name + "-debug.exe"),
+      debug=False,
+      strip=None,
+      upx=False,
+      icon=home+'icons/electrum.ico',
+      console=True)
 
 exe_portable = EXE(
       pyz,

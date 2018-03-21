@@ -406,6 +406,12 @@ def run():
         config_options['electrum_path'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                        'qtum-electrum-data')
 
+    try:
+        if is_bundle and os.path.exists(os.path.join(sys._MEIPASS, 'is_verbose')):
+            config_options['verbose'] = True
+    except AttributeError:
+        pass
+
     # kivy sometimes freezes when we write to sys.stderr
     set_verbosity(config_options.get('verbose') and config_options.get('gui') != 'kivy')
 
