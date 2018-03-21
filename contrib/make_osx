@@ -32,3 +32,5 @@ sleep 2
 hdiutil convert ${TEMP_DMG_NAME} -format UDZO -o ${DMG_NAME}
 hdiutil internet-enable -yes ${DMG_NAME}
 rm -rf ${TEMP_DMG_NAME}
+
+openssl dgst -sha256 ${DMG_NAME}
