@@ -215,9 +215,11 @@ class ContractFuncLayout(QGridLayout):
             show_sendto()
         else:
             abi = self.contract['interface'][abi_index]
-            if abi['stateMutability'] == 'view':
+            if not abi.get('stateMutability'):
+                self.dialog.show_message('stateMutability not found')
+            elif abi.get('stateMutability') == 'view':
                 show_call()
-            elif abi['stateMutability'] == 'nonpayable':
+            elif abi.get('stateMutability') == 'nonpayable':
                 show_sendto()
 
     def parse_values(self):
@@ -255,7 +257,7 @@ class ContractFuncLayout(QGridLayout):
         if len(self.senders) > 0:
             sender = self.senders[self.sender_combo.currentIndex()]
         else:
-            sender = None
+            sender = ''
         return abi, args, sender
 
     def do_call(self):
