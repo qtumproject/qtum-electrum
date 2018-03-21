@@ -201,7 +201,7 @@ class MessageBoxMixin(object):
 
     def show_message(self, msg, parent=None, title=None):
 
-        def adjust_text(text, max_line_len=20):
+        def adjust_text(text, max_line_len=40):
             length = len(text)
             nrow = length // max_line_len + 1
             if nrow < 2:
