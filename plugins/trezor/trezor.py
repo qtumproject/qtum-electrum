@@ -53,7 +53,6 @@ class TrezorKeyStore(Hardware_KeyStore):
         return msg_sig.signature
 
     def sign_transaction(self, tx, password):
-        print('TrezorKeyStore derivation', self.derivation)
         if tx.is_complete():
             return
         # previous transactions used as inputs
@@ -268,8 +267,6 @@ class TrezorPlugin(HW_PluginBase):
         client = self.get_client(keystore)
         inputs = self.tx_inputs(tx, True, keystore.get_script_gen())
         outputs = self.tx_outputs(keystore.get_derivation(), tx, keystore.get_script_gen())
-        # [<TxOutputType: {'address': 'Qfk19qeB1c9SRWpRzZoDJRnbsdqPvfoNBr', 'amount': 10000000, 'script_type': 0}>, <TxOutputType: {'amount': 9819200, 'script_type': 0, 'address_n': [2147483692, 2147483736, 2147483648, 1, 0]}>]
-        # may be is it because of the qtum address
         signed_tx = client.sign_tx(self.get_coin_name(), inputs, outputs, lock_time=tx.locktime)[1]
         raw = bh2u(signed_tx)
         tx.update_signatures(raw)

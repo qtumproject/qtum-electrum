@@ -12,6 +12,7 @@ from .amountedit import AmountEdit
 from qtum_electrum.qtum import is_hash160, is_b58_address, b58_address_to_hash160, bh2u, ADDRTYPE_P2PKH
 from qtum_electrum.i18n import _
 from qtum_electrum.tokens import Token
+from qtum_electrum_plugins.trezor.trezor import TrezorKeyStore
 
 
 class TokenAddLayout(QGridLayout):
@@ -25,11 +26,18 @@ class TokenAddLayout(QGridLayout):
         self.setColumnStretch(3, 1)
         self.callback = callback
         self.dialog = dialog
+
+        if isinstance(self.dialog.parent().wallet.keystore, TrezorKeyStore):
+            self.dialog.show_message('Trezor does not support QRC20 Token for now')
+            self.dialog.reject()
+            return
+
         self.addresses = self.dialog.parent().wallet.get_addresses_sort_by_balance()
 
         addr_type, __ = b58_address_to_hash160(self.addresses[0])
         if not addr_type == ADDRTYPE_P2PKH:
             self.dialog.show_message('only P2PKH address supports QRC20 Token')
+            self.dialog.reject()
             return
 
         address_lb = QLabel(_("Contract Address:"))
