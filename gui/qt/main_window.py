@@ -3150,7 +3150,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         if fee - gas_fee > confirm_rate * tx.estimated_size() / 1000:
             msg.append(_('Warning') + ': ' + _("The fee for this transaction seems unusually high."))
 
-        if self.wallet.has_password():
+        if self.wallet.has_keystore_encryption():
             msg.append("")
             msg.append(_("Enter your password to proceed"))
             password = self.password_dialog('\n'.join(msg))
@@ -3159,7 +3159,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         else:
             msg.append(_('Proceed?'))
             password = None
-            if not dialog.question('\n'.join(msg)):
+            if not self.question('\n'.join(msg)):
                 return
 
         def sign_done(success):
