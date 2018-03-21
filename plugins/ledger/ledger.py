@@ -5,7 +5,7 @@ import traceback
 
 from qtum_electrum import qtum
 from qtum_electrum import bitcoin
-from qtum_electrum.bitcoin import TYPE_ADDRESS, int_to_hex, var_int
+from qtum_electrum.bitcoin import TYPE_ADDRESS, int_to_hex, var_int, TYPE_SCRIPT
 from qtum_electrum.i18n import _
 from qtum_electrum.plugins import BasePlugin
 from qtum_electrum.keystore import Hardware_KeyStore
@@ -405,7 +405,7 @@ class Ledger_KeyStore(Hardware_KeyStore):
                 if len(tx.outputs()) > 2:
                     self.give_error("Transaction with more than 2 outputs not supported")
             for _type, address, amount in tx.outputs():
-                assert _type == TYPE_ADDRESS
+                # assert _type == TYPE_ADDRESS
                 info = tx.output_info.get(address)
                 if (info is not None) and (len(tx.outputs()) != 1):
                     index, xpubs, m = info
