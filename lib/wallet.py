@@ -681,7 +681,7 @@ class Abstract_Wallet(PrintError):
         for addr in self.get_addresses():
             c, u, x = self.get_addr_balance(addr)
             addrs.append((addr, c + u))
-        return list([addr[0] for addr in sorted(addrs, key=lambda y: y[1], reverse=True)])
+        return list([addr[0] for addr in sorted(addrs, key=lambda y: (-int(y[1]), y[0]))])
 
     def get_spendable_addresses(self, min_amount=0.000000001):
         result = []
