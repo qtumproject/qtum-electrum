@@ -32,7 +32,7 @@ fi
 pushd eth-hash
 git pull
 git checkout $BRANCH
-$PYTHON -m pip install . -e
+$PYTHON setup.py install
 popd
 
 pushd eth-utils
