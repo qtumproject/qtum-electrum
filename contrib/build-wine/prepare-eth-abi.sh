@@ -9,6 +9,8 @@ export WINEPREFIX=/opt/wine64
 PYHOME=c:/python$PYTHON_VERSION
 PYTHON="wine $PYHOME/python.exe -OO -B"
 
+$PYTHON -m pip install eth-hash
+
 cd `dirname $0`
 set -e
 cd tmp
