@@ -2,7 +2,7 @@
 
 # You probably need to update only this link
 ELECTRUM_GIT_URL=https://github.com/qtumproject/qtum-electrum.git
-BRANCH=master
+BRANCH=test0322
 NAME_ROOT=Qtum-electrum
 PYTHON_VERSION=3.5.4
 
