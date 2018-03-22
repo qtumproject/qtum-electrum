@@ -19,6 +19,7 @@ hiddenimports += collect_submodules('trezorlib')
 hiddenimports += collect_submodules('btchip')
 hiddenimports += collect_submodules('keepkeylib')
 hiddenimports += collect_submodules('websocket')
+hiddenimports += collect_submodules('pycryptodomex')
 
 # Add libusb binary
 binaries = [("c:/python3.5.4/libusb-1.0.dll", ".")]
