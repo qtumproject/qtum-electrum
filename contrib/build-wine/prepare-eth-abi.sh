@@ -12,6 +12,9 @@ PYTHON="wine $PYHOME/python.exe -OO -B"
 
 $PYTHON -m pip uninstall eth-hash
 $PYTHON -m pip uninstall eth-hash[pycryptodome]
+$PYTHON -m pip uninstall PyCrypto
+$PYTHON -m pip uninstall pycryptodome
+$PYTHON -m pip uninstall Cryptography
 
 cd `dirname $0`
 set -e
