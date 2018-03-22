@@ -22,8 +22,6 @@ six==1.11.0
 urllib3==1.22
 trezor==0.9.1
 libusb1==1.6.4
+#git+https://github.com/icodeface/eth-hash
 #git+https://github.com/icodeface/eth-utils
 #git+https://github.com/icodeface/eth-abi
-eth-hash[pycryptodome]
-pysha3
-eth-hash
