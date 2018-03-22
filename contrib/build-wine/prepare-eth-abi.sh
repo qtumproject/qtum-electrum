@@ -29,7 +29,7 @@ fi
 pushd eth-hash
 git pull
 git checkout $BRANCH
-$PYTHON setup.py install
+$PYTHON -m pip install . -e
 popd
 
 pushd eth-utils
