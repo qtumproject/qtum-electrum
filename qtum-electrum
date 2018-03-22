@@ -67,6 +67,7 @@ def check_imports():
         import pbkdf2
         import google.protobuf
         import jsonrpclib
+        import eth_hash
         import eth_utils
         import eth_abi
     except ImportError as e:
@@ -78,8 +79,8 @@ def check_imports():
     assert os.path.exists(requests.utils.DEFAULT_CA_BUNDLE_PATH)
 
 
-if not is_android:
-    check_imports()
+# if not is_android:
+check_imports()
 
 # load local module as qtum_electrum
 if is_local or is_android:
@@ -406,8 +407,8 @@ def run():
         config_options['electrum_path'] = os.path.join(os.path.dirname(os.path.realpath(__file__)),
                                                        'qtum-electrum-data')
 
-    config_options['verbose'] = True
-    set_verbosity(True)
+    # config_options['verbose'] = True
+    # set_verbosity(True)
 
     # check uri
     uri = config_options.get('uri')

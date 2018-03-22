@@ -10,11 +10,10 @@ export WINEPREFIX=/opt/wine64
 PYHOME=c:/python$PYTHON_VERSION
 PYTHON="wine $PYHOME/python.exe -OO -B"
 
-$PYTHON -m pip uninstall eth-hash
-$PYTHON -m pip uninstall eth-hash[pycryptodome]
-$PYTHON -m pip uninstall PyCrypto
-$PYTHON -m pip uninstall pycryptodome
-$PYTHON -m pip uninstall Cryptography
+
+$PYTHON -m pip install pycryptodomex -i https://pypi.tuna.tsinghua.edu.cn/simple
+$PYTHON -m pip install pysha3 -i https://pypi.tuna.tsinghua.edu.cn/simple
+$PYTHON -m pip install setuptools-markdown -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 cd `dirname $0`
 set -e
