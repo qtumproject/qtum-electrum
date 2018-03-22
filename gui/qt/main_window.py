@@ -30,7 +30,9 @@ import weakref
 import csv
 from decimal import Decimal
 import base64
+import binascii
 import eth_abi
+
 
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import *
@@ -3203,10 +3205,25 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         except BaseException as e:
             dialog.show_message(str(e))
             return
+        types = list([x['type'] for x in abi.get('outputs', [])])
+        try:
+            result = eth_abi.decode_abi(types, binascii.a2b_hex(result))
+
+            def decode_x(x):
+                if isinstance(x, bytes):
+                    try:
+                        return x.decode()
+                    except UnicodeDecodeError:
+                        return str(x)
+                return str(x)
+
+            result = ','.join([decode_x(x) for x in result])
+        except (BaseException,) as e:
+            print(e)
+            pass
         if not result:
             dialog.show_message('')
             return
-
         dialog.show_message(result)
 
     def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog):
