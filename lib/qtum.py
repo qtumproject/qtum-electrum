@@ -139,7 +139,7 @@ TYPE_SCRIPT  = 2
 # AES encryption
 
 try:
-    from Crypto.Cipher import AES
+    from Cryptodome.Cipher import AES
 except:
     AES = None
 

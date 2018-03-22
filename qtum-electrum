@@ -67,6 +67,7 @@ def check_imports():
         import pbkdf2
         import google.protobuf
         import jsonrpclib
+        import eth_hash
         import eth_utils
         import eth_abi
     except ImportError as e:
