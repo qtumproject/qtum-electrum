@@ -60,6 +60,7 @@ def check_imports():
     # pure-python dependencies need to be imported here for pyinstaller
     try:
         import Cryptodome
+        print('import Cryptodome success')
         import dns
         import pyaes
         import ecdsa
@@ -73,6 +74,9 @@ def check_imports():
         import eth_abi
     except ImportError as e:
         sys.exit("Error: {}. Try 'sudo pip install <module-name>'".format(e))
+
+    print('check all imports success')
+
     # the following imports are for pyinstaller
     # make sure that certificates are here
     if is_bundle and sys.platform=='darwin':
