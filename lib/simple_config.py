@@ -6,7 +6,7 @@ import stat
 
 from copy import deepcopy
 from .util import user_dir, print_error, print_msg, print_stderr, PrintError
-
+from .i18n import _
 from .bitcoin import MAX_FEE_RATE, FEE_TARGETS
 
 SYSTEM_CONFIG_PATH = "/etc/qtum_electrum.conf"
@@ -156,6 +156,10 @@ class SimpleConfig(PrintError):
             return path
 
         # default path
+        if not os.path.exists(self.path):
+            raise FileNotFoundError(
+                _('Electrum datadir does not exist. Was it deleted while running?') + '\n' +
+                _('Should be at {}').format(self.path))
         dirpath = os.path.join(self.path, "wallets")
         if not os.path.exists(dirpath):
             if os.path.islink(dirpath):
