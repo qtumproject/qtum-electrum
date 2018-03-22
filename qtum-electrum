@@ -59,6 +59,7 @@ elif is_bundle and sys.platform=='darwin':
 def check_imports():
     # pure-python dependencies need to be imported here for pyinstaller
     try:
+        import Cryptodome
         import dns
         import pyaes
         import ecdsa
