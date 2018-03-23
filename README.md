@@ -84,16 +84,7 @@ This directory contains the python dependencies used by Electrum.
 Mac OS X
 --------
 
-    # edit PyQt5/uic/port_v2/ascii_upper.py
-    change string.maketrans to str.maketrans
-
-    brew install libffi
-    brew install libusb
-
-    # install py2app
-    sudo pip3 install py2app==0.12
-
-    sudo ./contrib/make_osx
+See [contrib/build-osx/README.md](https://github.com/qtumproject/qtum-electrum/blob/master/contrib/build-osx/README.md) file.
 
 Windows
 -------

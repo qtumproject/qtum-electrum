@@ -1,10 +1,22 @@
 # -*- mode: python -*-
 
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules
+from PyInstaller.utils.hooks import collect_data_files, collect_submodules, collect_dynamic_libs
 import sys
 import os
 
-electrum = "../"
+PACKAGE='Qtum_Electrum'
+PYPKG='qtum_electrum'
+MAIN_SCRIPT='qtum-electrum'
+ICONS_FILE='qtum-electrum.icns'
+
+for i, x in enumerate(sys.argv):
+    if x == '--name':
+        VERSION = sys.argv[i+1]
+        break
+else:
+    raise BaseException('no version')
+
+electrum = os.path.abspath(".") + "/"
 block_cipher=None
 
 # see https://github.com/pyinstaller/pyinstaller/issues/2005
@@ -12,29 +24,35 @@ hiddenimports = []
 hiddenimports += collect_submodules('trezorlib')
 hiddenimports += collect_submodules('btchip')
 hiddenimports += collect_submodules('keepkeylib')
+hiddenimports += collect_submodules('websocket')
 
 datas = [
-    (electrum+'lib/currencies.json', 'electrum'),
-    (electrum+'lib/servers.json', 'electrum'),
-    (electrum+'lib/servers_testnet.json', 'electrum'),
-    (electrum+'lib/wordlist/english.txt', 'electrum/wordlist'),
-    (electrum+'plugins', 'electrum_plugins'),
-    (electrum+'lib/locale', 'electrum/locale'),
+    (electrum+'lib/currencies.json', PYPKG),
+    (electrum+'lib/servers.json', PYPKG),
+    (electrum+'lib/servers_testnet.json', PYPKG),
+    (electrum+'lib/wordlist/english.txt', PYPKG + '/wordlist'),
+    (electrum+'lib/locale', PYPKG + '/locale'),
+    (electrum+'plugins', PYPKG + '_plugins'),
 ]
 
 datas += collect_data_files('trezorlib')
 datas += collect_data_files('btchip')
 datas += collect_data_files('keepkeylib')
 
+# Add libusb so Trezor will work
+binaries = [(electrum + "contrib/build-osx/libusb-1.0.dylib", ".")]
+
+# Workaround for "Retro Look":
+binaries += [b for b in collect_dynamic_libs('PyQt5') if 'macstyle' in b[0]]
+
 # We don't put these files in to actually include them in the script but to make the Analysis method scan them for imports
-a = Analysis([electrum+'electrum',
+a = Analysis([electrum+MAIN_SCRIPT,
               electrum+'gui/qt/main_window.py',
               electrum+'gui/text.py',
               electrum+'lib/util.py',
               electrum+'lib/wallet.py',
               electrum+'lib/simple_config.py',
               electrum+'lib/bitcoin.py',
-              electrum+'lib/qtum.py',
               electrum+'lib/dnssec.py',
               electrum+'lib/commands.py',
               electrum+'plugins/cosigner_pool/qt.py',
@@ -44,9 +62,11 @@ a = Analysis([electrum+'electrum',
               electrum+'plugins/keepkey/qt.py',
               electrum+'plugins/ledger/qt.py',
               ],
+             binaries=binaries,
              datas=datas,
              hiddenimports=hiddenimports,
              hookspath=[])
+
 
 # http://stackoverflow.com/questions/19055089/pyinstaller-onefile-warning-pyconfig-h-when-importing-scipy-or-scipy-signal
 for d in a.datas:
@@ -60,14 +80,20 @@ exe = EXE(pyz,
           a.scripts,
           a.binaries,
           a.datas,
-          name='Qtum Electrum',
+          name=PACKAGE,
           debug=False,
           strip=False,
           upx=True,
-          icon=electrum+'qtum_electrum.icns',
+          icon=electrum+ICONS_FILE,
           console=False)
 
 app = BUNDLE(exe,
-             name='Qtum Electrum.app',
-             icon=electrum+'qtum_electrum.icns',
-             bundle_identifier=None)
+             version = VERSION,
+             name=PACKAGE + '.app',
+             icon=electrum+ICONS_FILE,
+             bundle_identifier=None,
+             info_plist={
+                'NSHighResolutionCapable': 'True',
+                'NSSupportsAutomaticGraphicsSwitching': 'True'
+             }
+)
