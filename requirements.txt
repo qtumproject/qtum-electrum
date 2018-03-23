@@ -26,8 +26,5 @@ sip==4.19.8
 trezor==0.9.1
 urllib3==1.22
 websocket-client==0.47.0
-git+https://github.com/icodeface/eth-hash
-git+https://github.com/icodeface/eth-utils
-git+https://github.com/icodeface/eth-abi
-#git+https://github.com/ecdsa/pyinstaller@fix_2952
-#py2app==0.12
+
+
