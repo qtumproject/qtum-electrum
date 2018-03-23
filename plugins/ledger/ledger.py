@@ -207,7 +207,7 @@ class Ledger_Client():
                 self.perform_hw1_preflight()
             except BTChipException as e:
                 print_error('checkDevice', e)
-                if (e.sw == 0x6d00 or e.sw == 0x6f00):
+                if (e.sw == 0x6d00 or e.sw == 0x6700):
                     raise BaseException(_("Device not in Qtum mode")) from e
                 raise e
             self.preflightDone = True
