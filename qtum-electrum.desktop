@@ -3,7 +3,7 @@
 
 [Desktop Entry]
 Comment=Lightweight Qtum Client
-Exec=electrum %u
+Exec=qtum-electrum %u
 GenericName[en_US]=Qtum Wallet
 GenericName=Qtum Wallet
 Icon=electrum
@@ -14,4 +14,10 @@ StartupNotify=false
 Terminal=false
 Type=Application
 MimeType=x-scheme-handler/qtum;
+Actions=Testnet;
+
+[Desktop Action Testnet]
+Exec=qtum-electrum --testnet %u
+Name=Testnet mode
+
 
