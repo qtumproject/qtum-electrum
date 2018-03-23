@@ -4,7 +4,7 @@ from PyInstaller.utils.hooks import collect_data_files, collect_submodules, coll
 import sys
 import os
 
-PACKAGE='Qtum_Electrum'
+PACKAGE='Qtum Electrum'
 PYPKG='qtum_electrum'
 MAIN_SCRIPT='qtum-electrum'
 ICONS_FILE='qtum-electrum.icns'
