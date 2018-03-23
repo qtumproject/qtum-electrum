@@ -483,9 +483,14 @@ class DeviceMgr(ThreadJob, PrintError):
             infos = self.unpaired_device_infos(handler, plugin, devices)
             if infos:
                 break
-            msg = _('Could not connect to your %s.  Verify the cable is '
-                    'connected and that no other application is using it.\n\n'
-                    'Try to connect again?') % plugin.device
+            msg = _('Please insert your {}').format(plugin.device)
+            if keystore.label:
+                msg += ' ({})'.format(keystore.label)
+            msg += '. {}\n\n{}'.format(
+                _('Verify the cable is connected and that '
+                  'no other application is using it.'),
+                _('Try to connect again?')
+            )
             if not handler.yes_no_question(msg):
                 raise UserCancelled()
             devices = None
