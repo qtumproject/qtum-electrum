@@ -11,7 +11,7 @@ from qtum_electrum.plugins import BasePlugin
 from qtum_electrum.keystore import Hardware_KeyStore
 from qtum_electrum.transaction import Transaction
 from ..hw_wallet import HW_PluginBase
-from qtum_electrum.util import print_error, bfh, bh2u
+from qtum_electrum.util import print_error, bfh, bh2u, is_verbose
 
 try:
     import hid
@@ -22,7 +22,6 @@ try:
     from btchip.bitcoinTransaction import bitcoinTransaction
     from btchip.btchipFirmwareWizard import checkFirmware, updateFirmware
     from btchip.btchipException import BTChipException
-    from qtum_electrum.util import is_verbose
     BTCHIP = True
     BTCHIP_DEBUG = is_verbose
 except ImportError:
@@ -63,7 +62,6 @@ class Ledger_Client():
         """Function decorator to test the Ledger for being unlocked, and if not,
         raise a human-readable exception.
         """
-
         def catch_exception(self, *args, **kwargs):
             try:
                 return func(self, *args, **kwargs)
@@ -72,7 +70,6 @@ class Ledger_Client():
                     raise Exception(_('Your Ledger is locked. Please unlock it.'))
                 else:
                     raise
-
         return catch_exception
 
     @test_pin_unlocked
@@ -98,8 +95,6 @@ class Ledger_Client():
         fingerprint = 0
         if len(splitPath) > 1:
             prevPath = "/".join(splitPath[0:len(splitPath) - 1])
-            # print('self.dongleObject.dongle', self.dongleObject.dongle)
-            # <btchip.btchipComm.HIDDongleHIDAPI object at 0x11e514fd0>
             try:
                 nodeData = self.dongleObject.getWalletPublicKey(prevPath)
             except BTChipException as e:
@@ -118,7 +113,6 @@ class Ledger_Client():
         xpub = bitcoin.serialize_xpub(xtype, nodeData['chainCode'], publicKey, depth, self.i4b(fingerprint),
                                       self.i4b(childnum))
         return xpub
-
 
     def has_detached_pin_support(self, client):
         try:
@@ -186,10 +180,7 @@ class Ledger_Client():
                     raise Exception('Aborted by user - please unplug the dongle and plug it again before retrying')
                 pin = pin.encode()
                 self.dongleObject.verifyPin(pin)
-                # self.dongleObject.setAlternateCoinVersion(qtum.ADDRTYPE_P2PKH, qtum.ADDRTYPE_P2SH)
         except BTChipException as e:
-            if (e.sw == 0x6700):
-                return
             if (e.sw == 0x6faa):
                 raise Exception("Dongle is temporarily locked - please unplug it and replug it again")
             if ((e.sw & 0xFFF0) == 0x63c0):
@@ -258,14 +249,12 @@ class Ledger_KeyStore(Hardware_KeyStore):
 
     def set_and_unset_signing(func):
         """Function decorator to set and unset self.signing."""
-
         def wrapper(self, *args, **kwargs):
             try:
                 self.signing = True
                 return func(self, *args, **kwargs)
             finally:
                 self.signing = False
-
         return wrapper
 
     def address_id_stripped(self, address):
@@ -311,7 +300,6 @@ class Ledger_KeyStore(Hardware_KeyStore):
             self.give_error(e, True)
         finally:
             self.handler.finished()
-
         # Parse the ASN.1 signature
         rLength = signature[3]
         r = signature[4: 4 + rLength]
@@ -321,7 +309,6 @@ class Ledger_KeyStore(Hardware_KeyStore):
             r = r[1:]
         if sLength == 33:
             s = s[1:]
-
         # And convert it
         return bytes([27 + 4 + (signature[0] & 0x01)]) + r + s
 
@@ -571,7 +558,8 @@ class LedgerPlugin(HW_PluginBase):
         return HIDDongleHIDAPI(dev, ledger, BTCHIP_DEBUG)
 
     def create_client(self, device, handler):
-        self.handler = handler
+        if handler:
+            self.handler = handler
 
         client = self.get_btchip_device(device)
         if client is not None:
