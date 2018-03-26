@@ -75,7 +75,7 @@ def strip_unneeded(bkts, sufficient_funds, exception=None):
     '''Remove buckets that are unnecessary in achieving the spend amount'''
     bkts = sorted(bkts, key = lambda bkt: bkt.value)
     for i in range(len(bkts)):
-        if exception and bkts[i] == exception:
+        if exception and bkts[i].desc == exception:
             del bkts[i]
             bkts.append(exception)
             break
@@ -84,6 +84,27 @@ def strip_unneeded(bkts, sufficient_funds, exception=None):
             return bkts[i:]
     # Shouldn't get here
     return bkts
+
+
+def strip_unneeded_utxo(bkts, sufficient_funds):
+    '''Remove utxos that are unnecessary in achieving the spend amount'''
+    assert len(bkts) == 1
+    bucket = bkts[0]
+    desc = bucket.desc
+    weight = 0
+    value = 0
+    coins = []
+
+    for coin in bucket.coins:
+        weight += Transaction.estimated_input_weight(coin)
+        value += coin['value']
+        coins.append(coin)
+        size = Transaction.virtual_size_from_weight(weight)
+        new_bucket = Bucket(desc, size, value, coins)
+        if sufficient_funds([new_bucket]):
+            return [new_bucket, ]
+    return [bucket, ]
+
 
 class CoinChooserBase(PrintError):
 
@@ -329,21 +350,19 @@ class CoinChooserQtum(CoinChooserBase):
         buckets.sort(key=lambda b: max(adj_height(coin['height'])
                                        for coin in b.coins))
         selected = []
-        sender_bucket = None
         if sender:
             for bucket in buckets:
                 if bucket.desc == sender:
-                    sender_bucket = bucket
                     selected.append(bucket)
                     if sufficient_funds(selected):
-                        return strip_unneeded(selected, sufficient_funds, sender_bucket)
+                        return strip_unneeded_utxo(selected, sufficient_funds)
                     break
             if len(selected) == 0:
                 raise BaseException('choose_buckets - sender address has no utxo')
         for bucket in buckets:
             selected.append(bucket)
             if sufficient_funds(selected):
-                return strip_unneeded(selected, sufficient_funds, sender_bucket)
+                return strip_unneeded(selected, sufficient_funds, sender)
         else:
             raise NotEnoughFunds()
 
