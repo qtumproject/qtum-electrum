@@ -1503,11 +1503,11 @@ class Abstract_Wallet(PrintError):
                 except OSError as exc:
                     if exc.errno != errno.EEXIST:
                         raise
-            with open(os.path.join(path, key), 'wb') as f:
+            with open(os.path.join(path, key), 'wb', encoding='utf-8') as f:
                 f.write(pr.SerializeToString())
             # reload
             req = self.get_payment_request(addr, config)
-            with open(os.path.join(path, key + '.json'), 'w') as f:
+            with open(os.path.join(path, key + '.json'), 'w', encoding='utf-8') as f:
                 f.write(json.dumps(req))
         return req
 

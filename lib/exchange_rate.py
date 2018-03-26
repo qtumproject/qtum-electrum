@@ -337,7 +337,7 @@ def get_exchanges_and_currencies():
             d[name] = exchange.get_currencies()
         except:
             continue
-    with open(path, 'w') as f:
+    with open(path, 'w', encoding='utf-8') as f:
         f.write(json.dumps(d, indent=4, sort_keys=True))
     return d
 
