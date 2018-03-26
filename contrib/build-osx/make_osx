@@ -11,6 +11,8 @@ function fail {
     exit 1
 }
 
+export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;
+
 build_dir=$(dirname "$0")
 test -n "$build_dir" -a -d "$build_dir" || exit
 cd $build_dir/../..
@@ -36,7 +38,7 @@ PYTHON_CONFIGURE_OPTS="--enable-framework" pyenv install -s $PYTHON_VERSION && \
 pyenv global $PYTHON_VERSION || fail "Unable to use Python $PYTHON_VERSION"
 
 info "Installing pyinstaller"
-python3 -m pip install git+https://github.com/ecdsa/pyinstaller@fix_2952 -I --user || fail "Could not install pyinstaller"
+python3 -m pip install git+https://github.com/ecdsa/pyinstaller@fix_2952 --user || fail "Could not install pyinstaller"
 
 info "Using these versions for building $PACKAGE:"
 sw_vers
@@ -46,8 +48,8 @@ pyinstaller --version
 
 
 info "Installing requirements..."
-python3 -m pip install -Ir ./requirements.txt --user && \
-python3 -m pip install -Ir ./requirements-fixed.txt --user || \
+python3 -m pip install -r ./requirements.txt --user && \
+python3 -m pip install -r ./requirements-fixed.txt --user || \
 fail "Could not install requirements"
 
 
