@@ -1,3 +1,12 @@
+# Release 0.18.2
+ * fix a ledger osx connection issue
+ * decrease osx dmg size
+ * smart contract supported
+
+# Release 0.18.1
+ * fix a synchronization issue when detecting a fork
+ * fix ledger sending token issue
+
 # Release 0.18.0
  * QRC20 Token supported
  * Trezor supported
