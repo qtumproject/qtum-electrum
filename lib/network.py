@@ -325,9 +325,9 @@ class Network(util.DaemonThread):
         for i in bitcoin.FEE_TARGETS:
             self.queue_request('blockchain.estimatefee', [i])
         self.queue_request('blockchain.relayfee', [])
-        for h in self.subscribed_addresses:
+        for h in list(self.subscribed_addresses):
             self.queue_request('blockchain.scripthash.subscribe', [h])
-        for hash160, contract_addr in self.subscribed_tokens:
+        for hash160, contract_addr in list(self.subscribed_tokens):
             self.queue_request('blockchain.hash160.contract.subscribe', [hash160, contract_addr])
 
 
