@@ -11,8 +11,6 @@ function fail {
     exit 1
 }
 
-export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;
-
 build_dir=$(dirname "$0")
 test -n "$build_dir" -a -d "$build_dir" || exit
 cd $build_dir/../..
