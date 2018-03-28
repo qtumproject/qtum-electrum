@@ -435,6 +435,8 @@ class Blockchain(util.PrintError):
         return nbits, new_target
 
     def can_connect(self, header, check_height=True):
+        if not header:
+            return False
         height = header['block_height']
         if check_height and self.height() != height - 1:
             print_error('[can_connect] check_height failed', height, self.height())
