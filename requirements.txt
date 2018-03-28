@@ -1,4 +1,4 @@
-btchip-python==0.1.24
+btchip-python==0.1.26
 cython==0.27.3
 cffi==1.11.5
 certifi==2018.1.18
