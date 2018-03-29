@@ -223,7 +223,7 @@ class Xpub:
 
     def derive_pubkey(self, for_change, n):
 
-        # m / 44'/ 88' / 0' / 0' / for_change / n
+        # m / 44'/ 88' / 0' / for_change / n
         xpub = self.xpub_change if for_change else self.xpub_receive
         if xpub is None:
             xpub = bip32_public_derivation(self.xpub, "", "/%d" % for_change)
