@@ -7,8 +7,10 @@ import imp
 import os
 import platform
 import sys
-
 from setuptools import setup
+
+with open('contrib/requirements/requirements.txt') as f:
+    requirements = f.read().splitlines()
 
 version = imp.load_source('version', 'lib/version.py')
 
@@ -38,19 +40,7 @@ if platform.system() in ['Linux', 'FreeBSD', 'DragonFly']:
 setup(
     name="Qtum Electrum",
     version=version.ELECTRUM_VERSION,
-    install_requires=[
-        'pyaes>=0.1a1',
-        'ecdsa>=0.9',
-        'pbkdf2',
-        'requests',
-        'qrcode',
-        'protobuf',
-        'dnspython',
-        'jsonrpclib-pelix',
-        'PySocks>=1.6.6',
-        # 'eth-abi',
-        # 'eth-utils'
-    ],
+    install_requires=requirements,
     packages=[
         'qtum_electrum',
         'qtum_electrum_gui',
