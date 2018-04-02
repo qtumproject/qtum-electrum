@@ -19,7 +19,7 @@ env/
 .tox/
 .buildozer/
 bin/
-
+lib/paymentrequest_pb2.py
 # tox files
 .cache/
 .coverage
