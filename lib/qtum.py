@@ -90,17 +90,17 @@ def set_testnet():
     DEFAULT_PORTS = {'t': '51001', 's': '51002'}
     XPRV_HEADERS = {
         'standard': 0x04358394,
-        'p2wpkh-p2sh': 0x049d7878,
-        'p2wsh-p2sh': 0x295b005,
-        'p2wpkh': 0x4b2430c,
-        'p2wsh': 0x2aa7a99
+        'p2wpkh-p2sh': 0x044a4e28,
+        'p2wsh-p2sh': 0x024285b5,
+        'p2wpkh': 0x045f18bc,
+        'p2wsh': 0x02575048
     }
     XPUB_HEADERS = {
-        'standard': 0x043587CF,
-        'p2wpkh-p2sh': 0x049d7cb2,
-        'p2wsh-p2sh': 0x295b43f,
-        'p2wpkh': 0x4b24746,
-        'p2wsh': 0x2aa7ed3
+        'standard': 0x043587cf,
+        'p2wpkh-p2sh': 0x044a5262,
+        'p2wsh-p2sh': 0x024289ef,
+        'p2wpkh': 0x045f1cf6,
+        'p2wsh': 0x02575483
     }
 
 
