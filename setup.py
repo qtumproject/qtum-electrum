@@ -9,7 +9,7 @@ import platform
 import sys
 from setuptools import setup
 
-with open('contrib/requirements/requirements.txt') as f:
+with open('./requirements.txt') as f:
     requirements = f.read().splitlines()
 
 version = imp.load_source('version', 'lib/version.py')
