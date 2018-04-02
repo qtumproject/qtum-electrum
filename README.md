@@ -44,6 +44,7 @@ Check out the code from Github:
 Install dependencies::
 
     pip3 install -r requirements.txt
+    pip3 install -r requirements-fixed.txt
 
 Compile the icons file for Qt:
 
