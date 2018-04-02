@@ -13,6 +13,10 @@ echo "Clearing $here/build and $here/dist..."
 rm "$here"/build/* -rf
 rm "$here"/dist/* -rf
 
+mkdir -p /tmp/qtum-electrum-build
+mkdir -p /tmp/qtum-electrum-build/pip-cache
+export PIP_CACHE_DIR="/tmp/qtum-electrum-build/pip-cache"
+
 $here/prepare-eth-abi.sh && \
 echo "Resetting modification time in C:\Python..."
 # (Because of some bugs in pyinstaller)
