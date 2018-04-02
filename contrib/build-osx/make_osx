@@ -25,6 +25,23 @@ DMG_NAME="${STAGING_DIR}/Qtum-electrum-osx-${VERSION}.dmg"
 
 rm -rf ${STAGING_DIR} ${TEMP_DMG_NAME}
 
+download_if_not_exist() {
+    local file_name=$1 url=$2
+    if [ ! -e $file_name ] ; then
+        wget -O $PWD/$file_name "$url"
+    fi
+}
+
+#export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;
+
+if [ ! -e contrib/build-osx/libusb-1.0.dylib ] ; then
+    info "Downloading libusb..."
+    curl https://homebrew.bintray.com/bottles/libusb-1.0.22.el_capitan.bottle.tar.gz | \
+    tar xz --directory /tmp/
+    cp /tmp/libusb/1.0.22/lib/libusb-1.0.dylib contrib/build-osx
+fi
+
+
 info "Installing Python $PYTHON_VERSION"
 export PATH="~/.pyenv/bin:~/.pyenv/shims:~/Library/Python/3.6/bin:$PATH"
 if [ -d "~/.pyenv" ]; then
