@@ -408,6 +408,8 @@ class MyTreeWidget(QTreeWidget):
         self.addChild = self.addTopLevelItem
         self.insertChild = self.insertTopLevelItem
 
+        self.icon_cache = IconCache()
+
         # Control which columns are editable
         self.editor = None
         self.pending_update = False
@@ -725,6 +727,18 @@ def export_meta_gui(electrum_window, title, exporter):
 
 float_validator = QRegExpValidator(QRegExp('^(-?\d+)(\.\d+)?$'))
 int_validator = QIntValidator(0, 10 ** 9 - 1)
+
+
+class IconCache:
+
+    def __init__(self):
+        self.__cache = {}
+
+    def get(self, file_name):
+        if file_name not in self.__cache:
+            self.__cache[file_name] = QIcon(file_name)
+        return self.__cache[file_name]
+
 
 if __name__ == "__main__":
     app = QApplication([])
