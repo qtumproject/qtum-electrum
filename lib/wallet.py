@@ -1189,7 +1189,7 @@ class Abstract_Wallet(PrintError):
             return True
         return False
 
-    def prepare_for_verifier(self):
+    def load_unverified_transactions(self):
         # review transactions that are in the history
         for addr, hist in self.history.items():
             for tx_hash, tx_height in hist:
@@ -1198,8 +1198,6 @@ class Abstract_Wallet(PrintError):
 
     def start_threads(self, network):
         self.network = network
-        # prepare self.unverified_tx regardless of network
-        self.prepare_for_verifier()
         if self.network is not None:
             self.verifier = SPV(self.network, self)
             self.synchronizer = Synchronizer(self, network)
