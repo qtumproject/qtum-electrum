@@ -91,7 +91,7 @@ class DigitalBitbox_Client():
         if reply:
             return reply['xpub']
         else:
-            raise BaseException('no reply')
+            raise Exception('no reply')
 
 
     def dbb_has_password(self):

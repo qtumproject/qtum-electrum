@@ -99,7 +99,7 @@ class Ledger_Client():
                 nodeData = self.dongleObject.getWalletPublicKey(prevPath)
             except BTChipException as e:
                 if e.sw == 0x6f04:
-                    raise BaseException('error 6f04, Please update your firmware or try Bitcoin mode')
+                    raise Exception('error 6f04, Please update your firmware or try Bitcoin mode')
                 raise e
             publicKey = compress_public_key(nodeData['publicKey'])
             h = hashlib.new('ripemd160')
@@ -199,7 +199,7 @@ class Ledger_Client():
             except BTChipException as e:
                 print_error('checkDevice', e)
                 if (e.sw == 0x6d00 or e.sw == 0x6700):
-                    raise BaseException(_("Device not in Qtum mode")) from e
+                    raise Exception(_("Device not in Qtum mode")) from e
                 raise e
             self.preflightDone = True
 

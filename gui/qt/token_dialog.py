@@ -65,7 +65,7 @@ class TokenAddLayout(QGridLayout):
             contract_addr = self.contract_addr_e.text()
             bind_addr = self.addresses[self.address_combo.currentIndex()]
             if not is_hash160(contract_addr):
-                raise BaseException('invalid contrace address:{}'.format(contract_addr))
+                raise Exception('invalid contrace address:{}'.format(contract_addr))
             self.callback(contract_addr, bind_addr)
             self.dialog.reject()
         except (BaseException,) as e:

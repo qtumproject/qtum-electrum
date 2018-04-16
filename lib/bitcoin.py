@@ -335,7 +335,7 @@ from .qtum import *
 #         script += push_script(bh2u(hash_160))
 #         script += '87'                                       # op_equal
 #     else:
-#         raise BaseException('unknown address type')
+#         raise Exception('unknown address type')
 #     return script
 #
 # def address_to_scripthash(addr):
@@ -833,7 +833,7 @@ from .qtum import *
 # def deserialize_xkey(xkey, prv):
 #     xkey = DecodeBase58Check(xkey)
 #     if len(xkey) != 78:
-#         raise BaseException('Invalid length')
+#         raise Exception('Invalid length')
 #     depth = xkey[4]
 #     fingerprint = xkey[5:9]
 #     child_number = xkey[9:13]
@@ -841,7 +841,7 @@ from .qtum import *
 #     header = XPRV_HEADER if prv else XPUB_HEADER
 #     xtype = int('0x' + bh2u(xkey[0:4]), 16) - header
 #     if xtype not in ([0, 1] if TESTNET else [0]):
-#         raise BaseException('Invalid header')
+#         raise Exception('Invalid header')
 #     n = 33 if prv else 32
 #     K_or_k = xkey[13+n:]
 #     return xtype, depth, fingerprint, child_number, c, K_or_k

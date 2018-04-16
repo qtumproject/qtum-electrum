@@ -598,7 +598,7 @@ class Transaction:
         elif isinstance(raw, dict):
             self.raw = raw['hex']
         else:
-            raise BaseException("cannot initialize transaction", raw)
+            raise Exception("cannot initialize transaction", raw)
         self._inputs = None
         self._outputs = None
         self.locktime = 0
@@ -762,7 +762,7 @@ class Transaction:
         else:
             witness = txin.get('witness', None)
             if not witness:
-                raise BaseException('wrong txin type', txin['type'])
+                raise Exception('wrong txin type', txin['type'])
         if self.is_txin_complete(txin) or estimate_size:
             value_field = ''
         else:
@@ -883,7 +883,7 @@ class Transaction:
             self._inputs.insert(0, sender_inp)
         else:
             print_error('qtum_sort', self._inputs)
-            raise BaseException('qtum_sort - sender address not in inputs')
+            raise Exception('qtum_sort - sender address not in inputs')
 
     def serialize_output(self, output):
         output_type, data, amount = output

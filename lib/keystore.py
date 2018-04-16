@@ -678,7 +678,7 @@ def xpubkey_to_address(x_pubkey):
         mpk, s = Old_KeyStore.parse_xpubkey(x_pubkey)
         pubkey = Old_KeyStore.get_pubkey_from_mpk(mpk, s[0], s[1])
     else:
-        raise BaseException("Cannot parse pubkey")
+        raise Exception("Cannot parse pubkey")
     if pubkey:
         address = public_key_to_p2pkh(bfh(pubkey))
     return pubkey, address
@@ -700,7 +700,7 @@ def hardware_keystore(d):
     if hw_type in hw_keystores:
         constructor = hw_keystores[hw_type]
         return constructor(d)
-    raise BaseException('unknown hardware type', hw_type)
+    raise Exception('unknown hardware type', hw_type)
 
 
 def is_old_mpk(mpk):
@@ -761,7 +761,7 @@ def load_keystore(storage, name):
     d = storage.get(name, {})
     t = d.get('type')
     if not t:
-        raise BaseException('wallet format requires update')
+        raise Exception('wallet format requires update')
     if t == 'old':
         k = Old_KeyStore(d)
     elif t == 'imported':
@@ -775,7 +775,7 @@ def load_keystore(storage, name):
     elif t == 'qtcore':
         k = Qt_Core_Keystore(d)
     else:
-        raise BaseException('unknown wallet type', t)
+        raise Exception('unknown wallet type', t)
     return k
 
 
@@ -788,7 +788,7 @@ def from_seed(seed, passphrase, is_p2sh):
         keystore.passphrase = passphrase
         return keystore
     else:
-        raise BaseException(t)
+        raise Exception(t)
 
 
 def from_bip39_seed(seed, passphrase, derivation):
@@ -837,7 +837,7 @@ def from_master_key(text):
     elif is_xpub(text):
         k = from_xpub(text)
     else:
-        raise BaseException('Invalid key')
+        raise Exception('Invalid key')
     return k
 
 
@@ -862,5 +862,5 @@ def from_qt_core_master_key(text):
     # elif is_xpub(text):
     #     k = from_desktop_xpub(text)
     else:
-        raise BaseException('Invalid key')
+        raise Exception('Invalid key')
     return k

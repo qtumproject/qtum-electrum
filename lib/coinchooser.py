@@ -358,7 +358,7 @@ class CoinChooserQtum(CoinChooserBase):
                         return strip_unneeded_utxo(selected, sufficient_funds)
                     break
             if len(selected) == 0:
-                raise BaseException('choose_buckets - sender address has no utxo')
+                raise Exception('choose_buckets - sender address has no utxo')
         for bucket in buckets:
             selected.append(bucket)
             if sufficient_funds(selected):

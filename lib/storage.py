@@ -320,7 +320,7 @@ class WalletStorage(PrintError):
                 storage2.write()
                 result.append(new_path)
         else:
-            raise BaseException("This wallet has multiple accounts and must be split")
+            raise Exception("This wallet has multiple accounts and must be split")
         return result
 
     def requires_upgrade(self):
@@ -432,7 +432,7 @@ class WalletStorage(PrintError):
             else:
                 addresses.append(addr)
         if addresses and keypairs:
-            raise BaseException('mixed addresses and privkeys')
+            raise Exception('mixed addresses and privkeys')
         elif addresses:
             self.put('addresses', addresses)
             self.put('accounts', None)
@@ -442,7 +442,7 @@ class WalletStorage(PrintError):
             self.put('keypairs', keypairs)
             self.put('accounts', None)
         else:
-            raise BaseException('no addresses or privkeys')
+            raise Exception('no addresses or privkeys')
 
     def convert_account(self):
         self.put('accounts', None)
@@ -459,7 +459,7 @@ class WalletStorage(PrintError):
         if not seed_version:
             seed_version = OLD_SEED_VERSION if len(self.get('master_public_key','')) == 128 else NEW_SEED_VERSION
         if seed_version > FINAL_SEED_VERSION:
-            raise BaseException('This version of Electrum is too old to open this wallet')
+            raise Exception('This version of Electrum is too old to open this wallet')
         if seed_version >=12:
             return seed_version
         if seed_version not in [OLD_SEED_VERSION, NEW_SEED_VERSION]:
@@ -476,7 +476,7 @@ class WalletStorage(PrintError):
                 else:
                     # creation was complete if electrum was run from source
                     msg += "\nPlease open this file with Electrum 1.9.8, and move your coins to a new wallet."
-            raise BaseException(msg)
+            raise Exception(msg)
         return seed_version
 
 

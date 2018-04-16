@@ -515,12 +515,12 @@ def parse_URI(uri, on_pr=None):
 
     if ':' not in uri:
         if not bitcoin.is_address(uri):
-            raise BaseException("Not a qtum address")
+            raise Exception("Not a qtum address")
         return {'address': uri}
 
     u = urllib.parse.urlparse(uri)
     if u.scheme != 'qtum':
-        raise BaseException("Not a qtum URI")
+        raise Exception("Not a qtum URI")
     address = u.path
 
     # python for android fails to parse query
@@ -537,7 +537,7 @@ def parse_URI(uri, on_pr=None):
     out = {k: v[0] for k, v in pq.items()}
     if address:
         if not bitcoin.is_address(address):
-            raise BaseException("Invalid qtum address:" + address)
+            raise Exception("Invalid qtum address:" + address)
         out['address'] = address
     if 'amount' in out:
         am = out['amount']

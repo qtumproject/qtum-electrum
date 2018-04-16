@@ -88,7 +88,7 @@ def get_payment_request(url):
             data = None
             error = "payment URL not pointing to a valid file"
     else:
-        raise BaseException("unknown scheme", url)
+        raise Exception("unknown scheme", url)
     pr = PaymentRequest(data, error)
     return pr
 
@@ -333,9 +333,9 @@ def verify_cert_chain(chain):
             x.check_date()
         else:
             if not x.check_ca():
-                raise BaseException("ERROR: Supplied CA Certificate Error")
+                raise Exception("ERROR: Supplied CA Certificate Error")
     if not cert_num > 1:
-        raise BaseException("ERROR: CA Certificate Chain Not Provided by Payment Processor")
+        raise Exception("ERROR: CA Certificate Chain Not Provided by Payment Processor")
     # if the root CA is not supplied, add it to the chain
     ca = x509_chain[cert_num-1]
     if ca.getFingerprint() not in ca_list:
@@ -345,7 +345,7 @@ def verify_cert_chain(chain):
             root = ca_list[f]
             x509_chain.append(root)
         else:
-            raise BaseException("Supplied CA Not Found in Trusted CA Store.")
+            raise Exception("Supplied CA Not Found in Trusted CA Store.")
     # verify the chain of signatures
     cert_num = len(x509_chain)
     for i in range(1, cert_num):
@@ -367,9 +367,9 @@ def verify_cert_chain(chain):
             verify = pubkey.verify(sig, x509.PREFIX_RSA_SHA512 + hashBytes)
         else:
             util.print_error(algo.getComponentByName('algorithm'))
-            raise BaseException("Algorithm not supported")
+            raise Exception("Algorithm not supported")
         if not verify:
-            raise BaseException("Certificate not Signed by Provided CA Certificate Chain")
+            raise Exception("Certificate not Signed by Provided CA Certificate Chain")
 
     return x509_chain[0], ca
 

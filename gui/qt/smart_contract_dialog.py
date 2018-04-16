@@ -240,7 +240,7 @@ class ContractFuncLayout(QGridLayout):
         abi = self.contract['interface'][abi_index]
         inputs = abi.get('inputs', [])
         if not len(args) == len(inputs):
-            raise BaseException('invalid input count,expect {} got {}'.format(len(inputs), len(args)))
+            raise Exception('invalid input count,expect {} got {}'.format(len(inputs), len(args)))
         for index, _input in enumerate(inputs):
             _type = _input.get('type', '')
             if _type == 'address':
@@ -249,11 +249,11 @@ class ContractFuncLayout(QGridLayout):
                     __, hash160 = b58_address_to_hash160(addr)
                     addr = bh2u(hash160)
                 if not is_hash160(addr):
-                    raise BaseException('invalid input:{}'.format(args[index]))
+                    raise Exception('invalid input:{}'.format(args[index]))
                 args[index] = addr.lower()
             elif 'int' in _type:
                 if not isinstance(args[index], int):
-                    raise BaseException('inavlid input:{}'.format(args[index]))
+                    raise Exception('inavlid input:{}'.format(args[index]))
         if len(self.senders) > 0:
             sender = self.senders[self.sender_combo.currentIndex()]
         else:
@@ -364,12 +364,12 @@ class ContractCreateLayout(QVBoxLayout):
         if len(self.senders) > 0:
             sender = self.senders[self.sender_combo.currentIndex()]
         if not sender:
-            raise BaseException('no sender selected')
+            raise Exception('no sender selected')
         args = json.loads('[{}]'.format(self.args_e.text()))
         abi = self.constructor
         inputs = abi.get('inputs', [])
         if not len(args) == len(inputs):
-            raise BaseException('invalid input count,expect {} got {}'.format(len(inputs), len(args)))
+            raise Exception('invalid input count,expect {} got {}'.format(len(inputs), len(args)))
         for index, _input in enumerate(inputs):
             _type = _input.get('type', '')
             if _type == 'address':
@@ -378,11 +378,11 @@ class ContractCreateLayout(QVBoxLayout):
                     __, hash160 = b58_address_to_hash160(addr)
                     addr = bh2u(hash160)
                 if not is_hash160(addr):
-                    raise BaseException('invalid input:{}'.format(args[index]))
+                    raise Exception('invalid input:{}'.format(args[index]))
                 args[index] = addr.lower()
             elif 'int' in _type:
                 if not isinstance(args[index], int):
-                    raise BaseException('inavlid input:{}'.format(args[index]))
+                    raise Exception('inavlid input:{}'.format(args[index]))
             elif _type == 'string' or _type == 'bytes':
                 args[index] = args[index].encode()
         return abi, args, sender

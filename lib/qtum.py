@@ -454,7 +454,7 @@ def address_to_script(addr):
         script += push_script(bh2u(hash_160))
         script += '87'                                       # op_equal
     else:
-        raise BaseException('unknown address type')
+        raise Exception('unknown address type')
     return script
 
 def address_to_scripthash(addr):
@@ -598,7 +598,7 @@ def deserialize_privkey(key):
         vch = DecodeBase58Check(key)
     except BaseException:
         neutered_privkey = str(key)[:3] + '..' + str(key)[-2:]
-        raise BaseException("cannot deserialize", neutered_privkey)
+        raise Exception("cannot deserialize", neutered_privkey)
 
     if txin_type is None:
         # keys exported in version 3.0.x encoded script type in first byte
@@ -1016,7 +1016,7 @@ def serialize_xpub(xtype, c, cK, depth=0, fingerprint=b'\x00'*4, child_number=b'
 def deserialize_xkey(xkey, prv):
     xkey = DecodeBase58Check(xkey)
     if not xkey or len(xkey) != 78:
-        raise BaseException('Invalid xkey', xkey)
+        raise Exception('Invalid xkey', xkey)
     depth = xkey[4]
     fingerprint = xkey[5:9]
     child_number = xkey[9:13]
@@ -1024,7 +1024,7 @@ def deserialize_xkey(xkey, prv):
     header = int('0x' + bh2u(xkey[0:4]), 16)
     headers = XPRV_HEADERS if prv else XPUB_HEADERS
     if header not in headers.values():
-        raise BaseException('Invalid xpub format', hex(header))
+        raise Exception('Invalid xpub format', hex(header))
     xtype = list(headers.keys())[list(headers.values()).index(header)]
     n = 33 if prv else 32
     K_or_k = xkey[13+n:]

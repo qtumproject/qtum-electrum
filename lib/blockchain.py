@@ -325,12 +325,12 @@ class Blockchain(util.PrintError):
         prev_hash = hash_header(prev_header)
         _hash = hash_header(header)
         if prev_hash != header.get('prev_block_hash'):
-            raise BaseException("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
+            raise Exception("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
         if qtum.TESTNET:
             return True
 
         if bits != header.get('bits'):
-            raise BaseException("bits mismatch: %s vs %s, %s" %
+            raise Exception("bits mismatch: %s vs %s, %s" %
                                 (hex(bits), hex(header.get('bits')), _hash))
 
         if is_pos(header):
@@ -339,7 +339,7 @@ class Blockchain(util.PrintError):
             # 需要拿到value，计算新的target
         else:
             if int('0x' + _hash, 16) > target:
-                raise BaseException("insufficient proof of work: %s vs target %s" % (int('0x' + _hash, 16), target))
+                raise Exception("insufficient proof of work: %s vs target %s" % (int('0x' + _hash, 16), target))
 
     def check_header(self, header):
         header_hash = hash_header(header)
@@ -371,7 +371,7 @@ class Blockchain(util.PrintError):
         while cursor < len(data):
             raw_header, cursor = read_a_raw_header_from_chunk(data, cursor)
             if not raw_header:
-                raise BaseException('read_chunk, no header read')
+                raise Exception('read_chunk, no header read')
             raw_headers.append(raw_header)
         return raw_headers
 
@@ -412,9 +412,9 @@ class Blockchain(util.PrintError):
             pprev_header = self.read_header(height - 2)
 
         if not prev_header:
-            raise BaseException('get header failed {}'.format(height - 1))
+            raise Exception('get header failed {}'.format(height - 1))
         if not pprev_header:
-            raise BaseException('get header failed {}'.format(height - 2))
+            raise Exception('get header failed {}'.format(height - 2))
 
         #  Limit adjustment step
         nActualSpace = prev_header.get('timestamp') - pprev_header.get('timestamp')

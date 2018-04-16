@@ -127,7 +127,7 @@ def sweep_preparations(privkeys, network, imax=100):
             # we also search for pay-to-pubkey outputs
             find_utxos_for_privkey('p2pk', privkey, compressed)
     if not inputs:
-        raise BaseException(_('No inputs found. (Note that inputs need to be confirmed)'))
+        raise Exception(_('No inputs found. (Note that inputs need to be confirmed)'))
     return inputs, keypairs
 
 
@@ -139,9 +139,9 @@ def sweep(privkeys, network, config, recipient, fee=None, imax=100):
         tx = Transaction.from_io(inputs, outputs)
         fee = config.estimate_fee(tx.estimated_size())
     if total - fee < 0:
-        raise BaseException(_('Not enough funds on address.') + '\nTotal: %d satoshis\nFee: %d' % (total, fee))
+        raise Exception(_('Not enough funds on address.') + '\nTotal: %d satoshis\nFee: %d' % (total, fee))
     if total - fee < dust_threshold(network):
-        raise BaseException(_('Not enough funds on address.') + '\nTotal: %d satoshis\nFee: %d\nDust Threshold: %d' % (
+        raise Exception(_('Not enough funds on address.') + '\nTotal: %d satoshis\nFee: %d\nDust Threshold: %d' % (
         total, fee, dust_threshold(network)))
 
     outputs = [(TYPE_ADDRESS, recipient, total - fee)]
@@ -1099,17 +1099,17 @@ class Abstract_Wallet(PrintError):
             _type, data, value = o
             if _type == TYPE_ADDRESS:
                 if not is_address(data):
-                    raise BaseException("Invalid Qtum address:" + data)
+                    raise Exception("Invalid Qtum address:" + data)
             if value == '!':
                 if i_max is not None:
-                    raise BaseException("More than one output set to spend max")
+                    raise Exception("More than one output set to spend max")
                 i_max = i
         # Avoid index-out-of-range with inputs[0] below
         if not inputs:
             raise NotEnoughFunds()
 
         if fixed_fee is None and config.fee_per_kb() is None:
-            raise BaseException('Dynamic fee estimates not available')
+            raise Exception('Dynamic fee estimates not available')
 
         if not is_sweep:
             for item in inputs:
@@ -1271,7 +1271,7 @@ class Abstract_Wallet(PrintError):
 
     def bump_fee(self, tx, delta):
         if tx.is_final():
-            raise BaseException(_("Cannot bump fee: transaction is final"))
+            raise Exception(_("Cannot bump fee: transaction is final"))
         inputs = copy.deepcopy(tx.inputs())
         outputs = copy.deepcopy(tx.outputs())
         for txin in inputs:
@@ -1302,7 +1302,7 @@ class Abstract_Wallet(PrintError):
                 if delta > 0:
                     continue
         if delta > 0:
-            raise BaseException(_('Cannot bump fee: cound not find suitable outputs'))
+            raise Exception(_('Cannot bump fee: cound not find suitable outputs'))
         locktime = self.get_local_height()
         return Transaction.from_io(inputs, outputs, locktime=locktime)
 
@@ -1831,14 +1831,14 @@ class Imported_Wallet(Simple_Wallet):
             txin_type, pubkey = self.keystore.import_privkey(sec, pw)
         except Exception:
             neutered_privkey = str(sec)[:3] + '..' + str(sec)[-2:]
-            raise BaseException('Invalid private key', neutered_privkey)
+            raise Exception('Invalid private key', neutered_privkey)
         if txin_type in ['p2pkh', 'p2wpkh', 'p2wpkh-p2sh']:
             if redeem_script is not None:
-                raise BaseException('Cannot use redeem script with', txin_type)
+                raise Exception('Cannot use redeem script with', txin_type)
             addr = bitcoin.pubkey_to_address(txin_type, pubkey)
         elif txin_type in ['p2sh', 'p2wsh', 'p2wsh-p2sh']:
             if redeem_script is None:
-                raise BaseException('Redeem script required for', txin_type)
+                raise Exception('Redeem script required for', txin_type)
             addr = bitcoin.redeem_script_to_address(txin_type, redeem_script)
         else:
             raise NotImplementedError(self.txin_type)

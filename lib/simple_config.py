@@ -87,7 +87,7 @@ class SimpleConfig(PrintError):
         # Make directory if it does not yet exist.
         if not os.path.exists(path):
             if os.path.islink(path):
-                raise BaseException('Dangling link: ' + path)
+                raise Exception('Dangling link: ' + path)
             os.mkdir(path)
 
         self.print_error("qtum_electrum directory", path)
@@ -163,7 +163,7 @@ class SimpleConfig(PrintError):
         dirpath = os.path.join(self.path, "wallets")
         if not os.path.exists(dirpath):
             if os.path.islink(dirpath):
-                raise BaseException('Dangling link: ' + dirpath)
+                raise Exception('Dangling link: ' + dirpath)
             os.mkdir(dirpath)
 
         new_path = os.path.join(self.path, "wallets", "default_wallet")
