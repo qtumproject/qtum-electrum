@@ -51,6 +51,7 @@ class Synchronizer(ThreadJob):
         self.requested_histories = {}
         self.requested_addrs = set()
         self.lock = Lock()
+        self.initialized = False
         self.initialize()
 
     def parse_response(self, response):
@@ -85,6 +86,8 @@ class Synchronizer(ThreadJob):
         return bh2u(hashlib.sha256(status.encode('ascii')).digest())
 
     def on_address_status(self, response):
+        if self.wallet.synchronizer is None and self.initialized:
+            return  # we have been killed, this was just an orphan callback
         params, result = self.parse_response(response)
         if not params:
             return
@@ -99,6 +102,8 @@ class Synchronizer(ThreadJob):
             self.requested_addrs.remove(addr)
 
     def on_address_history(self, response):
+        if self.wallet.synchronizer is None and self.initialized:
+            return  # we have been killed, this was just an orphan callback
         params, result = self.parse_response(response)
         if not params:
             return
@@ -128,6 +133,8 @@ class Synchronizer(ThreadJob):
         self.requested_histories.pop(addr)
 
     def tx_response(self, response):
+        if self.wallet.synchronizer is None and self.initialized:
+            return # we have been killed, this was just an orphan callback
         params, result = self.parse_response(response)
         if not params:
             return
@@ -230,6 +237,7 @@ class Synchronizer(ThreadJob):
             token = self.wallet.tokens[key]
             tokens.add(token)
         self.subscribe_tokens(tokens)
+        self.initialized = True
 
     def run(self):
         '''Called from the network proxy thread main loop.'''
