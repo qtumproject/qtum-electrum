@@ -6,7 +6,7 @@ from qtum_electrum.qtum import (b58_address_to_hash160, xpub_from_pubkey,
                                 TYPE_ADDRESS, TYPE_SCRIPT, TESTNET, qtum_addr_to_bitcoin_addr)
 from qtum_electrum.i18n import _
 from qtum_electrum.plugins import BasePlugin, Device
-from qtum_electrum.transaction import deserialize
+from qtum_electrum.transaction import deserialize, Transaction
 from qtum_electrum.keystore import Hardware_KeyStore, is_xpubkey, parse_xpubkey
 
 from ..hw_wallet import HW_PluginBase
@@ -62,6 +62,8 @@ class TrezorKeyStore(Hardware_KeyStore):
         for txin in tx.inputs():
             pubkeys, x_pubkeys = tx.get_sorted_pubkeys(txin)
             tx_hash = txin['prevout_hash']
+            if txin.get('prev_tx') is None and not Transaction.is_segwit_input(txin):
+                raise Exception(_('Offline signing with {} is not supported for legacy inputs.').format(self.device))
             prev_tx[tx_hash] = txin['prev_tx']
             for x_pubkey in x_pubkeys:
                 if not is_xpubkey(x_pubkey):
