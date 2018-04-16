@@ -259,6 +259,13 @@ class Abstract_Wallet(PrintError):
         for txid in itertools.chain(self.txi, self.txo):
             self._add_tx_to_local_history(txid)
 
+    def remove_local_transactions_we_dont_have(self):
+        txid_set = set(self.txi) | set(self.txo)
+        for txid in txid_set:
+            tx_height = self.get_tx_height(txid)[0]
+            if tx_height == TX_HEIGHT_LOCAL and txid not in self.transactions:
+                self.remove_transaction(txid)
+
     @profiler
     def save_transactions(self, write=False):
         with self.transaction_lock:
