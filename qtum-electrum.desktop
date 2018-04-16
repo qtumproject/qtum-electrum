@@ -3,7 +3,7 @@
 
 [Desktop Entry]
 Comment=Lightweight Qtum Client
-Exec=sh -c 'PATH="$HOME/.local/bin:$PATH" qtum-electrum %u'
+Exec=sh -c "PATH=\"\\$HOME/.local/bin:\\$PATH\" qtum-electrum %u"
 GenericName[en_US]=Qtum Wallet
 GenericName=Qtum Wallet
 Icon=electrum
@@ -17,7 +17,7 @@ MimeType=x-scheme-handler/qtum;
 Actions=Testnet;
 
 [Desktop Action Testnet]
-Exec=sh -c 'PATH="$HOME/.local/bin:$PATH" qtum-electrum --testnet %u'
+Exec=sh -c "PATH=\"\\$HOME/.local/bin:\\$PATH\" qtum-electrum --testnet %u"
 Name=Testnet mode
 
 
