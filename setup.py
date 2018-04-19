@@ -47,7 +47,6 @@ setup(
         'qtum_electrum_gui.qt',
         'qtum_electrum_plugins',
         'qtum_electrum_plugins.audio_modem',
-        'qtum_electrum_plugins.cosigner_pool',
         'qtum_electrum_plugins.email_requests',
         'qtum_electrum_plugins.greenaddress_instant',
         'qtum_electrum_plugins.hw_wallet',
