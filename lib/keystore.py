@@ -280,6 +280,7 @@ class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
         Deterministic_KeyStore.__init__(self, d)
         self.xpub = d.get('xpub')
         self.xprv = d.get('xprv')
+        self.derivation = d.get('derivation', '')
 
     def format_seed(self, seed):
         return ' '.join(seed.split())
@@ -289,6 +290,7 @@ class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
         d['type'] = 'bip32'
         d['xpub'] = self.xpub
         d['xprv'] = self.xprv
+        d['derivation'] = self.derivation
         return d
 
     def get_master_private_key(self, password):
@@ -323,6 +325,7 @@ class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
     def add_xprv_from_seed(self, bip32_seed, xtype, derivation):
         xprv, xpub = bip32_root(bip32_seed, xtype)
         xprv, xpub = bip32_private_derivation(xprv, "m/", derivation)
+        self.derivation = derivation
         self.add_xprv(xprv)
 
     def get_private_key(self, sequence, password):
@@ -391,6 +394,7 @@ class Qt_Core_Keystore(BIP32_KeyStore):
         sub_xprv, sub_xpub = bip32_private_derivation(master_xprv, "", "/{}'".format(sequence[1]))
         pk = self.get_privatekey_from_xprv(sub_xprv, ())
         return pk, True
+
 
 class Old_KeyStore(Deterministic_KeyStore):
 
@@ -607,7 +611,6 @@ class Hardware_KeyStore(KeyStore, Xpub):
         return super().ready_to_sign() and self.has_usable_connection_with_device()
 
 
-
 def bip39_normalize_passphrase(passphrase):
     return normalize('NFKD', passphrase or '')
 
@@ -744,6 +747,7 @@ def bip44_derivation(account_id, segwit=False):
 
 def qt_core_derivation():
     return "m/0'/0'"
+
 
 def mobile_derivation():
     return "m/88'/0'"
