@@ -16,7 +16,7 @@ pyaes==1.6.1
 pyblake2==1.1.1
 PySocks==1.6.8
 PyQt5==5.10.1
-pycryptodomex==3.6.0
+pycryptodomex==3.4.12
 publicsuffix
 qrcode==6.0
 requests==2.18.4
