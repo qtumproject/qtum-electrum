@@ -16,11 +16,12 @@ pyaes==1.6.1
 pyblake2==1.1.1
 PySocks==1.6.8
 PyQt5==5.10.1
-pycryptodomex==3.4.12
+pycryptodomex==3.6.0
 publicsuffix
 qrcode==6.0
 requests==2.18.4
 rsa
+rlp==0.6.0
 six==1.11.0
 sip==4.19.8
 trezor==0.9.1
