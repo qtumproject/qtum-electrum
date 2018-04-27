@@ -1,3 +1,8 @@
+# Release 0.18.3
+ * fix OS X Sierra crash
+ * enable seed ext
+ * fix a race condition in synchronizer
+
 # Release 0.18.2
  * fix a ledger osx connection issue
  * decrease osx dmg size
