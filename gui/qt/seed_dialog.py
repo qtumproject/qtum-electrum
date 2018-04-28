@@ -23,7 +23,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from qtum_electrum.i18n import _
-from electrum.mnemonic import Mnemonic
+from qtum_electrum.mnemonic import Mnemonic
 
 from .util import *
 from .qrtextedit import ShowQRTextEdit, ScanQRTextEdit
