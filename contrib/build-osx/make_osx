@@ -64,6 +64,7 @@ pyinstaller --version
 
 info "Installing requirements..."
 python3 -m pip install -r ./requirements.txt --user && \
+python3 -m pip install -r ./requirements-binaries.txt --user && \
 python3 -m pip install -r ./requirements-fixed.txt --user || \
 fail "Could not install requirements"
 

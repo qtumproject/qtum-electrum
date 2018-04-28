@@ -54,8 +54,9 @@ download_if_not_exist() {
 }
 
 # Let's begin!
-cd `dirname $0`
+here=$(dirname $(readlink -e $0))
 set -e
+
 
 # Clean up Wine environment
 echo "Cleaning $WINEPREFIX"
@@ -64,7 +65,8 @@ echo "done"
 
 wine 'wineboot'
 
-cd /tmp/qtum-electrum-build
+mkdir -p /tmp/electrum-build
+cd /tmp/electrum-build
 
 # Install Python
 # note: you might need "sudo apt-get install dirmngr" for the following
@@ -85,28 +87,18 @@ $PYTHON -m pip install pip --upgrade
 # Install pywin32-ctypes
 $PYTHON -m pip install pywin32-ctypes==0.1.2
 
-# Install PyQt
-$PYTHON -m pip install PyQt5 -i https://pypi.tuna.tsinghua.edu.cn/simple
+# install PySocks
+$PYTHON -m pip install win_inet_pton==1.0.1
+
+$PYTHON -m pip install -r $here/../../requirements-binaries.txt
 
 ## Install pyinstaller
 $PYTHON -m pip install https://github.com/ecdsa/pyinstaller/archive/fix_2952.zip
-
-# install PySocks
-$PYTHON -m pip install win_inet_pton==1.0.1
 
 # Install ZBar
 download_if_not_exist $ZBAR_FILENAME "$ZBAR_URL"
 verify_hash $ZBAR_FILENAME "$ZBAR_SHA256"
 wine "$PWD/$ZBAR_FILENAME" /S
-
-# install Cryptodome
-$PYTHON -m pip install pycryptodomex -i https://pypi.tuna.tsinghua.edu.cn/simple
-
-# install PySocks
-$PYTHON -m pip install win_inet_pton
-
-# install websocket (python2)
-$PYTHON -m pip install websocket-client
 
 # Upgrade setuptools (so Electrum can be installed later)
 $PYTHON -m pip install setuptools --upgrade

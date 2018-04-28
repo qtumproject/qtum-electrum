@@ -6,21 +6,19 @@ BRANCH=master
 NAME_ROOT=Qtum-electrum
 PYTHON_VERSION=3.5.4
 
-
 # These settings probably don't need any change
 export WINEPREFIX=/opt/wine64
 export PYTHONHASHSEED=22
 export PYTHONDONTWRITEBYTECODE=1
 
-
 PYHOME=c:/python$PYTHON_VERSION
 PYTHON="wine $PYHOME/python.exe -OO -B"
-
 
 # Let's begin!
 cd `dirname $0`
 set -e
 
+mkdir -p tmp
 cd tmp
 
 if [ -d "qtum-electrum-git" ]; then
@@ -53,13 +51,11 @@ cp qtum-electrum-git/LICENCE .
 # add locale dir
 cp -r ../../../lib/locale $WINEPREFIX/drive_c/qtum-electrum/lib/
 
-
 # Install frozen dependencies
 $PYTHON -m pip install -r ../../../requirements.txt
 
 # Build Qt resources
 wine $WINEPREFIX/drive_c/python$PYTHON_VERSION/Scripts/pyrcc5.exe C:/qtum-electrum/icons.qrc -o C:/qtum-electrum/gui/qt/icons_rc.py
-
 
 pushd $WINEPREFIX/drive_c/qtum-electrum
 $PYTHON setup.py install
@@ -84,7 +80,6 @@ wine "$WINEPREFIX/drive_c/Program Files (x86)/NSIS/makensis.exe" /DPRODUCT_VERSI
 cd dist
 mv electrum-setup.exe $NAME_ROOT-win-$VERSION-setup.exe
 cd ..
-
 
 echo "Done."
 sha256sum dist/Qtum-electrum*exe
