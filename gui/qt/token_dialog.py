@@ -257,8 +257,12 @@ class TokenSendLayout(QGridLayout):
             return
         address_to = self.address_to_e.text().rstrip().lstrip()
         if is_b58_address(address_to):
-            __, hash160 = b58_address_to_hash160(address_to)
-            hash160 = bh2u(hash160)
+            addr_type, hash160 = b58_address_to_hash160(address_to)
+            if addr_type == ADDRTYPE_P2PKH:
+                hash160 = bh2u(hash160)
+            else:
+                self.dialog.show_message('invalid address')
+                return
         elif is_hash160(address_to):
             hash160 = address_to.lower()
         else:
