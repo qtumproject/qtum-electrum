@@ -10,6 +10,7 @@ from qtum_electrum.i18n import _
 from qtum_electrum.plugins import BasePlugin
 from qtum_electrum.keystore import Hardware_KeyStore
 from qtum_electrum.transaction import Transaction
+from qtum_electrum.wallet import Standard_Wallet
 from ..hw_wallet import HW_PluginBase
 from qtum_electrum.util import print_error, bfh, bh2u, is_verbose, versiontuple
 
@@ -625,7 +626,15 @@ class LedgerPlugin(HW_PluginBase):
             client.checkDevice()
         return client
 
-    def show_address(self, wallet, address):
+    def show_address(self, wallet, address, keystore=None):
+        if keystore is None:
+            keystore = wallet.get_keystore()
+        if not self.show_address_helper(wallet, address, keystore):
+            return
+        if type(wallet) is not Standard_Wallet:
+            keystore.handler.show_error(_('This function is only available for standard wallets when using {}.').format(self.device))
+            return
         sequence = wallet.get_address_index(address)
         txin_type = wallet.get_txin_type(address)
-        wallet.get_keystore().show_address(sequence, txin_type)
+        keystore.show_address(sequence, txin_type)
+

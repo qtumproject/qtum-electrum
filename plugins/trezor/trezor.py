@@ -1,7 +1,6 @@
-import threading
+from binascii import hexlify, unhexlify
 import traceback
 import sys
-from binascii import hexlify, unhexlify
 
 from qtum_electrum.util import bfh, bh2u, versiontuple, UserCancelled
 from qtum_electrum.qtum import (b58_address_to_hash160, xpub_from_pubkey,
@@ -84,7 +83,7 @@ class TrezorPlugin(HW_PluginBase):
     #     libraries_available, libraries_URL, minimum_firmware,
     #     wallet_class, ckd_public, types
 
-    firmware_URL = 'https://www.mytrezor.com'
+    firmware_URL = 'https://wallet.trezor.io'
     libraries_URL = 'https://github.com/trezor/python-trezor'
     minimum_firmware = (1, 5, 2)
     keystore_class = TrezorKeyStore
@@ -156,7 +155,7 @@ class TrezorPlugin(HW_PluginBase):
         if not client.atleast_version(*self.minimum_firmware):
             msg = (_('Outdated {} firmware for device labelled {}. Please '
                      'download the updated firmware from {}')
-                .format(self.device, client.label(), self.firmware_URL))
+                   .format(self.device, client.label(), self.firmware_URL))
             self.print_error(msg)
             handler.show_error(msg)
             return None
@@ -174,7 +173,7 @@ class TrezorPlugin(HW_PluginBase):
         return client
 
     def get_coin_name(self):
-        return "Testnet" if TESTNET else "Bitcoin"
+        return "Testnet" if TESTNET else "Qtum"
 
     def initialize_device(self, device_id, wizard, handler):
         # Initialization method
@@ -280,7 +279,11 @@ class TrezorPlugin(HW_PluginBase):
         raw = bh2u(signed_tx)
         tx.update_signatures(raw)
 
-    def show_address(self, wallet, keystore, address):
+    def show_address(self, wallet, address, keystore=None):
+        if keystore is None:
+            keystore = wallet.get_keystore()
+        if not self.show_address_helper(wallet, address, keystore):
+            return
         client = self.get_client(keystore)
         if not client.atleast_version(1, 3):
             keystore.handler.show_error(_("Your device firmware is too old"))
@@ -428,6 +431,7 @@ class TrezorPlugin(HW_PluginBase):
             return txoutputtype
 
         def create_output_by_address():
+            # qtum diff
             txoutputtype = self.types.TxOutputType()
             txoutputtype.amount = amount
             if _type == TYPE_SCRIPT:
