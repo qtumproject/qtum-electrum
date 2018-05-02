@@ -50,7 +50,6 @@ setup(
         'qtum_electrum_plugins.email_requests',
         'qtum_electrum_plugins.greenaddress_instant',
         'qtum_electrum_plugins.hw_wallet',
-        'qtum_electrum_plugins.keepkey',
         'qtum_electrum_plugins.labels',
         'qtum_electrum_plugins.ledger',
         'qtum_electrum_plugins.trezor',

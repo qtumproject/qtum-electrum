@@ -52,7 +52,6 @@ a = Analysis([home+'qtum-electrum',
               home+'plugins/email_requests/qt.py',
               home+'plugins/trezor/client.py',
               home+'plugins/trezor/qt.py',
-              home+'plugins/keepkey/qt.py',
               home+'plugins/ledger/qt.py',
               #home+'packages/requests/utils.py'
               ],
