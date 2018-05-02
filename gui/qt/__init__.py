@@ -39,9 +39,10 @@ import PyQt5.QtCore as QtCore
 
 from qtum_electrum.i18n import _, set_language
 from qtum_electrum.plugins import run_hook
+from qtum_electrum.base_wizard import GoBack
 from qtum_electrum import SimpleConfig, Wallet, WalletStorage
 from qtum_electrum.util import DebugMem, UserCancelled, InvalidPassword, print_error
-from .installwizard import InstallWizard, GoBack
+from .installwizard import InstallWizard
 
 
 try:

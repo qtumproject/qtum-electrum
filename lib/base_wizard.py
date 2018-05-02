@@ -41,6 +41,7 @@ HWD_SETUP_NEW_WALLET, HWD_SETUP_DECRYPT_WALLET = range(0, 2)
 
 class ScriptTypeNotSupported(Exception): pass
 
+class GoBack(Exception): pass
 
 class BaseWizard(object):
 
@@ -284,12 +285,12 @@ class BaseWizard(object):
             devmgr.unpair_id(device_info.device.id_)
             self.choose_hw_device()
             return
-        except UserCancelled:
+        except (UserCancelled, GoBack):
             self.choose_hw_device(purpose)
             return
         except BaseException as e:
             import traceback, sys
-            traceback.print_exc(file=sys.stdout)
+            traceback.print_exc(file=sys.stderr)
             self.show_error(str(e))
             self.choose_hw_device(purpose)
             return
