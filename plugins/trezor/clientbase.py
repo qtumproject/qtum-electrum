@@ -83,6 +83,15 @@ class GuiMixin(object):
         return self.proto.PassphraseStateAck()
 
     def callback_WordRequest(self, msg):
+        if (msg.type is not None
+            and msg.type in (self.types.WordRequestType.Matrix9,
+                             self.types.WordRequestType.Matrix6)):
+            num = 9 if msg.type == self.types.WordRequestType.Matrix9 else 6
+            char = self.handler.get_matrix(num)
+            if char == 'x':
+                return self.proto.Cancel()
+            return self.proto.WordAck(word=char)
+
         self.step += 1
         msg = _("Step %d/24.  Enter seed word as explained on "
                 "your %s:") % (self.step, self.device)
