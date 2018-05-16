@@ -181,7 +181,7 @@ class QtPlugin(QtPluginBase):
         if device_id:
             SettingsDialog(window, self, keystore, device_id).exec_()
 
-    def request_trezor_init_settings(self, wizard, method, device):
+    def request_trezor_init_settings(self, wizard, method, model):
         vbox = QVBoxLayout()
         next_enabled = True
         label = QLabel(_("Enter a label to name your device:"))
