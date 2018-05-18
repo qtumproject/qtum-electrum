@@ -49,6 +49,7 @@ class Synchronizer(ThreadJob):
         # Entries are (tx_hash, tx_height) tuples
         self.requested_tx = {}
         self.requested_histories = {}
+        self.requested_token_histories = {}
         self.requested_addrs = set()
         self.lock = Lock()
         self.initialized = False
@@ -62,7 +63,7 @@ class Synchronizer(ThreadJob):
 
     def is_up_to_date(self):
         return (not self.requested_tx and not self.requested_histories
-                and not self.requested_addrs)
+                and not self.requested_addrs and not self.requested_token_histories)
 
     def release(self):
         self.network.unsubscribe(self.on_address_status)
@@ -183,10 +184,19 @@ class Synchronizer(ThreadJob):
         if tokens:
             self.network.subscribe_tokens(tokens, self.on_token_status)
 
+    def get_token_status(self, h):
+        if not h:
+            return None
+        status = ':'.join(['{}:{:d}:{:d}'.format(tx_hash, height, log_index)
+                           for tx_hash, height, log_index in h])
+        return bh2u(hashlib.sha256(status.encode('ascii')).digest())
+
     def on_token_status(self, response):
-        self.print_error('on_token_status', response)
+        if self.wallet.synchronizer is None and self.initialized:
+            return  # we have been killed, this was just an orphan callback
         params, result = self.parse_response(response)
         if not params:
+            print('on_token_status err', response)
             return
         try:
             bind_addr = hash160_to_p2pkh(binascii.a2b_hex(params[0]))
@@ -194,7 +204,60 @@ class Synchronizer(ThreadJob):
             key = '{}_{}'.format(contract_addr, bind_addr)
             token = self.wallet.tokens[key]
             if token:
-                self.get_token_balance(token)
+                token_history = self.wallet.token_history.get(key, [])
+                if self.get_token_status(token_history) != result:
+                    self.requested_token_histories[key] = result
+                    self.network.request_token_history(token, self.on_token_history)
+                    self.get_token_balance(token)
+                else:
+                    print('token status matched')
+                # # remove addr from list only after it is added to requested_histories
+                # if addr in self.requested_addrs:  # Notifications won't be in
+                #     self.requested_addrs.remove(addr)
+        except (BaseException,) as e:
+            print('on_token_status err', e)
+
+    def on_token_history(self, response):
+        if self.wallet.synchronizer is None and self.initialized:
+            return  # we have been killed, this was just an orphan callback
+        params, result = self.parse_response(response)
+        if not params:
+            print('on_token_history err', response)
+            return
+        try:
+            bind_addr = hash160_to_p2pkh(binascii.a2b_hex(params[0]))
+            contract_addr = params[1]
+            key = '{}_{}'.format(contract_addr, bind_addr)
+            # token = self.wallet.tokens[key]
+            # if not token:
+            #     return
+            server_status = self.requested_token_histories.get(key)
+            if server_status is None:
+                self.print_error("receiving history (unsolicited)", key, len(result))
+                return
+
+            self.print_error("receiving token history", key, len(result))
+
+            hist = list(map(lambda item: (item['tx_hash'], item['height'], item['log_index']), result))
+            hashes = set(map(lambda item: (item['tx_hash'], item['log_index']), result))
+            # Note if the server hasn't been patched to sort the items properly
+            if hist != sorted(hist, key=lambda x: x[1]):
+                self.network.interface.print_error("serving improperly sorted address histories")
+
+            # Check that txids are unique
+            if len(hashes) != len(result):
+                print("error: server token history has non-unique txid_logindexs: %s" % key)
+            # Check that the status corresponds to what was announced
+            elif self.get_token_status(hist) != server_status:
+                print("error: status mismatch: %s" % key)
+            else:
+                # Store received history
+                self.wallet.receive_token_history_callback(key, hist)
+                # # Request transactions we don't have
+                # self.request_missing_txs(hist)
+            # Remove request; this allows up_to_date to be True
+            self.requested_token_histories.pop(key)
+
         except (BaseException,) as e:
             print('on_token_status err', e)
 
@@ -232,6 +295,10 @@ class Synchronizer(ThreadJob):
             if history == ['*']:
                 continue
             self.request_missing_txs(history)
+
+        # todo codeface
+        # for history in self.wallet.token_history.values():
+        #     self.request_missing_txs(history)
 
         if self.requested_tx:
             self.print_error("missing tx", self.requested_tx)

@@ -653,7 +653,7 @@ class Network(util.DaemonThread):
     def subscribe_tokens(self, tokens, callback):
         msgs = [(
             'blockchain.hash160.contract.subscribe',
-            [bh2u(b58_address_to_hash160(token.bind_addr)[1]), token.contract_addr])
+            [bh2u(b58_address_to_hash160(token.bind_addr)[1]), token.contract_addr, TOKEN_TRANSFER_TOPIC])
             for token in tokens]
         self.send(msgs, callback)
 
@@ -668,6 +668,12 @@ class Network(util.DaemonThread):
         datahex = '70a08231{}'.format(hash160.zfill(64))
         self.send([('blockchain.contract.call', [token.contract_addr, datahex, '', 'int'])],
                   callback)
+
+    def request_token_history(self, token, callback):
+        __, hash160 = b58_address_to_hash160(token.bind_addr)
+        hash160 = bh2u(hash160)
+        self.send([('blockchain.hash160.contract.get_eventlogs',
+                    [hash160, token.contract_addr, TOKEN_TRANSFER_TOPIC])], callback)
 
     def send(self, messages, callback):
         '''Messages is a list of (method, params) tuples'''

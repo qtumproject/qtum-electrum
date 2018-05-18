@@ -195,25 +195,37 @@ class Abstract_Wallet(PrintError):
         self.multiple_change       = storage.get('multiple_change', False)
         self.labels                = storage.get('labels', {})
         self.frozen_addresses = set(storage.get('frozen_addresses', []))
-        self.history = storage.get('addr_history', {})  # address -> list(txid, height)
+
+        # address -> list(txid, height)
+        self.history = storage.get('addr_history', {})
+
+        # contract_addr + '_' + b58addr -> list(txid, height, log_index)
+        self.token_history = storage.get('addr_token_history', {})
+
         self.receive_requests = storage.get('payment_requests', {})
 
         # Verified transactions.  Each value is a (height, timestamp, block_pos) tuple.  Access with self.lock.
         self.verified_tx = storage.get('verified_tx3', {})
+        self.verified_token_tx = storage.get('verified_token_tx', {})
 
         # Transactions pending verification.  A map from tx hash to transaction
         # height.  Access is not contended so no lock is needed.
         self.unverified_tx = defaultdict(int)
+        self.unverified_token_tx = defaultdict(int)
 
         self.load_keystore()
         self.load_addresses()
         self.test_addresses_sanity()
+
         self.load_transactions()
         self.check_history()
         self.load_unverified_transactions()
         self.load_local_history()
         self.build_spent_outpoints()
         self.remove_local_transactions_we_dont_have()
+
+        self.check_token_history()
+        self.load_unverified_token_transactions()
 
         # there is a difference between wallet.up_to_date and interface.is_up_to_date()
         # interface.is_up_to_date() returns true when all requests have been answered and processed
@@ -278,6 +290,7 @@ class Abstract_Wallet(PrintError):
             self.storage.put('tx_fees', self.tx_fees)
             self.storage.put('pruned_txo', self.pruned_txo)
             self.storage.put('addr_history', self.history)
+            self.storage.put('addr_token_history', self.token_history)
             if write:
                 self.storage.write()
 
@@ -1674,6 +1687,59 @@ class Abstract_Wallet(PrintError):
                     children.add(other_hash)
                     children |= self.get_depending_transactions(other_hash)
         return children
+
+    def receive_token_history_callback(self, key, hist):
+        print('receive_token_history_callback', key, hist)
+        with self.lock:
+            self.token_history[key] = hist
+        #     old_hist = self.get_address_history(addr)
+        #     for tx_hash, height in old_hist:
+        #         if (tx_hash, height) not in hist:
+        #             # make tx local
+        #             self.unverified_tx.pop(tx_hash, None)
+        #             self.verified_tx.pop(tx_hash, None)
+        #             self.verifier.merkle_roots.pop(tx_hash, None)
+        #             # but remove completely if not is_mine
+        #             if self.txi[tx_hash] == {}:
+        #                 # FIXME the test here should be for "not all is_mine"; cannot detect conflict in some cases
+        #                 self.remove_transaction(tx_hash)
+        #     self.history[addr] = hist
+        #
+        # for tx_hash, tx_height in hist:
+        #     # add it in case it was previously unconfirmed
+        #     self.add_unverified_tx(tx_hash, tx_height)
+        #     # if addr is new, we have to recompute txi and txo
+        #     tx = self.transactions.get(tx_hash)
+        #     if tx is not None and self.txi.get(tx_hash, {}).get(addr) is None and self.txo.get(tx_hash, {}).get(addr) is None:
+        #         self.add_transaction(tx_hash, tx)
+        #
+        # # Store fees
+        # self.tx_fees.update(tx_fees)
+
+    def check_token_history(self):
+        print('check_token_history')
+        # 把不是自己的地址从self.token_history剔除掉
+        # todo codeface
+        pass
+
+    def load_unverified_token_transactions(self):
+        print('load_unverified_token_transactions')
+        # 遍历self.token_history的tx， add_unverified_token_tx
+        pass
+
+    def add_unverified_token_tx(self, tx):
+        print('add_unverified_token_tx')
+        # 如果是未确认交易，从self.verifier.merkle_roots剔除，从self.verified_token_tx剔除
+        # 如果tx不在self.verified_token_tx中，就添加到self.unverified_token_tx中
+        pass
+
+    def get_addr_token_history(self, addr):
+        print('get_addr_token_history')
+        pass
+
+    def get_token_history(self, domain=None, from_timestamp=None, to_timestamp=None):
+        print('get_token_history')
+        pass
 
 
 class Simple_Wallet(Abstract_Wallet):
