@@ -49,7 +49,10 @@ class Synchronizer(ThreadJob):
         # Entries are (tx_hash, tx_height) tuples
         self.requested_tx = {}
         self.requested_histories = {}
+
+        self.requested_tx_receipt = {}
         self.requested_token_histories = {}
+
         self.requested_addrs = set()
         self.lock = Lock()
         self.initialized = False
@@ -211,9 +214,6 @@ class Synchronizer(ThreadJob):
                     self.get_token_balance(token)
                 else:
                     print('token status matched')
-                # # remove addr from list only after it is added to requested_histories
-                # if addr in self.requested_addrs:  # Notifications won't be in
-                #     self.requested_addrs.remove(addr)
         except (BaseException,) as e:
             print('on_token_status err', e)
 
@@ -253,13 +253,45 @@ class Synchronizer(ThreadJob):
             else:
                 # Store received history
                 self.wallet.receive_token_history_callback(key, hist)
-                # # Request transactions we don't have
-                # self.request_missing_txs(hist)
+                # Request eventlogs we don't have
+                self.request_missing_tx_receipts(hist)
             # Remove request; this allows up_to_date to be True
             self.requested_token_histories.pop(key)
 
         except (BaseException,) as e:
             print('on_token_status err', e)
+
+    def request_missing_tx_receipts(self, hist):
+        # "hist" is a list of [tx_hash, tx_height, log_index] lists
+        requests = []
+        for tx_hash, tx_height, log_index in hist:
+            if tx_hash in self.requested_tx_receipt:
+                continue
+            if tx_hash in self.wallet.tx_receipt:
+                continue
+            requests.append(('blochchain.transaction.get_receipt', [tx_hash]))
+            self.requested_tx_receipt[tx_hash] = tx_height
+        self.network.send(requests, self.tx_receipt_response)
+
+    def tx_receipt_response(self, response):
+        if self.wallet.synchronizer is None and self.initialized:
+            return  # we have been killed, this was just an orphan callback
+        params, receipt = self.parse_response(response)
+        if not params:
+            print('tx_eventlog_response err', response)
+            return
+        tx_hash = params[0]
+        if not isinstance(receipt, list):
+            self.print_msg("transaction receipt not list, skipping", tx_hash)
+            return
+        height = self.requested_tx_receipt.pop(tx_hash)
+        self.wallet.receive_tx_receipt_callback(tx_hash, receipt)
+        self.print_error("received tx_receipt %s height: %d" %
+                         (tx_hash, height))
+        # callbacks
+        self.network.trigger_callback('new_tx_receipt', receipt)
+        if not self.requested_tx_receipt:
+            self.network.trigger_callback('token_hist_updated')
 
     def get_token_balance(self, token):
         """
@@ -295,20 +327,22 @@ class Synchronizer(ThreadJob):
             if history == ['*']:
                 continue
             self.request_missing_txs(history)
-
-        # todo codeface
-        # for history in self.wallet.token_history.values():
-        #     self.request_missing_txs(history)
-
         if self.requested_tx:
             self.print_error("missing tx", self.requested_tx)
+
         self.subscribe_to_addresses(set(self.wallet.get_addresses()))
+
+        for history in self.wallet.token_history.values():
+            self.request_missing_tx_receipts(history)
+        if self.requested_tx_receipt:
+            self.print_error("missing tx receipt", self.requested_tx_receipt)
 
         tokens = set()
         for key in self.wallet.tokens.keys():
             token = self.wallet.tokens[key]
             tokens.add(token)
         self.subscribe_tokens(tokens)
+
         self.initialized = True
 
     def run(self):

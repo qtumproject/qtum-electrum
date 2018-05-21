@@ -35,6 +35,7 @@ from collections import defaultdict
 import traceback
 import sys
 import itertools
+from operator import itemgetter
 
 from .i18n import _
 from .util import NotEnoughFunds, PrintError, UserCancelled, profiler, format_satoshis, timestamp_to_datetime
@@ -199,19 +200,21 @@ class Abstract_Wallet(PrintError):
         # address -> list(txid, height)
         self.history = storage.get('addr_history', {})
 
+        # Token
+        self.tokens = Tokens(self.storage)
         # contract_addr + '_' + b58addr -> list(txid, height, log_index)
         self.token_history = storage.get('addr_token_history', {})
+        # txid -> tx receipt
+        self.tx_receipt = storage.get('tx_receipt', {})
 
         self.receive_requests = storage.get('payment_requests', {})
 
         # Verified transactions.  Each value is a (height, timestamp, block_pos) tuple.  Access with self.lock.
         self.verified_tx = storage.get('verified_tx3', {})
-        self.verified_token_tx = storage.get('verified_token_tx', {})
 
         # Transactions pending verification.  A map from tx hash to transaction
         # height.  Access is not contended so no lock is needed.
         self.unverified_tx = defaultdict(int)
-        self.unverified_token_tx = defaultdict(int)
 
         self.load_keystore()
         self.load_addresses()
@@ -223,9 +226,7 @@ class Abstract_Wallet(PrintError):
         self.load_local_history()
         self.build_spent_outpoints()
         self.remove_local_transactions_we_dont_have()
-
         self.check_token_history()
-        self.load_unverified_token_transactions()
 
         # there is a difference between wallet.up_to_date and interface.is_up_to_date()
         # interface.is_up_to_date() returns true when all requests have been answered and processed
@@ -239,7 +240,7 @@ class Abstract_Wallet(PrintError):
         self.invoices = InvoiceStore(self.storage)
         self.contacts = Contacts(self.storage)
         self.smart_contracts = SmartContracts(self.storage)
-        self.tokens = Tokens(self.storage)
+
 
     def diagnostic_name(self):
         return self.basename()
@@ -282,7 +283,7 @@ class Abstract_Wallet(PrintError):
     def save_transactions(self, write=False):
         with self.transaction_lock:
             tx = {}
-            for k,v in self.transactions.items():
+            for k, v in self.transactions.items():
                 tx[k] = str(v)
             self.storage.put('transactions', tx)
             self.storage.put('txi', self.txi)
@@ -291,6 +292,7 @@ class Abstract_Wallet(PrintError):
             self.storage.put('pruned_txo', self.pruned_txo)
             self.storage.put('addr_history', self.history)
             self.storage.put('addr_token_history', self.token_history)
+            self.storage.put('tx_receipt', self.tx_receipt)
             if write:
                 self.storage.write()
 
@@ -305,6 +307,8 @@ class Abstract_Wallet(PrintError):
                 self.history = {}
                 self.verified_tx = {}
                 self.transactions = {}
+                self.token_history = {}
+                self.tx_receipt = {}
                 self.save_transactions()
 
     @profiler
@@ -1688,8 +1692,113 @@ class Abstract_Wallet(PrintError):
                     children |= self.get_depending_transactions(other_hash)
         return children
 
+    def add_tx_receipt(self, tx_hash, tx_receipt):
+        assert tx_hash, 'none tx_hash'
+        assert tx_receipt, 'empty tx_receipt'
+        for contract_call in tx_receipt:
+            if not contract_call.get('transactionHash') == tx_hash:
+                return
+            if not contract_call.get('log'):
+                return
+        self.tx_receipt[tx_hash] = tx_receipt
+
+    #     assert tx.is_complete(), 'incomplete tx'
+    #     # we need self.transaction_lock but get_tx_height will take self.lock
+    #     # so we need to take that too here, to enforce order of locks
+    #     with self.lock, self.transaction_lock:
+    #         # NOTE: returning if tx in self.transactions might seem like a good idea
+    #         # BUT we track is_mine inputs in a txn, and during subsequent calls
+    #         # of add_transaction tx, we might learn of more-and-more inputs of
+    #         # being is_mine, as we roll the gap_limit forward
+    #         is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinstake'
+    #         tx_height = self.get_tx_height(tx_hash)[0]
+    #         is_mine = any([self.is_mine(txin['address']) for txin in tx.inputs()])
+    #         # do not save if tx is local and not mine
+    #         if tx_height == TX_HEIGHT_LOCAL and not is_mine:
+    #             # FIXME the test here should be for "not all is_mine"; cannot detect conflict in some cases
+    #             raise NotIsMineTransactionException()
+    #         # raise exception if unrelated to wallet
+    #         is_for_me = any([self.is_mine(self.get_txout_address(txo)) for txo in tx.outputs()])
+    #         if not is_mine and not is_for_me:
+    #             raise UnrelatedTransactionException()
+    #         # Find all conflicting transactions.
+    #         # In case of a conflict,
+    #         #     1. confirmed > mempool > local
+    #         #     2. this new txn has priority over existing ones
+    #         # When this method exits, there must NOT be any conflict, so
+    #         # either keep this txn and remove all conflicting (along with dependencies)
+    #         #     or drop this txn
+    #         conflicting_txns = self.get_conflicting_transactions(tx)
+    #         if conflicting_txns:
+    #             existing_mempool_txn = any(
+    #                 self.get_tx_height(tx_hash2)[0] in (TX_HEIGHT_UNCONFIRMED, TX_HEIGHT_UNCONF_PARENT)
+    #                 for tx_hash2 in conflicting_txns)
+    #             existing_confirmed_txn = any(
+    #                 self.get_tx_height(tx_hash2)[0] > 0
+    #                 for tx_hash2 in conflicting_txns)
+    #             if existing_confirmed_txn and tx_height <= 0:
+    #                 # this is a non-confirmed tx that conflicts with confirmed txns; drop.
+    #                 return False
+    #             if existing_mempool_txn and tx_height == TX_HEIGHT_LOCAL:
+    #                 # this is a local tx that conflicts with non-local txns; drop.
+    #                 return False
+    #             # keep this txn and remove all conflicting
+    #             to_remove = set()
+    #             to_remove |= conflicting_txns
+    #             for conflicting_tx_hash in conflicting_txns:
+    #                 to_remove |= self.get_depending_transactions(conflicting_tx_hash)
+    #             for tx_hash2 in to_remove:
+    #                 self.remove_transaction(tx_hash2)
+    #         # add inputs
+    #         self.txi[tx_hash] = d = {}
+    #         for txi in tx.inputs():
+    #             addr = self.get_txin_address(txi)
+    #             if txi['type'] != 'coinbase':
+    #                 prevout_hash = txi['prevout_hash']
+    #                 prevout_n = txi['prevout_n']
+    #                 ser = prevout_hash + ':%d'%prevout_n
+    #             if addr and self.is_mine(addr):
+    #                 # we only track is_mine spends
+    #                 self.spent_outpoints[ser] = tx_hash
+    #                 # find value from prev output
+    #                 dd = self.txo.get(prevout_hash, {})
+    #                 for n, v, is_cb in dd.get(addr, []):
+    #                     if n == prevout_n:
+    #                         if d.get(addr) is None:
+    #                             d[addr] = []
+    #                         d[addr].append((ser, v))
+    #                         break
+    #                 else:
+    #                     self.pruned_txo[ser] = tx_hash
+    #         # add outputs
+    #         self.txo[tx_hash] = d = {}
+    #         for n, txo in enumerate(tx.outputs()):
+    #             v = txo[2]
+    #             ser = tx_hash + ':%d'%n
+    #             addr = self.get_txout_address(txo)
+    #             if addr and self.is_mine(addr):
+    #                 if d.get(addr) is None:
+    #                     d[addr] = []
+    #                 d[addr].append((n, v, is_coinbase))
+    #             # give v to txi that spends me
+    #             next_tx = self.pruned_txo.get(ser)
+    #             if next_tx is not None:
+    #                 self.pruned_txo.pop(ser)
+    #                 dd = self.txi.get(next_tx, {})
+    #                 if dd.get(addr) is None:
+    #                     dd[addr] = []
+    #                 dd[addr].append((ser, v))
+    #                 self._add_tx_to_local_history(next_tx)
+    #         # add to local history
+    #         self._add_tx_to_local_history(tx_hash)
+    #         # save
+    #         self.transactions[tx_hash] = tx
+    #         return True
+
+    def receive_tx_receipt_callback(self, tx_hash, tx_receipt):
+        self.add_tx_receipt(tx_hash, tx_receipt)
+
     def receive_token_history_callback(self, key, hist):
-        print('receive_token_history_callback', key, hist)
         with self.lock:
             self.token_history[key] = hist
         #     old_hist = self.get_address_history(addr)
@@ -1716,30 +1825,60 @@ class Abstract_Wallet(PrintError):
         # # Store fees
         # self.tx_fees.update(tx_fees)
 
+    @profiler
     def check_token_history(self):
-        print('check_token_history')
-        # 把不是自己的地址从self.token_history剔除掉
-        # todo codeface
-        pass
+        # remove not mine and not subscribe toke history
+        save = False
+        hist_keys_not_mine = list(filter(lambda k: not self.is_mine(k.split('_')[1]), self.token_history.keys()))
+        hist_keys_not_subscribe = list(filter(lambda k: k not in self.tokens, self.token_history.keys()))
+        for key in set(hist_keys_not_mine).union(hist_keys_not_subscribe):
+            self.token_history.pop(key)
+            save = True
+        if save:
+            self.save_transactions()
 
-    def load_unverified_token_transactions(self):
-        print('load_unverified_token_transactions')
-        # 遍历self.token_history的tx， add_unverified_token_tx
-        pass
+    def get_token_history(self, contract_addr=None, bind_addr=None, from_timestamp=None, to_timestamp=None):
+        h = []  # [(from, to, amount, token, txid, height, call_index, log_index)]
+        keys = []
+        for token_key in self.tokens.keys():
+            if contract_addr and contract_addr in token_key \
+                    or bind_addr and bind_addr in token_key \
+                    or not bind_addr and not contract_addr:
+                keys.append(token_key)
+        for key in keys:
+            contract_addr, bind_addr = key.split('_')
+            for txid, height, log_index in self.token_history.get(key, []):
+                for call_index, contract_call in enumerate(self.tx_receipt.get(txid, [])):
+                    logs = contract_call.get('log', [])
+                    if len(logs) > log_index:
+                        log = logs[log_index]
 
-    def add_unverified_token_tx(self, tx):
-        print('add_unverified_token_tx')
-        # 如果是未确认交易，从self.verifier.merkle_roots剔除，从self.verified_token_tx剔除
-        # 如果tx不在self.verified_token_tx中，就添加到self.unverified_token_tx中
-        pass
+                        # check contarct address
+                        if contract_addr != log.get('address', ''):
+                            print('contract address mismatch')
+                            continue
 
-    def get_addr_token_history(self, addr):
-        print('get_addr_token_history')
-        pass
+                        # check topic name
+                        topics = log.get('topics', [])
+                        if len(topics) < 3:
+                            print('not enough topics')
+                            continue
+                        if topics[0] != TOKEN_TRANSFER_TOPIC:
+                            print('topic mismatch')
+                            continue
 
-    def get_token_history(self, domain=None, from_timestamp=None, to_timestamp=None):
-        print('get_token_history')
-        pass
+                        # check user bind address
+                        _, hash160b = b58_address_to_hash160(bind_addr)
+                        hash160 = bh2u(hash160b).zfill(64)
+                        if hash160 not in topics:
+                            print('address mismatch')
+                            continue
+                        amount = int(log.get('data'), 16)
+                        h.append((topics[1][-40:], topics[2][-40:], amount,
+                                  self.tokens[key], txid, height, call_index, log_index))
+                    else:
+                        continue
+        return sorted(h, key=itemgetter(5, 6, 7))
 
 
 class Simple_Wallet(Abstract_Wallet):
