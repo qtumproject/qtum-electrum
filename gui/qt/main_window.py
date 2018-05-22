@@ -240,6 +240,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def on_fx_token(self):
         self.token_balance_list.update()
+        self.token_hist_list.update()
 
     def toggle_tab(self, tab):
         show = not self.config.get('show_{}_tab'.format(tab.tab_name), False)
@@ -772,6 +773,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.utxo_list.update()
         self.contact_list.update()
         self.token_balance_list.update()
+        self.token_hist_list.update()
         self.smart_contract_list.update()
         self.invoice_list.update()
         self.update_completions()
@@ -3086,10 +3088,14 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             return True
 
     def create_tokens_tab(self):
-        from .token_list import TokenBalanceList
+        from .token_list import TokenBalanceList, TokenHistoryList
         self.token_balance_list = tbl = TokenBalanceList(self)
-        tbl.searchable_list = tbl
-        return self.create_list_tab(tbl, tbl.create_toolbar(visible=False))
+        self.token_hist_list = thl = TokenHistoryList(self)
+        splitter = QSplitter(self)
+        splitter.addWidget(tbl)
+        splitter.addWidget(thl)
+        splitter.setOrientation(Qt.Vertical)
+        return splitter
 
     def set_token(self, token):
         """
@@ -3098,6 +3104,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         """
         self.wallet.add_token(token)
         self.token_balance_list.update()
+        self.token_hist_list.update()
 
     def delete_token(self, key):
         if not self.question(_("Remove {} from your list of tokens?".format(
@@ -3105,6 +3112,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             return False
         self.tokens.pop(key)
         self.token_balance_list.update()
+        self.token_hist_list.update()
 
     def token_add_dialog(self):
         d = TokenAddDialog(self)
