@@ -36,6 +36,7 @@ import traceback
 import sys
 import itertools
 from operator import itemgetter
+from functools import reduce
 
 from .i18n import _
 from .util import NotEnoughFunds, PrintError, UserCancelled, profiler, format_satoshis, timestamp_to_datetime
@@ -227,6 +228,7 @@ class Abstract_Wallet(PrintError):
         self.build_spent_outpoints()
         self.remove_local_transactions_we_dont_have()
         self.check_token_history()
+        self.load_token_txs()
 
         # there is a difference between wallet.up_to_date and interface.is_up_to_date()
         # interface.is_up_to_date() returns true when all requests have been answered and processed
@@ -1827,7 +1829,7 @@ class Abstract_Wallet(PrintError):
 
     @profiler
     def check_token_history(self):
-        # remove not mine and not subscribe toke history
+        # remove not mine and not subscribe token history
         save = False
         hist_keys_not_mine = list(filter(lambda k: not self.is_mine(k.split('_')[1]), self.token_history.keys()))
         hist_keys_not_subscribe = list(filter(lambda k: k not in self.tokens, self.token_history.keys()))
@@ -1837,8 +1839,19 @@ class Abstract_Wallet(PrintError):
         if save:
             self.save_transactions()
 
+    @profiler
+    def load_token_txs(self):
+        token_tx_list = self.storage.get('token_txs', {})
+        # token_hist_txids = reduce(lambda x, y: x+y, list([[y[0] for y in x] for x in self.token_history.values()]))
+        token_hist_txids = [x[0] for x in reduce(lambda x, y: x+y, self.token_history.values())]
+        self.token_txs = {}
+        for tx_hash, raw in token_tx_list:
+            if tx_hash in token_hist_txids:
+                tx = Transaction(raw)
+                self.token_txs[tx_hash] = tx
+
     def get_token_history(self, contract_addr=None, bind_addr=None, from_timestamp=None, to_timestamp=None):
-        h = []  # [(from, to, amount, token, txid, height, call_index, log_index)]
+        h = []  # [(from, to, amount, token, txid, height, timestamp, conf,call_index, log_index)]
         keys = []
         for token_key in self.tokens.keys():
             if contract_addr and contract_addr in token_key \
