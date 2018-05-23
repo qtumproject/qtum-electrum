@@ -52,6 +52,7 @@ class Synchronizer(ThreadJob):
 
         self.requested_tx_receipt = {}
         self.requested_token_histories = {}
+        self.requested_token_txs = {}
 
         self.requested_addrs = set()
         self.lock = Lock()
@@ -253,8 +254,9 @@ class Synchronizer(ThreadJob):
             else:
                 # Store received history
                 self.wallet.receive_token_history_callback(key, hist)
-                # Request eventlogs we don't have
+                # Request token tx and receipts we don't have
                 self.request_missing_tx_receipts(hist)
+                self.request_missing_token_txs(hist)
             # Remove request; this allows up_to_date to be True
             self.requested_token_histories.pop(key)
 
@@ -271,6 +273,7 @@ class Synchronizer(ThreadJob):
                 continue
             requests.append(('blochchain.transaction.get_receipt', [tx_hash]))
             self.requested_tx_receipt[tx_hash] = tx_height
+
         self.network.send(requests, self.tx_receipt_response)
 
     def tx_receipt_response(self, response):
@@ -278,7 +281,7 @@ class Synchronizer(ThreadJob):
             return  # we have been killed, this was just an orphan callback
         params, receipt = self.parse_response(response)
         if not params:
-            print('tx_eventlog_response err', response)
+            print('tx_receipt_response err', response)
             return
         tx_hash = params[0]
         if not isinstance(receipt, list):
@@ -292,6 +295,40 @@ class Synchronizer(ThreadJob):
         self.network.trigger_callback('new_tx_receipt', receipt)
         if not self.requested_tx_receipt:
             self.network.trigger_callback('token_hist_updated')
+
+    def request_missing_token_txs(self, hist):
+        # "hist" is a list of [tx_hash, tx_height, log_index] lists
+        requests = []
+        for tx_hash, tx_height, log_index in hist:
+            if tx_hash in self.requested_token_txs:
+                continue
+            if tx_hash in self.wallet.token_txs:
+                continue
+            requests.append(('blockchain.transaction.get', [tx_hash]))
+            self.requested_tx[tx_hash] = tx_height
+        self.network.send(requests, self.token_tx_response)
+
+    def token_tx_response(self, response):
+        if self.wallet.synchronizer is None and self.initialized:
+            return  # we have been killed, this was just an orphan callback
+        params, result = self.parse_response(response)
+        if not params:
+            return
+        tx_hash = params[0]
+        tx = Transaction(result)
+        try:
+            tx.deserialize()
+        except Exception:
+            self.print_msg("cannot deserialize transaction, skipping", tx_hash)
+            return
+        tx_height = self.requested_token_txs.pop(tx_hash)
+        self.wallet.receive_token_tx_callback(tx_hash, tx, tx_height)
+        self.print_error("received tx %s height: %d bytes: %d" %
+                         (tx_hash, tx_height, len(tx.raw)))
+        # callbacks
+        self.network.trigger_callback('new_token_transaction', tx)
+        if not self.requested_token_txs:
+            self.network.trigger_callback('updated')
 
     def get_token_balance(self, token):
         """
@@ -334,6 +371,7 @@ class Synchronizer(ThreadJob):
 
         for history in self.wallet.token_history.values():
             self.request_missing_tx_receipts(history)
+            self.request_missing_token_txs(history)
         if self.requested_tx_receipt:
             self.print_error("missing tx receipt", self.requested_tx_receipt)
 
