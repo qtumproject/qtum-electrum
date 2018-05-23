@@ -89,20 +89,24 @@ class TokenHistoryList(MyTreeWidget):
         for hist in self.parent.wallet.get_token_history():
             # conf, timestamp
             _from, to, amount, token, txid, height, call_index, log_index = hist
+            payout = False
             if _from == to:
                 amount = 0
             if hash160_to_p2pkh(binascii.a2b_hex(to)) == token.bind_addr:
                 balance_str = '+'
             else:
                 balance_str = '-'
+                payout = True
             balance_str += '{}'.format(amount / 10 ** token.decimals)
-
             item = QTreeWidgetItem(['', '2018-05-22 25:00', token.bind_addr, token.name, balance_str])
             item.setData(0, Qt.UserRole, txid)
             item.setTextAlignment(0, Qt.AlignLeft | Qt.AlignVCenter)
             self.addTopLevelItem(item)
             if txid == current_key:
                 self.setCurrentItem(item)
+            if payout:
+                item.setForeground(3, QBrush(QColor("#BC1E1E")))
+                item.setForeground(4, QBrush(QColor("#BC1E1E")))
         run_hook('update_token_hist_tab', self)
 
     def on_doubleclick(self, item, column):
