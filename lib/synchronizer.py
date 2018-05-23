@@ -305,7 +305,7 @@ class Synchronizer(ThreadJob):
             if tx_hash in self.wallet.token_txs:
                 continue
             requests.append(('blockchain.transaction.get', [tx_hash]))
-            self.requested_tx[tx_hash] = tx_height
+            self.requested_token_txs[tx_hash] = tx_height
         self.network.send(requests, self.token_tx_response)
 
     def token_tx_response(self, response):
