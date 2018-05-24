@@ -1078,6 +1078,8 @@ class Abstract_Wallet(PrintError):
         is_mined = False
         try:
             tx = self.transactions.get(tx_hash)
+            if not tx:
+                tx = self.token_txs.get(tx_hash)
             is_mined = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinstake'
         except (BaseException,) as e:
             print_error('get_tx_status', e)
