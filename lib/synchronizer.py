@@ -214,7 +214,7 @@ class Synchronizer(ThreadJob):
                     self.network.request_token_history(token, self.on_token_history)
                     self.get_token_balance(token)
                 else:
-                    print('token status matched')
+                    self.print_error('token status matched')
         except (BaseException,) as e:
             print('on_token_status err', e)
 
@@ -346,7 +346,7 @@ class Synchronizer(ThreadJob):
             if token and token.balance != result:
                 token = token._replace(balance=result)
                 self.wallet.tokens[key] = token
-                self.network.trigger_callback('on_token')
+                # self.network.trigger_callback('on_token')
         except (BaseException,) as e:
             print('token_balance_response err', e)
 

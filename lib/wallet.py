@@ -1822,7 +1822,7 @@ class Abstract_Wallet(PrintError):
                              height, conf, timestamp, call_index, log_index))
                     else:
                         continue
-        return sorted(h, key=itemgetter(7, 8, 9), reverse=True)
+        return sorted(h, key=itemgetter(5, 8, 9), reverse=True)
 
 
 class Simple_Wallet(Abstract_Wallet):
