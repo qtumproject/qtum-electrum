@@ -99,7 +99,6 @@ class TokenHistoryList(MyTreeWidget):
                 payout = True
             balance_str += '{}'.format(amount / 10 ** token.decimals)
             status, status_str = wallet.get_tx_status(txid, height, conf, timestamp)
-            date = timestamp_to_datetime(time.time() if conf <= 0 else timestamp)
             icon = self.icon_cache.get(":icons/" + TX_ICONS[status])
 
             item = QTreeWidgetItem(['', status_str, token.bind_addr, token.name, balance_str])
