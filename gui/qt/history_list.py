@@ -30,26 +30,6 @@ from qtum_electrum.util import timestamp_to_datetime, profiler, open_browser
 from qtum_electrum.wallet import TX_HEIGHT_LOCAL
 
 
-TX_ICONS = [
-    "warning.png",
-    "warning.png",
-    "warning.png",
-    "unconfirmed.png",
-    "unconfirmed.png",
-    "offline_tx.png",
-    "clock1.png",
-    "clock2.png",
-    "clock3.png",
-    "clock4.png",
-    "clock5.png",
-    "clock6.png",
-    "clock7.png",
-    "clock8.png",
-    "clock9.png",
-    "confirmed.png",
-]
-
-
 class HistoryList(MyTreeWidget, AcceptFileDragDrop):
     filter_columns = [2, 3, 4]  # Date, Description, Amount
 
@@ -183,7 +163,6 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
 
             status, status_str = self.wallet.get_tx_status(tx_hash, height, conf, timestamp)
             has_invoice = self.wallet.invoices.paid.get(tx_hash)
-            # icon = QIcon(":icons/" + TX_ICONS[status])
             icon = self.icon_cache.get(":icons/" + TX_ICONS[status])
             v_str = self.parent.format_amount(value, True, whitespaces=True)
             balance_str = self.parent.format_amount(balance, whitespaces=True)

@@ -48,6 +48,25 @@ expiration_values = [
     (_('Never'), None)
 ]
 
+TX_ICONS = [
+    "warning.png",
+    "warning.png",
+    "warning.png",
+    "unconfirmed.png",
+    "unconfirmed.png",
+    "offline_tx.png",
+    "clock1.png",
+    "clock2.png",
+    "clock3.png",
+    "clock4.png",
+    "clock5.png",
+    "clock6.png",
+    "clock7.png",
+    "clock8.png",
+    "clock9.png",
+    "confirmed.png",
+]
+
 
 class Timer(QThread):
     stopped = False

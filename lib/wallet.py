@@ -1778,7 +1778,7 @@ class Abstract_Wallet(PrintError):
         return True
 
     def get_token_history(self, contract_addr=None, bind_addr=None, from_timestamp=None, to_timestamp=None):
-        h = []  # [(from, to, amount, token, txid, height, timestamp, conf,call_index, log_index)]
+        h = []  # from, to, amount, token, txid, height, conf, timestamp, call_index, log_index
         keys = []
         for token_key in self.tokens.keys():
             if contract_addr and contract_addr in token_key \
@@ -1788,6 +1788,7 @@ class Abstract_Wallet(PrintError):
         for key in keys:
             contract_addr, bind_addr = key.split('_')
             for txid, height, log_index in self.token_history.get(key, []):
+                height, conf, timestamp = self.get_tx_height(txid)
                 for call_index, contract_call in enumerate(self.tx_receipt.get(txid, [])):
                     logs = contract_call.get('log', [])
                     if len(logs) > log_index:
@@ -1814,11 +1815,14 @@ class Abstract_Wallet(PrintError):
                             print('address mismatch')
                             continue
                         amount = int(log.get('data'), 16)
-                        h.append((topics[1][-40:], topics[2][-40:], amount,
-                                  self.tokens[key], txid, height, call_index, log_index))
+                        from_addr = topics[1][-40:]
+                        to_addr = topics[2][-40:]
+                        h.append(
+                            (from_addr, to_addr, amount, self.tokens[key], txid,
+                             height, conf, timestamp, call_index, log_index))
                     else:
                         continue
-        return sorted(h, key=itemgetter(5, 6, 7))
+        return sorted(h, key=itemgetter(7, 8, 9), reverse=True)
 
 
 class Simple_Wallet(Abstract_Wallet):

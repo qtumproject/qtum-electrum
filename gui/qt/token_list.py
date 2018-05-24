@@ -10,7 +10,7 @@ from .util import *
 from qtum_electrum.qtum import hash160_to_p2pkh
 from qtum_electrum.i18n import _
 from qtum_electrum.plugins import run_hook
-from qtum_electrum.util import block_explorer_URL, format_satoshis, open_browser
+from qtum_electrum.util import block_explorer_URL, open_browser, timestamp_to_datetime
 
 
 class TokenBalanceList(MyTreeWidget):
@@ -83,12 +83,12 @@ class TokenHistoryList(MyTreeWidget):
         self.setSortingEnabled(True)
 
     def on_update(self):
+        wallet = self.parent.wallet
         item = self.currentItem()
         current_key = item.data(0, Qt.UserRole) if item else None
         self.clear()
-        for hist in self.parent.wallet.get_token_history():
-            # conf, timestamp
-            _from, to, amount, token, txid, height, call_index, log_index = hist
+        for hist in wallet.get_token_history():
+            _from, to, amount, token, txid, height, conf, timestamp, call_index, log_index = hist
             payout = False
             if _from == to:
                 amount = 0
@@ -98,7 +98,13 @@ class TokenHistoryList(MyTreeWidget):
                 balance_str = '-'
                 payout = True
             balance_str += '{}'.format(amount / 10 ** token.decimals)
-            item = QTreeWidgetItem(['', '2018-05-22 25:00', token.bind_addr, token.name, balance_str])
+            status, status_str = wallet.get_tx_status(txid, height, conf, timestamp)
+            date = timestamp_to_datetime(time.time() if conf <= 0 else timestamp)
+            icon = self.icon_cache.get(":icons/" + TX_ICONS[status])
+
+            item = QTreeWidgetItem(['', status_str, token.bind_addr, token.name, balance_str])
+            item.setIcon(0, icon)
+            item.setToolTip(0, str(conf) + " confirmation" + ("s" if conf != 1 else ""))
             item.setData(0, Qt.UserRole, txid)
             item.setTextAlignment(0, Qt.AlignLeft | Qt.AlignVCenter)
             self.addTopLevelItem(item)
