@@ -297,8 +297,8 @@ class Abstract_Wallet(PrintError):
             self.storage.put('tx_receipt', self.tx_receipt)
 
             token_txs = {}
-            for txid, (tx, height) in self.token_txs.items():
-                token_txs[txid] = (str(tx), height)
+            for txid, tx in self.token_txs.items():
+                token_txs[txid] = str(tx)
             self.storage.put('token_txs', token_txs)
             if write:
                 self.storage.write()
@@ -1718,10 +1718,10 @@ class Abstract_Wallet(PrintError):
         # token_hist_txids = reduce(lambda x, y: x+y, list([[y[0] for y in x] for x in self.token_history.values()]))
         token_hist_txids = [x[0] for x in reduce(lambda x, y: x+y, self.token_history.values())]
         self.token_txs = {}
-        for tx_hash, (raw, height) in token_tx_list.items():
+        for tx_hash, raw in token_tx_list.items():
             if tx_hash in token_hist_txids:
                 tx = Transaction(raw)
-                self.token_txs[tx_hash] = (tx, height)
+                self.token_txs[tx_hash] = tx
 
     def receive_token_history_callback(self, key, hist):
         with self.lock:
@@ -1754,8 +1754,8 @@ class Abstract_Wallet(PrintError):
         self.add_tx_receipt(tx_hash, tx_receipt)
 
     def receive_token_tx_callback(self, tx_hash, tx, tx_height):
-        self.add_token_transaction(tx_hash, tx, tx_height)
-        self.add_unverified_token_tx(tx_hash, tx_height)
+        self.add_token_transaction(tx_hash, tx)
+        self.add_unverified_tx(tx_hash, tx_height)
 
     def add_tx_receipt(self, tx_hash, tx_receipt):
         assert tx_hash, 'none tx_hash'
@@ -1767,13 +1767,10 @@ class Abstract_Wallet(PrintError):
                 return
         self.tx_receipt[tx_hash] = tx_receipt
 
-    def add_token_transaction(self, tx_hash, tx, tx_height):
+    def add_token_transaction(self, tx_hash, tx):
         assert tx.is_complete(), 'incomplete tx'
-        self.token_txs[tx_hash] = (tx, tx_height)
+        self.token_txs[tx_hash] = tx
         return True
-
-    def add_unverified_token_tx(self, tx_hash, tx_height):
-        pass
 
     def get_token_history(self, contract_addr=None, bind_addr=None, from_timestamp=None, to_timestamp=None):
         h = []  # [(from, to, amount, token, txid, height, timestamp, conf,call_index, log_index)]
