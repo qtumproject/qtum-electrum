@@ -327,8 +327,8 @@ class Network(util.DaemonThread):
         self.queue_request('blockchain.relayfee', [])
         for h in list(self.subscribed_addresses):
             self.queue_request('blockchain.scripthash.subscribe', [h])
-        for hash160, contract_addr in list(self.subscribed_tokens):
-            self.queue_request('blockchain.hash160.contract.subscribe', [hash160, contract_addr])
+        for hash160, contract_addr, topic in list(self.subscribed_tokens):
+            self.queue_request('blockchain.hash160.contract.subscribe', [hash160, contract_addr, topic])
 
 
     def get_status_value(self, key):
@@ -572,7 +572,7 @@ class Network(util.DaemonThread):
     def get_index(self, method, params):
         """ hashable index for subscriptions and cache"""
         if method == 'blockchain.hash160.contract.subscribe':
-            return '{}:{}:{}'.format(method, params[0], params[1])
+            return '{}:{}:{}:{}'.format(method, params[0], params[1], params[2])
         return str(method) + (':' + str(params[0]) if params else '')
 
     def process_responses(self, interface):
@@ -601,7 +601,7 @@ class Network(util.DaemonThread):
                 if method == 'blockchain.scripthash.subscribe':
                     self.subscribed_addresses.add(params[0])
                 elif method == 'blockchain.hash160.contract.subscribe':
-                    self.subscribed_tokens.add((params[0], params[1]))
+                    self.subscribed_tokens.add((params[0], params[1], params[2]))
             else:
                 if not response:  # Closed remotely / misbehaving
                     self.connection_down(interface.server)
@@ -617,7 +617,8 @@ class Network(util.DaemonThread):
                     response['params'] = [params[0]]  # addr
                     response['result'] = params[1]
                 elif method == 'blockchain.hash160.contract.subscribe':
-                    print_error('process_responses 2', response)
+                    response['params'] = params[0:3]  # addr, contract, topic
+                    response['result'] = params[3]
                 callbacks = self.subscriptions.get(k, [])
 
             # update cache if it's a subscription
