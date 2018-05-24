@@ -229,9 +229,7 @@ class Synchronizer(ThreadJob):
             bind_addr = hash160_to_p2pkh(binascii.a2b_hex(params[0]))
             contract_addr = params[1]
             key = '{}_{}'.format(contract_addr, bind_addr)
-            # token = self.wallet.tokens[key]
-            # if not token:
-            #     return
+
             server_status = self.requested_token_histories.get(key)
             if server_status is None:
                 self.print_error("receiving history (unsolicited)", key, len(result))
@@ -261,7 +259,7 @@ class Synchronizer(ThreadJob):
             self.requested_token_histories.pop(key)
 
         except (BaseException,) as e:
-            print('on_token_status err', e)
+            print('on_token_history err', e)
 
     def request_missing_tx_receipts(self, hist):
         # "hist" is a list of [tx_hash, tx_height, log_index] lists
@@ -293,8 +291,8 @@ class Synchronizer(ThreadJob):
                          (tx_hash, height))
         # callbacks
         self.network.trigger_callback('new_tx_receipt', receipt)
-        if not self.requested_tx_receipt:
-            self.network.trigger_callback('token_hist_updated')
+        if not self.requested_tx_receipt and not self.requested_token_txs:
+            self.network.trigger_callback('on_token')
 
     def request_missing_token_txs(self, hist):
         # "hist" is a list of [tx_hash, tx_height, log_index] lists
@@ -327,8 +325,8 @@ class Synchronizer(ThreadJob):
                          (tx_hash, tx_height, len(tx.raw)))
         # callbacks
         self.network.trigger_callback('new_token_transaction', tx)
-        if not self.requested_token_txs:
-            self.network.trigger_callback('updated')
+        if not self.requested_token_txs and not self.requested_tx_receipt:
+            self.network.trigger_callback('on_token')
 
     def get_token_balance(self, token):
         """
@@ -374,6 +372,8 @@ class Synchronizer(ThreadJob):
             self.request_missing_token_txs(history)
         if self.requested_tx_receipt:
             self.print_error("missing tx receipt", self.requested_tx_receipt)
+        if self.requested_token_txs:
+            self.print_error("missing token txs", self.requested_token_txs)
 
         tokens = set()
         for key in self.wallet.tokens.keys():
