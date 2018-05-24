@@ -1225,6 +1225,11 @@ class Abstract_Wallet(PrintError):
                 # add it in case it was previously unconfirmed
                 self.add_unverified_tx(tx_hash, tx_height)
 
+        # review transactions that are in the token history
+        for key, token_hist in self.token_history.items():
+            for txid, height, log_index in token_hist:
+                self.add_unverified_tx(txid, height)
+
     def start_threads(self, network):
         self.network = network
         if self.network is not None:
