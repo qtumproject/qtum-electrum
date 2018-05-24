@@ -101,7 +101,7 @@ class TokenHistoryList(MyTreeWidget):
             status, status_str = wallet.get_tx_status(txid, height, conf, timestamp)
             icon = self.icon_cache.get(":icons/" + TX_ICONS[status])
 
-            item = QTreeWidgetItem(['', status_str, token.bind_addr, token.name, balance_str])
+            item = QTreeWidgetItem(['', status_str, token.bind_addr, token.symbol, balance_str])
             item.setIcon(0, icon)
             item.setToolTip(0, str(conf) + " confirmation" + ("s" if conf != 1 else ""))
             item.setData(0, Qt.UserRole, txid)
