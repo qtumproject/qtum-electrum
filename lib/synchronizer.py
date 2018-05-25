@@ -229,7 +229,6 @@ class Synchronizer(ThreadJob):
             bind_addr = hash160_to_p2pkh(binascii.a2b_hex(params[0]))
             contract_addr = params[1]
             key = '{}_{}'.format(contract_addr, bind_addr)
-
             server_status = self.requested_token_histories.get(key)
             if server_status is None:
                 self.print_error("receiving history (unsolicited)", key, len(result))
@@ -379,6 +378,7 @@ class Synchronizer(ThreadJob):
         for key in self.wallet.tokens.keys():
             token = self.wallet.tokens[key]
             tokens.add(token)
+            self.get_token_balance(token)
         self.subscribe_tokens(tokens)
 
         self.initialized = True
