@@ -328,7 +328,7 @@ class Network(util.DaemonThread):
         for h in list(self.subscribed_addresses):
             self.queue_request('blockchain.scripthash.subscribe', [h])
         for hash160, contract_addr, topic in list(self.subscribed_tokens):
-            self.queue_request('blockchain.hash160.contract.subscribe', [hash160, contract_addr, topic])
+            self.queue_request('blockchain.contract.event.subscribe', [hash160, contract_addr, topic])
 
 
     def get_status_value(self, key):
@@ -571,7 +571,7 @@ class Network(util.DaemonThread):
 
     def get_index(self, method, params):
         """ hashable index for subscriptions and cache"""
-        if method == 'blockchain.hash160.contract.subscribe':
+        if method == 'blockchain.contract.event.subscribe':
             return '{}:{}:{}:{}'.format(method, params[0], params[1], params[2])
         return str(method) + (':' + str(params[0]) if params else '')
 
@@ -600,7 +600,7 @@ class Network(util.DaemonThread):
                 # add it to the list; avoids double-sends on reconnection
                 if method == 'blockchain.scripthash.subscribe':
                     self.subscribed_addresses.add(params[0])
-                elif method == 'blockchain.hash160.contract.subscribe':
+                elif method == 'blockchain.contract.event.subscribe':
                     self.subscribed_tokens.add((params[0], params[1], params[2]))
             else:
                 if not response:  # Closed remotely / misbehaving
@@ -616,7 +616,7 @@ class Network(util.DaemonThread):
                 elif method == 'blockchain.scripthash.subscribe':
                     response['params'] = [params[0]]  # addr
                     response['result'] = params[1]
-                elif method == 'blockchain.hash160.contract.subscribe':
+                elif method == 'blockchain.contract.event.subscribe':
                     response['params'] = params[0:3]  # addr, contract, topic
                     response['result'] = params[3]
                 callbacks = self.subscriptions.get(k, [])
@@ -653,7 +653,7 @@ class Network(util.DaemonThread):
 
     def subscribe_tokens(self, tokens, callback):
         msgs = [(
-            'blockchain.hash160.contract.subscribe',
+            'blockchain.contract.event.subscribe',
             [bh2u(b58_address_to_hash160(token.bind_addr)[1]), token.contract_addr, TOKEN_TRANSFER_TOPIC])
             for token in tokens]
         self.send(msgs, callback)
@@ -673,7 +673,7 @@ class Network(util.DaemonThread):
     def request_token_history(self, token, callback):
         __, hash160 = b58_address_to_hash160(token.bind_addr)
         hash160 = bh2u(hash160)
-        self.send([('blockchain.hash160.contract.get_eventlogs',
+        self.send([('blockchain.contract.event.get_history',
                     [hash160, token.contract_addr, TOKEN_TRANSFER_TOPIC])], callback)
 
     def send(self, messages, callback):
