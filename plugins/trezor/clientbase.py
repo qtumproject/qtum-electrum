@@ -9,7 +9,8 @@ from qtum_electrum.bitcoin import serialize_xpub
 
 class GuiMixin(object):
     # Requires: self.proto, self.device
-
+    
+    # ref: https://github.com/trezor/trezor-common/blob/44dfb07cfaafffada4b2ce0d15ba1d90d17cf35e/protob/types.proto#L89
     messages = {
         3: _("Confirm the transaction output on your %s device"),
         4: _("Confirm internal entropy on your %s device to begin"),
@@ -20,6 +21,7 @@ class GuiMixin(object):
              "%s device"),
         10: _("Confirm wallet address on your %s device"),
         'default': _("Check your %s device to continue"),
+        14: _("Choose on your {} device where to enter your passphrase"),
     }
 
     def callback_Failure(self, msg):
@@ -83,6 +85,15 @@ class GuiMixin(object):
         return self.proto.PassphraseStateAck()
 
     def callback_WordRequest(self, msg):
+        if (msg.type is not None
+            and msg.type in (self.types.WordRequestType.Matrix9,
+                             self.types.WordRequestType.Matrix6)):
+            num = 9 if msg.type == self.types.WordRequestType.Matrix9 else 6
+            char = self.handler.get_matrix(num)
+            if char == 'x':
+                return self.proto.Cancel()
+            return self.proto.WordAck(word=char)
+
         self.step += 1
         msg = _("Step %d/24.  Enter seed word as explained on "
                 "your %s:") % (self.step, self.device)
@@ -223,6 +234,10 @@ class TrezorClientBase(GuiMixin, PrintError):
 
     def atleast_version(self, major, minor=0, patch=0):
         return self.firmware_version() >= (major, minor, patch)
+
+    def get_trezor_model(self):
+        """Returns '1' for Trezor One, 'T' for Trezor T."""
+        return self.features.model
 
     @staticmethod
     def wrapper(func):

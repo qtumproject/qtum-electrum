@@ -656,11 +656,19 @@ def deserialize_privkey(key):
 
     if txin_type is None:
         # keys exported in version 3.0.x encoded script type in first byte
-        txin_type = inv_dict(SCRIPT_TYPES)[vch[0] - WIF_PREFIX]
+        prefix_value = vch[0] - WIF_PREFIX
+        inverse_script_types = inv_dict(SCRIPT_TYPES)
+        try:
+            txin_type = inverse_script_types[prefix_value]
+        except KeyError:
+            raise Exception('invalid prefix ({}) for WIF key (1)'.format(vch[0]))
     else:
-        assert vch[0] == WIF_PREFIX
+        # all other keys must have a fixed first byte
+        if vch[0] != WIF_PREFIX:
+            raise Exception('invalid prefix ({}) for WIF key (2)'.format(vch[0]))
 
-    assert len(vch) in [33, 34]
+    if len(vch) not in [33, 34]:
+        raise Exception('invalid vch len for WIF key: {}'.format(len(vch)))
     compressed = len(vch) == 34
     return txin_type, vch[1:33], compressed
 
@@ -1057,7 +1065,10 @@ def xpub_header(xtype):
     return bfh("%08x" % (XPUB_HEADERS[xtype]))
 
 
-def serialize_xprv(xtype, c, k, depth=0, fingerprint=b'\x00'*4, child_number=b'\x00'*4):
+def serialize_xprv(xtype, c, k, depth=0, fingerprint=b'\x00'*4,
+                   child_number=b'\x00'*4):
+    if not (0 < string_to_number(k) < SECP256k1.order):
+        raise Exception('Impossible xprv (not within curve order)')
     xprv = xprv_header(xtype) + bytes([depth]) + fingerprint + child_number + c + bytes([0]) + k
     return EncodeBase58Check(xprv)
 
@@ -1082,6 +1093,8 @@ def deserialize_xkey(xkey, prv):
     xtype = list(headers.keys())[list(headers.values()).index(header)]
     n = 33 if prv else 32
     K_or_k = xkey[13+n:]
+    if prv and not (0 < string_to_number(K_or_k) < SECP256k1.order):
+        raise Exception('Impossible xprv (not within curve order)')
     return xtype, depth, fingerprint, child_number, c, K_or_k
 
 

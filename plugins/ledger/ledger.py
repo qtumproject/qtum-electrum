@@ -13,6 +13,7 @@ from qtum_electrum.transaction import Transaction
 from qtum_electrum.wallet import Standard_Wallet
 from ..hw_wallet import HW_PluginBase
 from qtum_electrum.util import print_error, bfh, bh2u, is_verbose, versiontuple
+from qtum_electrum.base_wizard import ScriptTypeNotSupported
 
 try:
     import hid
@@ -566,6 +567,8 @@ class LedgerPlugin(HW_PluginBase):
         (0x2c97, 0x0001)  # Nano-S
     ]
 
+    SUPPORTED_XTYPES = ('standard', 'p2wpkh-p2sh', 'p2wpkh', 'p2wsh-p2sh', 'p2wsh')
+
     def __init__(self, parent, config, name):
         self.segwit = config.get("segwit")
         HW_PluginBase.__init__(self, parent, config, name)
@@ -601,10 +604,17 @@ class LedgerPlugin(HW_PluginBase):
         devmgr = self.device_manager()
         device_id = device_info.device.id_
         client = devmgr.client_by_id(device_id)
+        if client is None:
+            raise Exception(_('Failed to create a client for this device.') + '\n' +
+                            _('Make sure it is in the correct state.'))
         client.handler = self.create_handler(wizard)
         client.get_xpub("m/44'/88'", 'standard')  # TODO replace by direct derivation once Nano S > 1.1
 
     def get_xpub(self, device_id, derivation, xtype, wizard):
+
+        if xtype not in self.SUPPORTED_XTYPES:
+            raise ScriptTypeNotSupported(_('This type of script is not supported with {}.').format(self.device))
+
         devmgr = self.device_manager()
         client = devmgr.client_by_id(device_id)
         client.handler = self.create_handler(wizard)

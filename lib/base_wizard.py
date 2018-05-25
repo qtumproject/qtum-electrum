@@ -319,16 +319,29 @@ class BaseWizard(object):
             raise Exception('unknown purpose: %s' % purpose)
 
     def derivation_dialog(self, f):
-        default = bip44_derivation(0, False)
+        default = bip44_derivation(0, bip43_purpose=44)
         message = '\n'.join([
             _('Enter your wallet derivation here.'),
             _('If you are not sure what this is, leave this field unchanged.')
         ])
-        self.line_dialog(run_next=f, title=_('Derivation'), message=message, default=default, test=bitcoin.is_bip32_derivation)
+        presets = (
+            ('legacy BIP44', bip44_derivation(0, bip43_purpose=44)),
+            ('p2sh-segwit BIP49', bip44_derivation(0, bip43_purpose=49)),
+            ('native-segwit BIP84', bip44_derivation(0, bip43_purpose=84)),
+        )
+        while True:
+            try:
+                self.line_dialog(run_next=f, title=_('Derivation'), message=message,
+                                 default=default, test=bitcoin.is_bip32_derivation,
+                                 presets=presets)
+                return
+            except ScriptTypeNotSupported as e:
+                self.show_error(e)
+                # let the user choose again
 
     def on_hw_derivation(self, name, device_info, derivation):
         from .keystore import hardware_keystore
-        xtype = 'p2wpkh-p2sh' if derivation.startswith("m/49'/") else 'standard'
+        xtype = keystore.xtype_from_derivation(derivation)
         try:
             xpub = self.plugin.get_xpub(device_info.device.id_, derivation, xtype, self)
         except BaseException as e:
