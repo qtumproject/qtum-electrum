@@ -133,6 +133,7 @@ class TokenHistoryList(MyTreeWidget):
             column_title = self.headerItem().text(column)
             column_data = '\n'.join([item.text(column) for item in selected])
             menu.addAction(_("Copy %s") % column_title, lambda: self.parent.app.clipboard().setText(column_data))
+            menu.addAction(_("Copy Transaction ID"), lambda: self.parent.app.clipboard().setText(txid))
             URL = block_explorer_URL(self.config, {'tx': txid})
             if URL:
                 menu.addAction(_("View on block explorer"), lambda: open_browser(URL))
