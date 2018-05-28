@@ -5,7 +5,7 @@ import os
 import stat
 
 from copy import deepcopy
-from .util import user_dir, print_error, print_msg, print_stderr, PrintError
+from .util import user_dir, print_error, make_dir, print_stderr, PrintError
 from .i18n import _
 from .bitcoin import MAX_FEE_RATE, FEE_TARGETS
 
@@ -80,15 +80,11 @@ class SimpleConfig(PrintError):
         path = self.get('electrum_path')
         if path is None:
             path = self.user_dir()
+        make_dir(path, allow_symlink=False)
 
         if self.get('testnet'):
             path = os.path.join(path, 'testnet')
-
-        # Make directory if it does not yet exist.
-        if not os.path.exists(path):
-            if os.path.islink(path):
-                raise Exception('Dangling link: ' + path)
-            os.mkdir(path)
+            make_dir(path, allow_symlink=False)
 
         self.print_error("qtum_electrum directory", path)
         return path
@@ -161,10 +157,7 @@ class SimpleConfig(PrintError):
                 _('Electrum datadir does not exist. Was it deleted while running?') + '\n' +
                 _('Should be at {}').format(self.path))
         dirpath = os.path.join(self.path, "wallets")
-        if not os.path.exists(dirpath):
-            if os.path.islink(dirpath):
-                raise Exception('Dangling link: ' + dirpath)
-            os.mkdir(dirpath)
+        make_dir(dirpath, allow_symlink=False)
 
         new_path = os.path.join(self.path, "wallets", "default_wallet")
 

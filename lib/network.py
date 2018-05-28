@@ -196,8 +196,7 @@ class Network(util.DaemonThread):
         self.downloading_headers = False
 
         dir_path = os.path.join(self.config.path, 'certs')
-        if not os.path.exists(dir_path):
-            os.mkdir(dir_path)
+        util.make_dir(dir_path)
 
         # subscriptions and requests
         self.subscribed_addresses = set()

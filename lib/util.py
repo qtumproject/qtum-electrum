@@ -34,6 +34,7 @@ import threading
 import hmac
 from struct import Struct
 import webbrowser
+import stat
 
 from .i18n import _
 
@@ -758,3 +759,12 @@ def open_browser(url, new=0, autoraise=True):
         if browser.open(url, new, autoraise):
             return True
     return False
+
+
+def make_dir(path, allow_symlink=True):
+    """Make directory if it does not yet exist."""
+    if not os.path.exists(path):
+        if not allow_symlink and os.path.islink(path):
+            raise Exception('Dangling link: ' + path)
+        os.mkdir(path)
+        os.chmod(path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
