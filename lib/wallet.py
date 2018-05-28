@@ -1723,7 +1723,10 @@ class Abstract_Wallet(PrintError):
     def load_token_txs(self):
         token_tx_list = self.storage.get('token_txs', {})
         # token_hist_txids = reduce(lambda x, y: x+y, list([[y[0] for y in x] for x in self.token_history.values()]))
-        token_hist_txids = [x[0] for x in reduce(lambda x, y: x+y, self.token_history.values())]
+        if self.token_history:
+            token_hist_txids = [x[0] for x in reduce(lambda x, y: x+y, self.token_history.values())]
+        else:
+            token_hist_txids = []
         self.token_txs = {}
         for tx_hash, raw in token_tx_list.items():
             if tx_hash in token_hist_txids:
