@@ -389,7 +389,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                                                         self.wallet.basename())
         extra = [self.wallet.storage.get('wallet_type', '?')]
         if self.wallet.is_watching_only():
-            self.warn_if_watching_only()
+            # self.warn_if_watching_only()
             extra.append(_('watching only'))
         title += '  [%s]'% ', '.join(extra)
 
