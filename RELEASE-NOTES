@@ -1,3 +1,7 @@
+# Release 0.18.4
+ * support token transfer history
+ * prevent sending QRC20 tokens to P2SH Qtum addresses
+
 # Release 0.18.3
  * fix OS X Sierra crash
  * enable seed ext
