@@ -227,8 +227,9 @@ class Abstract_Wallet(PrintError):
         self.check_history()
         self.load_unverified_transactions()
         self.remove_local_transactions_we_dont_have()
-        self.check_token_history()
         self.load_token_txs()
+        self.check_token_history()
+
 
         # There is a difference between wallet.up_to_date and network.is_up_to_date().
         # network.is_up_to_date() returns true when all requests have been answered and processed
@@ -1728,7 +1729,9 @@ class Abstract_Wallet(PrintError):
         hist_keys_not_mine = list(filter(lambda k: not self.is_mine(k.split('_')[1]), self.token_history.keys()))
         hist_keys_not_subscribe = list(filter(lambda k: k not in self.tokens, self.token_history.keys()))
         for key in set(hist_keys_not_mine).union(hist_keys_not_subscribe):
-            self.token_history.pop(key)
+            hist = self.token_history.pop(key)
+            for txid, height, log_index in hist:
+                self.token_txs.pop(txid)
             save = True
         if save:
             self.save_transactions()
