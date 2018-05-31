@@ -1,6 +1,7 @@
 # Release 0.18.4
- * support token transfer history
+ * support ERC20 token transfer history
  * prevent sending QRC20 tokens to P2SH Qtum addresses
+ * fix coin stake transaction hash calculation
 
 # Release 0.18.3
  * fix OS X Sierra crash
