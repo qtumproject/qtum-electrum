@@ -211,11 +211,10 @@ class Abstract_Wallet(PrintError):
 
         self.receive_requests = storage.get('payment_requests', {})
 
-        # Verified transactions.  Each value is a (height, timestamp, block_pos) tuple.  Access with self.lock.
+        # Verified transactions.  txid -> (height, timestamp, block_pos).  Access with self.lock.
         self.verified_tx = storage.get('verified_tx3', {})
 
-        # Transactions pending verification.  A map from tx hash to transaction
-        # height.  Access is not contended so no lock is needed.
+        # Transactions pending verification.  txid -> tx_height. Access with self.lock.
         self.unverified_tx = defaultdict(int)
 
         self.load_keystore()
@@ -453,12 +452,13 @@ class Abstract_Wallet(PrintError):
 
         # tx will be verified only if height > 0
         if tx_hash not in self.verified_tx:
-            self.unverified_tx[tx_hash] = tx_height
+            with self.lock:
+                self.unverified_tx[tx_hash] = tx_height
 
     def add_verified_tx(self, tx_hash, info):
         # Remove from the unverified map and add to the verified map and
-        self.unverified_tx.pop(tx_hash, None)
         with self.lock:
+            self.unverified_tx.pop(tx_hash, None)
             self.verified_tx[tx_hash] = info  # (tx_height, timestamp, pos)
         height, conf, timestamp = self.get_tx_height(tx_hash)
         if isinstance(height, tuple):
@@ -468,7 +468,8 @@ class Abstract_Wallet(PrintError):
 
     def get_unverified_txs(self):
         '''Returns a map from tx hash to transaction height'''
-        return self.unverified_tx
+        with self.lock:
+            return dict(self.unverified_tx)  # copy
 
     def undo_verifications(self, blockchain, height):
         '''Used by the verifier when a reorg has happened'''
