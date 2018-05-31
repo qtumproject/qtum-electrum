@@ -39,7 +39,7 @@ from operator import itemgetter
 from functools import reduce
 
 from .i18n import _
-from .util import NotEnoughFunds, PrintError, UserCancelled, profiler, format_satoshis, timestamp_to_datetime
+from .util import NotEnoughFunds, PrintError, UserCancelled, profiler, format_satoshis, InvalidPassword
 from .qtum import *
 from .version import *
 from .keystore import load_keystore, Hardware_KeyStore
