@@ -929,7 +929,10 @@ class Transaction:
             raise Exception('qtum_sort - sender address not in inputs')
 
     def serialize_output(self, output):
+        # qtum
         output_type, data, amount = output
+        if output_type == 'coinstake':
+            output_type = TYPE_SCRIPT
         s = int_to_hex(amount, 8)
         script = self.pay_script(output_type, addr=data)
         s += var_int(len(script)//2)
