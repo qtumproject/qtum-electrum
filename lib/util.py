@@ -468,11 +468,12 @@ def time_difference(distance_in_time, include_seconds):
 
 
 def block_explorer_info():
-    from . import qtum
-    if qtum.TESTNET:
-        return qtum.testnet_block_explorers
+    from . import constants
+    from .qtum import testnet_block_explorers, mainnet_block_explorers
+    if constants.net.TESTNET:
+        return testnet_block_explorers
     else:
-        return qtum.mainnet_block_explorers
+        return mainnet_block_explorers
 
 
 def block_explorer(config):

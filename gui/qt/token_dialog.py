@@ -9,7 +9,8 @@ from PyQt5.QtWidgets import *
 from PyQt5.QtGui import *
 from .util import ButtonsLineEdit, Buttons, CancelButton, MessageBoxMixin
 from .amountedit import AmountEdit
-from qtum_electrum.qtum import is_hash160, is_b58_address, b58_address_to_hash160, bh2u, ADDRTYPE_P2PKH
+from qtum_electrum.qtum import is_hash160, is_b58_address, b58_address_to_hash160, bh2u
+from qtum_electrum import constants
 from qtum_electrum.i18n import _
 from qtum_electrum.tokens import Token
 from qtum_electrum_plugins.trezor.trezor import TrezorKeyStore
@@ -35,7 +36,7 @@ class TokenAddLayout(QGridLayout):
         self.addresses = self.dialog.parent().wallet.get_addresses_sort_by_balance()
 
         addr_type, __ = b58_address_to_hash160(self.addresses[0])
-        if not addr_type == ADDRTYPE_P2PKH:
+        if not addr_type == constants.net.ADDRTYPE_P2PKH:
             self.dialog.show_message('only P2PKH address supports QRC20 Token')
             self.dialog.reject()
             return
@@ -258,7 +259,7 @@ class TokenSendLayout(QGridLayout):
         address_to = self.address_to_e.text().rstrip().lstrip()
         if is_b58_address(address_to):
             addr_type, hash160 = b58_address_to_hash160(address_to)
-            if addr_type == ADDRTYPE_P2PKH:
+            if addr_type == constants.net.ADDRTYPE_P2PKH:
                 hash160 = bh2u(hash160)
             else:
                 self.dialog.show_message('invalid address')

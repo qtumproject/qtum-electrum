@@ -35,6 +35,7 @@ from . import bitcoin
 from . import blockchain
 from . import util
 from .qtum import *
+from . import constants
 from .interface import Connection, Interface
 from .version import ELECTRUM_VERSION, PROTOCOL_VERSION
 
@@ -54,7 +55,7 @@ def parse_servers(result):
             for v in item[2]:
                 if re.match("[st]\d*", v):
                     protocol, port = v[0], v[1:]
-                    if port == '': port = DEFAULT_PORTS[protocol]
+                    if port == '': port = constants.net.DEFAULT_PORTS[protocol]
                     out[protocol] = port
                 elif re.match("v(.?)+", v):
                     version = v[1:]
@@ -86,9 +87,8 @@ def filter_protocol(hostmap, protocol = 's'):
     return eligible
 
 def pick_random_server(hostmap = None, protocol = 's', exclude_set = set()):
-    from .qtum import DEFAULT_SERVERS
     if hostmap is None:
-        hostmap = DEFAULT_SERVERS
+        hostmap = constants.net.DEFAULT_SERVERS
     eligible = list(set(filter_protocol(hostmap, protocol)) - exclude_set)
     return random.choice(eligible) if eligible else None
 
@@ -364,8 +364,7 @@ class Network(util.DaemonThread):
         return list(self.interfaces.keys())
 
     def get_servers(self):
-        from .qtum import DEFAULT_SERVERS
-        out = DEFAULT_SERVERS
+        out = constants.net.DEFAULT_SERVERS
         if self.irc_servers:
             out.update(filter_version(self.irc_servers.copy()))
         else:

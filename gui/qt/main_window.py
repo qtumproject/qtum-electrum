@@ -39,7 +39,8 @@ from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
 from qtum_electrum import keystore
-from qtum_electrum.qtum import COIN, is_address, TYPE_ADDRESS, TYPE_SCRIPT, TESTNET, is_hash160, eth_abi_encode
+from qtum_electrum import constants
+from qtum_electrum.qtum import COIN, is_address, TYPE_ADDRESS, TYPE_SCRIPT, is_hash160, eth_abi_encode
 from qtum_electrum.plugins import run_hook
 from qtum_electrum.i18n import _
 from qtum_electrum.util import (bh2u, bfh, format_time, format_satoshis, PrintError, format_satoshis_plain,
@@ -393,7 +394,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             extra.append(_('watching only'))
         title += '  [%s]'% ', '.join(extra)
 
-        if TESTNET:
+        if constants.net.TESTNET:
             title += '  -  testnet'
 
         self.setWindowTitle(title)

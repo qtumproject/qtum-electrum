@@ -28,7 +28,7 @@ from unicodedata import normalize
 
 from . import bitcoin
 from .bitcoin import *
-from .bitcoin import is_seed
+from . import constants
 from .mnemonic import Mnemonic, load_wordlist
 from .util import PrintError, InvalidPassword, hfu
 

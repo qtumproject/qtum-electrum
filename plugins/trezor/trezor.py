@@ -4,7 +4,8 @@ import sys
 
 from qtum_electrum.util import bfh, bh2u, versiontuple, UserCancelled
 from qtum_electrum.qtum import (b58_address_to_hash160, xpub_from_pubkey,
-                                TYPE_ADDRESS, TYPE_SCRIPT, TESTNET, qtum_addr_to_bitcoin_addr)
+                                TYPE_ADDRESS, TYPE_SCRIPT, qtum_addr_to_bitcoin_addr)
+from qtum_electrum import constants
 from qtum_electrum.i18n import _
 from qtum_electrum.plugins import BasePlugin, Device
 from qtum_electrum.transaction import deserialize, Transaction
@@ -170,7 +171,7 @@ class TrezorPlugin(HW_PluginBase):
         return client
 
     def get_coin_name(self):
-        return "Testnet" if TESTNET else "Qtum"
+        return "Testnet" if constants.net.TESTNET else "Qtum"
 
     def initialize_device(self, device_id, wizard, handler):
         # Initialization method

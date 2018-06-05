@@ -77,6 +77,7 @@ if is_local or is_android:
     imp.load_module('qtum_electrum_plugins', *imp.find_module('plugins'))
 
 from qtum_electrum import qtum
+from qtum_electrum import constants
 from qtum_electrum import SimpleConfig, Network
 from qtum_electrum.wallet import Wallet, Imported_Wallet
 from qtum_electrum.storage import WalletStorage, get_derivation_used_for_hw_device_encryption
@@ -412,7 +413,7 @@ def run():
     cmdname = config.get('cmd')
 
     if config.get('testnet'):
-        qtum.set_testnet()
+        constants.set_testnet()
 
     # run non-RPC commands separately
     if cmdname in ['create', 'restore']:

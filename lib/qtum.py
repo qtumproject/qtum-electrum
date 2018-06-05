@@ -14,18 +14,10 @@ from eth_utils import function_signature_to_4byte_selector, function_abi_to_4byt
 
 from .util import bfh, bh2u, to_string
 from . import version
+from . import constants
 from .util import print_error, InvalidPassword, assert_bytes, to_bytes, inv_dict
 from .util import unpack_uint16_from, unpack_uint32_from, unpack_uint64_from, unpack_int32_from, unpack_int64_from
 from . import segwit_addr
-
-
-def read_json_dict(filename):
-    path = os.path.join(os.path.dirname(__file__), filename)
-    try:
-        r = json.loads(open(path, 'r').read())
-    except:
-        r = {}
-    return r
 
 
 BITCOIN_ADDRTYPE_P2PKH = 0
@@ -33,19 +25,7 @@ BITCOIN_ADDRTYPE_P2SH = 5
 
 TOKEN_TRANSFER_TOPIC = 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
 
-# QTUM network constants
-TESTNET = False
-ADDRTYPE_P2PKH = 0x3a
-ADDRTYPE_P2SH = 0x32
-WIF_PREFIX = 0x80
-SEGWIT_HRP = "bc"
-HEADERS_URL = ""
-GENESIS = "000075aef83cf2853580f8ae8ce6f8c3096cfa21d98334d6e3f95e5582ed986c"
-GENESIS_BITS = 0x1f00ffff
 BASIC_HEADER_SIZE = 180  # not include sig
-SERVERLIST = 'servers.json'
-DEFAULT_SERVERS = read_json_dict(SERVERLIST)
-DEFAULT_PORTS = {'t': '50001', 's': '50002'}
 POW_BLOCK_COUNT = 5000
 CHUNK_SIZE = 2016
 POW_LIMIT = 0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
@@ -53,58 +33,6 @@ POS_LIMIT = 0x00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 POW_TARGET_TIMESPAN = 16 * 60  # bitcoin is 14 * 24 * 60 * 60
 POW_TARGET_TIMESPACE = 2 * 64  # bitcoin is 10 * 60
 RECOMMEND_CONFIRMATIONS = 10
-
-# Version numbers for BIP32 extended keys
-# standard: xprv, xpub
-# segwit in p2sh: yprv, ypub
-# native segwit: zprv, zpub
-XPRV_HEADERS = {
-    'standard': 0x0488ade4,
-    'p2wpkh-p2sh': 0x049d7878,
-    'p2wsh-p2sh': 0x295b005,
-    'p2wpkh': 0x4b2430c,
-    'p2wsh': 0x2aa7a99
-}
-XPUB_HEADERS = {
-    'standard': 0x0488b21e,
-    'p2wpkh-p2sh': 0x049d7cb2,
-    'p2wsh-p2sh': 0x295b43f,
-    'p2wpkh': 0x4b24746,
-    'p2wsh': 0x2aa7ed3
-}
-
-
-def set_testnet():
-    global ADDRTYPE_P2PKH, ADDRTYPE_P2SH, WIF_PREFIX
-    global TESTNET, SERVERLIST, DEFAULT_PORTS, DEFAULT_SERVERS
-    global GENESIS, GENESIS_BITS
-    global SEGWIT_HRP
-    global XPUB_HEADERS, XPRV_HEADERS
-    TESTNET = True
-    ADDRTYPE_P2PKH = 120
-    ADDRTYPE_P2SH = 110
-    SEGWIT_HRP = "tb"
-    WIF_PREFIX = 0xef
-    GENESIS = "0000e803ee215c0684ca0d2f9220594d3f828617972aad66feb2ba51f5e14222"
-    GENESIS_BITS = 0x1f00ffff
-    SERVERLIST = 'servers_testnet.json'
-    DEFAULT_SERVERS = read_json_dict(SERVERLIST)
-    DEFAULT_PORTS = {'t': '51001', 's': '51002'}
-    XPRV_HEADERS = {
-        'standard': 0x04358394,
-        'p2wpkh-p2sh': 0x044a4e28,
-        'p2wsh-p2sh': 0x024285b5,
-        'p2wpkh': 0x045f18bc,
-        'p2wsh': 0x02575048
-    }
-    XPUB_HEADERS = {
-        'standard': 0x043587cf,
-        'p2wpkh-p2sh': 0x044a5262,
-        'p2wsh-p2sh': 0x024289ef,
-        'p2wpkh': 0x045f1cf6,
-        'p2wsh': 0x02575483
-    }
-
 
 mainnet_block_explorers = {
     'qtum.info': ('https://qtum.info',
@@ -429,11 +357,11 @@ def b58_address_to_hash160(addr):
 
 
 def hash160_to_p2pkh(h160):
-    return hash160_to_b58_address(h160, ADDRTYPE_P2PKH)
+    return hash160_to_b58_address(h160, constants.net.ADDRTYPE_P2PKH)
 
 
 def hash160_to_p2sh(h160):
-    return hash160_to_b58_address(h160, ADDRTYPE_P2SH)
+    return hash160_to_b58_address(h160, constants.net.ADDRTYPE_P2SH)
 
 
 def public_key_to_p2pkh(public_key):
@@ -441,11 +369,11 @@ def public_key_to_p2pkh(public_key):
 
 
 def hash160_to_segwit_addr(h160):
-    return segwit_addr.encode(SEGWIT_HRP, 0, h160)
+    return segwit_addr.encode(constants.net.SEGWIT_HRP, 0, h160)
 
 
 def hash_to_segwit_addr(h, witver):
-    return segwit_addr.encode(SEGWIT_HRP, witver, h)
+    return segwit_addr.encode(constants.net.SEGWIT_HRP, witver, h)
 
 
 def public_key_to_p2wpkh(public_key):
@@ -491,7 +419,7 @@ def redeem_script_to_address(txin_type, redeem_script):
 
 
 def address_to_script(addr):
-    witver, witprog = segwit_addr.decode(SEGWIT_HRP, addr)
+    witver, witprog = segwit_addr.decode(constants.net.SEGWIT_HRP, addr)
     if witprog is not None:
         assert (0 <= witver <= 16)
         OP_n = witver + 0x50 if witver > 0 else 0
@@ -499,11 +427,11 @@ def address_to_script(addr):
         script += push_script(bh2u(bytes(witprog)))
         return script
     addrtype, hash_160 = b58_address_to_hash160(addr)
-    if addrtype == ADDRTYPE_P2PKH:
+    if addrtype == constants.net.ADDRTYPE_P2PKH:
         script = '76a9'                                      # op_dup, op_hash_160
         script += push_script(bh2u(hash_160))
         script += '88ac'                                     # op_equalverify, op_checksig
-    elif addrtype == ADDRTYPE_P2SH:
+    elif addrtype == constants.net.ADDRTYPE_P2SH:
         script = 'a9'                                        # op_hash_160
         script += push_script(bh2u(hash_160))
         script += '87'                                       # op_equal
@@ -629,9 +557,9 @@ SCRIPT_TYPES = {
 
 def serialize_privkey(secret, compressed, txin_type, internal_use=False):
     if internal_use:
-        prefix = bytes([(SCRIPT_TYPES[txin_type] + WIF_PREFIX) & 255])
+        prefix = bytes([(SCRIPT_TYPES[txin_type] + constants.net.WIF_PREFIX) & 255])
     else:
-        prefix = bytes([WIF_PREFIX])
+        prefix = bytes([constants.net.WIF_PREFIX])
     suffix = b'\01' if compressed else b''
     vchIn = prefix + secret + suffix
     base58_wif = EncodeBase58Check(vchIn)
@@ -656,7 +584,7 @@ def deserialize_privkey(key):
 
     if txin_type is None:
         # keys exported in version 3.0.x encoded script type in first byte
-        prefix_value = vch[0] - WIF_PREFIX
+        prefix_value = vch[0] - constants.net.WIF_PREFIX
         inverse_script_types = inv_dict(SCRIPT_TYPES)
         try:
             txin_type = inverse_script_types[prefix_value]
@@ -664,7 +592,7 @@ def deserialize_privkey(key):
             raise Exception('invalid prefix ({}) for WIF key (1)'.format(vch[0]))
     else:
         # all other keys must have a fixed first byte
-        if vch[0] != WIF_PREFIX:
+        if vch[0] != constants.net.WIF_PREFIX:
             raise Exception('invalid prefix ({}) for WIF key (2)'.format(vch[0]))
 
     if len(vch) not in [33, 34]:
@@ -705,7 +633,7 @@ def address_from_private_key(sec):
 
 def is_segwit_address(addr):
     try:
-        witver, witprog = segwit_addr.decode(SEGWIT_HRP, addr)
+        witver, witprog = segwit_addr.decode(constants.net.SEGWIT_HRP, addr)
         return witprog is not None
     except (BaseException,) as e:
         return False
@@ -716,7 +644,7 @@ def is_b58_address(addr):
         addrtype, h = b58_address_to_hash160(addr)
     except Exception as e:
         return False
-    if addrtype not in [ADDRTYPE_P2PKH, ADDRTYPE_P2SH]:
+    if addrtype not in [constants.net.ADDRTYPE_P2PKH, constants.net.ADDRTYPE_P2SH]:
         return False
     return addr == hash160_to_b58_address(h, addrtype)
 
@@ -728,13 +656,13 @@ def is_address(addr):
 def is_p2pkh(addr):
     if is_address(addr):
         addrtype, h = b58_address_to_hash160(addr)
-        return addrtype == ADDRTYPE_P2PKH
+        return addrtype == constants.net.ADDRTYPE_P2PKH
 
 
 def is_p2sh(addr):
     if is_address(addr):
         addrtype, h = b58_address_to_hash160(addr)
-        return addrtype == ADDRTYPE_P2SH
+        return addrtype == constants.net.ADDRTYPE_P2SH
 
 
 def is_private_key(key):
@@ -1057,28 +985,34 @@ def _CKD_pub(cK, c, s):
     return cK_n, c_n
 
 
-def xprv_header(xtype):
-    return bfh("%08x" % (XPRV_HEADERS[xtype]))
+def xprv_header(xtype, *, net=None):
+    if net is None:
+        net = constants.net
+    return bfh("%08x" % (net.XPRV_HEADERS[xtype]))
 
 
-def xpub_header(xtype):
-    return bfh("%08x" % (XPUB_HEADERS[xtype]))
+def xpub_header(xtype, *, net=None):
+    if net is None:
+        net = constants.net
+    return bfh("%08x" % (net.XPUB_HEADERS[xtype]))
 
 
 def serialize_xprv(xtype, c, k, depth=0, fingerprint=b'\x00'*4,
-                   child_number=b'\x00'*4):
+                   child_number=b'\x00'*4, *, net=None):
     if not (0 < string_to_number(k) < SECP256k1.order):
         raise Exception('Impossible xprv (not within curve order)')
-    xprv = xprv_header(xtype) + bytes([depth]) + fingerprint + child_number + c + bytes([0]) + k
+    xprv = xprv_header(xtype, net=net) + bytes([depth]) + fingerprint + child_number + c + bytes([0]) + k
     return EncodeBase58Check(xprv)
 
 
-def serialize_xpub(xtype, c, cK, depth=0, fingerprint=b'\x00'*4, child_number=b'\x00'*4):
-    xpub = xpub_header(xtype) + bytes([depth]) + fingerprint + child_number + c + cK
+def serialize_xpub(xtype, c, cK, depth=0, fingerprint=b'\x00'*4, child_number=b'\x00'*4, *, net=None):
+    xpub = xpub_header(xtype, net=net) + bytes([depth]) + fingerprint + child_number + c + cK
     return EncodeBase58Check(xpub)
 
 
-def deserialize_xkey(xkey, prv):
+def deserialize_xkey(xkey, prv, *, net=None):
+    if net is None:
+        net = constants.net
     xkey = DecodeBase58Check(xkey)
     if not xkey or len(xkey) != 78:
         raise Exception('Invalid xkey', xkey)
@@ -1087,7 +1021,7 @@ def deserialize_xkey(xkey, prv):
     child_number = xkey[9:13]
     c = xkey[13:13+32]
     header = int('0x' + bh2u(xkey[0:4]), 16)
-    headers = XPRV_HEADERS if prv else XPUB_HEADERS
+    headers = net.XPRV_HEADERS if prv else net.XPUB_HEADERS
     if header not in headers.values():
         raise Exception('Invalid xpub format', hex(header))
     xtype = list(headers.keys())[list(headers.values()).index(header)]
@@ -1098,11 +1032,11 @@ def deserialize_xkey(xkey, prv):
     return xtype, depth, fingerprint, child_number, c, K_or_k
 
 
-def deserialize_xpub(xkey):
-    return deserialize_xkey(xkey, False)
+def deserialize_xpub(xkey, *, net=None):
+    return deserialize_xkey(xkey, False, net=net)
 
-def deserialize_xprv(xkey):
-    return deserialize_xkey(xkey, True)
+def deserialize_xprv(xkey, *, net=None):
+    return deserialize_xkey(xkey, True, net=net)
 
 
 def xpub_type(x):
@@ -1353,9 +1287,9 @@ def compact_from_uint256(target):
 
 def qtum_addr_to_bitcoin_addr(qtum_addr):
     addr_type, hash160 = b58_address_to_hash160(qtum_addr)
-    if addr_type == ADDRTYPE_P2PKH:
+    if addr_type == constants.net.ADDRTYPE_P2PKH:
         return hash160_to_b58_address(hash160, addrtype=BITCOIN_ADDRTYPE_P2PKH)
-    elif addr_type == ADDRTYPE_P2SH:
+    elif addr_type == constants.net.ADDRTYPE_P2SH:
         return hash160_to_b58_address(hash160, addr_type=BITCOIN_ADDRTYPE_P2SH)
 
 

@@ -24,6 +24,7 @@ import threading
 import sqlite3
 from . import util
 from . import qtum
+from . import constants
 from .qtum import *
 
 
@@ -325,7 +326,7 @@ class Blockchain(util.PrintError):
         _hash = hash_header(header)
         if prev_hash != header.get('prev_block_hash'):
             raise Exception("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
-        if qtum.TESTNET:
+        if constants.net.TESTNET:
             return True
 
         if bits != header.get('bits'):
@@ -441,9 +442,9 @@ class Blockchain(util.PrintError):
             print_error('[can_connect] check_height failed', height, self.height())
             return False
         if height == 0:
-            valid = hash_header(header) == qtum.GENESIS
+            valid = hash_header(header) == constants.net.GENESIS
             if not valid:
-                print_error('[can_connect] GENESIS hash check', hash_header(header), qtum.GENESIS)
+                print_error('[can_connect] GENESIS hash check', hash_header(header), constants.net.GENESIS)
             return valid
         prev_header = self.read_header(height - 1)
         if not prev_header:
