@@ -34,7 +34,7 @@ import base64
 from functools import wraps
 from decimal import Decimal
 
-from .import util
+from .import util, ecc
 from .util import bfh, bh2u, format_satoshis, json_decode, print_error
 from .import bitcoin
 from .bitcoin import is_address,  hash_160, COIN, TYPE_ADDRESS
@@ -237,8 +237,9 @@ class Commands:
         """Sign a transaction. The wallet keys will be used unless a private key is provided."""
         tx = Transaction(tx)
         if privkey:
-            pubkey = bitcoin.public_key_from_private_key(privkey)
-            h160 = bitcoin.hash_160(bfh(pubkey))
+            txin_type, privkey2, compressed = bitcoin.deserialize_privkey(privkey)
+            pubkey_bytes = ecc.ECPrivkey(privkey2).get_public_key_bytes(compressed=compressed)
+            h160 = bitcoin.hash_160(pubkey_bytes)
             x_pubkey = 'fd' + bh2u(b'\x00' + h160)
             tx.sign({x_pubkey:privkey})
         else:
@@ -404,7 +405,7 @@ class Commands:
         """Verify a signature."""
         sig = base64.b64decode(signature)
         message = util.to_bytes(message)
-        return bitcoin.verify_message(address, sig, message)
+        return ecc.verify_message_with_address(address, sig, message)
 
     def _mktx(self, outputs, fee, change_addr, domain, nocheck, unsigned, rbf, password, locktime=None):
         self.nocheck = nocheck
@@ -556,7 +557,10 @@ class Commands:
     @command('')
     def encrypt(self, pubkey, message):
         """Encrypt a message with a public key. Use quotes if the message contains whitespaces."""
-        return bitcoin.encrypt_message(message, pubkey)
+        public_key = ecc.ECPubkey(bfh(pubkey))
+        encrypted = public_key.encrypt_message(message)
+        return encrypted
+
 
     @command('wp')
     def decrypt(self, pubkey, encrypted, password=None):

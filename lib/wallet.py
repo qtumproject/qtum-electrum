@@ -25,7 +25,7 @@
 #   - Imported_Wallet: imported address, no keystore
 #   - Standard_Wallet: one keystore, P2PKH
 #   - Multisig_Wallet: several keystores, P2SH
-
+import os
 import threading
 import random
 import time
@@ -111,7 +111,7 @@ def append_utxos_to_inputs(inputs, network, pubkey, txin_type, imax):
 def sweep_preparations(privkeys, network, imax=100):
 
     def find_utxos_for_privkey(txin_type, privkey, compressed):
-        pubkey = bitcoin.public_key_from_private_key(privkey, compressed)
+        pubkey = ecc.ECPrivkey(privkey).get_public_key_hex(compressed=compressed)
         append_utxos_to_inputs(inputs, network, pubkey, txin_type, imax)
         keypairs[pubkey] = privkey, compressed
     inputs = []
