@@ -4,6 +4,7 @@ include qtum-electrum.conf.sample
 include qtum-electrum.desktop
 include *.py
 include qtum-electrum
+include requirements.txt
 recursive-include lib *.py
 recursive-include gui *.py
 recursive-include plugins *.py
@@ -12,4 +13,3 @@ recursive-include packages cacert.pem
 include icons.qrc
 recursive-include icons *
 recursive-include scripts *
-

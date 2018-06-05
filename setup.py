@@ -12,6 +12,8 @@ from setuptools import setup
 with open('./requirements.txt') as f:
     requirements = f.read().splitlines()
 
+requirements += ['eth-hash', 'eth-utils', 'eth-abi']
+
 version = imp.load_source('version', 'lib/version.py')
 
 if sys.version_info[:3] < (3, 4, 0):
@@ -41,6 +43,15 @@ setup(
     name="Qtum Electrum",
     version=version.ELECTRUM_VERSION,
     install_requires=requirements,
+    extras_require={
+        'full': ['Cython>=0.27', 'rlp==0.6.0', 'trezor[hidapi]>=0.9.0',
+                 'keepkey', 'btchip-python', 'websocket-client', 'hidapi']
+    },
+    dependency_links=[
+        'https://github.com/icodeface/eth-hash',
+        'https://github.com/icodeface/eth-utils',
+        'https://github.com/icodeface/eth-abi',
+    ],
     packages=[
         'qtum_electrum',
         'qtum_electrum_gui',
