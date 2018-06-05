@@ -223,13 +223,12 @@ class Abstract_Wallet(PrintError):
 
         self.load_transactions()
         self.load_local_history()
+        self.load_token_txs()
         self.build_spent_outpoints()
         self.check_history()
+        self.check_token_history()
         self.load_unverified_transactions()
         self.remove_local_transactions_we_dont_have()
-        self.load_token_txs()
-        self.check_token_history()
-
 
         # There is a difference between wallet.up_to_date and network.is_up_to_date().
         # network.is_up_to_date() returns true when all requests have been answered and processed
