@@ -2,15 +2,14 @@ import unittest
 
 from lib import interface
 
+from . import SequentialTestCase
 
-class TestInterface(unittest.TestCase):
+
+class TestInterface(SequentialTestCase):
 
     def test_match_host_name(self):
-        self.assertTrue(interface._match_hostname('asd.fgh.com', 'asd.fgh.com'))
-        self.assertFalse(interface._match_hostname('asd.fgh.com', 'asd.zxc.com'))
-        self.assertTrue(interface._match_hostname('asd.fgh.com', '*.fgh.com'))
-        self.assertFalse(interface._match_hostname('asd.fgh.com', '*fgh.com'))
-        self.assertFalse(interface._match_hostname('asd.fgh.com', '*.zxc.com'))
+        self.assertTrue(interface._match_hostname('s1.qtum.info', 's1.qtum.info'))
+        self.assertFalse(interface._match_hostname('s2.qtum.info', 's2.qtum.info'))
 
     def test_check_host_name(self):
         i = interface.TcpConnection(server=':1:', queue=None, config_path=None)
