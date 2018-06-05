@@ -347,7 +347,7 @@ class Abstract_Wallet(PrintError):
             hist = self.history[addr]
 
             for tx_hash, tx_height in hist:
-                if tx_hash in self.pruned_txo.values() or self.txi.get(tx_hash) or self.txo.get(tx_hash):
+                if tx_hash in self.pruned_txo.values():
                     continue
                 tx = self.transactions.get(tx_hash)
                 if tx is not None:
