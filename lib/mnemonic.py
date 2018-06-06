@@ -132,6 +132,7 @@ class Mnemonic(object):
         PBKDF2_ROUNDS = 2048
         mnemonic = normalize_text(mnemonic)
         passphrase = normalize_text(passphrase)
+        # Qtum
         return pbkdf2.PBKDF2(mnemonic, 'mnemonic' + passphrase, iterations=PBKDF2_ROUNDS, macmodule=hmac,
                              digestmodule=hashlib.sha512).read(64)
         # return pbkdf2.PBKDF2(mnemonic, 'electrum' + passphrase, iterations = PBKDF2_ROUNDS, macmodule = hmac, digestmodule = hashlib.sha512).read(64)

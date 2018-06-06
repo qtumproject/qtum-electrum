@@ -82,11 +82,11 @@ def needs_test_with_all_aes_implementations(func):
     return run_test
 
 
-class Test_bitcoin(SequentialTestCase):
+class Test_qtum(SequentialTestCase):
 
-    def test_libsecp256k1_is_available(self):
-        # we want the unit testing framework to test with libsecp256k1 available.
-        self.assertTrue(bool(ecc_fast._libsecp256k1))
+    # def test_libsecp256k1_is_available(self):
+    #     # we want the unit testing framework to test with libsecp256k1 available.
+    #     self.assertTrue(bool(ecc_fast._libsecp256k1))
 
     def test_pycryptodomex_is_available(self):
         # we want the unit testing framework to test with pycryptodomex available.
@@ -321,8 +321,8 @@ class Test_bitcoin(SequentialTestCase):
         self.assertEqual(address_to_script('QLcQXvM3BQwCuK8dKVRFdmHCbvyB6E6YVi'), '76a91400146378616571ce8869993119bf3eeae7d47aa588ac')
 
         # base58 P2SH
-        self.assertEqual(address_to_script('35ZqQJcBQMZ1rsv8aSuJ2wkC7ohUCQMJbT'), 'a9142a84cf00d47f699ee7bbc1dea5ec1bdecb4ac15487')
-        self.assertEqual(address_to_script('3PyjzJ3im7f7bcV724GR57edKDqoZvH7Ji'), 'a914f47c8954e421031ad04ecd8e7752c9479206b9d387')
+        self.assertEqual(address_to_script('MBmyiC29MUQSfPC2gKtdrazbSWHvGqJCnU'), 'a9142a84cf00d47f699ee7bbc1dea5ec1bdecb4ac15487')
+        self.assertEqual(address_to_script('MWBtJBTgiEWYQ7m17wFktku2dvSFZXqhWZ'), 'a914f47c8954e421031ad04ecd8e7752c9479206b9d387')
 
 
 class Test_Qtum_testnet(TestCaseForTestnet):
@@ -338,8 +338,8 @@ class Test_Qtum_testnet(TestCaseForTestnet):
         self.assertEqual(address_to_script('qew8b29dYAp1m87JwM5tTNFiwWhuKn2JEn'), '76a914ea77a182fcbefa04603f329bd2ed408c1b3f81d188ac')
 
         # base58 P2SH
-        self.assertEqual(address_to_script('2N3LSvr3hv5EVdfcrxg2Yzecf3SRvqyBE4p'), 'a9146eae23d8c4a941316017946fc761a7a6c85561fb87')
-        self.assertEqual(address_to_script('2NE4ZdmxFmUgwu5wtfoN2gVniyMgRDYq1kk'), 'a914e4567743d378957cd2ee7072da74b1203c1a7a0b87')
+        self.assertEqual(address_to_script('mPSf1yDXLV2t5KHFjo3uSvmPqTDT7u6Lzv'), 'a9144fade6b7b33e644f55d7bc250f615ff112f8d8c587')
+        self.assertEqual(address_to_script('me4XYkYa9wBFA33Q77Af4n4FpxiNLH6bkt'), 'a914f00866dbf068b55288d33e406a912212009a2efa87')
 
 
 class Test_xprv_xpub(SequentialTestCase):
@@ -655,22 +655,13 @@ class Test_seeds(SequentialTestCase):
     """ Test old and new seeds. """
 
     mnemonics = {
-        ('cell dumb heartbeat north boom tease ship baby bright kingdom rare squeeze', 'old'),
-        ('cell dumb heartbeat north boom tease ' * 4, 'old'),
-        ('cell dumb heartbeat north boom tease ship baby bright kingdom rare badword', ''),
-        ('cElL DuMb hEaRtBeAt nOrTh bOoM TeAsE ShIp bAbY BrIgHt kInGdOm rArE SqUeEzE', 'old'),
-        ('   cElL  DuMb hEaRtBeAt nOrTh bOoM  TeAsE ShIp    bAbY BrIgHt kInGdOm rArE SqUeEzE   ', 'old'),
-        # below seed is actually 'invalid old' as it maps to 33 hex chars
-        ('hurry idiot prefer sunset mention mist jaw inhale impossible kingdom rare squeeze', 'old'),
         ('cram swing cover prefer miss modify ritual silly deliver chunk behind inform able', 'standard'),
         ('cram swing cover prefer miss modify ritual silly deliver chunk behind inform', ''),
         ('ostrich security deer aunt climb inner alpha arm mutual marble solid task', 'standard'),
         ('OSTRICH SECURITY DEER AUNT CLIMB INNER ALPHA ARM MUTUAL MARBLE SOLID TASK', 'standard'),
         ('   oStRiCh sEcUrItY DeEr aUnT ClImB       InNeR AlPhA ArM MuTuAl mArBlE   SoLiD TaSk  ', 'standard'),
         ('x8', 'standard'),
-        ('science dawn member doll dutch real can brick knife deny drive list', '2fa'),
         ('science dawn member doll dutch real ca brick knife deny drive list', ''),
-        (' sCience dawn   member doll Dutch rEAl can brick knife deny drive  lisT', '2fa'),
         ('frost pig brisk excite novel report camera enlist axis nation novel desert', 'segwit'),
         ('  fRoSt pig brisk excIte novel rePort CamEra enlist axis nation nOVeL dEsert ', 'segwit'),
         ('9dk', 'segwit'),
