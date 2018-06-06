@@ -72,7 +72,7 @@ class QtumTestnet:
     WIF_PREFIX = 0xef
     ADDRTYPE_P2PKH = 120
     ADDRTYPE_P2SH = 110
-    SEGWIT_HRP = "tb"
+    SEGWIT_HRP = "tq"
     GENESIS = "0000e803ee215c0684ca0d2f9220594d3f828617972aad66feb2ba51f5e14222"
     GENESIS_BITS = 0x1f00ffff
     DEFAULT_PORTS = {'t': '51001', 's': '51002'}
