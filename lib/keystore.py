@@ -793,7 +793,10 @@ def load_keystore(storage, name):
 def from_seed(seed, passphrase, is_p2sh):
     t = seed_type(seed)
     if t in ['standard', 'segwit']:
-        derivarion = bip44_derivation(0)
+        if t == 'standard':
+            derivarion = bip44_derivation(0, bip43_purpose=44)
+        else:
+            derivarion = bip44_derivation(0, bip43_purpose=49)
         keystore = from_bip39_seed(seed, passphrase, derivarion)
         keystore.add_seed(seed)
         keystore.passphrase = passphrase
