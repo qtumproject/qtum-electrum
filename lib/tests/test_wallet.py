@@ -48,7 +48,7 @@ class TestWalletStorage(WalletTestCase):
         with open(self.wallet_path, "w") as f:
             contents = f.write(contents)
 
-        storage = WalletStorage(self.wallet_path, manual_upgrades=True)
+        storage = WalletStorage(self.wallet_path)
         self.assertEqual("b", storage.get("a"))
         self.assertEqual("d", storage.get("c"))
 
