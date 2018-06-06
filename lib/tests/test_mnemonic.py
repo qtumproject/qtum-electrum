@@ -12,8 +12,7 @@ class Test_NewMnemonic(SequentialTestCase):
     def test_to_seed(self):
         seed = mnemonic.Mnemonic.mnemonic_to_seed(mnemonic='foobar', passphrase='none')
         self.assertEqual(bh2u(seed),
-                          '741b72fd15effece6bfe5a26a52184f66811bd2be363190e07a42cca442b1a5b'
-                          'b22b3ad0eb338197287e6d314866c7fba863ac65d3f156087a5052ebc7157fce')
+                          '30a7f31981208c55102f15de25c5d9b9cacabec0dbc67eb4bcb18335e311a32cd6cd3f59c712d1671d7d7c88a3799896558aa717aa4fd612488d01313dc1c187')
 
     def test_random_seeds(self):
         iters = 10
