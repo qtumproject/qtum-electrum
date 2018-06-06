@@ -797,7 +797,7 @@ def from_seed(seed, passphrase, is_p2sh=True):
             if is_p2sh:
                 derivarion = bip44_derivation(0, bip43_purpose=49)
             else:
-                derivarion = bip44_derivation(0, bip43_purpose=85)
+                derivarion = bip44_derivation(0, bip43_purpose=84)
         else:
             derivarion = bip44_derivation(0, bip43_purpose=44)
         keystore = from_bip39_seed(seed, passphrase, derivarion)
