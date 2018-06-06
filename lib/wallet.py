@@ -1741,7 +1741,7 @@ class Abstract_Wallet(PrintError):
         token_tx_list = self.storage.get('token_txs', {})
         # token_hist_txids = reduce(lambda x, y: x+y, list([[y[0] for y in x] for x in self.token_history.values()]))
         if self.token_history:
-            token_hist_txids = [x[0] for x in reduce(lambda x, y: x+y, self.token_history.values())]
+            token_hist_txids = [x2[0] for x2 in reduce(lambda x1, y1: x1+y1, self.token_history.values())]
         else:
             token_hist_txids = []
         self.token_txs = {}
