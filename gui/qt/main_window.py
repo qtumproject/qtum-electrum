@@ -33,7 +33,6 @@ import base64
 import binascii
 import eth_abi
 
-
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
@@ -42,7 +41,7 @@ from qtum_electrum import keystore, constants, ecc
 from qtum_electrum.qtum import COIN, is_address, TYPE_ADDRESS, TYPE_SCRIPT, is_hash160, eth_abi_encode
 from qtum_electrum.plugins import run_hook
 from qtum_electrum.i18n import _
-from qtum_electrum.util import (bh2u, bfh, format_time, format_satoshis, PrintError, format_satoshis_plain,
+from qtum_electrum.util import (bh2u, bfh, format_time, format_satoshis, format_fee_satoshis,PrintError, format_satoshis_plain,
                                 NotEnoughFunds, UserCancelled, profiler, export_meta, import_meta, open_browser,
                                 InvalidPassword)
 from qtum_electrum import Transaction
@@ -658,14 +657,17 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.require_fee_update = False
 
     def format_amount(self, x, is_diff=False, whitespaces=False):
-        return format_satoshis(x, is_diff, self.num_zeros, self.decimal_point, whitespaces)
+        return format_satoshis(x, self.num_zeros, self.decimal_point, is_diff=is_diff, whitespaces=whitespaces)
 
     def format_amount_and_units(self, amount):
         text = self.format_amount(amount) + ' '+ self.base_unit()
-        x = self.fx.format_amount_and_units(amount)
+        x = self.fx.format_amount_and_units(amount) if self.fx else None
         if text and x:
             text += ' (%s)'%x
         return text
+
+    def format_fee_rate(self, fee_rate):
+        return format_fee_satoshis(fee_rate/1000, self.num_zeros) + ' sat/byte'
 
     def get_decimal_point(self):
         return self.decimal_point
