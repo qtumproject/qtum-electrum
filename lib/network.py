@@ -557,8 +557,8 @@ class Network(util.DaemonThread):
             if error is None and result is not None and result > 0:
                 self.relay_fee = int(result * COIN)
                 self.print_error("relayfee", self.relay_fee)
-        elif method == 'blockchain.block.get_chunk':
-            self.on_get_chunk(interface, response)
+        elif method == 'blockchain.block.headers':
+            self.on_block_headers(interface, response)
         elif method == 'blockchain.block.get_header':
             self.on_get_header(interface, response)
 
@@ -789,38 +789,42 @@ class Network(util.DaemonThread):
         if index in self.requested_chunks:
             return
         interface.print_error("requesting chunk %d" % index)
-        self.queue_request('blockchain.block.get_chunk', [index], interface)
+        height = index * 2016
+        self.queue_request('blockchain.block.headers', [height, 2016],
+                           interface)
         self.requested_chunks.add(index)
 
-    def on_get_chunk(self, interface, response):
+    def on_block_headers(self, interface, response):
         '''Handle receiving a chunk of block headers'''
         error = response.get('error')
         result = response.get('result')
         params = response.get('params')
+        blockchain = interface.blockchain
         if result is None or params is None or error is not None:
             print_error('on get chunk error', error, result, params)
             return
 
-        index = params[0]
-        # Ignore unsolicited chunks
-        if index not in self.requested_chunks:
+        height = params[0]
+        index = height // 2016
+        if index * 2016 != height or index not in self.requested_chunks:
             interface.print_error("received chunk %d (unsolicited)" % index)
             return
         else:
             interface.print_error("received chunk %d" % index)
         self.requested_chunks.remove(index)
-        connect = interface.blockchain.connect_chunk(index, result)
+        hexdata = result['hex']
+        connect = blockchain.connect_chunk(index, hexdata)
         # If not finished, get the next chunk
         if not connect:
             self.connection_down(interface.server)
             return
-        if interface.blockchain.height() < interface.tip:
+        # If not finished, get the next chunk
+        if index >= len(blockchain.checkpoints) and blockchain.height() < interface.tip:
             self.request_chunk(interface, index+1)
         else:
-            interface.request = None
             interface.mode = 'default'
-            interface.print_error('catch up done', interface.blockchain.height())
-            interface.blockchain.catch_up = None
+            interface.print_error('catch up done', blockchain.height())
+            blockchain.catch_up = None
         self.notify('updated')
 
     def request_header(self, interface, height):
@@ -847,7 +851,14 @@ class Network(util.DaemonThread):
         chain = blockchain.check_header(header)
 
         if interface.mode == 'backward':
-            if chain:
+            can_connect = blockchain.can_connect(header)
+            if can_connect and can_connect.catch_up is None:
+                interface.mode = 'catch_up'
+                interface.blockchain = can_connect
+                interface.blockchain.save_header(header)
+                next_height = height + 1
+                interface.blockchain.catch_up = interface.server
+            elif chain:
                 interface.print_error("binary search")
                 interface.mode = 'binary'
                 interface.blockchain = chain
