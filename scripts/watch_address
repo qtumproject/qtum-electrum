@@ -4,12 +4,15 @@ import sys
 import time
 from qtum_electrum import SimpleConfig, Network
 from qtum_electrum.util import print_msg, json_encode
+from qtum_electrum import qtum
 
 try:
     addr = sys.argv[1]
 except Exception:
     print("usage: watch_address <qtum_address>")
     sys.exit(1)
+
+sh = qtum.address_to_scripthash(addr)
 
 # start network
 c = SimpleConfig()
@@ -26,7 +29,7 @@ if not network.is_connected():
 
 # 2. send the subscription
 callback = lambda response: print_msg(json_encode(response.get('result')))
-network.send([('blockchain.address.subscribe',[addr])], callback)
+network.send([('blockchain.scripthash.subscribe',[sh])], callback)
 
 # 3. wait for results
 while network.is_connected():
