@@ -1778,6 +1778,13 @@ class Abstract_Wallet(PrintError):
             self.token_txs[tx_hash] = tx
             return True
 
+    def delete_token(self, key):
+        with self.token_lock:
+            if key in self.tokens:
+                self.tokens.pop(key)
+            if key in self.token_history:
+                self.token_history.pop(key)
+
     def get_token_history(self, contract_addr=None, bind_addr=None, from_timestamp=None, to_timestamp=None):
         with self.lock, self.token_lock:
             h = []  # from, to, amount, token, txid, height, conf, timestamp, call_index, log_index

@@ -3117,7 +3117,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         if not self.question(_("Remove {} from your list of tokens?".format(
                 self.tokens[key].name))):
             return False
-        self.tokens.pop(key)
+        self.wallet.delete_token(key)
         self.token_balance_list.update()
         self.token_hist_list.update()
 
