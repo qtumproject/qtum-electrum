@@ -814,12 +814,11 @@ class Network(util.DaemonThread):
         self.requested_chunks.remove(index)
         hexdata = result['hex']
         connect = blockchain.connect_chunk(index, hexdata)
-        # If not finished, get the next chunk
         if not connect:
             self.connection_down(interface.server)
             return
         # If not finished, get the next chunk
-        if index >= len(blockchain.checkpoints) and blockchain.height() < interface.tip:
+        if blockchain.height() < interface.tip:
             self.request_chunk(interface, index+1)
         else:
             interface.mode = 'default'
