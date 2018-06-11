@@ -4,7 +4,7 @@ import sys
 
 from qtum_electrum.util import bfh, bh2u, versiontuple, UserCancelled
 from qtum_electrum.qtum import (b58_address_to_hash160, xpub_from_pubkey,
-                                TYPE_ADDRESS, TYPE_SCRIPT, qtum_addr_to_bitcoin_addr)
+                                TYPE_ADDRESS, TYPE_SCRIPT, qtum_addr_to_bitcoin_addr, deserialize_xpub)
 from qtum_electrum import constants
 from qtum_electrum.i18n import _
 from qtum_electrum.plugins import BasePlugin, Device
@@ -78,7 +78,7 @@ class TrezorPlugin(HW_PluginBase):
     #
     #  class-static variables: client_class, firmware_URL, handler_class,
     #     libraries_available, libraries_URL, minimum_firmware,
-    #     wallet_class, ckd_public, types
+    #     wallet_class, types
 
     firmware_URL = 'https://wallet.trezor.io'
     libraries_URL = 'https://github.com/trezor/python-trezor'
@@ -114,10 +114,8 @@ class TrezorPlugin(HW_PluginBase):
 
         from . import client
         from . import transport
-        import trezorlib.ckd_public
         import trezorlib.messages
         self.client_class = client.TrezorClient
-        self.ckd_public = trezorlib.ckd_public
         self.types = trezorlib.messages
         self.DEVICE_IDS = ('TREZOR',)
 
@@ -263,6 +261,17 @@ class TrezorPlugin(HW_PluginBase):
             client.load_device_by_xprv(item, pin, passphrase_protection,
                                        label, language)
 
+    def _make_node_path(self, xpub, address_n):
+        _, depth, fingerprint, child_num, chain_code, key = deserialize_xpub(xpub)
+        node = self.types.HDNodeType(
+            depth=depth,
+            fingerprint=int.from_bytes(fingerprint, 'big'),
+            child_num=int.from_bytes(child_num, 'big'),
+            chain_code=chain_code,
+            public_key=key,
+        )
+        return self.types.HDNodePathType(node=node, address_n=address_n)
+
     def setup_device(self, device_info, wizard, purpose):
         devmgr = self.device_manager()
         device_id = device_info.device.id_
@@ -328,8 +337,7 @@ class TrezorPlugin(HW_PluginBase):
             client.get_address(self.get_coin_name(), address_n, True, script_type=script_type)
         else:
             def f(xpub):
-                node = self.ckd_public.deserialize(xpub)
-                return self.types.HDNodePathType(node=node, address_n=[change, index])
+                return self._make_node_path(xpub, [change, index])
 
             pubkeys = wallet.get_public_keys(address)
             # sort xpubs using the order of pubkeys
@@ -367,8 +375,7 @@ class TrezorPlugin(HW_PluginBase):
                             else:
                                 xpub = xpub_from_pubkey(0, bfh(x_pubkey))
                                 s = []
-                            node = self.ckd_public.deserialize(xpub)
-                            return self.types.HDNodePathType(node=node, address_n=s)
+                            return self._make_node_path(xpub, s)
 
                         pubkeys = list(map(f, x_pubkeys))
                         multisig = self.types.MultisigRedeemScriptType(
@@ -433,8 +440,7 @@ class TrezorPlugin(HW_PluginBase):
                 else:
                     script_type = self.types.OutputScriptType.PAYTOMULTISIG
                 address_n = self.client_class.expand_path("/%d/%d" % index)
-                nodes = map(self.ckd_public.deserialize, xpubs)
-                pubkeys = [self.types.HDNodePathType(node=node, address_n=address_n) for node in nodes]
+                pubkeys = [self._make_node_path(xpub, address_n) for xpub in xpubs]
                 multisig = self.types.MultisigRedeemScriptType(
                     pubkeys=pubkeys,
                     signatures=[b''] * len(pubkeys),
