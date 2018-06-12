@@ -348,7 +348,7 @@ class Abstract_Wallet(PrintError):
                     continue
                 tx = self.transactions.get(tx_hash)
                 if tx is not None:
-                    self.add_transaction(tx_hash, tx)
+                    self.add_transaction(tx_hash, tx, allow_unrelated=True)
                     save = True
         if save:
             self.save_transactions()
@@ -845,7 +845,7 @@ class Abstract_Wallet(PrintError):
                 conflicting_txns -= {txid}
             return conflicting_txns
 
-    def add_transaction(self, tx_hash, tx):
+    def add_transaction(self, tx_hash, tx, allow_unrelated=False):
         assert tx_hash, 'none tx_hash'
         assert tx, 'empty tx'
         assert tx.is_complete(), 'incomplete tx'
@@ -858,10 +858,15 @@ class Abstract_Wallet(PrintError):
             # being is_mine, as we roll the gap_limit forward
             is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinstake'
             tx_height = self.get_tx_height(tx_hash)[0]
-            is_mine = any([self.is_mine(txin['address']) for txin in tx.inputs()])
-            is_for_me = any([self.is_mine(self.get_txout_address(txo)) for txo in tx.outputs()])
-            if not is_mine and not is_for_me:
-                raise UnrelatedTransactionException()
+
+            if not allow_unrelated:
+                # note that during sync, if the transactions are not properly sorted,
+                # it could happen that we think tx is unrelated but actually one of the inputs is is_mine.
+                # this is the main motivation for allow_unrelated
+                is_mine = any([self.is_mine(txin['address']) for txin in tx.inputs()])
+                is_for_me = any([self.is_mine(self.get_txout_address(txo)) for txo in tx.outputs()])
+                if not is_mine and not is_for_me:
+                    raise UnrelatedTransactionException()
             # Find all conflicting transactions.
             # In case of a conflict,
             #     1. confirmed > mempool > local
@@ -976,8 +981,8 @@ class Abstract_Wallet(PrintError):
             self.txo.pop(tx_hash, None)
 
     def receive_tx_callback(self, tx_hash, tx, tx_height):
-        self.add_transaction(tx_hash, tx)
         self.add_unverified_tx(tx_hash, tx_height)
+        self.add_transaction(tx_hash, tx, allow_unrelated=True)
 
     def receive_history_callback(self, addr, hist, tx_fees):
         with self.lock:
@@ -1706,6 +1711,7 @@ class Abstract_Wallet(PrintError):
     def get_depending_transactions(self, tx_hash):
         """Returns all (grand-)children of tx_hash in this wallet."""
         children = set()
+        # TODO rewrite this to use self.spent_outpoints
         for other_hash, tx in self.transactions.items():
             for input in (tx.inputs()):
                 if input["prevout_hash"] == tx_hash:
@@ -1749,8 +1755,8 @@ class Abstract_Wallet(PrintError):
         self.add_tx_receipt(tx_hash, tx_receipt)
 
     def receive_token_tx_callback(self, tx_hash, tx, tx_height):
-        self.add_token_transaction(tx_hash, tx)
         self.add_unverified_tx(tx_hash, tx_height)
+        self.add_token_transaction(tx_hash, tx)
 
     def add_tx_receipt(self, tx_hash, tx_receipt):
         assert tx_hash, 'none tx_hash'
