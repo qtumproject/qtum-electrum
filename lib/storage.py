@@ -33,12 +33,12 @@ import pbkdf2, hmac, hashlib
 import base64
 import zlib
 
-from .i18n import _
-from .util import PrintError, profiler, InvalidPassword, export_meta, import_meta, print_error, bfh
+from .util import PrintError, profiler, InvalidPassword, \
+    export_meta, import_meta, print_error, bfh, WalletFileException
 from .plugins import run_hook, plugin_loaders
 from .keystore import bip44_derivation
-from . import bitcoin
 from . import ecc
+from . import util
 
 # seed_version is now used for the version of the wallet file
 
@@ -335,6 +335,8 @@ class WalletStorage(PrintError):
         self.write()
 
     def convert_wallet_type(self):
+        if not self._is_upgrade_method_needed(0, 13):
+            return
         wallet_type = self.get('wallet_type')
         if wallet_type == 'btchip': wallet_type = 'ledger'
         if self.get('keystore') or self.get('x1/') or wallet_type=='imported':
@@ -421,6 +423,8 @@ class WalletStorage(PrintError):
         self.put('key_type', None)
 
     def convert_imported(self):
+        if not self._is_upgrade_method_needed(0, 13):
+            return
         # '/x' is the internal ID for imported accounts
         d = self.get('accounts', {}).get('/x', {}).get('imported',{})
         if not d:
@@ -447,7 +451,20 @@ class WalletStorage(PrintError):
             raise Exception('no addresses or privkeys')
 
     def convert_account(self):
+        if not self._is_upgrade_method_needed(0, 13):
+            return
         self.put('accounts', None)
+
+    def _is_upgrade_method_needed(self, min_version, max_version):
+        cur_version = self.get_seed_version()
+        if cur_version > max_version:
+            return False
+        elif cur_version < min_version:
+            raise WalletFileException(
+                'storage upgrade: unexpected version {} (should be {}-{})'
+                .format(cur_version, min_version, max_version))
+        else:
+            return True
 
     def get_action(self):
         action = run_hook('get_action', self)
