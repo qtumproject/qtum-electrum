@@ -32,6 +32,7 @@ import stat
 import pbkdf2, hmac, hashlib
 import base64
 import zlib
+from collections import defaultdict
 
 from .util import PrintError, profiler, InvalidPassword, \
     export_meta, import_meta, print_error, bfh, WalletFileException
@@ -44,7 +45,7 @@ from . import util
 
 OLD_SEED_VERSION = 4        # electrum versions < 2.0
 NEW_SEED_VERSION = 11       # electrum versions >= 2.0
-FINAL_SEED_VERSION = 14  # electrum >= 2.7 will set this to prevent
+FINAL_SEED_VERSION = 15  # electrum >= 2.7 will set this to prevent
                             # old versions from overwriting new format
 
 
@@ -222,8 +223,8 @@ class WalletStorage(PrintError):
 
     def put(self, key, value):
         try:
-            json.dumps(key)
-            json.dumps(value)
+            json.dumps(key, cls=util.MyEncoder)
+            json.dumps(value, cls=util.MyEncoder)
         except:
             self.print_error("json error: cannot save", key)
             return
@@ -238,8 +239,6 @@ class WalletStorage(PrintError):
 
     @profiler
     def write(self):
-        # this ensures that previous versions of electrum won't open the wallet
-        self.put('seed_version', FINAL_SEED_VERSION)
         with self.lock:
             self._write()
 
@@ -249,7 +248,7 @@ class WalletStorage(PrintError):
             return
         if not self.modified:
             return
-        s = json.dumps(self.data, indent=4, sort_keys=True)
+        s = json.dumps(self.data, indent=4, sort_keys=True, cls=util.MyEncoder)
         if self.pubkey:
             s = bytes(s, 'utf8')
             c = zlib.compress(s)
@@ -328,10 +327,14 @@ class WalletStorage(PrintError):
     def requires_upgrade(self):
         return self.file_exists() and self.get_seed_version() < FINAL_SEED_VERSION
 
+    @profiler
     def upgrade(self):
+        self.print_error('upgrading wallet format')
         self.convert_imported()
         self.convert_wallet_type()
         self.convert_account()
+        self.convert_version_15()
+        self.put('seed_version', FINAL_SEED_VERSION)  # just to be sure
         self.write()
 
     def convert_wallet_type(self):
@@ -465,6 +468,25 @@ class WalletStorage(PrintError):
                 .format(cur_version, min_version, max_version))
         else:
             return True
+
+    def convert_version_15(self):
+        # delete pruned_txo; construct spent_outpoints
+        if not self._is_upgrade_method_needed(14, 14):
+            return
+        self.put('pruned_txo', None)
+        from .transaction import Transaction
+        transactions = self.get('transactions', {})  # txid -> raw_tx
+        spent_outpoints = defaultdict(dict)
+        for txid, raw_tx in transactions.items():
+            tx = Transaction(raw_tx)
+            for txin in tx.inputs():
+                if txin['type'] == 'coinbase':
+                    continue
+                prevout_hash = txin['prevout_hash']
+                prevout_n = txin['prevout_n']
+                spent_outpoints[prevout_hash][prevout_n] = txid
+        self.put('spent_outpoints', spent_outpoints)
+        self.put('seed_version', 15)
 
     def get_action(self):
         action = run_hook('get_action', self)
