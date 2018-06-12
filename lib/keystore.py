@@ -32,7 +32,7 @@ from . import constants
 from .ecc import string_to_number, number_to_string
 from .crypto import pw_decode, pw_encode
 from .mnemonic import Mnemonic, load_wordlist
-from .util import PrintError, InvalidPassword, hfu
+from .util import PrintError, InvalidPassword, hfu, WalletFileException, QtumException
 
 
 class KeyStore(PrintError):
@@ -690,7 +690,8 @@ def xpubkey_to_address(x_pubkey):
         mpk, s = Old_KeyStore.parse_xpubkey(x_pubkey)
         pubkey = Old_KeyStore.get_pubkey_from_mpk(mpk, s[0], s[1])
     else:
-        raise Exception("Cannot parse pubkey")
+        raise QtumException("Cannot parse pubkey. prefix: {}"
+                            .format(x_pubkey[0:2]))
     if pubkey:
         address = public_key_to_p2pkh(bfh(pubkey))
     return pubkey, address
@@ -712,7 +713,7 @@ def hardware_keystore(d):
     if hw_type in hw_keystores:
         constructor = hw_keystores[hw_type]
         return constructor(d)
-    raise Exception('unknown hardware type', hw_type)
+    raise WalletFileException('unknown hardware type', hw_type)
 
 
 def is_old_mpk(mpk):
@@ -768,11 +769,12 @@ def from_private_key_list(text):
 
 
 def load_keystore(storage, name):
-    w = storage.get('wallet_type', 'standard')
     d = storage.get(name, {})
     t = d.get('type')
     if not t:
-        raise Exception('wallet format requires update')
+        raise WalletFileException(
+            'wallet format requires update\n'
+            'Cannot find keystore for name {}'.format(name))
     if t == 'old':
         k = Old_KeyStore(d)
     elif t == 'imported':
@@ -786,7 +788,8 @@ def load_keystore(storage, name):
     elif t == 'qtcore':
         k = Qt_Core_Keystore(d)
     else:
-        raise Exception('unknown wallet type', t)
+        raise WalletFileException(
+            'Unknown type {} for keystore named {}'.format(t, name))
     return k
 
 
@@ -805,7 +808,7 @@ def from_seed(seed, passphrase, is_p2sh=True):
         keystore.passphrase = passphrase
         return keystore
     else:
-        raise Exception(t)
+        raise QtumException('Unexpected seed type {}'.format(t))
 
 
 def from_bip39_seed(seed, passphrase, derivation):
@@ -854,7 +857,7 @@ def from_master_key(text):
     elif is_xpub(text):
         k = from_xpub(text)
     else:
-        raise Exception('Invalid key')
+        raise QtumException('Invalid key')
     return k
 
 

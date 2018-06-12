@@ -41,7 +41,7 @@ from qtum_electrum.i18n import _, set_language
 from qtum_electrum.plugins import run_hook
 from qtum_electrum.base_wizard import GoBack
 from qtum_electrum import SimpleConfig, Wallet, WalletStorage
-from qtum_electrum.util import DebugMem, UserCancelled, InvalidPassword, print_error
+from qtum_electrum.util import (DebugMem, UserCancelled, InvalidPassword, print_error, WalletFileException, QtumException)
 from .installwizard import InstallWizard
 
 
@@ -202,7 +202,15 @@ class ElectrumGui:
                 pass
             except GoBack as e:
                 print_error('[start_new_window] Exception caught (GoBack)', e)
-            wizard.terminate()
+            except (WalletFileException, QtumException) as e:
+                traceback.print_exc(file=sys.stderr)
+                d = QMessageBox(QMessageBox.Warning, _('Error'),
+                                _('Cannot load wallet') + ' (2):\n' + str(e))
+                d.exec_()
+                return
+            finally:
+                wizard.terminate()
+
             if not wallet:
                 return
 

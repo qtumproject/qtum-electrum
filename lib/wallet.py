@@ -40,7 +40,7 @@ from operator import itemgetter
 from functools import reduce
 
 from .i18n import _
-from .util import NotEnoughFunds, PrintError, UserCancelled, profiler, format_satoshis, InvalidPassword
+from .util import NotEnoughFunds, PrintError, UserCancelled, profiler, format_satoshis, InvalidPassword, WalletFileException
 from .qtum import *
 from .version import *
 from .keystore import load_keystore, Hardware_KeyStore
@@ -373,7 +373,7 @@ class Abstract_Wallet(PrintError):
         addrs = self.get_receiving_addresses()
         if len(addrs) > 0:
             if not is_address(addrs[0]):
-                raise Exception('The addresses in this wallet are not qtum addresses.')
+                raise WalletFileException('The addresses in this wallet are not qtum addresses.')
 
     def synchronize(self, create_new=False):
         pass

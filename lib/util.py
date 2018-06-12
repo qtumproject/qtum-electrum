@@ -78,6 +78,13 @@ class FileExportFailed(Exception):
     def __str__(self):
         return _("Failed to export to file.") + "\n" + self.message
 
+
+class WalletFileException(Exception): pass
+
+
+class QtumException(Exception): pass
+
+
 # Throw this exception to unwind the stack like when an error occurs.
 # However unlike other exceptions the user won't be informed.
 class UserCancelled(Exception):
