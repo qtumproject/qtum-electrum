@@ -20,6 +20,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
+import sys
 import os
 import json
 import errno
@@ -32,7 +33,8 @@ import time
 from collections import defaultdict
 import re
 import socks
-
+import dns
+import dns.resolver
 from . import bitcoin
 from . import blockchain
 from . import util
@@ -414,7 +416,23 @@ class Network(util.DaemonThread):
             socket.getaddrinfo = lambda *args: [(socket.AF_INET, socket.SOCK_STREAM, 6, '', (args[0], args[1]))]
         else:
             socket.socket = socket._socketobject
-            socket.getaddrinfo = socket._getaddrinfo
+            if sys.platform == 'win32':
+                # on Windows, socket.getaddrinfo takes a mutex, and might hold it for up to 10 seconds
+                # when dns-resolving. to speed it up drastically, we resolve dns ourselves, outside that lock
+                def fast_getaddrinfo(host, *args, **kwargs):
+                    try:
+                        if str(host) not in ('localhost', 'localhost.',):
+                            answers = dns.resolver.query(host)
+                            addr = str(answers[0])
+                        else:
+                            addr = host
+                    except:
+                        raise socket.gaierror(11001, 'getaddrinfo failed')
+                    else:
+                        return socket._getaddrinfo(addr, *args, **kwargs)
+                socket.getaddrinfo = fast_getaddrinfo
+            else:
+                socket.getaddrinfo = socket._getaddrinfo
 
     def start_network(self, protocol, proxy):
         assert not self.interface and not self.interfaces
