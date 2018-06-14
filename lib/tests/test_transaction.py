@@ -8,8 +8,8 @@ from lib.util import bh2u, bfh
 from . import SequentialTestCase
 from .test_qtum import needs_test_with_all_ecc_implementations
 
-unsigned_blob = '01000000012a5c9a94fcde98f5581cd00162c60a13936ceb75389ea65bf38633b424eb4031000000005701ff4c53ff0488b21e03ef2afea18000000089689bff23e1e7fb2f161daa37270a97a3d8c2e537584b2d304ecb47b86d21fc021b010d3bd425f8cf2e04824bfdf1f1f5ff1d51fadd9a41f9e3fb8dd3403b1bfe00000000ffffffff0140420f00000000001976a914230ac37834073a42146f11ef8414ae929feaafc388ac00000000'
-signed_blob = '0200000001f8e493210c81fa216cece110d76a18949f51571f5d7137e6b01e45b675b0105a000000006a473044022041a23ce4b2dfaa97f9e3474fb0403e2cea7612b261a99f0306100d6438165ac4022068696e52bfbd6dc173f35537b45f37f228dccce796f46de77aa08655ad1938d1012102cd731b7e7a0d7baf1ed755af3a5177597013d90ca84ed2e64090f594aecb73e1feffffff02ef1108a2440000001976a914532cf245b7344a556a043da781222c60caaf56f488ac00e40b54020000001976a9141875f7bf6c817a6da266dbeeb152ea14efb341b388acf09f0200'
+unsigned_blob = '45505446ff000100000001d04069de4a1e5c166e3fd30bb3a76b4606010ff447dce4d1989301b97f96a242000000005701ff4c53ff0488b21e034f85f5168000000053c5dceed71fd3485535da3783b65e1b00c09211c36920e111fea04a23f944750244c3c7fb97e543108b1eef410f7c657a54c9f46cc9ad52f4f1d928b89900eb5e00001000feffffff0210270000000000001976a9140a154c00d8a50b7c2336dafe42700e614f46b71488acec1f9400000000001976a9148f72f5aa0234ecc8a0d629845969c89319f3a78588ac00000000'
+signed_blob = '0100000001d04069de4a1e5c166e3fd30bb3a76b4606010ff447dce4d1989301b97f96a242000000006a47304402204f193d69a06ee58a1894b42168c3fc11d36d578645e47f117a0f1936d6aff5ed022026505b6ea4b344a533d97fbd9ab28fa844d5ab777979088c6267efe71262df9e0121031ed1acd7c54f1c8efd3f038819da1e300ac0fdc499fb8bdf743e52f243141cf1feffffff0210270000000000001976a9140a154c00d8a50b7c2336dafe42700e614f46b71488acec1f9400000000001976a9148f72f5aa0234ecc8a0d629845969c89319f3a78588ac00000000'
 v2_blob = "0200000001191601a44a81e061502b7bfbc6eaa1cef6d1e6af5308ef96c9342f71dbf4b9b5000000006b483045022100a6d44d0a651790a477e75334adfb8aae94d6612d01187b2c02526e340a7fd6c8022028bdf7a64a54906b13b145cd5dab21a26bd4b85d6044e9b97bceab5be44c2a9201210253e8e0254b0c95776786e40984c1aa32a7d03efa6bdacdea5f421b774917d346feffffff026b20fa04000000001976a914024db2e87dd7cfd0e5f266c5f212e21a31d805a588aca0860100000000001976a91421919b94ae5cefcdf0271191459157cdb41c4cbf88aca6240700"
 signed_segwit_blob = "01000000000101b66d722484f2db63e827ebf41d02684fed0c6550e85015a6c9d41ef216a8a6f00000000000fdffffff0280c3c90100000000160014b65ce60857f7e7892b983851c2a8e3526d09e4ab64bac30400000000160014c478ebbc0ab2097706a98e10db7cf101839931c4024730440220789c7d47f876638c58d98733c30ae9821c8fa82b470285dcdf6db5994210bf9f02204163418bbc44af701212ad42d884cc613f3d3d831d2d0cc886f767cca6e0235e012103083a6dc250816d771faa60737bfe78b23ad619f6b458e0a1f1688e3a0605e79c00000000"
 
@@ -57,40 +57,38 @@ class TestBCDataStream(SequentialTestCase):
 
 class TestTransaction(SequentialTestCase):
 
-    @needs_test_with_all_ecc_implementations
     def test_tx_unsigned(self):
         expected = {
-            'inputs': [{
-                'type': 'p2pkh',
-                'address': '1446oU3z268EeFgfcwJv6X2VBXHfoYxfuD',
-                'num_sig': 1,
-                'prevout_hash': '3140eb24b43386f35ba69e3875eb6c93130ac66201d01c58f598defc949a5c2a',
-                'prevout_n': 0,
-                'pubkeys': ['02e61d176da16edd1d258a200ad9759ef63adf8e14cd97f53227bae35cdb84d2f6'],
-                'scriptSig': '01ff4c53ff0488b21e03ef2afea18000000089689bff23e1e7fb2f161daa37270a97a3d8c2e537584b2d304ecb47b86d21fc021b010d3bd425f8cf2e04824bfdf1f1f5ff1d51fadd9a41f9e3fb8dd3403b1bfe00000000',
-                'sequence': 4294967295,
-                'signatures': [None],
-                'x_pubkeys': ['ff0488b21e03ef2afea18000000089689bff23e1e7fb2f161daa37270a97a3d8c2e537584b2d304ecb47b86d21fc021b010d3bd425f8cf2e04824bfdf1f1f5ff1d51fadd9a41f9e3fb8dd3403b1bfe00000000']}],
-            'lockTime': 0,
-            'outputs': [{
-                'address': '14CHYaaByjJZpx4oHBpfDMdqhTyXnZ3kVs',
-                'prevout_n': 0,
-                'scriptPubKey': '76a914230ac37834073a42146f11ef8414ae929feaafc388ac',
-                'type': TYPE_ADDRESS,
-                'value': 1000000}],
-                'version': 1
-        }
+            'partial': True,
+            'version': 1,
+            'segwit_ser': False,
+            'inputs': [
+                {'prevout_hash': '42a2967fb9019398d1e4dc47f40f0106466ba7b30bd33f6e165c1e4ade6940d0',
+                 'prevout_n': 0,
+                 'scriptSig': '01ff4c53ff0488b21e034f85f5168000000053c5dceed71fd3485535da3783b65e1b00c09211c36920e111fea04a23f944750244c3c7fb97e543108b1eef410f7c657a54c9f46cc9ad52f4f1d928b89900eb5e00001000',
+                 'sequence': 4294967294,
+                 'type': 'p2pkh',
+                 'address': 'QVQdgKJ6z9aPGm6vQDTFoauSS6VjoCGno5',
+                 'num_sig': 1,
+                 'x_pubkeys': ['ff0488b21e034f85f5168000000053c5dceed71fd3485535da3783b65e1b00c09211c36920e111fea04a23f944750244c3c7fb97e543108b1eef410f7c657a54c9f46cc9ad52f4f1d928b89900eb5e00001000'],
+                 'pubkeys': ['031ed1acd7c54f1c8efd3f038819da1e300ac0fdc499fb8bdf743e52f243141cf1'],
+                 'signatures': [None]}],
+            'outputs': [
+                {'value': 10000, 'type': 0, 'address': 'QMXJNx76h4cG9xgAhjGn2a9Ppq8SdqAYLh', 'scriptPubKey': '76a9140a154c00d8a50b7c2336dafe42700e614f46b71488ac', 'prevout_n': 0},
+                {'value': 9707500, 'type': 0, 'address': 'QZgUTGMC5KSMqPSL23qmDYxRkJHBEBXi41', 'scriptPubKey': '76a9148f72f5aa0234ecc8a0d629845969c89319f3a78588ac', 'prevout_n': 1}],
+            'lockTime': 0}
+
         tx = transaction.Transaction(unsigned_blob)
         self.assertEqual(tx.deserialize(), expected)
         self.assertEqual(tx.deserialize(), None)
 
         self.assertEqual(tx.as_dict(), {'hex': unsigned_blob, 'complete': False, 'final': True})
-        self.assertEqual(tx.get_outputs(), [('14CHYaaByjJZpx4oHBpfDMdqhTyXnZ3kVs', 1000000)])
-        self.assertEqual(tx.get_output_addresses(), ['14CHYaaByjJZpx4oHBpfDMdqhTyXnZ3kVs'])
+        self.assertEqual(tx.get_outputs(), [('QMXJNx76h4cG9xgAhjGn2a9Ppq8SdqAYLh', 10000), ('QZgUTGMC5KSMqPSL23qmDYxRkJHBEBXi41', 9707500)])
+        self.assertEqual(tx.get_output_addresses(), ['QMXJNx76h4cG9xgAhjGn2a9Ppq8SdqAYLh', 'QZgUTGMC5KSMqPSL23qmDYxRkJHBEBXi41'])
 
-        self.assertTrue(tx.has_address('14CHYaaByjJZpx4oHBpfDMdqhTyXnZ3kVs'))
-        self.assertTrue(tx.has_address('1446oU3z268EeFgfcwJv6X2VBXHfoYxfuD'))
-        self.assertFalse(tx.has_address('1CQj15y1N7LDHp7wTt28eoD1QhHgFgxECH'))
+        self.assertTrue(tx.has_address('QMXJNx76h4cG9xgAhjGn2a9Ppq8SdqAYLh'))
+        self.assertTrue(tx.has_address('QZgUTGMC5KSMqPSL23qmDYxRkJHBEBXi41'))
+        self.assertFalse(tx.has_address('QCQj15y1N7LDHp7wTt28eoD1QhHgFgxECH'))
 
         self.assertEqual(tx.serialize(), unsigned_blob)
 
@@ -105,14 +103,11 @@ class TestTransaction(SequentialTestCase):
     def test_tx_signed(self):
         expected = {
             'partial': False,
-            'version': 2,
+            'version': 1,
             'segwit_ser': False,
-            'inputs': [{'prevout_hash': '5a10b075b6451eb0e637715d1f57519f94186ad710e1ec6c21fa810c2193e4f8', 'prevout_n': 0, 'scriptSig': '473044022041a23ce4b2dfaa97f9e3474fb0403e2cea7612b261a99f0306100d6438165ac4022068696e52bfbd6dc173f35537b45f37f228dccce796f46de77aa08655ad1938d1012102cd731b7e7a0d7baf1ed755af3a5177597013d90ca84ed2e64090f594aecb73e1', 'sequence': 4294967294, 'type': 'unknown', 'address': None, 'num_sig': 0}],
-            'outputs': [
-                {'value': 294776213999, 'type': 0, 'address': 'QUBn39e8RQRv6GZk9VKCD3CzAUdqGGQhho', 'scriptPubKey': '76a914532cf245b7344a556a043da781222c60caaf56f488ac', 'prevout_n': 0},
-                {'value': 10000000000, 'type': 0, 'address': 'QNqKeSsHjZfbVxB2jkpDUgGcZvSheWKhCw', 'scriptPubKey': '76a9141875f7bf6c817a6da266dbeeb152ea14efb341b388ac', 'prevout_n': 1}
-            ],
-            'lockTime': 172016}
+            'inputs': [{'prevout_hash': '42a2967fb9019398d1e4dc47f40f0106466ba7b30bd33f6e165c1e4ade6940d0', 'prevout_n': 0, 'scriptSig': '47304402204f193d69a06ee58a1894b42168c3fc11d36d578645e47f117a0f1936d6aff5ed022026505b6ea4b344a533d97fbd9ab28fa844d5ab777979088c6267efe71262df9e0121031ed1acd7c54f1c8efd3f038819da1e300ac0fdc499fb8bdf743e52f243141cf1', 'sequence': 4294967294, 'type': 'unknown', 'address': None, 'num_sig': 0}],
+            'outputs': [{'value': 10000, 'type': 0, 'address': 'QMXJNx76h4cG9xgAhjGn2a9Ppq8SdqAYLh', 'scriptPubKey': '76a9140a154c00d8a50b7c2336dafe42700e614f46b71488ac', 'prevout_n': 0}, {'value': 9707500, 'type': 0, 'address': 'QZgUTGMC5KSMqPSL23qmDYxRkJHBEBXi41', 'scriptPubKey': '76a9148f72f5aa0234ecc8a0d629845969c89319f3a78588ac', 'prevout_n': 1}],
+            'lockTime': 0}
         tx = transaction.Transaction(signed_blob)
         self.assertEqual(tx.deserialize(), expected)
         self.assertEqual(tx.deserialize(), None)
