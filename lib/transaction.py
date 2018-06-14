@@ -953,6 +953,13 @@ class Transaction:
             print_error('qtum_sort', self._inputs)
             raise Exception('qtum_sort - sender address not in inputs')
 
+    @classmethod
+    def estimated_output_size(cls, address):
+        """Return an estimate of serialized output size in bytes."""
+        script = bitcoin.address_to_script(address)
+        # 8 byte value + 1 byte script len + script
+        return 9 + len(script) // 2
+
     def serialize_output(self, output):
         # qtum
         output_type, data, amount = output
