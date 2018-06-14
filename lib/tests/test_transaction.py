@@ -5,7 +5,7 @@ from lib.qtum import TYPE_ADDRESS
 from lib.keystore import xpubkey_to_address
 from lib.util import bh2u, bfh
 
-from . import SequentialTestCase
+from . import SequentialTestCase, TestCaseForTestnet
 from .test_qtum import needs_test_with_all_ecc_implementations
 
 unsigned_blob = '45505446ff000100000001d04069de4a1e5c166e3fd30bb3a76b4606010ff447dce4d1989301b97f96a242000000005701ff4c53ff0488b21e034f85f5168000000053c5dceed71fd3485535da3783b65e1b00c09211c36920e111fea04a23f944750244c3c7fb97e543108b1eef410f7c657a54c9f46cc9ad52f4f1d928b89900eb5e00001000feffffff0210270000000000001976a9140a154c00d8a50b7c2336dafe42700e614f46b71488acec1f9400000000001976a9148f72f5aa0234ecc8a0d629845969c89319f3a78588ac00000000'
@@ -750,6 +750,35 @@ class TestTransaction(SequentialTestCase):
 
 # txns from Bitcoin Core ends <---
 
+
+class TestTransactionTestnet(TestCaseForTestnet):
+
+    def _run_naive_tests_on_tx(self, raw_tx, txid):
+        tx = transaction.Transaction(raw_tx)
+        self.assertEqual(txid, tx.txid())
+        self.assertEqual(raw_tx, tx.serialize())
+        self.assertTrue(tx.estimated_size() >= 0)
+
+# partial txns using our partial format --->
+    # NOTE: our partial format contains xpubs, and xpubs have version bytes,
+    # and version bytes encode the network as well; so these are network-sensitive!
+
+    def test_txid_partial_segwit_p2wpkh(self):
+        raw_tx = '45505446ff000100000000010115a847356cbb44be67f345965bb3f2589e2fec1c9a0ada21fd28225dcc602e8f0100000000fdffffff02f6fd1200000000001600149c756aa33f4f89418b33872a973274b5445c727b80969800000000001600140f9de573bc679d040e763d13f0250bd03e625f6ffeffffffff9095ab000000000000000201ff53ff045f1cf6014af5fa07800000002fa3f450ba41799b9b62642979505817783a9b6c656dc11cd0bb4fa362096808026adc616c25a4d0a877d1741eb1db9cef65c15118bd7d5f31bf65f319edda81840100c8000f391400'
+        txid = '63ff7e99d85d8e33f683e6ec84574bdf8f5111078a5fe900893e019f9a7f95c3'
+        self._run_naive_tests_on_tx(raw_tx, txid)
+
+    def test_txid_partial_segwit_p2wpkh_p2sh_simple(self):
+        raw_tx = '45505446ff0001000000000101d0d23a6fbddb21cc664cb81cca96715baa4d6dbe5b7b9bcc6632f1005a7b0b840100000017160014a78a91261e71a681b6312cd184b14503a21f856afdffffff0134410f000000000017a914d6514ca17ecc31952c990daf96e307fbc58529cd87feffffffff40420f000000000000000201ff53ff044a5262033601222e800000001618aa51e49a961f63fd111f64cd4a7e792c1d7168be7a07703de505ebed2cf70286ebbe755767adaa5835f4d78dec1ee30849d69eacfe80b7ee6b1585279536c30000020011391400'
+        txid = '2739f2e7fde9b8ec73fce4aee53722cc7683312d1321ded073284c51fadf44df'
+        self._run_naive_tests_on_tx(raw_tx, txid)
+
+    def test_txid_partial_segwit_p2wpkh_p2sh_mixed_outputs(self):
+        raw_tx = '45505446ff00010000000001011dcac788f24b84d771b60c44e1f9b6b83429e50f06e1472d47241922164013b00100000017160014801d28ca6e2bde551112031b6cb75de34f10851ffdffffff0440420f00000000001600140f9de573bc679d040e763d13f0250bd03e625f6fc0c62d000000000017a9142899f6484e477233ce60072fc185ef4c1f2c654487809698000000000017a914d40f85ba3c8fa0f3615bcfa5d6603e36dfc613ef87712d19040000000017a914e38c0cffde769cb65e72cda1c234052ae8d2254187feffffffff6ad1ee040000000000000201ff53ff044a5262033601222e800000001618aa51e49a961f63fd111f64cd4a7e792c1d7168be7a07703de505ebed2cf70286ebbe755767adaa5835f4d78dec1ee30849d69eacfe80b7ee6b1585279536c301000c000f391400'
+        txid = 'ba5c88e07a4025a39ad3b85247cbd4f556a70d6312b18e04513c7cec9d45d6ac'
+        self._run_naive_tests_on_tx(raw_tx, txid)
+
+# end partial txns <---
 
 class NetworkMock(object):
 
