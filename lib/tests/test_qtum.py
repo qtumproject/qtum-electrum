@@ -112,16 +112,18 @@ class Test_qtum(SequentialTestCase):
 
         sig1 = sign_message_with_wif_privkey(
             'L1TnU2zbNaAqMoVh65Cyvmcjzbrj41Gs9iTLcWbpJCMynXuap6UN', msg1)
-        addr1 = '15hETetDmcXm1mM4sEf7U2KXC9hDHFMSzz'
+        addr1 = 'QRJDZxAvx5QaSuS6HZybbJ79hQdvbG9QEJ'
         sig2 = sign_message_with_wif_privkey(
             '5Hxn5C4SQuiV6e62A1MtZmbSeQyrLFhu5uYks62pU5VBUygK2KD', msg2)
-        addr2 = '1GPHVTY8UD9my6jyP4tb2TYJwUbDetyNC6'
+        addr2 = 'QbzGbkpqeg2bQEpzoQD59jKwSjXvuabHoG'
 
         sig1_b64 = base64.b64encode(sig1)
         sig2_b64 = base64.b64encode(sig2)
 
-        self.assertEqual(sig1_b64, b'H/9jMOnj4MFbH3d7t4yCQ9i7DgZU/VZ278w3+ySv2F4yIsdqjsc5ng3kmN8OZAThgyfCZOQxZCWza9V5XzlVY0Y=')
-        self.assertEqual(sig2_b64, b'G84dmJ8TKIDKMT9qBRhpX2sNmR0y5t+POcYnFFJCs66lJmAs3T8A6Sbpx7KA6yTQ9djQMabwQXRrDomOkIKGn18=')
+        self.assertEqual(sig1_b64, b'H9S7evNApt7E5qp2ePbWU313uV870g89Sztzno0srQynF1D6Yfwg1eBN9OppFAMxILWuTYu7c+K+'
+ b'ndhrTscOqjo=')
+        self.assertEqual(sig2_b64, b'HFASw2nUywYXe5mS4J3PQyxbOErPJWAfRJCItw7yJctgLdNyxJNwd7rW4Atlgl2ujLQozL5kRPDd'
+ b'a1/k61eHpuk=')
 
         self.assertTrue(ecc.verify_message_with_address(addr1, sig1, msg1))
         self.assertTrue(ecc.verify_message_with_address(addr2, sig2, msg2))
@@ -514,7 +516,7 @@ class Test_keyImport(SequentialTestCase):
            {'priv': 'LHJnnvRzsdrTX2j5QeWVsaBkabK7gfMNqNNqxnbBVRaJYfk24iJz',
             'exported_privkey': 'p2wpkh-p2sh:Kz9XebiCXL2BZzhYJViiHDzn5iup1povWV8aqstzWU4sz1K5nVva',
             'pub': '0279ad237ca0d812fb503ab86f25e15ebd5fa5dd95c193639a8a738dcd1acbad81',
-            'address': '3GeVJB3oKr7psgKR6BTXSxKtWUkfsHHhk7',
+            'address': 'MNrdc4TmGxyFgBbKC4SsGbaHqBM7uzsjTf',
             'minikey': False,
             'txin_type': 'p2wpkh-p2sh',
             'compressed': True,
@@ -523,7 +525,7 @@ class Test_keyImport(SequentialTestCase):
            {'priv': 'p2wpkh-p2sh:L3CZH1pm87X4bbE6mSGvZnAZ1KcFDRomBudUkrkBG7EZhDtBVXMW',
             'exported_privkey': 'p2wpkh-p2sh:L3CZH1pm87X4bbE6mSGvZnAZ1KcFDRomBudUkrkBG7EZhDtBVXMW',
             'pub': '0229da20a15b3363b2c28e3c5093c180b56c439df0b968a970366bb1f38435361e',
-            'address': '3C79goMwT7zSTjXnPoCg6VFGAnUpZAkyus',
+            'address': 'MJKHzgmuQEqsGEogVgC1v8VfVV5GVjm822',
             'minikey': False,
             'txin_type': 'p2wpkh-p2sh',
             'compressed': True,
@@ -532,7 +534,7 @@ class Test_keyImport(SequentialTestCase):
            {'priv': 'L8g5V8kFFeg2WbecahRSdobARbHz2w2STH9S8ePHVSY4fmia7Rsj',
             'exported_privkey': 'p2wpkh:Kz6SuyPM5VktY5dr2d2YqdVgBA6LCWkiHqXJaC3BzxnMPSUuYzmF',
             'pub': '03e9f948421aaa89415dc5f281a61b60dde12aae3181b3a76cd2d849b164fc6d0b',
-            'address': 'bc1qqmpt7u5e9hfznljta5gnvhyvfd2kdd0r90hwue',
+            'address': 'qc1qqmpt7u5e9hfznljta5gnvhyvfd2kdd0rfu5zur',
             'minikey': False,
             'txin_type': 'p2wpkh',
             'compressed': True,
@@ -541,7 +543,7 @@ class Test_keyImport(SequentialTestCase):
            {'priv': 'p2wpkh:KyDWy5WbjLA58Zesh1o8m3pADGdJ3v33DKk4m7h8BD5zDKDmDFwo',
             'exported_privkey': 'p2wpkh:KyDWy5WbjLA58Zesh1o8m3pADGdJ3v33DKk4m7h8BD5zDKDmDFwo',
             'pub': '038c57657171c1f73e34d5b3971d05867d50221ad94980f7e87cbc2344425e6a1e',
-            'address': 'bc1qpakeeg4d9ydyjxd8paqrw4xy9htsg532xzxn50',
+            'address': 'qc1qpakeeg4d9ydyjxd8paqrw4xy9htsg532239l54',
             'minikey': False,
             'txin_type': 'p2wpkh',
             'compressed': True,
