@@ -3,7 +3,6 @@ import dns
 from lib import dnssec
 
 from . import SequentialTestCase
-from .test_qtum import needs_test_with_all_ecc_implementations
 
 
 class TestDnsSec(SequentialTestCase):

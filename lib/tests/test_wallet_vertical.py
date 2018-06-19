@@ -10,12 +10,8 @@ from lib.transaction import Transaction
 from lib.simple_config import SimpleConfig
 from lib.wallet import TX_HEIGHT_UNCONFIRMED, TX_HEIGHT_UNCONF_PARENT
 from lib.util import bfh, bh2u
-
-from plugins.trustedcoin import trustedcoin
-
 from . import TestCaseForTestnet
 from . import SequentialTestCase
-from .test_qtum import needs_test_with_all_ecc_implementations
 
 
 class WalletIntegrityHelper:
