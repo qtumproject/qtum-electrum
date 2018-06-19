@@ -12,6 +12,7 @@ from qtum_electrum.transaction import deserialize, Transaction
 from qtum_electrum.keystore import Hardware_KeyStore, is_xpubkey, parse_xpubkey, xtype_from_derivation
 from qtum_electrum.base_wizard import ScriptTypeNotSupported
 from ..hw_wallet import HW_PluginBase
+from ..hw_wallet.plugin import is_any_tx_output_on_change_branch
 
 # TREZOR initialization methods
 TIM_NEW, TIM_RECOVER, TIM_MNEMONIC, TIM_PRIVKEY = range(0, 4)
@@ -464,18 +465,9 @@ class TrezorPlugin(HW_PluginBase):
                 txoutputtype.address = qtum_addr_to_bitcoin_addr(address)
             return txoutputtype
 
-        def is_any_output_on_change_branch():
-            for _type, address, amount in tx.outputs():
-                info = tx.output_info.get(address)
-                if info is not None:
-                    index, xpubs, m = info
-                    if index[0] == 1:
-                        return True
-            return False
-
         outputs = []
         has_change = False
-        any_output_on_change_branch = is_any_output_on_change_branch()
+        any_output_on_change_branch = is_any_tx_output_on_change_branch(tx)
 
         for _type, address, amount in tx.outputs():
             use_create_by_derivation = False
