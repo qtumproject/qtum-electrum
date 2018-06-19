@@ -67,10 +67,13 @@ def rev_hex(s):
     return bh2u(bfh(s)[::-1])
 
 
-def int_to_hex(i, length=1):
+def int_to_hex(i: int, length: int=1) -> str:
     assert isinstance(i, int)
+    range_size = pow(256, length)
+    if i < -range_size / 2 or i >= range_size:
+        raise OverflowError('cannot convert int {} to hex ({} bytes)'.format(i, length))
     if i < 0:
-        i = pow(256, length) + i
+        i = range_size + i
     s = hex(i)[2:].rstrip('L')
     s = "0"*(2*length - len(s)) + s
     return rev_hex(s)
