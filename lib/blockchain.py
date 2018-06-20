@@ -100,6 +100,7 @@ class Blockchain(util.PrintError):
         self.config = config
         self.catch_up = None # interface catching up
         self.checkpoint = checkpoint
+        self.checkpoints = constants.net.CHECKPOINTS
         self.parent_id = parent_id
         self.lock = threading.Lock()
         self.swaping = threading.Event()
@@ -391,6 +392,12 @@ class Blockchain(util.PrintError):
             prev_header = header
 
     def get_hash(self, height):
+        if height == -1:
+            return '0000000000000000000000000000000000000000000000000000000000000000'
+        elif height == 0:
+            return constants.net.GENESIS
+        if str(height) in self.checkpoints:
+            return self.checkpoints[str(height)]
         return hash_header(self.read_header(height))
 
     def BIP9(self, height, flag):

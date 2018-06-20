@@ -76,12 +76,10 @@ setup(
     },
     package_data={
         'qtum_electrum': [
-            'currencies.json',
             'www/index.html',
             'wordlist/*.txt',
             'locale/*/LC_MESSAGES/electrum.mo',
-            'servers.json',
-            'servers_testnet.json',
+            '*.json',
         ]
     },
     scripts=['qtum-electrum'],

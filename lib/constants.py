@@ -48,7 +48,7 @@ class QtumMainnet:
     GENESIS_BITS = 0x1f00ffff
     DEFAULT_PORTS = {'t': '50001', 's': '50002'}
     DEFAULT_SERVERS = read_json('servers.json', {})
-    # CHECKPOINTS = read_json('checkpoints.json', [])
+    CHECKPOINTS = read_json('checkpoints.json', {})
 
     XPRV_HEADERS = {
         'standard': 0x0488ade4,
@@ -77,7 +77,7 @@ class QtumTestnet:
     GENESIS_BITS = 0x1f00ffff
     DEFAULT_PORTS = {'t': '51001', 's': '51002'}
     DEFAULT_SERVERS = read_json('servers_testnet.json', {})
-    # CHECKPOINTS = read_json('checkpoints_testnet.json', [])
+    CHECKPOINTS = read_json('checkpoints_testnet.json', {})
 
     XPRV_HEADERS = {
         'standard': 0x04358394,
@@ -97,10 +97,10 @@ class QtumTestnet:
 
 class QtumRegtest(QtumTestnet):
 
-    SEGWIT_HRP = "bcrt"
+    SEGWIT_HRP = "qcrt"
     GENESIS = "0x665ed5b402ac0b44efc37d8926332994363e8a7278b7ee9a58fb972efadae943"
     DEFAULT_SERVERS = read_json('servers_regtest.json', {})
-    CHECKPOINTS = []
+    CHECKPOINTS = {}
 
 
 # don't import net directly, import the module instead (so that net is singleton)
