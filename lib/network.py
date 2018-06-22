@@ -913,7 +913,7 @@ class Network(util.DaemonThread):
                     elif branch.parent().check_header(header):
                         interface.print_error('reorg', interface.bad, interface.tip)
                         interface.blockchain = branch.parent()
-                        next_height = None
+                        next_height = interface.bad
                     else:
                         interface.print_error('checkpoint conflicts with existing fork', branch.path())
                         branch.write(b'', 0)
