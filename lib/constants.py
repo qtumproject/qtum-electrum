@@ -49,6 +49,7 @@ class QtumMainnet:
     DEFAULT_PORTS = {'t': '50001', 's': '50002'}
     DEFAULT_SERVERS = read_json('servers.json', {})
     CHECKPOINTS = read_json('checkpoints.json', {})
+    BIP44_COIN_TYPE = 88
 
     XPRV_HEADERS = {
         'standard': 0x0488ade4,
@@ -78,6 +79,7 @@ class QtumTestnet:
     DEFAULT_PORTS = {'t': '51001', 's': '51002'}
     DEFAULT_SERVERS = read_json('servers_testnet.json', {})
     CHECKPOINTS = read_json('checkpoints_testnet.json', {})
+    BIP44_COIN_TYPE = 1
 
     XPRV_HEADERS = {
         'standard': 0x04358394,
