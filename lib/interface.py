@@ -151,13 +151,14 @@ class TcpConnection(threading.Thread, util.PrintError):
                     except Exception as e:
                         self.print_error('[get_socket] 2', e)
                         return
-                try:
-                    if s and self.check_host_name(s.getpeercert(), self.host):
-                        self.print_error("SSL certificate signed by CA")
-                        return s
-                except Exception as e:
-                    self.print_error('[get_socket] 2.5', e)
-
+                    else:
+                        try:
+                            peer_cert = s.getpeercert()
+                        except OSError:
+                            return
+                        if self.check_host_name(peer_cert, self.host):
+                            self.print_error("SSL certificate signed by CA")
+                            return s
                 # get server certificate.
                 # Do not use ssl.get_server_certificate because it does not work with proxy
                 s = self.get_simple_socket()
@@ -174,7 +175,10 @@ class TcpConnection(threading.Thread, util.PrintError):
                     self.print_error('[get_socket] 4', e)
                     return
 
-                dercert = s.getpeercert(True)
+                try:
+                    dercert = s.getpeercert(True)
+                except OSError:
+                    return
                 s.close()
                 cert = ssl.DER_cert_to_PEM_cert(dercert)
                 # workaround android bug
