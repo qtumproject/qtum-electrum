@@ -1,7 +1,9 @@
 # Release 0.18.5
+ * use libsecp256k1 to speed up elliptic curve operations.
  * fix trezor sending issue on testnet
  * fix a rare synchronization issue when multiple forks at same checkpoint
  * add checkpoints
+
 
 # Release 0.18.4
  * support ERC20 token transfer history
