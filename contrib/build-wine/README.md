@@ -28,9 +28,10 @@ $ sudo apt install wine-stable
  - dirmngr
  - gpg
  - 7z
+ - mingw-w64
 
 ```
-sudo apt-get install dirmngr gnupg2 p7zip-full
+sudo apt-get install dirmngr gnupg2 p7zip-full mingw-w64
 ```
 
 
