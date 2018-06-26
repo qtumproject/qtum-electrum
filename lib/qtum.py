@@ -15,9 +15,6 @@ from . import segwit_addr
 from . import ecc
 from .crypto import Hash, sha256, hash_160
 
-BITCOIN_ADDRTYPE_P2PKH = 0
-BITCOIN_ADDRTYPE_P2SH = 5
-
 TOKEN_TRANSFER_TOPIC = 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
 
 BASIC_HEADER_SIZE = 180  # not include sig
@@ -931,9 +928,9 @@ def compact_from_uint256(target):
 def qtum_addr_to_bitcoin_addr(qtum_addr):
     addr_type, hash160 = b58_address_to_hash160(qtum_addr)
     if addr_type == constants.net.ADDRTYPE_P2PKH:
-        return hash160_to_b58_address(hash160, addrtype=BITCOIN_ADDRTYPE_P2PKH)
+        return hash160_to_b58_address(hash160, addrtype=constants.net.BITCOIN_ADDRTYPE_P2PKH)
     elif addr_type == constants.net.ADDRTYPE_P2SH:
-        return hash160_to_b58_address(hash160, addr_type=BITCOIN_ADDRTYPE_P2SH)
+        return hash160_to_b58_address(hash160, addrtype=constants.net.BITCOIN_ADDRTYPE_P2SH)
 
 
 def eth_abi_encode(abi, args):

@@ -41,6 +41,8 @@ class QtumMainnet:
 
     TESTNET = False
     WIF_PREFIX = 0x80
+    BITCOIN_ADDRTYPE_P2PKH = 0
+    BITCOIN_ADDRTYPE_P2SH = 5
     ADDRTYPE_P2PKH = 0x3a
     ADDRTYPE_P2SH = 0x32
     SEGWIT_HRP = "qc"
@@ -71,6 +73,8 @@ class QtumTestnet:
 
     TESTNET = True
     WIF_PREFIX = 0xef
+    BITCOIN_ADDRTYPE_P2PKH = 111
+    BITCOIN_ADDRTYPE_P2SH = 196
     ADDRTYPE_P2PKH = 120
     ADDRTYPE_P2SH = 110
     SEGWIT_HRP = "tq"
