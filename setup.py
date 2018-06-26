@@ -65,7 +65,6 @@ setup(
         'qtum_electrum_plugins.labels',
         'qtum_electrum_plugins.ledger',
         'qtum_electrum_plugins.trezor',
-        'qtum_electrum_plugins.digitalbitbox',
         'qtum_electrum_plugins.trustedcoin',
         'qtum_electrum_plugins.virtualkeyboard',
     ],
