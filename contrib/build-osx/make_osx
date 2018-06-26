@@ -22,6 +22,8 @@ STAGING_DIR="dist"
 VOL_NAME="Qtum Electrum"
 TEMP_DMG_NAME="/tmp/qtum-electrum.dmg"
 DMG_NAME="${STAGING_DIR}/Qtum-electrum-osx-${VERSION}.dmg"
+LIBSECP_VERSION=452d8e4d2a2f9f1b5be6b02e18f1ba102e5ca0b4
+# export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;
 
 rm -rf ${STAGING_DIR} ${TEMP_DMG_NAME}
 
@@ -32,15 +34,7 @@ download_if_not_exist() {
     fi
 }
 
-#export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;
-
-if [ ! -e contrib/build-osx/libusb-1.0.dylib ] ; then
-    info "Downloading libusb..."
-    curl https://homebrew.bintray.com/bottles/libusb-1.0.22.el_capitan.bottle.tar.gz | \
-    tar xz --directory /tmp/
-    cp /tmp/libusb/1.0.22/lib/libusb-1.0.dylib contrib/build-osx
-fi
-
+which brew > /dev/null 2>&1 || fail "Please install brew from https://brew.sh/ to continue"
 
 info "Installing Python $PYTHON_VERSION"
 export PATH="~/.pyenv/bin:~/.pyenv/shims:~/Library/Python/3.6/bin:$PATH"
@@ -61,6 +55,24 @@ python3 --version
 echo -n "Pyinstaller "
 pyinstaller --version
 
+if [ ! -e contrib/build-osx/libusb-1.0.dylib ] ; then
+    info "Downloading libusb..."
+    curl https://homebrew.bintray.com/bottles/libusb-1.0.22.el_capitan.bottle.tar.gz | \
+    tar xz --directory /tmp/
+    cp /tmp/libusb/1.0.22/lib/libusb-1.0.dylib contrib/build-osx
+fi
+
+info "Building libsecp256k1"
+brew install autoconf automake libtool
+git clone https://github.com/bitcoin-core/secp256k1 /tmp/secp256k1
+pushd /tmp/secp256k1
+git reset --hard $LIBSECP_VERSION
+git clean -f -x -q
+./autogen.sh
+./configure --enable-module-recovery --enable-experimental --enable-module-ecdh --disable-jni
+make
+popd
+cp /tmp/secp256k1/.libs/libsecp256k1.0.dylib contrib/build-osx
 
 info "Installing requirements..."
 python3 -m pip install -r ./requirements.txt --user && \
