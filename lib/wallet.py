@@ -1005,7 +1005,7 @@ class Abstract_Wallet(PrintError):
             tx = self.transactions.get(tx_hash)
             if tx is None:
                 continue
-            self.add_transaction(tx_hash, tx)
+            self.add_transaction(tx_hash, tx, allow_unrelated=True)
 
         # Store fees
         self.tx_fees.update(tx_fees)
