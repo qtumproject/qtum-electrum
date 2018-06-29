@@ -28,10 +28,15 @@ $ sudo apt install wine-stable
  - dirmngr
  - gpg
  - 7z
- - mingw-w64
+ - (and, for building libsecp256k1)
+   - mingw-w64
+   - autotools-dev
+   - autoconf
+   - libtool
 
 ```
-sudo apt-get install dirmngr gnupg2 p7zip-full mingw-w64
+sudo apt-get install dirmngr gnupg2 p7zip-full
+sudo apt-get install mingw-w64 autotools-dev autoconf libtool
 ```
 
 
