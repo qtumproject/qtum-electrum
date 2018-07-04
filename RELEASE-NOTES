@@ -4,6 +4,7 @@
  * fix a rare synchronization issue when multiple forks at same checkpoint
  * add checkpoints
  * change testnet derivation path to make it different with mainnet
+ * fix DNS resolution on Windows
 
 
 # Release 0.18.4
