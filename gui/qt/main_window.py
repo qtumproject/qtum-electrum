@@ -1485,7 +1485,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             if pr and pr.has_expired():
                 self.payment_request = None
                 return False, _("Payment request has expired")
-            status, msg =  self.network.broadcast(tx)
+            status, msg = self.network.broadcast_transaction(tx)
             if pr and status is True:
                 self.invoices.set_paid(pr, tx.txid())
                 self.invoices.save()
@@ -2217,7 +2217,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         if ok and txid:
             txid = str(txid).strip()
             try:
-                r = self.network.synchronous_get(('blockchain.transaction.get',[txid]))
+                r = self.network.get_transaction(txid)
             except BaseException as e:
                 self.show_message(str(e))
                 return
@@ -3235,7 +3235,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
     def call_smart_contract(self, address, abi, args, sender, dialog):
         data = eth_abi_encode(abi, args)
         try:
-            result = self.network.synchronous_get(('blockchain.contract.call', [address, data, sender]), timeout=10)
+            result = self.network.call_contract(address, data, sender)
         except BaseException as e:
             dialog.show_message(str(e))
             return

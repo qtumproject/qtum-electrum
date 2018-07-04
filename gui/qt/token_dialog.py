@@ -88,7 +88,7 @@ class TokenAddDialog(QDialog, MessageBoxMixin):
 
     def save(self, contract_addr, bind_addr):
         try:
-            r = self.parent().network.synchronous_get(('blockchain.token.get_info', [contract_addr]), timeout=10)
+            r = self.parent().network.get_token_info(contract_addr)
             name = r.get('name')
             decimals = r.get('decimals')
             symbol = r.get('symbol')

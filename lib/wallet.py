@@ -40,7 +40,7 @@ from operator import itemgetter
 from functools import reduce
 
 from .i18n import _
-from .util import NotEnoughFunds, PrintError, UserCancelled, profiler, format_satoshis, InvalidPassword, WalletFileException
+from .util import NotEnoughFunds, PrintError, UserCancelled, profiler, format_satoshis, InvalidPassword, WalletFileException, TimeoutException
 from .qtum import *
 from .version import *
 from .keystore import load_keystore, Hardware_KeyStore
@@ -94,7 +94,7 @@ def append_utxos_to_inputs(inputs, network, pubkey, txin_type, imax):
         script = bitcoin.public_key_to_p2pk_script(pubkey)
         sh = bitcoin.script_to_scripthash(script)
         address = '(pubkey)'
-    u = network.synchronous_get(('blockchain.scripthash.listunspent', [sh]))
+    u = network.listunspent_for_scripthash(sh)
     for item in u:
         if len(inputs) >= imax:
             break
@@ -1406,8 +1406,10 @@ class Abstract_Wallet(PrintError):
         # all the input txs, in which case we ask the network.
         tx = self.transactions.get(tx_hash)
         if not tx and self.network:
-            request = ('blockchain.transaction.get', [tx_hash])
-            tx = Transaction(self.network.synchronous_get(request))
+            try:
+                tx = Transaction(self.network.get_transaction(tx_hash))
+            except TimeoutException as e:
+                self.print_error('getting input txn from network timed out for {}'.format(tx_hash))
         return tx
 
     def add_hw_info(self, tx):

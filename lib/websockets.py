@@ -33,6 +33,7 @@ except ImportError:
     sys.exit("install SimpleWebSocketServer")
 
 from . import util
+from . import qtum
 
 request_queue = queue.Queue()
 
@@ -96,15 +97,17 @@ class WsClientThread(util.DaemonThread):
                 continue
             util.print_error('response', r)
             method = r.get('method')
-            params = r.get('params')
             result = r.get('result')
             if result is None:
                 continue
             if method == 'blockchain.scripthash.subscribe':
-                self.network.send([('blockchain.scripthash.get_balance', params)], self.response_queue.put)
+                addr = r.get('params')[0]
+                scripthash = qtum.address_to_scripthash(addr)
+                self.network.get_balance_for_scripthash(
+                    scripthash, self.response_queue.put)
             elif method == 'blockchain.scripthash.get_balance':
-                h = params[0]
-                addr = self.network.h2addr.get(h, None)
+                scripthash = r.get('params')[0]
+                addr = self.network.h2addr.get(scripthash, None)
                 if addr is None:
                     util.print_error("can't find address for scripthash: %s" % h)
                 l = self.subscriptions.get(addr, [])
