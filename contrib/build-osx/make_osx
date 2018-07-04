@@ -94,7 +94,7 @@ done
 
 
 info "Building binary"
-pyinstaller --noconfirm --ascii --name $VERSION contrib/build-osx/osx.spec || fail "Could not build binary"
+pyinstaller --noconfirm --ascii --clean --name $VERSION contrib/build-osx/osx.spec || fail "Could not build binary"
 
 
 hdiutil create -size 300m -fs HFS+ -volname "${VOL_NAME}" -ov ${TEMP_DMG_NAME}
