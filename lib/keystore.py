@@ -661,8 +661,20 @@ def xtype_from_derivation(derivation):
         return 'p2wpkh'
     elif derivation.startswith("m/49'"):
         return 'p2wpkh-p2sh'
-    else:
+    elif derivation.startswith("m/44'"):
         return 'standard'
+    elif derivation.startswith("m/45'"):
+        return 'standard'
+
+    bip32_indices = list(bip32_derivation(derivation))
+    if len(bip32_indices) >= 4:
+        if bip32_indices[0] == 48 + BIP32_PRIME:
+            # m / purpose' / coin_type' / account' / script_type' / change / address_index
+            script_type_int = bip32_indices[3] - BIP32_PRIME
+            script_type = PURPOSE48_SCRIPT_TYPES_INV.get(script_type_int)
+            if script_type is not None:
+                return script_type
+    return 'standard'
 
 # extended pubkeys
 def is_xpubkey(x_pubkey):
@@ -746,6 +758,17 @@ is_private = lambda x: is_seed(x) or is_xprv(x) or is_private_key_list(x)
 is_master_key = lambda x: is_old_mpk(x) or is_xprv(x) or is_xpub(x)
 is_private_key = lambda x: is_xprv(x) or is_private_key_list(x)
 is_bip32_key = lambda x: is_xprv(x) or is_xpub(x)
+
+
+def purpose48_derivation(account_id: int, xtype: str) -> str:
+    # m / purpose' / coin_type' / account' / script_type' / change / address_index
+    bip43_purpose = 48
+    coin = constants.net.BIP44_COIN_TYPE
+    account_id = int(account_id)
+    script_type_int = PURPOSE48_SCRIPT_TYPES.get(xtype)
+    if script_type_int is None:
+        raise Exception('unknown xtype: {}'.format(xtype))
+    return "m/%d'/%d'/%d'/%d'" % (bip43_purpose, coin, account_id, script_type_int)
 
 
 def bip44_derivation(account_id, bip43_purpose=44):
