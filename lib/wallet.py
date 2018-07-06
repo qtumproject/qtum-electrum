@@ -655,8 +655,12 @@ class Abstract_Wallet(PrintError):
 
     def get_addr_utxo(self, address):
         coins, spent = self.get_addr_io(address)
-        for txi in spent:
-            coins.pop(txi)
+        try:
+            for txi in spent:
+                coins.pop(txi)
+        except KeyError as e:
+            print('get_addr_utxo KeyError', coins, spent)
+            return []
         out = []
         for txo, v in coins.items():
             tx_height, value, is_cb = v
