@@ -834,10 +834,11 @@ def from_seed(seed, passphrase, is_p2sh=True):
         raise QtumException('Unexpected seed type {}'.format(t))
 
 
-def from_bip39_seed(seed, passphrase, derivation):
+def from_bip39_seed(seed, passphrase, derivation, xtype=None):
     k = BIP32_KeyStore({})
     bip32_seed = bip39_to_seed(seed, passphrase)
-    xtype = xtype_from_derivation(derivation)
+    if xtype is None:
+        xtype = xtype_from_derivation(derivation)
     k.add_xprv_from_seed(bip32_seed, xtype, derivation)
     return k
 
