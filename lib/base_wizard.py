@@ -330,6 +330,11 @@ class BaseWizard(object):
                 ('p2wsh-p2sh', 'p2sh-segwit multisig (p2wsh-p2sh)', purpose48_derivation(0, xtype='p2wsh-p2sh')),
                 ('p2wsh',      'native segwit multisig (p2wsh)',    purpose48_derivation(0, xtype='p2wsh')),
             ]
+        elif self.seed_type == 'segwit':
+            choices = [
+                ('p2wpkh-p2sh', 'p2sh-segwit (p2wpkh-p2sh)', bip44_derivation(0, bip43_purpose=49)),
+                ('p2wpkh',      'native segwit (p2wpkh)',    bip44_derivation(0, bip43_purpose=84)),
+            ]
         else:
             choices = [
                 ('standard',    'legacy (p2pkh)',            bip44_derivation(0, bip43_purpose=44)),
@@ -397,18 +402,15 @@ class BaseWizard(object):
         if self.seed_type == 'bip39':
             f = lambda passphrase: self.on_restore_bip39(seed, passphrase)
             self.passphrase_dialog(run_next=f) if is_ext else f('')
-        elif self.seed_type in ['standard', 'segwit']:
+
+        elif self.seed_type == 'standard':
             f = lambda passphrase: self.run('create_keystore', seed, passphrase)
             self.passphrase_dialog(run_next=f) if is_ext else f('')
-        elif self.seed_type == 'old':
-            self.run('create_keystore', seed, '')
-        elif self.seed_type == '2fa':
-            if self.is_kivy:
-                self.show_error('2FA seeds are not supported in this version')
-                self.run('restore_from_seed')
-            else:
-                self.load_2fa()
-                self.run('on_restore_seed', seed, is_ext)
+
+        elif self.seed_type == 'segwit':
+            f = lambda passphrase: self.on_restore_bip39(seed, passphrase)
+            self.passphrase_dialog(run_next=f) if is_ext else f('')
+
         else:
             raise Exception('Unknown seed type', self.seed_type)
 
@@ -421,7 +423,13 @@ class BaseWizard(object):
         if self.wallet_type == 'mobile':
             k = keystore.from_mobile_seed(seed)
         else:
-            k = keystore.from_seed(seed, passphrase, self.wallet_type == 'multisig')
+            if self.seed_type == 'segwit':
+                is_p2sh = True
+            elif self.wallet_type == 'multisig':
+                is_p2sh = True
+            else:
+                is_p2sh = False
+            k = keystore.from_seed(seed, passphrase, is_p2sh)
         self.on_keystore(k)
 
     def on_bip43(self, seed, passphrase, derivation, script_type):
