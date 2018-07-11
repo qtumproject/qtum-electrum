@@ -35,7 +35,7 @@ class ExchangeBase(PrintError):
     def get_json(self, site, get_string):
         # APIs must have https
         url = ''.join(['https://', site, get_string])
-        response = requests.request('GET', url, headers={'User-Agent' : 'Electrum'})
+        response = requests.request('GET', url, headers={'User-Agent': 'Electrum'})
         return response.json()
 
     def get_csv(self, site, get_string):
@@ -125,6 +125,16 @@ class AllCoin(ExchangeBase):
         result = {ccy: Decimal(json['data']['last'])}
         return result
 
+
+class CoinMarketCap(ExchangeBase):
+
+    def get_rates(self, ccy):
+        # the id 1684 is from https://coinmarketcap.com/api/#endpoint_listings
+        json = self.get_json('api.coinmarketcap.com', '/v2/ticker/1684/?convert={}'.format(ccy))
+        result = {ccy: Decimal(json['data']['quotes'][ccy]['price'])}
+        return result
+
+
 def dictinvert(d):
     inv = {}
     for k, vlist in d.items():
@@ -198,7 +208,7 @@ class FxThread(ThreadJob):
             rounded_amount = round(amount, prec)
         except decimal.InvalidOperation:
             rounded_amount = amount
-        return fmt_str.format(round(amount, prec))
+        return fmt_str.format(rounded_amount)
 
     def run(self):
         # This runs from the plugins thread which catches exceptions
@@ -229,10 +239,10 @@ class FxThread(ThreadJob):
 
     def get_currency(self):
         '''Use when dynamic fetching is needed'''
-        return self.config.get("currency", "USDT")
+        return self.config.get("currency", "USD")
 
     def config_exchange(self):
-        return self.config.get('use_exchange', 'Huobi')
+        return self.config.get('use_exchange', 'CoinMarketCap')
 
     def show_history(self):
         return self.is_enabled() and self.get_history_config() and self.ccy in self.exchange.history_ccys()
@@ -244,7 +254,7 @@ class FxThread(ThreadJob):
         self.on_quotes()
 
     def set_exchange(self, name):
-        class_ = globals().get(name, Huobi)
+        class_ = globals().get(name, CoinMarketCap)
         self.print_error("using exchange", name)
         if self.config_exchange() != name:
             self.config.set_key('use_exchange', name, True)
