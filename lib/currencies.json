@@ -10,5 +10,9 @@
   "BCEX": [
     "CKUSD",
     "BTC"
+  ],
+  "AllCoin": [
+    "CKUSD",
+    "BTC"
   ]
 }

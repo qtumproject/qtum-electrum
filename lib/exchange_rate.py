@@ -108,7 +108,6 @@ class Huobi(ExchangeBase):
     def get_rates(self, ccy):
         json = self.get_json('api.huobi.pro', '/market/trade?symbol=qtum{}'.format(ccy.lower()))
         result = {ccy: Decimal(json['tick']['data'][0]['price'])}
-        print(result)
         return result
 
 
@@ -118,6 +117,13 @@ class OKEX(ExchangeBase):
         json = self.get_json('www.okex.com', '/api/v1/ticker.do?symbol=qtum_{}'.format(ccy.lower()))
         return {ccy: Decimal(json['ticker']['last'])}
 
+
+class AllCoin(ExchangeBase):
+
+    def get_rates(self, ccy):
+        json = self.get_json('www.allcoin.ca', '/Api_Order/ticker?symbol=qtum2{}'.format(ccy.lower()))
+        result = {ccy: Decimal(json['data']['last'])}
+        return result
 
 def dictinvert(d):
     inv = {}
