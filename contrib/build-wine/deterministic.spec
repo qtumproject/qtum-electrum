@@ -21,7 +21,7 @@ hiddenimports += collect_submodules('keepkeylib')
 hiddenimports += collect_submodules('websocket')
 
 # Add libusb binary
-binaries = [("c:/python3.5.4/libusb-1.0.dll", ".")]
+binaries = [("c:/python3.6.6/libusb-1.0.dll", ".")]
 binaries += [('C:/tmp/libsecp256k1.dll', '.')]
 
 # Workaround for "Retro Look":
