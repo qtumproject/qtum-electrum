@@ -1,5 +1,5 @@
 btchip-python==0.1.26
-Cython==0.28.3
+Cython==0.28.4
 cffi==1.11.5
 certifi==2018.1.18
 chardet==3.0.4
@@ -20,7 +20,8 @@ qrcode==6.0
 requests==2.19.1
 rsa
 rlp==0.6.0
+setuptools==40.0.0
 six==1.11.0
 sip==4.19.8
-trezor==0.10.1
+trezor==0.10.2
 urllib3==1.23
