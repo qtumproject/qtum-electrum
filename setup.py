@@ -78,7 +78,7 @@ setup(
             'qtum_electrum/locale/*/LC_MESSAGES/electrum.mo',
         ]
     },
-    scripts=['qtum-electrum/qtum_electrum'],
+    scripts=['run_qtum_electrum'],
     data_files=data_files,
     description="Lightweight Qtum Wallet",
     author="CodeFace",
