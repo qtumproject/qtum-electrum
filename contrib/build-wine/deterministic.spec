@@ -38,24 +38,22 @@ datas += collect_data_files('btchip')
 datas += collect_data_files('keepkeylib')
 
 # We don't put these files in to actually include them in the script but to make the Analysis method scan them for imports
-a = Analysis([home+'qtum-electrum',
-              home+'gui/qt/main_window.py',
-              home+'gui/text.py',
-              home+'lib/util.py',
-              home+'lib/wallet.py',
-              home+'lib/simple_config.py',
-              home+'lib/bitcoin.py',
-              home+'lib/dnssec.py',
-              home+'lib/commands.py',
-              home+'plugins/email_requests/qt.py',
-              home+'plugins/trezor/client.py',
-              home+'plugins/trezor/qt.py',
-              home+'plugins/ledger/qt.py',
-              #home+'packages/requests/utils.py'
+a = Analysis([home+'run_qtum_electrum',
+              home+'qtum_electrum/gui/qt/main_window.py',
+              home+'qtum_electrum/gui/text.py',
+              home+'qtum_electrum/util.py',
+              home+'qtum_electrum/wallet.py',
+              home+'qtum_electrum/simple_config.py',
+              home+'qtum_electrum/qtum.py',
+              home+'qtum_electrum/dnssec.py',
+              home+'qtum_electrum/commands.py',
+              home+'qtum_electrum/plugins/email_requests/qt.py',
+              home+'qtum_electrum/plugins/trezor/client.py',
+              home+'qtum_electrum/plugins/trezor/qt.py',
+              home+'qtum_electrum/plugins/ledger/qt.py',
               ],
              binaries=binaries,
              datas=datas,
-             #pathex=[home+'lib', home+'gui', home+'plugins'],
              hiddenimports=hiddenimports,
              hookspath=[])
 
