@@ -1,4 +1,5 @@
 ####-*.patch
+app.fi
 *.pyc
 *.swp
 build/
@@ -8,7 +9,7 @@ dist/
 contrib/pyinstaller/
 Qtum_Electrum.egg-info/
 qtum_electrum/gui/qt/icons_rc.py
-locale/
+qtum_electrum/locale/
 .devlocaltmp/
 *_trial_temp
 packages

@@ -95,8 +95,8 @@ class GuiMixin(object):
             return self.proto.WordAck(word=char)
 
         self.step += 1
-        msg = _("Step %d/24.  Enter seed word as explained on "
-                "your %s:") % (self.step, self.device)
+        msg = _("Step {}/24.  Enter seed word as explained on "
+                "your {}:").format(self.step, self.device)
         word = self.handler.get_word(msg)
         # Unfortunately the device can't handle self.proto.Cancel()
         return self.proto.WordAck(word=word)

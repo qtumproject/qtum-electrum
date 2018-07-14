@@ -8,8 +8,8 @@ import requests
 os.chdir(os.path.dirname(os.path.realpath(__file__)))
 os.chdir('..')
 
-code_directories = 'gui plugins lib'
-cmd = "find {} -type f -name '*.py' -o -name '*.kv'".format(code_directories)
+cmd = "find qtum_electrum -type f -name '*.py' -o -name '*.kv'"
+
 files = subprocess.check_output(cmd, shell=True)
 
 with open("app.fil", "wb") as f:
@@ -18,16 +18,16 @@ with open("app.fil", "wb") as f:
 print("Found {} files to translate".format(len(files.splitlines())))
 
 # Generate fresh translation template
-if not os.path.exists('lib/locale'):
-    os.mkdir('lib/locale')
-cmd = 'xgettext -s --from-code UTF-8 --language Python --no-wrap -f app.fil --output=lib/locale/messages.pot'
+if not os.path.exists('qtum_electrum/locale'):
+    os.mkdir('qtum_electrum/locale')
+cmd = 'xgettext -s --from-code UTF-8 --language Python --no-wrap -f app.fil --output=qtum_electrum/locale/messages.pot'
 print('Generate template')
 os.system(cmd)
 
-os.chdir('lib')
+os.chdir('qtum_electrum')
 
 crowdin_identifier = 'electrum'
-crowdin_file_name = 'electrum-client/messages.pot'
+crowdin_file_name = 'files[electrum-client/messages.pot]'
 locale_file_name = 'locale/messages.pot'
 crowdin_api_key = None
 
@@ -42,16 +42,18 @@ if crowdin_api_key:
     # Push to Crowdin
     print('Push to Crowdin')
     url = ('https://api.crowdin.com/api/project/' + crowdin_identifier + '/update-file?key=' + crowdin_api_key)
-    files = {crowdin_file_name: open(locale_file_name,'rb')}
-    requests.request('POST', url, files=files)
+    with open(locale_file_name, 'rb') as f:
+        files = {crowdin_file_name: f}
+        response = requests.request('POST', url, files=files)
+    print("", "update-file:", "-"*20, response.text, "-"*20, sep="\n")
     # Build translations
     print('Build translations')
     response = requests.request('GET', 'http://api.crowdin.com/api/project/' + crowdin_identifier + '/export?key=' + crowdin_api_key).content
-    print(response)
+    print("", "export:", "-" * 20, response.text, "-" * 20, sep="\n")
 
 # Download & unzip
 print('Download translations')
-s = requests.request('GET', 'http://crowdin.com/download/project/' + crowdin_identifier + '.zip').content
+s = requests.request('GET', 'http://crowdin.com/backend/download/project/' + crowdin_identifier + '.zip').content
 zfobj = zipfile.ZipFile(io.BytesIO(s))
 
 print('Unzip translations')
@@ -62,9 +64,8 @@ for name in zfobj.namelist():
         if not os.path.exists(name[16:]):
             os.mkdir(name[16:])
     else:
-        output = open(name[16:], 'wb')
-        output.write(zfobj.read(name))
-        output.close()
+        with open(name[16:], 'wb') as output:
+            output.write(zfobj.read(name))
 
 # Convert .po to .mo
 print('Installing')
