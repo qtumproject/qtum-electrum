@@ -6,7 +6,7 @@ import os
 
 PACKAGE='Qtum Electrum'
 PYPKG='qtum_electrum'
-MAIN_SCRIPT='qtum-electrum'
+MAIN_SCRIPT='run_qtum_electrum'
 ICONS_FILE='qtum-electrum.icns'
 
 for i, x in enumerate(sys.argv):
@@ -27,10 +27,9 @@ hiddenimports += collect_submodules('keepkeylib')
 hiddenimports += collect_submodules('websocket')
 
 datas = [
-    (electrum+'lib/*.json', PYPKG),
-    (electrum+'lib/wordlist/english.txt', PYPKG + '/wordlist'),
-    (electrum+'lib/locale', PYPKG + '/locale'),
-    (electrum+'plugins', PYPKG + '_plugins'),
+    (electrum+'qtum_electrum/*.json', PYPKG),
+    (electrum+'qtum_electrum/wordlist/english.txt', PYPKG + '/wordlist'),
+    (electrum+'qtum_electrum/locale', PYPKG + '/locale'),
 ]
 
 datas += collect_data_files('trezorlib')
@@ -46,18 +45,18 @@ binaries += [b for b in collect_dynamic_libs('PyQt5') if 'macstyle' in b[0]]
 
 # We don't put these files in to actually include them in the script but to make the Analysis method scan them for imports
 a = Analysis([electrum+MAIN_SCRIPT,
-              electrum+'gui/qt/main_window.py',
-              electrum+'gui/text.py',
-              electrum+'lib/util.py',
-              electrum+'lib/wallet.py',
-              electrum+'lib/simple_config.py',
-              electrum+'lib/bitcoin.py',
-              electrum+'lib/dnssec.py',
-              electrum+'lib/commands.py',
-              electrum+'plugins/email_requests/qt.py',
-              electrum+'plugins/trezor/client.py',
-              electrum+'plugins/trezor/qt.py',
-              electrum+'plugins/ledger/qt.py',
+              electrum+'qtum_electrum/gui/qt/main_window.py',
+              electrum+'qtum_electrum/gui/text.py',
+              electrum+'qtum_electrum/util.py',
+              electrum+'qtum_electrum/wallet.py',
+              electrum+'qtum_electrum/simple_config.py',
+              electrum+'qtum_electrum/qtum.py',
+              electrum+'qtum_electrum/dnssec.py',
+              electrum+'qtum_electrum/commands.py',
+              electrum+'qtum_electrum/plugins/email_requests/qt.py',
+              electrum+'qtum_electrum/plugins/trezor/client.py',
+              electrum+'qtum_electrum/plugins/trezor/qt.py',
+              electrum+'qtum_electrum/plugins/ledger/qt.py',
               ],
              binaries=binaries,
              datas=datas,

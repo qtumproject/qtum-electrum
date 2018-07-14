@@ -50,12 +50,12 @@ Install dependencies::
 Compile the icons file for Qt:
 
     sudo apt-get install pyqt5-dev-tools
-    pyrcc5 icons.qrc -o gui/qt/icons_rc.py
+    pyrcc5 icons.qrc -o qtum_electrum/gui/qt/icons_rc.py
 
 Compile the protobuf description file:
 
     sudo apt-get install protobuf-compiler
-    protoc --proto_path=lib/ --python_out=lib/ lib/paymentrequest.proto
+    protoc --proto_path=qtum_electrum --python_out=qtum_electrum qtum_electrum/paymentrequest.proto
 
 Create translations (optional):
 
@@ -69,7 +69,7 @@ Create translations (optional):
 
 Run it:
 
-    ./qtum-electrum
+    ./run_qtum_electrum
 
 
 
