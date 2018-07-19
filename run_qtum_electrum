@@ -47,7 +47,6 @@ def check_imports():
         import ecdsa
         import requests
         import qrcode
-        import pbkdf2
         import google.protobuf
         import jsonrpclib
         import eth_hash

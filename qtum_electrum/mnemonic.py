@@ -30,8 +30,6 @@ import unicodedata
 import string
 
 import ecdsa
-import pbkdf2
-
 from .util import print_error
 from .bitcoin import is_old_seed, is_new_seed
 from . import version
@@ -133,9 +131,7 @@ class Mnemonic(object):
         mnemonic = normalize_text(mnemonic)
         passphrase = normalize_text(passphrase)
         # Qtum
-        return pbkdf2.PBKDF2(mnemonic, 'mnemonic' + passphrase, iterations=PBKDF2_ROUNDS, macmodule=hmac,
-                             digestmodule=hashlib.sha512).read(64)
-        # return pbkdf2.PBKDF2(mnemonic, 'electrum' + passphrase, iterations = PBKDF2_ROUNDS, macmodule = hmac, digestmodule = hashlib.sha512).read(64)
+        return hashlib.pbkdf2_hmac('sha512', mnemonic.encode('utf-8'), b'mnemonic' + passphrase.encode('utf-8'), iterations=PBKDF2_ROUNDS)
 
     def mnemonic_encode(self, i):
         n = len(self.wordlist)
