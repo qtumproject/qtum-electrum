@@ -1211,8 +1211,7 @@ class Abstract_Wallet(PrintError):
         # tx.BIP_LI01_sort()
         tx.qtum_sort(sender)
         # Timelock tx to current height.
-        # Disabled until keepkey firmware update
-        # tx.locktime = self.get_local_height()
+        tx.locktime = self.get_local_height()
         run_hook('make_unsigned_transaction', self, tx)
         return tx
 
