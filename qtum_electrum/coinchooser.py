@@ -71,14 +71,18 @@ class PRNG:
 Bucket = namedtuple('Bucket', ['desc', 'size', 'value', 'coins'])
 
 
-def strip_unneeded(bkts, sufficient_funds, exception=None):
+def strip_unneeded(bkts, sufficient_funds, exception_addr=None) -> list:
     '''Remove buckets that are unnecessary in achieving the spend amount'''
-    bkts = sorted(bkts, key = lambda bkt: bkt.value)
+    bkts = sorted(bkts, key=lambda bkt: bkt.value)
+
+    # move the exception bucket to the end
     for i in range(len(bkts)):
-        if exception and bkts[i].desc == exception:
+        if exception_addr and bkts[i].desc == exception_addr:
+            exception_bucket = bkts[i]
             del bkts[i]
-            bkts.append(exception)
+            bkts.append(exception_bucket)
             break
+
     for i in range(len(bkts)):
         if not sufficient_funds(bkts[i + 1:]):
             return bkts[i:]
