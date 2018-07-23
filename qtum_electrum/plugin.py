@@ -60,10 +60,8 @@ class Plugins(DaemonThread):
 
     def load_plugins(self):
         for loader, name, ispkg in pkgutil.iter_modules([self.pkgpath]):
-            # do not load deprecated plugins
-            if name in ['plot', 'exchange_rate']:
-                continue
-            m = loader.find_module(name).load_module(name)
+            mod = pkgutil.find_loader('qtum_electrum.plugins.' + name)
+            m = mod.load_module()
             d = m.__dict__
             gui_good = self.gui_name in d.get('available_for', [])
             if not gui_good:
@@ -96,7 +94,7 @@ class Plugins(DaemonThread):
         if not loader:
             raise RuntimeError("%s implementation for %s plugin not found"
                                % (self.gui_name, name))
-        p = loader.load_module(full_name)
+        p = loader.load_module()
         plugin = p.Plugin(self, self.config, name)
         self.add_jobs(plugin.thread_jobs())
         self.plugins[name] = plugin
@@ -134,8 +132,8 @@ class Plugins(DaemonThread):
         for dep, s in deps:
             try:
                 __import__(dep)
-            except ImportError:
-                return False
+            except ImportError as e:
+                self.print_error('Plugin', name, 'unavailable:', type(e).__name__, ':', str(e))
         requires = d.get('requires_wallet_type', [])
         return not requires or w.wallet_type in requires
 

@@ -45,13 +45,13 @@ class GoBack(Exception): pass
 
 class BaseWizard(object):
 
-    def __init__(self, config, storage):
+    def __init__(self, config, plugins, storage):
         super(BaseWizard, self).__init__()
         self.config = config
+        self.plugins = plugins
         self.storage = storage
         self.wallet = None
         self.stack = []
-        self.plugin = None
         self.keystores = []
         self.is_kivy = config.get('gui') == 'kivy'
         self.seed_type = None

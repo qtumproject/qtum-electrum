@@ -89,7 +89,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
     synchronized_signal = pyqtSignal(str)
 
     def __init__(self, config, app, plugins, storage):
-        BaseWizard.__init__(self, config, storage)
+        BaseWizard.__init__(self, config, plugins, storage)
         QDialog.__init__(self, None)
         self.setWindowTitle('Qtum Electrum  -  ' + _('Install Wizard'))
         self.app = app
