@@ -1,5 +1,5 @@
 ####-*.patch
-app.fi
+app.fil
 *.pyc
 *.swp
 build/
@@ -22,3 +22,6 @@ lib/paymentrequest_pb2.py
 .cache/
 .coverage
 .idea/
+.pytest_cache/
+contrib/build-osx/*.dylib
+qtum-electrum-data/
