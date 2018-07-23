@@ -1,5 +1,5 @@
 #!/bin/bash
-PYTHON_VERSION=3.5.4
+PYTHON_VERSION=3.6.6
 
 ETH_HASH_GIT_URL=https://github.com/icodeface/eth-hash
 ETH_UTILS_GIT_URL=https://github.com/icodeface/eth-utils
