@@ -1,3 +1,8 @@
+# Release 0.18.6
+ * fix exchange rate
+ * reorganization code structure
+ * fix coinchooser issue when sending tokens
+
 # Release 0.18.5
  * use libsecp256k1 to speed up elliptic curve operations.
  * fix trezor sending issue on testnet
@@ -5,7 +10,6 @@
  * add checkpoints
  * change testnet derivation path to make it different with mainnet
  * fix DNS resolution on Windows
-
 
 # Release 0.18.4
  * support ERC20 token transfer history
