@@ -69,6 +69,8 @@ wine 'wineboot'
 # needed for python 3.6+
 rm -f /opt/wine-stable/lib/wine/fakedlls/api-ms-win-core-path-l1-1-0.dll
 rm -f /opt/wine-stable/lib/wine/api-ms-win-core-path-l1-1-0.dll.so
+rm -f /usr/lib/i386-linux-gnu/wine-development/api-ms-win-core-path-l1-1-0.dll.so
+rm -f /usr/lib/i386-linux-gnu/wine-development/fakedlls/api-ms-win-core-path-l1-1-0.dll
 
 mkdir -p /tmp/electrum-build
 cd /tmp/electrum-build
