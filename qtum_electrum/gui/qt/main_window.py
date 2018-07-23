@@ -44,10 +44,9 @@ from qtum_electrum.i18n import _
 from qtum_electrum.util import (bh2u, bfh, format_time, format_satoshis, format_fee_satoshis,PrintError, format_satoshis_plain,
                                 NotEnoughFunds, UserCancelled, profiler, export_meta, import_meta, open_browser,
                                 InvalidPassword)
-from qtum_electrum import Transaction
 from qtum_electrum import util, bitcoin, commands, coinchooser
 from qtum_electrum import paymentrequest
-from qtum_electrum.transaction import opcodes, contract_script
+from qtum_electrum.transaction import Transaction, opcodes, contract_script
 from qtum_electrum.wallet import Multisig_Wallet, AddTransactionException
 from qtum_electrum.tokens import Token
 
@@ -2960,7 +2959,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             run_hook('init_qt', self.gui_object)
 
         for i, descr in enumerate(plugins.descriptions.values()):
-            name = descr['__name__']
+            full_name = descr['__name__']
+            prefix, _separator, name = full_name.rpartition('.')
             p = plugins.get(name)
             if descr.get('registers_keystore'):
                 continue

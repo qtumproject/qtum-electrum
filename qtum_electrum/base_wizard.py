@@ -51,6 +51,7 @@ class BaseWizard(object):
         self.plugins = plugins
         self.storage = storage
         self.wallet = None
+        self.plugin = None
         self.stack = []
         self.keystores = []
         self.is_kivy = config.get('gui') == 'kivy'

@@ -6,7 +6,8 @@ import traceback
 
 from PyQt5.QtCore import *
 
-from qtum_electrum import Wallet, WalletStorage
+from qtum_electrum.wallet import Wallet
+from qtum_electrum.storage import WalletStorage
 from qtum_electrum.util import UserCancelled, InvalidPassword
 from qtum_electrum.base_wizard import BaseWizard, HWD_SETUP_DECRYPT_WALLET, GoBack
 from qtum_electrum.i18n import _
