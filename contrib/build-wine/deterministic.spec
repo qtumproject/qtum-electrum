@@ -31,6 +31,7 @@ datas = [
     (home+'qtum_electrum/*.json', 'qtum_electrum'),
     (home+'qtum_electrum/wordlist/english.txt', 'qtum_electrum/wordlist'),
     (home+'qtum_electrum/locale', 'qtum_electrum/locale'),
+    (home+'qtum_electrum/plugins', 'qtum_electrum/plugins'),
     ('C:\\Program Files (x86)\\ZBar\\bin\\', '.')
 ]
 datas += collect_data_files('trezorlib')
