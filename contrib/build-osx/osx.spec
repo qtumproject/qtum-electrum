@@ -30,6 +30,7 @@ datas = [
     (electrum+'qtum_electrum/*.json', PYPKG),
     (electrum+'qtum_electrum/wordlist/english.txt', PYPKG + '/wordlist'),
     (electrum+'qtum_electrum/locale', PYPKG + '/locale'),
+    (electrum+'qtum_electrum/plugins', PYPKG + '/plugins'),
 ]
 
 datas += collect_data_files('trezorlib')

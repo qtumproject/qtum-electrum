@@ -60,8 +60,14 @@ class Plugins(DaemonThread):
 
     def load_plugins(self):
         for loader, name, ispkg in pkgutil.iter_modules([self.pkgpath]):
-            mod = pkgutil.find_loader('qtum_electrum.plugins.' + name)
-            m = mod.load_module()
+            # mod = pkgutil.find_loader('qtum_electrum.plugins.' + name)
+            # m = mod.load_module()
+
+            # do not load deprecated plugins
+            if name in ['plot', 'exchange_rate']:
+                continue
+            m = loader.find_module(name).load_module(name)
+
             d = m.__dict__
             gui_good = self.gui_name in d.get('available_for', [])
             if not gui_good:
