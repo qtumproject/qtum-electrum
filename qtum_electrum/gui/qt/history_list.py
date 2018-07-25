@@ -25,9 +25,9 @@
 import datetime
 from .util import *
 from qtum_electrum.i18n import _
-from qtum_electrum.util import block_explorer_URL, format_satoshis, format_time
+from qtum_electrum.util import block_explorer_URL
 from qtum_electrum.util import timestamp_to_datetime, profiler, open_browser
-from qtum_electrum.wallet import TX_HEIGHT_LOCAL
+from qtum_electrum.address_synchronizer import TX_HEIGHT_LOCAL
 
 
 class HistoryList(MyTreeWidget, AcceptFileDragDrop):

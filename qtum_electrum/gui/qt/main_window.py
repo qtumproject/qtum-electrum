@@ -47,7 +47,8 @@ from qtum_electrum.util import (bh2u, bfh, format_time, format_satoshis, format_
 from qtum_electrum import util, bitcoin, commands, coinchooser
 from qtum_electrum import paymentrequest
 from qtum_electrum.transaction import Transaction, opcodes, contract_script
-from qtum_electrum.wallet import Multisig_Wallet, AddTransactionException
+from qtum_electrum.address_synchronizer import AddTransactionException
+from qtum_electrum.wallet import Multisig_Wallet
 from qtum_electrum.tokens import Token
 
 try:
