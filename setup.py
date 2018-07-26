@@ -2,6 +2,7 @@
 
 # python setup.py sdist --format=zip,gztar
 
+from setuptools import setup, find_packages
 import argparse
 import imp
 import os
@@ -57,24 +58,15 @@ setup(
         'qtum_electrum.gui',
         'qtum_electrum.gui.qt',
         'qtum_electrum.plugins',
-        'qtum_electrum.plugins.audio_modem',
-        'qtum_electrum.plugins.email_requests',
-        'qtum_electrum.plugins.greenaddress_instant',
-        'qtum_electrum.plugins.hw_wallet',
-        'qtum_electrum.plugins.labels',
-        'qtum_electrum.plugins.ledger',
-        'qtum_electrum.plugins.trezor',
-        'qtum_electrum.plugins.trustedcoin',
-        'qtum_electrum.plugins.virtualkeyboard',
-    ],
+    ] + [('qtum_electrum.plugins.'+pkg) for pkg in find_packages('qtum_electrum/plugins')],
     package_dir={
         'qtum_electrum': 'qtum_electrum',
     },
     package_data={
         '': ['*.txt', '*.json', '*.ttf', '*.otf'],
         'qtum_electrum': [
-            'qtum_electrum/wordlist/*.txt',
-            'qtum_electrum/locale/*/LC_MESSAGES/electrum.mo',
+            'wordlist/*.txt',
+            'locale/*/LC_MESSAGES/electrum.mo',
         ]
     },
     scripts=['run_qtum_electrum'],
