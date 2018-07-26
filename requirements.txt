@@ -23,4 +23,5 @@ setuptools==40.0.0
 six==1.11.0
 sip==4.19.8
 trezor==0.10.2
+typing>=3.0.0
 urllib3==1.23

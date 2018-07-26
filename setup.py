@@ -46,7 +46,6 @@ setup(
     extras_require={
         'full': ['Cython>=0.27', 'rlp==0.6.0', 'trezor[hidapi]>=0.9.0',
                  'keepkey', 'btchip-python', 'websocket-client', 'hidapi'],
-        ':python_version < "3.5"': ['typing>=3.0.0'],
     },
     dependency_links=[
         'https://github.com/icodeface/eth-hash',
