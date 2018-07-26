@@ -491,7 +491,7 @@ class AddressSynchronizer(PrintError):
 
         # get domain
         if domain is None:
-            domain = self.get_addresses()
+            domain = self.history.keys()
         domain = set(domain)
         # 1. Get the history of each address in the domain, maintain the
         #    delta of a tx as the sum of its deltas on domain addresses
