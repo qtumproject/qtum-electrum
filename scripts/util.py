@@ -1,4 +1,4 @@
-import select, time, electrum, queue
+import select, time, qtum_electrum, queue
 from qtum_electrum import Connection, Interface, SimpleConfig
 
 from qtum_electrum.network import filter_protocol, parse_servers
