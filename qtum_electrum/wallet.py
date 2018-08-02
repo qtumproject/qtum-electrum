@@ -311,7 +311,8 @@ class Abstract_Wallet(AddressSynchronizer):
         if tx.is_complete():
             if tx_hash in self.transactions.keys():
                 label = self.get_label(tx_hash)
-                height, conf, timestamp = self.get_tx_height(tx_hash)
+                tx_mined_status = self.get_tx_height(tx_hash)
+                height, conf = tx_mined_status.height, tx_mined_status.conf
                 if height > 0:
                     if conf:
                         status = _("%d confirmations") % conf
@@ -389,6 +390,7 @@ class Abstract_Wallet(AddressSynchronizer):
         return label
 
     def get_default_label(self, tx_hash):
+        # qtum diff
         if self.txi.get(tx_hash) == {}:
             d = self.txo.get(tx_hash, {})
             labels = []
@@ -408,9 +410,14 @@ class Abstract_Wallet(AddressSynchronizer):
             print_error('get_default_label', e)
         return ''
 
-    def get_tx_status(self, tx_hash, height, conf, timestamp):
+    def get_tx_status(self, tx_hash, tx_mined_status):
+        # qtum diff
         from .util import format_time
+        height = tx_mined_status.height
+        conf = tx_mined_status.conf
+        timestamp = tx_mined_status.timestamp
         is_mined = False
+        tx = None
         try:
             tx = self.transactions.get(tx_hash)
             if not tx:
@@ -751,8 +758,7 @@ class Abstract_Wallet(AddressSynchronizer):
             txid, n = txo.split(':')
             info = self.verified_tx.get(txid)
             if info:
-                tx_height, timestamp, pos = info
-                conf = local_height - tx_height
+                conf = local_height - info.height
             else:
                 conf = 0
             l.append((conf, v))
@@ -1095,7 +1101,7 @@ class Imported_Wallet(Simple_Wallet):
                 self.unverified_tx.pop(tx_hash, None)
                 self.transactions.pop(tx_hash, None)
 
-            self.storage.put('verified_tx3', self.verified_tx)
+            self.save_verified_tx()
         self.save_transactions()
 
         self.set_label(address, None)

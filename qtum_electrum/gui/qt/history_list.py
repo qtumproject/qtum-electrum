@@ -25,8 +25,7 @@
 import datetime
 from .util import *
 from qtum_electrum.i18n import _
-from qtum_electrum.util import block_explorer_URL
-from qtum_electrum.util import timestamp_to_datetime, profiler, open_browser
+from qtum_electrum.util import block_explorer_URL, timestamp_to_datetime, profiler, open_browser, TxMinedStatus
 from qtum_electrum.address_synchronizer import TX_HEIGHT_LOCAL
 
 
@@ -159,20 +158,21 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
         fx = self.parent.fx
         if fx: fx.history_used_spot = False
         for h_item in h:
-            tx_hash, height, conf, timestamp, value, balance = h_item
+            tx_hash, tx_mined_status, delta, balance = h_item
+            status, status_str = self.wallet.get_tx_status(tx_hash, tx_mined_status)
+            conf = tx_mined_status.conf
 
-            status, status_str = self.wallet.get_tx_status(tx_hash, height, conf, timestamp)
             has_invoice = self.wallet.invoices.paid.get(tx_hash)
             icon = self.icon_cache.get(":icons/" + TX_ICONS[status])
-            v_str = self.parent.format_amount(value, True, whitespaces=True)
+            v_str = self.parent.format_amount(delta, True, whitespaces=True)
             balance_str = self.parent.format_amount(balance, whitespaces=True)
             label = self.wallet.get_label(tx_hash)
-            if value and 0 < value < 4 * 10 ** 7 and label == 'stake mined':
+            if delta and 0 < delta < 4 * 10 ** 7 and label == 'stake mined':
                 label = 'contract gas change'
             entry = ['', tx_hash, status_str, label, v_str, balance_str]
             if fx and fx.show_history():
-                date = timestamp_to_datetime(time.time() if conf <= 0 else timestamp)
-                for amount in [value, balance]:
+                date = timestamp_to_datetime(time.time() if conf <= 0 else tx_mined_status.timestamp)
+                for amount in [delta, balance]:
                     text = fx.historical_value_str(amount, date)
                     entry.append(text)
             item = QTreeWidgetItem(entry)
@@ -185,7 +185,7 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
                     item.setTextAlignment(i, Qt.AlignRight | Qt.AlignVCenter)
                 if i != 2:
                     item.setFont(i, QFont(MONOSPACE_FONT))
-            if value and value < 0:
+            if delta and delta < 0:
                 item.setForeground(3, QBrush(QColor("#BC1E1E")))
                 item.setForeground(4, QBrush(QColor("#BC1E1E")))
             if tx_hash:
@@ -208,10 +208,11 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
             label = self.wallet.get_label(txid)
             item.setText(3, label)
 
-    def update_item(self, tx_hash, height, conf, timestamp):
+    def update_item(self, tx_hash, tx_mined_status):
         if self.wallet is None:
             return
-        status, status_str = self.wallet.get_tx_status(tx_hash, height, conf, timestamp)
+        conf = tx_mined_status.conf
+        status, status_str = self.wallet.get_tx_status(tx_hash, tx_mined_status)
         icon = self.icon_cache.get(":icons/" + TX_ICONS[status])
         items = self.findItems(tx_hash, Qt.UserRole|Qt.MatchContains|Qt.MatchRecursive, column=1)
         if items:
@@ -236,7 +237,7 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
             column_data = item.text(column)
 
         tx_URL = block_explorer_URL(self.config, {'tx': tx_hash})
-        height, conf, timestamp = self.wallet.get_tx_height(tx_hash)
+        height = self.wallet.get_tx_height(tx_hash).height
         tx = self.wallet.transactions.get(tx_hash)
         is_relevant, is_mine, v, fee = self.wallet.get_wallet_delta(tx)
         is_unconfirmed = height <= 0

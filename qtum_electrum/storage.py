@@ -45,7 +45,7 @@ from . import util
 
 OLD_SEED_VERSION = 4        # electrum versions < 2.0
 NEW_SEED_VERSION = 11       # electrum versions >= 2.0
-FINAL_SEED_VERSION = 15  # electrum >= 2.7 will set this to prevent
+FINAL_SEED_VERSION = 16  # electrum >= 2.7 will set this to prevent
                             # old versions from overwriting new format
 
 
@@ -346,6 +346,7 @@ class WalletStorage(JsonDB):
         self.convert_wallet_type()
         self.convert_account()
         self.convert_version_15()
+        self.convert_version_16()
         self.put('seed_version', FINAL_SEED_VERSION)  # just to be sure
         self.write()
 
@@ -499,6 +500,14 @@ class WalletStorage(JsonDB):
                 spent_outpoints[prevout_hash][prevout_n] = txid
         self.put('spent_outpoints', spent_outpoints)
         self.put('seed_version', 15)
+
+    def convert_version_16(self):
+        # delete verified_tx3 as its structure changed
+        if not self._is_upgrade_method_needed(15, 15):
+            return
+
+        self.put('verified_tx3', None)
+        self.put('seed_version', 16)
 
     def get_action(self):
         action = run_hook('get_action', self)

@@ -35,6 +35,7 @@ import hmac
 from struct import Struct
 import webbrowser
 import stat
+from typing import NamedTuple
 
 from .i18n import _
 
@@ -818,3 +819,13 @@ def make_dir(path, allow_symlink=True):
             raise Exception('Dangling link: ' + path)
         os.mkdir(path)
         os.chmod(path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+
+
+TxMinedStatus = NamedTuple("TxMinedStatus", [("height", int),
+                                             ("conf", int),
+                                             ("timestamp", int),
+                                             ("header_hash", str)])
+VerifiedTxInfo = NamedTuple("VerifiedTxInfo", [("height", int),
+                                               ("timestamp", int),
+                                               ("txpos", int),
+                                               ("header_hash", str)])
