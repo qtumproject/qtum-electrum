@@ -26,7 +26,9 @@
 
 from qtum_electrum.plugin import BasePlugin, hook
 from qtum_electrum.i18n import _
-from qtum_electrum.bitcoin import is_address
+from qtum_electrum.qtum import is_address, TYPE_SCRIPT
+from qtum_electrum.util import bfh
+from qtum_electrum.transaction import opcodes
 
 
 class HW_PluginBase(BasePlugin):
@@ -83,3 +85,15 @@ def is_any_tx_output_on_change_branch(tx):
             if index[0] == 1:
                 return True
     return False
+
+
+def trezor_validate_op_return_output_and_get_data(_type, address, amount):
+    if _type != TYPE_SCRIPT:
+        raise Exception("Unexpected output type: {}".format(_type))
+    script = bfh(address)
+    if not (script[0] == opcodes.OP_RETURN and
+            script[1] == len(script) - 2 and script[1] <= 75):
+        raise Exception(_("Only OP_RETURN scripts, with one constant push, are supported."))
+    if amount != 0:
+        raise Exception(_("Amount for OP_RETURN output must be zero."))
+    return script[2:]
