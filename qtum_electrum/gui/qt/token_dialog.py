@@ -92,7 +92,7 @@ class TokenAddDialog(QDialog, MessageBoxMixin):
             name = r.get('name')
             decimals = r.get('decimals')
             symbol = r.get('symbol')
-            if not name or not symbol or not decimals or not isinstance(decimals, int):
+            if not name or not symbol or not isinstance(decimals, int) or decimals is None:
                 self.show_message('token info not valid: {} {} {}'.format(name, symbol, decimals))
                 return
             token = Token(contract_addr, bind_addr, name, symbol, decimals, 0)
