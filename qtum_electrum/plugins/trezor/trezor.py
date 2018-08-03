@@ -457,12 +457,12 @@ class TrezorPlugin(HW_PluginBase):
                     script_type=script_type)
             return txoutputtype
 
-        def create_output_by_address():
+        def create_output_by_address(o):
             txoutputtype = self.types.TxOutputType()
             txoutputtype.amount = amount
             if _type == TYPE_SCRIPT:
                 txoutputtype.script_type = self.types.OutputScriptType.PAYTOOPRETURN
-                txoutputtype.op_return_data = trezor_validate_op_return_output_and_get_data(_type, address, amount)
+                txoutputtype.op_return_data = trezor_validate_op_return_output_and_get_data(o)
             elif _type == TYPE_ADDRESS:
                 txoutputtype.script_type = self.types.OutputScriptType.PAYTOADDRESS
                 # qtum diff
@@ -473,7 +473,8 @@ class TrezorPlugin(HW_PluginBase):
         has_change = False
         any_output_on_change_branch = is_any_tx_output_on_change_branch(tx)
 
-        for _type, address, amount in tx.outputs():
+        for o in tx.outputs():
+            _type, address, amount = o.type, o.address, o.value
             use_create_by_derivation = False
 
             info = tx.output_info.get(address)
@@ -491,7 +492,7 @@ class TrezorPlugin(HW_PluginBase):
             if use_create_by_derivation:
                 txoutputtype = create_output_by_derivation(info)
             else:
-                txoutputtype = create_output_by_address()
+                txoutputtype = create_output_by_address(o)
             outputs.append(txoutputtype)
 
         return outputs

@@ -46,7 +46,7 @@ from .plugin import run_hook
 from . import transaction
 from . import bitcoin
 from . import coinchooser
-from .transaction import Transaction
+from .transaction import Transaction, TxOutput
 from .address_synchronizer import AddressSynchronizer
 from . import paymentrequest
 from .paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED
@@ -130,7 +130,7 @@ def sweep(privkeys, network, config, recipient, fee=None, imax=100):
     inputs, keypairs = sweep_preparations(privkeys, network, imax)
     total = sum(i.get('value') for i in inputs)
     if fee is None:
-        outputs = [(TYPE_ADDRESS, recipient, total)]
+        outputs = [TxOutput(TYPE_ADDRESS, recipient, total)]
         tx = Transaction.from_io(inputs, outputs)
         fee = config.estimate_fee(tx.estimated_size())
     if total - fee < 0:
@@ -139,7 +139,7 @@ def sweep(privkeys, network, config, recipient, fee=None, imax=100):
         raise Exception(_('Not enough funds on address.') + '\nTotal: %d satoshis\nFee: %d\nDust Threshold: %d' % (
         total, fee, dust_threshold(network)))
 
-    outputs = [(TYPE_ADDRESS, recipient, total - fee)]
+    outputs = [TxOutput(TYPE_ADDRESS, recipient, total - fee)]
     locktime = network.get_local_height()
 
     tx = Transaction.from_io(inputs, outputs, locktime=locktime)
@@ -402,7 +402,7 @@ class Abstract_Wallet(AddressSynchronizer):
                 return ', '.join(labels)
         try:
             tx = self.transactions.get(tx_hash)
-            if tx.outputs()[0][0] == 'coinstake':
+            if tx.outputs()[0].type == TYPE_STAKE:
                 return 'stake mined'
             elif tx.inputs()[0]['type'] == 'coinbase':
                 return 'coinbase'
@@ -422,7 +422,7 @@ class Abstract_Wallet(AddressSynchronizer):
             tx = self.transactions.get(tx_hash)
             if not tx:
                 tx = self.token_txs.get(tx_hash)
-            is_mined = tx.outputs()[0][0] == 'coinstake'
+            is_mined = tx.outputs()[0].type == TYPE_STAKE
         except (BaseException,) as e:
             print_error('get_tx_status', e)
         if conf == 0:
@@ -472,11 +472,10 @@ class Abstract_Wallet(AddressSynchronizer):
         # check outputs
         i_max = None
         for i, o in enumerate(outputs):
-            _type, data, value = o
-            if _type == TYPE_ADDRESS:
-                if not is_address(data):
-                    raise Exception("Invalid Qtum address:" + data)
-            if value == '!':
+            if o.type == TYPE_ADDRESS:
+                if not is_address(o.address):
+                    raise Exception("Invalid Qtum address:" + o.address)
+            if o.value == '!':
                 if i_max is not None:
                     raise Exception("More than one output set to spend max")
                 i_max = i
@@ -523,15 +522,14 @@ class Abstract_Wallet(AddressSynchronizer):
                                       fee_estimator, self.dust_threshold(), sender)
         else:
             sendable = sum(map(lambda x:x['value'], inputs))
-            _type, data, value = outputs[i_max]
-            outputs[i_max] = (_type, data, 0)
+            outputs[i_max] = outputs[i_max]._replace(value=0)
             tx = Transaction.from_io(inputs, outputs[:])
             fee = fee_estimator(tx.estimated_size())
             fee = fee + gas_fee
             amount = sendable - tx.output_value() - fee
             if amount < 0:
                 raise NotEnoughFunds()
-            outputs[i_max] = (_type, data, amount)
+            outputs[i_max] = outputs[i_max]._replace(value=amount)
             tx = Transaction.from_io(inputs, outputs[:])
 
         # Sort the inputs and outputs deterministically
@@ -626,14 +624,13 @@ class Abstract_Wallet(AddressSynchronizer):
         s = sorted(s, key=lambda x: x[2])
         for o in s:
             i = outputs.index(o)
-            otype, address, value = o
-            if value - delta >= self.dust_threshold():
-                outputs[i] = otype, address, value - delta
+            if o.value - delta >= self.dust_threshold():
+                outputs[i] = o._replace(value=o.value - delta)
                 delta = 0
                 break
             else:
                 del outputs[i]
-                delta -= value
+                delta -= o.value
                 if delta > 0:
                     continue
         if delta > 0:
@@ -644,8 +641,8 @@ class Abstract_Wallet(AddressSynchronizer):
     def cpfp(self, tx, fee):
         txid = tx.txid()
         for i, o in enumerate(tx.outputs()):
-            otype, address, value = o
-            if otype == TYPE_ADDRESS and self.is_mine(address):
+            address, value = o.address, o.value
+            if o.type == TYPE_ADDRESS and self.is_mine(address):
                 break
         else:
             return
@@ -655,7 +652,7 @@ class Abstract_Wallet(AddressSynchronizer):
             return
         self.add_input_info(item)
         inputs = [item]
-        outputs = [(TYPE_ADDRESS, address, value - fee)]
+        outputs = [TxOutput(TYPE_ADDRESS, address, value - fee)]
         locktime = self.get_local_height()
         # note: no need to call tx.BIP_LI01_sort() here - single input/output
         return Transaction.from_io(inputs, outputs, locktime=locktime)

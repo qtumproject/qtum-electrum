@@ -6,10 +6,10 @@ import getpass
 import qtum_electrum
 from qtum_electrum.util import format_satoshis, set_verbosity
 from qtum_electrum.bitcoin import is_address, COIN, TYPE_ADDRESS
-from qtum_electrum import Wallet, WalletStorage
+from qtum_electrum.transaction import TxOutput
+from .. import Wallet, WalletStorage
 
 _ = lambda x:x
-
 
 
 class ElectrumGui:
@@ -339,7 +339,7 @@ class ElectrumGui:
         else:
             password = None
         try:
-            tx = self.wallet.mktx([(TYPE_ADDRESS, self.str_recipient, amount)], password, self.config, fee)
+            tx = self.wallet.mktx([TxOutput(TYPE_ADDRESS, self.str_recipient, amount)], password, self.config, fee)
         except Exception as e:
             self.show_message(str(e))
             return

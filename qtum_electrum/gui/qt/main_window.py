@@ -46,7 +46,7 @@ from qtum_electrum.util import (bh2u, bfh, format_time, format_satoshis, format_
                                 InvalidPassword)
 from qtum_electrum import util, bitcoin, commands, coinchooser
 from qtum_electrum import paymentrequest
-from qtum_electrum.transaction import Transaction, opcodes, contract_script
+from qtum_electrum.transaction import Transaction, opcodes, contract_script, TxOutput
 from qtum_electrum.address_synchronizer import AddTransactionException
 from qtum_electrum.wallet import Multisig_Wallet
 from qtum_electrum.tokens import Token
@@ -1242,7 +1242,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             outputs = self.payto_e.get_outputs(self.is_max)
             if not outputs:
                 _type, addr = self.get_payto_or_dummy()
-                outputs = [(_type, addr, amount)]
+                outputs = [TxOutput(_type, addr, amount)]
             try:
                 is_sweep = bool(self.tx_external_keypairs)
                 tx = self.wallet.make_unsigned_transaction(self.get_coins(), outputs, self.config, fee,
@@ -1367,14 +1367,14 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.show_error(_('No outputs'))
             return
 
-        for _type, addr, amount in outputs:
-            if addr is None:
+        for o in outputs:
+            if o.address is None:
                 self.show_error(_('Qtum Address is None'))
                 return
-            if _type == TYPE_ADDRESS and not bitcoin.is_address(addr):
+            if o.type == TYPE_ADDRESS and not bitcoin.is_address(o.address):
                 self.show_error(_('Invalid Qtum Address'))
                 return
-            if amount is None:
+            if o.value is None:
                 self.show_error(_('Invalid Amount'))
                 return
 

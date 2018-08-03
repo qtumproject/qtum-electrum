@@ -24,7 +24,7 @@
 # SOFTWARE.
 
 # Note: The deserialization code originally comes from ABE.
-from typing import Sequence, Union
+from typing import Sequence, Union, NamedTuple
 from .util import print_error, profiler
 from . import bitcoin
 from . import ecc
@@ -40,6 +40,8 @@ from .keystore import xpubkey_to_address, xpubkey_to_pubkey
 
 NO_SIGNATURE = 'ff'
 PARTIAL_TXN_HEADER_MAGIC = b'EPTF\xff'
+TxOutput = NamedTuple("TxOutput", [('type', int), ('address', str), ('value', Union[int, str])])
+# ^ value is str when the output is set to max: '!'
 
 
 class SerializationError(Exception):
@@ -52,6 +54,7 @@ class UnknownTxinType(Exception):
 
 class NotRecognizedRedeemScript(Exception):
     pass
+
 
 
 class BCDataStream(object):
@@ -537,7 +540,7 @@ def parse_output(vds, i):
     d['prevout_n'] = i
     # Qtum
     if not d['value'] and not d['address'] and not i and not d['scriptPubKey']:
-        d['type'] = 'coinstake'
+        d['type'] = TYPE_STAKE
     return d
 
 
@@ -726,7 +729,7 @@ class Transaction:
             return
         d = deserialize(self.raw, force_full_parse)
         self._inputs = d['inputs']
-        self._outputs = [(x['type'], x['address'], x['value']) for x in d['outputs']]
+        self._outputs = [TxOutput(x['type'], x['address'], x['value']) for x in d['outputs']]
         self.locktime = d['lockTime']
         self.version = d['version']
         self.is_partial_originally = d['partial']
@@ -747,7 +750,7 @@ class Transaction:
             return addr
         elif output_type == TYPE_ADDRESS:
             return bitcoin.address_to_script(addr)
-        elif output_type == TYPE_PUBKEY or output_type == 'coinstake':
+        elif output_type == TYPE_PUBKEY or output_type == TYPE_STAKE:
             return bitcoin.public_key_to_p2pk_script(addr)
         else:
             raise TypeError('Unknown output type {} {}'.format(output_type, addr))
@@ -970,7 +973,7 @@ class Transaction:
     def serialize_output(self, output):
         # qtum
         output_type, data, amount = output
-        if output_type == 'coinstake':
+        if output_type == TYPE_STAKE:
             output_type = TYPE_SCRIPT
         s = int_to_hex(amount, 8)
         script = self.pay_script(output_type, addr=data)
@@ -1166,16 +1169,17 @@ class Transaction:
 
     def get_outputs(self):
         """convert pubkeys to addresses"""
-        o = []
-        for type, x, v in self.outputs():
-            if type == TYPE_ADDRESS:
+        outputs = []
+        for o in self.outputs():
+            if o.type == TYPE_ADDRESS:
                 addr = x
-            elif type == TYPE_PUBKEY:
-                addr = bitcoin.public_key_to_p2pkh(bfh(x))
+            elif o.type == TYPE_PUBKEY:
+                # TODO do we really want this conversion? it's not really that address after all
+                addr = bitcoin.public_key_to_p2pkh(bfh(o.address))
             else:
-                addr = 'SCRIPT ' + x
-            o.append((addr,v))      # consider using yield (addr, v)
-        return o
+                addr = 'SCRIPT ' + o.address
+            outputs.append((addr, o.value))      # consider using yield (addr, v)
+        return outputs
 
     def get_output_addresses(self):
         return [addr for addr, val in self.get_outputs()]

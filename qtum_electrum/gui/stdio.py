@@ -4,6 +4,7 @@ _ = lambda x:x
 from qtum_electrum import WalletStorage, Wallet
 from qtum_electrum.util import format_satoshis, set_verbosity
 from qtum_electrum.bitcoin import is_address, COIN, TYPE_ADDRESS
+from qtum_electrum.transaction import TxOutput
 import getpass, datetime
 
 # minimal fdisk like gui for console usage
@@ -190,7 +191,7 @@ class ElectrumGui:
             if c == "n": return
 
         try:
-            tx = self.wallet.mktx([(TYPE_ADDRESS, self.str_recipient, amount)], password, self.config, fee)
+            tx = self.wallet.mktx([TxOutput(TYPE_ADDRESS, self.str_recipient, amount)], password, self.config, fee)
         except Exception as e:
             print(str(e))
             return

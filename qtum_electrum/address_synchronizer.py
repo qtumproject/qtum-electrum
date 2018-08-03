@@ -28,9 +28,9 @@ import itertools
 from operator import itemgetter
 
 from . import qtum
-from .qtum import COINBASE_MATURITY, TYPE_ADDRESS, TYPE_PUBKEY, b58_address_to_hash160, TOKEN_TRANSFER_TOPIC
+from .qtum import COINBASE_MATURITY, TYPE_ADDRESS, TYPE_PUBKEY, b58_address_to_hash160, TOKEN_TRANSFER_TOPIC, TYPE_STAKE
 from .util import PrintError, profiler, bfh, bh2u, VerifiedTxInfo, TxMinedStatus
-from .transaction import Transaction
+from .transaction import Transaction, TxOutput
 from .synchronizer import Synchronizer
 from .verifier import SPV
 from .blockchain import hash_header
@@ -127,12 +127,11 @@ class AddressSynchronizer(PrintError):
                     return addr
         return None
 
-    def get_txout_address(self, txo):
-        _type, x, v = txo
-        if _type == TYPE_ADDRESS:
-            addr = x
-        elif _type == TYPE_PUBKEY:
-            addr = qtum.public_key_to_p2pkh(bfh(x))
+    def get_txout_address(self, txo: TxOutput):
+        if txo.type == TYPE_ADDRESS:
+            addr = txo.address
+        elif txo.type == TYPE_PUBKEY:
+            addr = qtum.public_key_to_p2pkh(bfh(txo.address))
         else:
             addr = None
         return addr
@@ -220,7 +219,7 @@ class AddressSynchronizer(PrintError):
             # being is_mine, as we roll the gap_limit forward
 
             # qtum
-            is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0][0] == 'coinstake'
+            is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0].type == TYPE_STAKE
             tx_height = self.get_tx_height(tx_hash).height
             if not allow_unrelated:
                 # note that during sync, if the transactions are not properly sorted,
