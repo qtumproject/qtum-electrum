@@ -190,7 +190,7 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
                     item.setFont(i, monospace_font)
             if delta and delta < 0:
                 item.setForeground(3, red_brush)
-                item.setForeground(4, blue_brush)
+                item.setForeground(4, red_brush)
             if tx_hash:
                 item.setData(0, Qt.UserRole, tx_hash)
             self.insertTopLevelItem(0, item)
