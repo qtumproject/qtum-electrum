@@ -3149,7 +3149,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         try:
             datahex = 'a9059cbb{}{:064x}'.format(pay_to.zfill(64), amount)
             script = contract_script(gas_limit, gas_price, datahex, token.contract_addr, opcodes.OP_CALL)
-            outputs = [(TYPE_SCRIPT, script, 0), ]
+            outputs = [TxOutput(TYPE_SCRIPT, script, 0), ]
             tx_desc = 'pay out {} {}'.format(amount / (10 ** token.decimals), token.symbol)
             self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, token.bind_addr, dialog)
         except (BaseException,) as e:
@@ -3268,7 +3268,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         try:
             abi_encoded = eth_abi_encode(abi, args)
             script = contract_script(gas_limit, gas_price, abi_encoded, address, opcodes.OP_CALL)
-            outputs = [(TYPE_SCRIPT, script, amount), ]
+            outputs = [TxOutput(TYPE_SCRIPT, script, amount), ]
             tx_desc = 'contract sendto {}'.format(self.smart_contracts[address][0])
             self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog)
         except (BaseException,) as e:
@@ -3280,7 +3280,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             if constructor:
                 abi_encoded = eth_abi_encode(constructor, args)
             script = contract_script(gas_limit, gas_price, bytecode + abi_encoded, opcodes.OP_CREATE)
-            outputs = [(TYPE_SCRIPT, script, 0), ]
+            outputs = [TxOutput(TYPE_SCRIPT, script, 0), ]
             self._smart_contract_broadcast(outputs, 'contract create', gas_limit * gas_price, sender, dialog)
         except (BaseException,) as e:
             dialog.show_message(str(e))
