@@ -44,14 +44,14 @@ def read_blockchains(config):
     bad_chains = []
     main_chain_height = main_chain.height()
     for filename in l:
-        checkpoint = int(filename.split('_')[2])
+        forkpoint = int(filename.split('_')[2])
         parent_id = int(filename.split('_')[1])
-        b = Blockchain(config, checkpoint, parent_id)
+        b = Blockchain(config, forkpoint, parent_id)
         if not b.is_valid():
-            bad_chains.append(b.checkpoint)
+            bad_chains.append(b.forkpoint)
         if b.parent_id == 0 and b.height() < main_chain_height - 100:
-            bad_chains.append(b.checkpoint)
-        blockchains[b.checkpoint] = b
+            bad_chains.append(b.forkpoint)
+        blockchains[b.forkpoint] = b
     if not main_chain.is_valid():
         bad_chains.append(0)
 
@@ -71,7 +71,7 @@ def remove_chain(cp, chains):
         print_error('remove_chain error', e)
     for k in list(chains.keys()):
         if chains[k].parent_id == cp:
-            remove_chain(chains[k].checkpoint, chains)
+            remove_chain(chains[k].forkpoint, chains)
 
 
 def check_header(header):
@@ -96,10 +96,10 @@ class Blockchain(util.PrintError):
     Manages blockchain headers and their verification
     """
 
-    def __init__(self, config, checkpoint, parent_id):
+    def __init__(self, config, forkpoint, parent_id):
         self.config = config
         self.catch_up = None # interface catching up
-        self.checkpoint = checkpoint
+        self.forkpoint = forkpoint
         self.checkpoints = constants.net.CHECKPOINTS
         self.parent_id = parent_id
         self.lock = threading.Lock()
@@ -136,7 +136,7 @@ class Blockchain(util.PrintError):
             size = int(cursor.fetchone()[0])
             cursor.close()
             conn.close()
-            if not min_height == self.checkpoint:
+            if not min_height == self.forkpoint:
                 return False
             if size > 0 and not size == max_height - min_height + 1:
                 return False
@@ -145,38 +145,38 @@ class Blockchain(util.PrintError):
     def path(self):
         d = util.get_headers_dir(self.config)
         filename = 'blockchain_headers' if self.parent_id is None \
-            else os.path.join('forks', 'fork_%d_%d'%(self.parent_id, self.checkpoint))
+            else os.path.join('forks', 'fork_%d_%d'%(self.parent_id, self.forkpoint))
         return os.path.join(d, filename)
 
     def parent(self):
         return blockchains[self.parent_id]
 
     def get_max_child(self):
-        children = list(filter(lambda y: y.parent_id==self.checkpoint, blockchains.values()))
-        return max([x.checkpoint for x in children]) if children else None
+        children = list(filter(lambda y: y.parent_id == self.forkpoint, blockchains.values()))
+        return max([x.forkpoint for x in children]) if children else None
 
-    def get_checkpoint(self):
+    def get_forkpoint(self):
         mc = self.get_max_child()
-        return mc if mc is not None else self.checkpoint
+        return mc if mc is not None else self.forkpoint
 
     def get_branch_size(self):
-        return self.height() - self.get_checkpoint() + 1
+        return self.height() - self.get_forkpoint() + 1
 
     def get_name(self):
-        return self.get_hash(self.get_checkpoint()).lstrip('00')[0:10]
+        return self.get_hash(self.get_forkpoint()).lstrip('00')[0:10]
 
     def fork(parent, header):
-        checkpoint = header.get('block_height')
-        self = Blockchain(parent.config, checkpoint, parent.checkpoint)
-        print_error('[fork]', checkpoint, parent.checkpoint)
+        forkpoint = header.get('block_height')
+        self = Blockchain(parent.config, forkpoint, parent.forkpoint)
+        print_error('[fork]', forkpoint, parent.forkpoint)
         self.save_header(header)
         return self
 
     def _height(self):
-        return self.checkpoint + self._size - 1
+        return self.forkpoint + self._size - 1
 
     def height(self):
-        return self.checkpoint + self.size() - 1
+        return self.forkpoint + self.size() - 1
 
     def size(self):
         with self.lock:
@@ -194,11 +194,11 @@ class Blockchain(util.PrintError):
         if self.parent_id is None:
             return
         parent_id = self.parent_id
-        checkpoint = self.checkpoint
+        forkpoint = self.forkpoint
         parent = self.parent()
         self.update_size()
         parent.update_size()
-        parent_branch_size = parent._height() - self.checkpoint + 1
+        parent_branch_size = parent._height() - self.forkpoint + 1
         if parent_branch_size >= self._size:
             return
         if self.swaping.is_set() or parent.swaping.is_set():
@@ -207,8 +207,8 @@ class Blockchain(util.PrintError):
         parent.swaping.set()
         global blockchains
         try:
-            print_error('swap', self.checkpoint, self.parent_id)
-            for i in range(checkpoint, checkpoint + self._size):
+            print_error('swap', self.forkpoint, self.parent_id)
+            for i in range(forkpoint, forkpoint + self._size):
                 print_error('swaping', i)
                 header = self.read_header(i, deserialize=False)
                 parent_header = parent.read_header(i, deserialize=False)
@@ -228,8 +228,8 @@ class Blockchain(util.PrintError):
         parent.swap_with_parent()
 
     def _write(self, raw_header, height):
-        self.print_error('{} try to write {}'.format(self.checkpoint, height))
-        if height > self._size + self.checkpoint:
+        self.print_error('{} try to write {}'.format(self.forkpoint, height))
+        if height > self._size + self.forkpoint:
             return
         try:
             conn = self.conn
@@ -244,7 +244,7 @@ class Blockchain(util.PrintError):
     def write(self, raw_header, height):
         if self.swaping.is_set():
             return
-        if self.checkpoint > 0 and height < self.checkpoint:
+        if self.forkpoint > 0 and height < self.forkpoint:
             return
         if not raw_header:
             if height:
@@ -258,7 +258,7 @@ class Blockchain(util.PrintError):
             self.update_size()
 
     def _delete(self, height):
-        self.print_error('{} try to delete {}'.format(self.checkpoint, height))
+        self.print_error('{} try to delete {}'.format(self.forkpoint, height))
         try:
             conn = self.conn
             cursor = conn.cursor()
@@ -272,8 +272,8 @@ class Blockchain(util.PrintError):
     def delete(self, height):
         if self.swaping.is_set():
             return
-        self.print_error('{} try to delete {}'.format(self.checkpoint, height))
-        if self.checkpoint > 0 and height < self.checkpoint:
+        self.print_error('{} try to delete {}'.format(self.forkpoint, height))
+        if self.forkpoint > 0 and height < self.forkpoint:
             return
         with self.lock:
             self._delete(height)
@@ -300,12 +300,12 @@ class Blockchain(util.PrintError):
         self.swap_with_parent()
 
     def read_header(self, height, deserialize=True):
-        assert self.parent_id != self.checkpoint
+        assert self.parent_id != self.forkpoint
         if height < 0:
             return
         if height > self._height():
             return
-        if height < self.checkpoint:
+        if height < self.forkpoint:
             return self.parent().read_header(height)
 
         conn = sqlite3.connect(self.path(), check_same_thread=False)
@@ -315,7 +315,7 @@ class Blockchain(util.PrintError):
         cursor.close()
         conn.close()
         if not result or len(result) < 1:
-            print_error('read_header 4', height, self.checkpoint, self.parent_id, result, self._height())
+            print_error('read_header 4', height, self.forkpoint, self.parent_id, result, self._height())
             self.update_size()
             return
         header = result[0]
@@ -350,7 +350,7 @@ class Blockchain(util.PrintError):
         return header_hash == real_hash
 
     def save_chunk(self, index, raw_headers):
-        print_error('{} try to save chunk {}'.format(self.checkpoint, index * CHUNK_SIZE))
+        print_error('{} try to save chunk {}'.format(self.forkpoint, index * CHUNK_SIZE))
         if self.swaping.is_set():
             return
         with self.lock:
@@ -399,14 +399,6 @@ class Blockchain(util.PrintError):
         if str(height) in self.checkpoints:
             return self.checkpoints[str(height)]
         return hash_header(self.read_header(height))
-
-    def BIP9(self, height, flag):
-        v = self.read_header(height)['version']
-        return ((v & 0xE0000000) == 0x20000000) and ((v & flag) == flag)
-
-    def segwit_support(self, N=144):
-        h = self.local_height
-        return sum([self.BIP9(h-i, 2) for i in range(N)])*10000/N/100.
 
     def get_target(self, height, prev_header=None, pprev_header=None):
         if height <= POW_BLOCK_COUNT:

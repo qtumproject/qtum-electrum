@@ -942,7 +942,7 @@ class Network(util.DaemonThread):
                         interface.blockchain = branch.parent()
                         next_height = interface.bad
                     else:
-                        interface.print_error('checkpoint conflicts with existing fork', branch.path())
+                        interface.print_error('forkpoint conflicts with existing fork', branch.path())
                         branch.write(b'', 0)
                         branch.save_header(interface.bad_header)
                         interface.mode = 'catch_up'
@@ -958,7 +958,7 @@ class Network(util.DaemonThread):
                             with self.blockchains_lock:
                                 self.blockchains[interface.bad] = b
                             interface.blockchain = b
-                            interface.print_error("new chain", b.checkpoint)
+                            interface.print_error("new chain", b.forkpoint)
                             interface.mode = 'catch_up'
                             next_height = interface.bad + 1
                             interface.blockchain.catch_up = interface.server
@@ -1131,7 +1131,7 @@ class Network(util.DaemonThread):
     @with_interface_lock
     def blockchain(self):
         if self.interface and self.interface.blockchain is not None:
-            self.blockchain_index = self.interface.blockchain.checkpoint
+            self.blockchain_index = self.interface.blockchain.forkpoint
         return self.blockchains[self.blockchain_index]
 
     @with_interface_lock
