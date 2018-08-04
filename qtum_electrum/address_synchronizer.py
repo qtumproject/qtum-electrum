@@ -116,6 +116,9 @@ class AddressSynchronizer(PrintError):
                 h.append((tx_hash, tx_height))
         return h
 
+    def get_address_history_len(self, addr: str) -> int:
+        return len(self._history_local.get(addr, ()))
+
     def get_txin_address(self, txi):
         addr = txi.get('address')
         if addr and addr != "(pubkey)":
@@ -537,10 +540,11 @@ class AddressSynchronizer(PrintError):
         c, u, x = self.get_balance(domain)
         balance = c + u + x
         h2 = []
+        now = time.time()
         for tx_hash, tx_mined_status, delta in history:
-            if from_timestamp and (tx_mined_status.timestamp or time.time()) < from_timestamp:
+            if from_timestamp and (tx_mined_status.timestamp or now) < from_timestamp:
                 continue
-            if to_timestamp and (tx_mined_status.timestamp or time.time()) >= to_timestamp:
+            if to_timestamp and (tx_mined_status.timestamp or now) >= to_timestamp:
                 continue
             h2.append((tx_hash, tx_mined_status, delta, balance))
             if balance is None or delta is None:
