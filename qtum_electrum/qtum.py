@@ -48,6 +48,8 @@ testnet_block_explorers = {
 MAX_FEE_RATE = 1250000
 # min fee rate is set to 0.4*MAX_FEE_RATE
 
+FEERATE_DEFAULT_RELAY = 400000
+
 FEE_TARGETS = [25, 10, 5, 2]
 
 COINBASE_MATURITY = 500

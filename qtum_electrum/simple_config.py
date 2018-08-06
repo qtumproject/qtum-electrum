@@ -8,7 +8,7 @@ from copy import deepcopy
 from . import util
 from .util import user_dir, print_error, make_dir, print_stderr, PrintError
 from .i18n import _
-from .bitcoin import MAX_FEE_RATE, FEE_TARGETS
+from .qtum import MAX_FEE_RATE, FEE_TARGETS
 
 
 config = None

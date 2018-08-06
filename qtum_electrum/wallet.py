@@ -47,7 +47,6 @@ from . import transaction
 from . import bitcoin
 from . import coinchooser
 from .transaction import Transaction, TxOutput
-from .address_synchronizer import AddressSynchronizer
 from . import paymentrequest
 from .paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED
 from .paymentrequest import InvoiceStore
@@ -67,10 +66,8 @@ TX_STATUS = [
 
 
 def relayfee(network):
-    RELAY_FEE = 5000
-    MAX_RELAY_FEE = 500000
-    f = network.relay_fee if network and network.relay_fee else RELAY_FEE
-    return min(f, MAX_RELAY_FEE)
+    f = network.relay_fee if network and network.relay_fee else FEERATE_DEFAULT_RELAY
+    return min(f, MAX_FEE_RATE)
 
 
 def dust_threshold(network):
