@@ -24,8 +24,6 @@ import os
 import threading
 import sqlite3
 from . import util
-from . import qtum
-from . import constants
 from .qtum import *
 
 
@@ -96,18 +94,27 @@ class Blockchain(util.PrintError):
     Manages blockchain headers and their verification
     """
 
+    verbosity_filter = 'b'
+
     def __init__(self, config, forkpoint, parent_id):
         self.config = config
         self.catch_up = None # interface catching up
         self.forkpoint = forkpoint
         self.checkpoints = constants.net.CHECKPOINTS
         self.parent_id = parent_id
-        self.lock = threading.Lock()
+        assert parent_id != forkpoint
+        self.lock = threading.RLock()
         self.swaping = threading.Event()
         self.conn = None
         self.init_db()
         with self.lock:
             self.update_size()
+
+    def with_lock(func):
+        def func_wrapper(self, *args, **kwargs):
+            with self.lock:
+                return func(self, *args, **kwargs)
+        return func_wrapper
 
     def init_db(self):
         self.conn = sqlite3.connect(self.path(), check_same_thread=False)
@@ -117,29 +124,29 @@ class Blockchain(util.PrintError):
                            '(height INT PRIMARY KEY NOT NULL, data BLOB NOT NULL)')
             self.conn.commit()
         except (sqlite3.DatabaseError, ) as e:
-            print_error('error when init_db', e, 'will delete the db file and recreate')
+            self.print_error('error when init_db', e, 'will delete the db file and recreate')
             os.remove(self.path())
             self.conn = None
             self.init_db()
         finally:
             cursor.close()
 
+    @with_lock
     def is_valid(self):
-        with self.lock:
-            conn = sqlite3.connect(self.path(), check_same_thread=False)
-            cursor = conn.cursor()
-            cursor.execute('SELECT min(height), max(height) FROM header')
-            min_height, max_height = cursor.fetchone()
-            max_height = max_height or 0
-            min_height = min_height or 0
-            cursor.execute('SELECT COUNT(*) FROM header')
-            size = int(cursor.fetchone()[0])
-            cursor.close()
-            conn.close()
-            if not min_height == self.forkpoint:
-                return False
-            if size > 0 and not size == max_height - min_height + 1:
-                return False
+        conn = sqlite3.connect(self.path(), check_same_thread=False)
+        cursor = conn.cursor()
+        cursor.execute('SELECT min(height), max(height) FROM header')
+        min_height, max_height = cursor.fetchone()
+        max_height = max_height or 0
+        min_height = min_height or 0
+        cursor.execute('SELECT COUNT(*) FROM header')
+        size = int(cursor.fetchone()[0])
+        cursor.close()
+        conn.close()
+        if not min_height == self.forkpoint:
+            return False
+        if size > 0 and not size == max_height - min_height + 1:
+            return False
         return True
 
     def path(self):
@@ -168,12 +175,9 @@ class Blockchain(util.PrintError):
     def fork(parent, header):
         forkpoint = header.get('block_height')
         self = Blockchain(parent.config, forkpoint, parent.forkpoint)
-        print_error('[fork]', forkpoint, parent.forkpoint)
+        self.print_error('[fork]', forkpoint, parent.forkpoint)
         self.save_header(header)
         return self
-
-    def _height(self):
-        return self.forkpoint + self._size - 1
 
     def height(self):
         return self.forkpoint + self.size() - 1
@@ -190,33 +194,38 @@ class Blockchain(util.PrintError):
         self._size = count
         cursor.close()
 
+    @with_lock
     def swap_with_parent(self):
         if self.parent_id is None:
             return
-        parent_id = self.parent_id
-        forkpoint = self.forkpoint
         parent = self.parent()
+
         self.update_size()
         parent.update_size()
-        parent_branch_size = parent._height() - self.forkpoint + 1
+        parent_branch_size = parent.height() - self.forkpoint + 1
         if parent_branch_size >= self._size:
             return
+
         if self.swaping.is_set() or parent.swaping.is_set():
             return
         self.swaping.set()
         parent.swaping.set()
+
+        parent_id = self.parent_id
+        forkpoint = self.forkpoint
+
         global blockchains
         try:
-            print_error('swap', self.forkpoint, self.parent_id)
+            self.print_error('swap', forkpoint, parent_id)
             for i in range(forkpoint, forkpoint + self._size):
                 print_error('swaping', i)
                 header = self.read_header(i, deserialize=False)
                 parent_header = parent.read_header(i, deserialize=False)
-                parent._write(header, i)
+                parent.write(header, i)
                 if parent_header:
-                    self._write(parent_header, i)
+                    self.write(parent_header, i)
                 else:
-                    self._delete(i)
+                    self.delete(i)
         except (BaseException,) as e:
             self.print_error('swap error', e)
         # update size
@@ -226,20 +235,6 @@ class Blockchain(util.PrintError):
         parent.swaping.clear()
         print_error('swap finished')
         parent.swap_with_parent()
-
-    def _write(self, raw_header, height):
-        self.print_error('{} try to write {}'.format(self.forkpoint, height))
-        if height > self._size + self.forkpoint:
-            return
-        try:
-            conn = self.conn
-            cursor = self.conn.cursor()
-        except (sqlite3.ProgrammingError, AttributeError):
-            conn = sqlite3.connect(self.path(), check_same_thread=False)
-            cursor = conn.cursor()
-        cursor.execute('REPLACE INTO header (height, data) VALUES(?,?)', (height, raw_header))
-        cursor.close()
-        conn.commit()
 
     def write(self, raw_header, height):
         if self.swaping.is_set():
@@ -253,21 +248,19 @@ class Blockchain(util.PrintError):
                 self.delete_all()
             return
         with self.lock:
+            self.print_error('{} try to write {}'.format(self.forkpoint, height))
+            if height > self._size + self.forkpoint:
+                return
+            try:
+                conn = self.conn
+                cursor = self.conn.cursor()
+            except (sqlite3.ProgrammingError, AttributeError):
+                conn = sqlite3.connect(self.path(), check_same_thread=False)
+                cursor = conn.cursor()
+            cursor.execute('REPLACE INTO header (height, data) VALUES(?,?)', (height, raw_header))
+            cursor.close()
+            conn.commit()
             self.update_size()
-            self._write(raw_header, height)
-            self.update_size()
-
-    def _delete(self, height):
-        self.print_error('{} try to delete {}'.format(self.forkpoint, height))
-        try:
-            conn = self.conn
-            cursor = conn.cursor()
-        except (sqlite3.ProgrammingError, AttributeError):
-            conn = sqlite3.connect(self.path(), check_same_thread=False)
-            cursor = conn.cursor()
-        cursor.execute('DELETE FROM header where height=?', (height,))
-        cursor.close()
-        conn.commit()
 
     def delete(self, height):
         if self.swaping.is_set():
@@ -276,7 +269,16 @@ class Blockchain(util.PrintError):
         if self.forkpoint > 0 and height < self.forkpoint:
             return
         with self.lock:
-            self._delete(height)
+            self.print_error('{} try to delete {}'.format(self.forkpoint, height))
+            try:
+                conn = self.conn
+                cursor = conn.cursor()
+            except (sqlite3.ProgrammingError, AttributeError):
+                conn = sqlite3.connect(self.path(), check_same_thread=False)
+                cursor = conn.cursor()
+            cursor.execute('DELETE FROM header where height=?', (height,))
+            cursor.close()
+            conn.commit()
             self.update_size()
 
     def delete_all(self):
@@ -294,6 +296,7 @@ class Blockchain(util.PrintError):
             conn.commit()
             self._size = 0
 
+    @with_lock
     def save_header(self, header):
         data = bfh(serialize_header(header))
         self.write(data, header.get('block_height'))
@@ -303,7 +306,7 @@ class Blockchain(util.PrintError):
         assert self.parent_id != self.forkpoint
         if height < 0:
             return
-        if height > self._height():
+        if height > self.height():
             return
         if height < self.forkpoint:
             return self.parent().read_header(height)
@@ -315,7 +318,7 @@ class Blockchain(util.PrintError):
         cursor.close()
         conn.close()
         if not result or len(result) < 1:
-            print_error('read_header 4', height, self.forkpoint, self.parent_id, result, self._height())
+            self.print_error('read_header 4', height, self.forkpoint, self.parent_id, result, self.height())
             self.update_size()
             return
         header = result[0]
@@ -349,22 +352,22 @@ class Blockchain(util.PrintError):
         real_hash = self.get_hash(height)
         return header_hash == real_hash
 
+    @with_lock
     def save_chunk(self, index, raw_headers):
-        print_error('{} try to save chunk {}'.format(self.forkpoint, index * CHUNK_SIZE))
+        self.print_error('{} try to save chunk {}'.format(self.forkpoint, index * CHUNK_SIZE))
         if self.swaping.is_set():
             return
-        with self.lock:
-            try:
-                conn = self.conn
-                cursor = self.conn.cursor()
-            except (sqlite3.ProgrammingError, AttributeError):
-                conn = sqlite3.connect(self.path(), check_same_thread=False)
-                cursor = conn.cursor()
-            headers = list([(index * CHUNK_SIZE + i, v) for i, v in enumerate(raw_headers)])
-            cursor.executemany('REPLACE INTO header (height, data) VALUES(?,?)', headers)
-            cursor.close()
-            conn.commit()
-            self.update_size()
+        try:
+            conn = self.conn
+            cursor = self.conn.cursor()
+        except (sqlite3.ProgrammingError, AttributeError):
+            conn = sqlite3.connect(self.path(), check_same_thread=False)
+            cursor = conn.cursor()
+        headers = list([(index * CHUNK_SIZE + i, v) for i, v in enumerate(raw_headers)])
+        cursor.executemany('REPLACE INTO header (height, data) VALUES(?,?)', headers)
+        cursor.close()
+        conn.commit()
+        self.update_size()
         self.swap_with_parent()
 
     def read_chunk(self, data):
@@ -439,7 +442,7 @@ class Blockchain(util.PrintError):
             return False
         height = header['block_height']
         if check_height and self.height() != height - 1:
-            print_error('[can_connect] check_height failed', height, self.height())
+            self.print_error('[can_connect] check_height failed', height, self.height())
             return False
         if height == 0:
             valid = hash_header(header) == constants.net.GENESIS
@@ -448,17 +451,17 @@ class Blockchain(util.PrintError):
             return valid
         prev_header = self.read_header(height - 1)
         if not prev_header:
-            print_error('[can_connect] no prev_header', height)
+            self.print_error('[can_connect] no prev_header', height)
             return False
         prev_hash = hash_header(prev_header)
         if prev_hash != header.get('prev_block_hash'):
-            print_error('[can_connect] hash check failed', height)
+            self.print_error('[can_connect] hash check failed', height)
             return False
         bits, target = self.get_target(height)
         try:
             self.verify_header(header, prev_header, bits, target)
         except BaseException as e:
-            print_error('[can_connect] verify_header failed', e, height)
+            self.print_error('[can_connect] verify_header failed', e, height)
             return False
         return True
 
