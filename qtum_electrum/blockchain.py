@@ -363,7 +363,14 @@ class Blockchain(util.PrintError):
         except (sqlite3.ProgrammingError, AttributeError):
             conn = sqlite3.connect(self.path(), check_same_thread=False)
             cursor = conn.cursor()
-        headers = list([(index * CHUNK_SIZE + i, v) for i, v in enumerate(raw_headers)])
+
+        forkpoint = self.forkpoint
+        if forkpoint is None:
+            forkpoint = 0
+        headers = [(index * CHUNK_SIZE + i, v)
+                   for i, v in enumerate(raw_headers)
+                   if index * CHUNK_SIZE + i >= forkpoint]
+
         cursor.executemany('REPLACE INTO header (height, data) VALUES(?,?)', headers)
         cursor.close()
         conn.commit()
