@@ -207,20 +207,25 @@ class ContractFuncLayout(QGridLayout):
             self.optional_widget.setEnabled(False)
             self.call_button.setHidden(False)
 
-        def show_sendto():
+        def show_sendto(payable):
             self.optional_widget.setEnabled(True)
+            self.amount_e.clear()
+            self.amount_e.setEnabled(payable)
             self.sendto_button.setHidden(False)
 
         if abi_index == -1:
-            show_sendto()
+            show_sendto(True)
         else:
             abi = self.contract['interface'][abi_index]
-            if not abi.get('stateMutability'):
+            state_mutability = abi.get('stateMutability')
+            if not state_mutability:
                 self.dialog.show_message('stateMutability not found')
-            elif abi.get('stateMutability') == 'view':
+            elif state_mutability == 'view':
                 show_call()
-            elif abi.get('stateMutability') == 'nonpayable':
-                show_sendto()
+            elif state_mutability in ['nonpayable', 'payable']:
+                show_sendto(state_mutability == 'payable')
+            else:
+                self.dialog.show_message('unknown stateMutability', state_mutability)
 
     def parse_values(self):
         def parse_edit_value(edit, times=10 ** 8):

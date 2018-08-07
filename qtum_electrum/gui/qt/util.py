@@ -632,6 +632,13 @@ class ButtonsLineEdit(QLineEdit, ButtonsWidget):
         self.resizeButtons()
         return o
 
+    def setEnabled(self, enable):
+        super(QLineEdit, self).setEnabled(enable)
+        if enable:
+            self.setStyleSheet("background-color:rgba(255,255,255,255)")
+        else:
+            self.setStyleSheet("background-color:rgba(0,0,0,0)")
+
 class ButtonsTextEdit(QPlainTextEdit, ButtonsWidget):
     def __init__(self, text=None):
         QPlainTextEdit.__init__(self, text)
