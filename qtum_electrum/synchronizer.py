@@ -351,7 +351,7 @@ class Synchronizer(ThreadJob):
             bind_addr = hash160_to_p2pkh(binascii.a2b_hex(params[1][-40:]))
             key = '{}_{}'.format(contract_addr, bind_addr)
             token = self.wallet.tokens[key]
-            if token and token.balance != result:
+            if token and token.balance != result and isinstance(result, int):
                 token = token._replace(balance=result)
                 self.wallet.tokens[key] = token
                 # self.network.trigger_callback('on_token')
