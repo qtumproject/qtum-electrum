@@ -19,7 +19,7 @@ TOKEN_TRANSFER_TOPIC = 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4d
 
 BASIC_HEADER_SIZE = 180  # not include sig
 POW_BLOCK_COUNT = 5000
-CHUNK_SIZE = 2016
+CHUNK_SIZE = 1024
 POW_LIMIT = 0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 POS_LIMIT = 0x00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 POW_TARGET_TIMESPAN = 16 * 60  # bitcoin is 14 * 24 * 60 * 60

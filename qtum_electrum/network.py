@@ -839,10 +839,11 @@ class Network(util.DaemonThread):
 
     def request_chunk(self, interface, index):
         if index in self.requested_chunks:
+            interface.print_error("index {} already in requested chuns".format(index))
             return
         interface.print_error("requesting chunk %d" % index)
-        height = index * 2016
-        self.queue_request('blockchain.block.headers', [height, 2016],
+        height = index * CHUNK_SIZE
+        self.queue_request('blockchain.block.headers', [height, CHUNK_SIZE],
                            interface)
         self.requested_chunks.add(index)
 
@@ -853,12 +854,12 @@ class Network(util.DaemonThread):
         params = response.get('params')
         blockchain = interface.blockchain
         if result is None or params is None or error is not None:
-            print_error('on get chunk error', error, result, params)
+            interface.print_error('on get chunk error', error, result, params)
             return
 
         height = params[0]
-        index = height // 2016
-        if index * 2016 != height or index not in self.requested_chunks:
+        index = height // CHUNK_SIZE
+        if index * CHUNK_SIZE != height or index not in self.requested_chunks:
             interface.print_error("received chunk %d (unsolicited)" % index)
             return
         else:
