@@ -77,7 +77,7 @@ class ContractInfoLayout(QVBoxLayout):
             return
         name = self.name_e.text()
         name = name.rstrip().lstrip()
-        if len(name) > 10:
+        if len(name) > 32:
             self.dialog.show_message(_('name too long'))
             return
         if not name:
