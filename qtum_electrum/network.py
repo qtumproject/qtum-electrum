@@ -1237,9 +1237,11 @@ class Network(util.DaemonThread):
         try:
             out = Network.__wait_for(invocation)
         except BaseException as e:
+            print('broadcast_transaction failed 1', str(transaction))
             return False, "error: " + str(e)
 
         if out != transaction.txid():
+            print('broadcast_transaction failed 2', str(transaction))
             return False, "error: " + out
 
         return True, out
