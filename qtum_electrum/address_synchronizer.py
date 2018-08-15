@@ -403,7 +403,6 @@ class AddressSynchronizer(PrintError):
             children.add(other_hash)
             children |= self.get_depending_transactions(other_hash)
         return children
-
     @profiler
     def load_local_history(self):
         self._history_local = {}  # address -> set(txid)
@@ -659,10 +658,6 @@ class AddressSynchronizer(PrintError):
 
     def is_up_to_date(self):
         with self.lock: return self.up_to_date
-
-    def get_num_tx(self, address):
-        """ return number of transactions where address is involved """
-        return len(self.history.get(address, []))
 
     def get_tx_delta(self, tx_hash, address):
         "effect of tx on address"
