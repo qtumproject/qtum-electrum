@@ -622,7 +622,7 @@ class BaseWizard(object):
 
     def create_addresses(self):
         def task():
-            self.wallet.synchronize(create_new=True)
+            self.wallet.synchronize()
             self.wallet.storage.write()
             self.terminate()
 
