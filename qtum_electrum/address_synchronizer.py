@@ -399,12 +399,9 @@ class AddressSynchronizer(PrintError):
     def get_depending_transactions(self, tx_hash):
         """Returns all (grand-)children of tx_hash in this wallet."""
         children = set()
-        # TODO rewrite this to use self.spent_outpoints
-        for other_hash, tx in self.transactions.items():
-            for input in (tx.inputs()):
-                if input["prevout_hash"] == tx_hash:
-                    children.add(other_hash)
-                    children |= self.get_depending_transactions(other_hash)
+        for other_hash in self.spent_outpoints[tx_hash].values():
+            children.add(other_hash)
+            children |= self.get_depending_transactions(other_hash)
         return children
 
     @profiler
