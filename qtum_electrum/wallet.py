@@ -37,7 +37,7 @@ import sys
 
 
 from .i18n import _
-from .util import NotEnoughFunds, PrintError, UserCancelled, profiler, format_satoshis, InvalidPassword, WalletFileException, TimeoutException
+from .util import NotEnoughFunds, UserCancelled, profiler, format_satoshis, InvalidPassword, WalletFileException, TimeoutException
 from .qtum import *
 from .version import *
 from .keystore import load_keystore, Hardware_KeyStore
@@ -46,7 +46,7 @@ from .plugin import run_hook
 from . import transaction
 from . import bitcoin
 from . import coinchooser
-from .transaction import Transaction, TxOutput
+from .transaction import Transaction, TxOutput, TxOutputHwInfo
 from . import paymentrequest
 from .paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED
 from .paymentrequest import InvoiceStore
@@ -711,7 +711,8 @@ class Abstract_Wallet(AddressSynchronizer):
                 pubkeys = self.get_public_keys(addr)
                 # sort xpubs using the order of pubkeys
                 sorted_pubkeys, sorted_xpubs = zip(*sorted(zip(pubkeys, xpubs)))
-                info[addr] = index, sorted_xpubs, self.m if isinstance(self, Multisig_Wallet) else None
+                num_sig = self.m if isinstance(self, Multisig_Wallet) else None
+                info[addr] = TxOutputHwInfo(index, sorted_xpubs, num_sig, self.txin_type)
         tx.output_info = info
 
     def sign_transaction(self, tx, password):

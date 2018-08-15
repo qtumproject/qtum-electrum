@@ -24,7 +24,7 @@
 # SOFTWARE.
 
 # Note: The deserialization code originally comes from ABE.
-from typing import Sequence, Union, NamedTuple
+from typing import Sequence, Union, NamedTuple, Tuple, Optional, Iterable
 from .util import print_error, profiler
 from . import bitcoin
 from . import ecc
@@ -40,8 +40,14 @@ from .keystore import xpubkey_to_address, xpubkey_to_pubkey
 
 NO_SIGNATURE = 'ff'
 PARTIAL_TXN_HEADER_MAGIC = b'EPTF\xff'
+
 TxOutput = NamedTuple("TxOutput", [('type', int), ('address', str), ('value', Union[int, str])])
 # ^ value is str when the output is set to max: '!'
+
+TxOutputHwInfo = NamedTuple("TxOutputHwInfo", [('address_index', Tuple),
+                                               ('sorted_xpubs', Iterable[str]),
+                                               ('num_sig', Optional[int]),
+                                               ('script_type', str)])
 
 
 class SerializationError(Exception):

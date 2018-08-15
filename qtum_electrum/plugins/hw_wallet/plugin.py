@@ -81,8 +81,7 @@ def is_any_tx_output_on_change_branch(tx):
     for _type, address, amount in tx.outputs():
         info = tx.output_info.get(address)
         if info is not None:
-            index, xpubs, m = info
-            if index[0] == 1:
+            if info.address_index[0] == 1:
                 return True
     return False
 
