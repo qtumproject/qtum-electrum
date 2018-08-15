@@ -218,7 +218,7 @@ class Blockchain(util.PrintError):
         try:
             self.print_error('swap', forkpoint, parent_id)
             for i in range(forkpoint, forkpoint + self._size):
-                print_error('swaping', i)
+                # print_error('swaping', i)
                 header = self.read_header(i, deserialize=False)
                 parent_header = parent.read_header(i, deserialize=False)
                 parent.write(header, i)
@@ -237,8 +237,6 @@ class Blockchain(util.PrintError):
         parent.swap_with_parent()
 
     def write(self, raw_header, height):
-        if self.swaping.is_set():
-            return
         if self.forkpoint > 0 and height < self.forkpoint:
             return
         if not raw_header:
@@ -263,8 +261,6 @@ class Blockchain(util.PrintError):
             self.update_size()
 
     def delete(self, height):
-        if self.swaping.is_set():
-            return
         self.print_error('{} try to delete {}'.format(self.forkpoint, height))
         if self.forkpoint > 0 and height < self.forkpoint:
             return
