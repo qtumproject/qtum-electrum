@@ -357,6 +357,7 @@ class BaseWizard(object):
         try:
             xpub = self.plugin.get_xpub(device_info.device.id_, derivation, xtype, self)
         except BaseException as e:
+            traceback.print_exc(file=sys.stderr)
             self.show_error(e)
             return
         d = {

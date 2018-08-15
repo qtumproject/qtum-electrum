@@ -4,7 +4,7 @@ from struct import pack
 from qtum_electrum.i18n import _
 from qtum_electrum.util import PrintError, UserCancelled
 from qtum_electrum.keystore import bip39_normalize_passphrase
-from qtum_electrum.bitcoin import serialize_xpub
+from qtum_electrum.qtum import serialize_xpub, convert_bip32_path_to_list_of_uint32
 
 
 class GuiMixin(object):
@@ -151,21 +151,7 @@ class TrezorClientBase(GuiMixin, PrintError):
 
     @staticmethod
     def expand_path(n):
-        '''Convert bip32 path to list of uint32 integers with prime flags
-        0/-1/1' -> [0, 0x80000001, 0x80000001]'''
-        # This code is similar to code in trezorlib where it unforunately
-        # is not declared as a staticmethod.  Our n has an extra element.
-        PRIME_DERIVATION_FLAG = 0x80000000
-        path = []
-        for x in n.split('/')[1:]:
-            prime = 0
-            if x.endswith("'"):
-                x = x.replace('\'', '')
-                prime = PRIME_DERIVATION_FLAG
-            if x.startswith('-'):
-                prime = PRIME_DERIVATION_FLAG
-            path.append(abs(int(x)) | prime)
-        return path
+        return convert_bip32_path_to_list_of_uint32(n)
 
     def cancel(self):
         '''Provided here as in keepkeylib but not trezorlib.'''
