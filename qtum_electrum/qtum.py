@@ -3,6 +3,7 @@
 __author__ = 'CodeFace'
 """
 import hashlib
+import hmac
 from typing import List
 from eth_abi import encode_abi
 from eth_utils import function_abi_to_4byte_selector
