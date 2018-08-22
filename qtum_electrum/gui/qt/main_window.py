@@ -3285,7 +3285,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             abi_encoded = ''
             if constructor:
                 abi_encoded = eth_abi_encode(constructor, args)
-            script = contract_script(gas_limit, gas_price, bytecode + abi_encoded, opcodes.OP_CREATE)
+            script = contract_script(gas_limit, gas_price, bytecode + abi_encoded, None, opcodes.OP_CREATE)
             outputs = [TxOutput(TYPE_SCRIPT, script, 0), ]
             self._smart_contract_broadcast(outputs, 'contract create', gas_limit * gas_price, sender, dialog)
         except (BaseException,) as e:
