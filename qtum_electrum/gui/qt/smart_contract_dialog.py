@@ -19,6 +19,10 @@ float_validator = QRegExpValidator(QRegExp('^(-?\d+)(\.\d+)?$'))
 int_validator = QIntValidator(0, 10 ** 9 - 1)
 
 
+class ParseArgsException(BaseException):
+    pass
+
+
 class ContractInfoLayout(QVBoxLayout):
     def __init__(self, dialog, contract, callback):
         QVBoxLayout.__init__(self)
@@ -245,7 +249,7 @@ class ContractFuncLayout(QGridLayout):
         abi = self.contract['interface'][abi_index]
         inputs = abi.get('inputs', [])
         if not len(args) == len(inputs):
-            raise Exception('invalid input count,expect {} got {}'.format(len(inputs), len(args)))
+            raise ParseArgsException('invalid input count,expect {} got {}'.format(len(inputs), len(args)))
         for index, _input in enumerate(inputs):
             _type = _input.get('type', '')
             if _type == 'address':
@@ -254,11 +258,11 @@ class ContractFuncLayout(QGridLayout):
                     __, hash160 = b58_address_to_hash160(addr)
                     addr = bh2u(hash160)
                 if not is_hash160(addr):
-                    raise Exception('invalid input:{}'.format(args[index]))
+                    raise ParseArgsException('invalid input:{}'.format(args[index]))
                 args[index] = addr.lower()
             elif 'int' in _type:
                 if not isinstance(args[index], int):
-                    raise Exception('inavlid input:{}'.format(args[index]))
+                    raise ParseArgsException('inavlid input:{}'.format(args[index]))
         if len(self.senders) > 0:
             sender = self.senders[self.sender_combo.currentIndex()]
         else:
@@ -268,7 +272,12 @@ class ContractFuncLayout(QGridLayout):
     def do_call(self):
         try:
             abi, args, sender = self.parse_args()
+        except (ParseArgsException,) as e:
+            self.dialog.show_message(str(e))
+            return
         except (BaseException,) as e:
+            import traceback, sys
+            traceback.print_exc(file=sys.stderr)
             self.dialog.show_message(str(e))
             return
         self.dialog.do_call(abi, args, sender)
@@ -276,7 +285,12 @@ class ContractFuncLayout(QGridLayout):
     def do_sendto(self):
         try:
             abi, args, sender = self.parse_args()
+        except (ParseArgsException,) as e:
+            self.dialog.show_message(str(e))
+            return
         except (BaseException,) as e:
+            import traceback, sys
+            traceback.print_exc(file=sys.stderr)
             self.dialog.show_message(str(e))
             return
         if not sender:
@@ -369,12 +383,12 @@ class ContractCreateLayout(QVBoxLayout):
         if len(self.senders) > 0:
             sender = self.senders[self.sender_combo.currentIndex()]
         if not sender:
-            raise Exception('no sender selected')
+            raise ParseArgsException('no sender selected')
         args = json.loads('[{}]'.format(self.args_e.text()))
         abi = self.constructor
         inputs = abi.get('inputs', [])
         if not len(args) == len(inputs):
-            raise Exception('invalid input count,expect {} got {}'.format(len(inputs), len(args)))
+            raise ParseArgsException('invalid input count,expect {} got {}'.format(len(inputs), len(args)))
         for index, _input in enumerate(inputs):
             _type = _input.get('type', '')
             if _type == 'address':
@@ -383,11 +397,11 @@ class ContractCreateLayout(QVBoxLayout):
                     __, hash160 = b58_address_to_hash160(addr)
                     addr = bh2u(hash160)
                 if not is_hash160(addr):
-                    raise Exception('invalid input:{}'.format(args[index]))
+                    raise ParseArgsException('invalid input:{}'.format(args[index]))
                 args[index] = addr.lower()
             elif 'int' in _type:
                 if not isinstance(args[index], int):
-                    raise Exception('inavlid input:{}'.format(args[index]))
+                    raise ParseArgsException('inavlid input:{}'.format(args[index]))
             elif _type == 'string' or _type == 'bytes':
                 args[index] = args[index].encode()
         return abi, args, sender
@@ -404,7 +418,12 @@ class ContractCreateLayout(QVBoxLayout):
     def create(self):
         try:
             abi, args, sender = self.parse_args()
+        except (ParseArgsException,) as e:
+            self.dialog.show_message(str(e))
+            return
         except (BaseException,) as e:
+            import traceback, sys
+            traceback.print_exc(file=sys.stderr)
             self.dialog.show_message(str(e))
             return
         gas_limit, gas_price = self.parse_values()
@@ -428,6 +447,8 @@ class ContractCreateLayout(QVBoxLayout):
                                                for i in constructor.get('inputs', [])]))
             self.args_e.setPlaceholderText(signature)
         except (BaseException,) as e:
+            import traceback, sys
+            traceback.print_exc(file=sys.stderr)
             self.constructor = {}
             self.args_e.setPlaceholderText('')
             print_error('[interface_changed]', str(e))

@@ -70,6 +70,8 @@ class TokenAddLayout(QGridLayout):
             self.callback(contract_addr, bind_addr)
             self.dialog.reject()
         except (BaseException,) as e:
+            import traceback, sys
+            traceback.print_exc(file=sys.stderr)
             self.dialog.show_message(str(e))
 
 
@@ -98,6 +100,8 @@ class TokenAddDialog(QDialog, MessageBoxMixin):
             token = Token(contract_addr, bind_addr, name, symbol, decimals, 0)
             self.parent().set_token(token)
         except BaseException as e:
+            import traceback, sys
+            traceback.print_exc(file=sys.stderr)
             self.show_message(str(e))
 
 

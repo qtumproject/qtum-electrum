@@ -74,6 +74,8 @@ def remove_chain(cp, chains):
 
 def check_header(header):
     if type(header) is not dict:
+        import traceback, sys
+        traceback.print_exc(file=sys.stderr)
         print_error('[check_header] header not dic')
         return False
     for b in blockchains.values():
@@ -227,6 +229,8 @@ class Blockchain(util.PrintError):
                 else:
                     self.delete(i)
         except (BaseException,) as e:
+            import traceback, sys
+            traceback.print_exc(file=sys.stderr)
             self.print_error('swap error', e)
         # update size
         self.update_size()

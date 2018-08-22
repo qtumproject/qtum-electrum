@@ -225,6 +225,8 @@ class Synchronizer(ThreadJob):
                 else:
                     self.print_error('token status matched')
         except (BaseException,) as e:
+            import traceback, sys
+            traceback.print_exc(file=sys.stderr)
             print('on_token_status err', e)
 
     def on_token_history(self, response):

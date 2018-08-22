@@ -3242,6 +3242,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         try:
             result = self.network.call_contract(address, data, sender)
         except BaseException as e:
+            import traceback, sys
+            traceback.print_exc(file=sys.stderr)
             dialog.show_message(str(e))
             return
         types = list([x['type'] for x in abi.get('outputs', [])])
@@ -3258,8 +3260,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
             result = ','.join([decode_x(x) for x in result])
         except (BaseException,) as e:
+            import traceback, sys
+            traceback.print_exc(file=sys.stderr)
             print(e)
-            pass
         if not result:
             dialog.show_message('')
             return
@@ -3273,6 +3276,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             tx_desc = 'contract sendto {}'.format(self.smart_contracts[address][0])
             self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog)
         except (BaseException,) as e:
+            import traceback, sys
+            traceback.print_exc(file=sys.stderr)
             dialog.show_message(str(e))
 
     def create_smart_contract(self, bytecode, constructor, args, gas_limit, gas_price, sender, dialog):
@@ -3284,6 +3289,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             outputs = [TxOutput(TYPE_SCRIPT, script, 0), ]
             self._smart_contract_broadcast(outputs, 'contract create', gas_limit * gas_price, sender, dialog)
         except (BaseException,) as e:
+            import traceback, sys
+            traceback.print_exc(file=sys.stderr)
             dialog.show_message(str(e))
 
     def contract_create_dialog(self):
