@@ -327,6 +327,12 @@ class ContractCreateLayout(QVBoxLayout):
         self.dialog = dialog
         self.senders = self.dialog.parent().wallet.get_spendable_addresses()
         self.constructor = {}
+        self.abi = []
+
+        self.addWidget(QLabel(_("Contract Name:")))
+        self.name_e = ButtonsLineEdit()
+        self.addWidget(self.name_e)
+        self.addStretch(1)
 
         self.addWidget(QLabel(_("Bytecode:")))
         self.bytecode_e = ButtonsTextEdit()
@@ -385,8 +391,8 @@ class ContractCreateLayout(QVBoxLayout):
         if not sender:
             raise ParseArgsException('no sender selected')
         args = json.loads('[{}]'.format(self.args_e.text()))
-        abi = self.constructor
-        inputs = abi.get('inputs', [])
+        constructor = self.constructor
+        inputs = constructor.get('inputs', [])
         if not len(args) == len(inputs):
             raise ParseArgsException('invalid input count,expect {} got {}'.format(len(inputs), len(args)))
         for index, _input in enumerate(inputs):
@@ -401,10 +407,10 @@ class ContractCreateLayout(QVBoxLayout):
                 args[index] = addr.lower()
             elif 'int' in _type:
                 if not isinstance(args[index], int):
-                    raise ParseArgsException('inavlid input:{}'.format(args[index]))
+                    raise ParseArgsException('invalid input:{}'.format(args[index]))
             elif _type == 'string' or _type == 'bytes':
                 args[index] = args[index].encode()
-        return abi, args, sender
+        return constructor, args, sender
 
     def parse_values(self):
         def parse_edit_value(edit, times=10 ** 8):
@@ -417,7 +423,7 @@ class ContractCreateLayout(QVBoxLayout):
 
     def create(self):
         try:
-            abi, args, sender = self.parse_args()
+            constructor, args, sender = self.parse_args()
         except (ParseArgsException,) as e:
             self.dialog.show_message(str(e))
             return
@@ -428,16 +434,19 @@ class ContractCreateLayout(QVBoxLayout):
             return
         gas_limit, gas_price = self.parse_values()
         bytecode = self.bytecode_e.text()
-        self.dialog.do_create(bytecode, abi, args, gas_limit, gas_price, sender)
+        self.dialog.do_create(self.name_e.text(), bytecode, self.abi, constructor, args, gas_limit, gas_price, sender)
 
     def interface_changed(self):
         interface_text = self.interface_e.text()
         try:
-            interface = json.loads(interface_text)
+            abi = json.loads(interface_text)
+            if not isinstance(abi, list):
+                raise BaseException("invalid interface")
+            self.abi = abi
             constructor = {}
-            for abi in interface:
-                if abi.get('type') == 'constructor':
-                    constructor = abi
+            for item in abi:
+                if item.get('type') == 'constructor':
+                    constructor = item
                     break
             self.constructor = constructor
             if not constructor:
@@ -449,6 +458,7 @@ class ContractCreateLayout(QVBoxLayout):
         except (BaseException,) as e:
             import traceback, sys
             traceback.print_exc(file=sys.stderr)
+            self.abi = []
             self.constructor = {}
             self.args_e.setPlaceholderText('')
             print_error('[interface_changed]', str(e))
@@ -465,5 +475,5 @@ class ContractCreateDialog(QDialog, MessageBoxMixin):
         layout = ContractCreateLayout(self)
         self.setLayout(layout)
 
-    def do_create(self, bytecode, constructor, args, gas_limit, gas_price, sender):
-        self.parent().create_smart_contract(bytecode, constructor, args, gas_limit, gas_price, sender, self)
+    def do_create(self, name, bytecode, abi, constructor, args, gas_limit, gas_price, sender):
+        self.parent().create_smart_contract(name, bytecode, abi, constructor, args, gas_limit, gas_price, sender, self)

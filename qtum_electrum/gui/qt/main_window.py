@@ -46,10 +46,11 @@ from qtum_electrum.util import (bh2u, bfh, format_time, format_satoshis, format_
                                 InvalidPassword)
 from qtum_electrum import util, bitcoin, commands, coinchooser
 from qtum_electrum import paymentrequest
-from qtum_electrum.transaction import Transaction, opcodes, contract_script, TxOutput
+from qtum_electrum.transaction import Transaction, opcodes, contract_script, TxOutput, is_opcreate_script
 from qtum_electrum.address_synchronizer import AddTransactionException
 from qtum_electrum.wallet import Multisig_Wallet
 from qtum_electrum.tokens import Token
+from qtum_electrum.crypto import hash_160
 
 try:
     from qtum_electrum.plot import plot_history
@@ -3157,7 +3158,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             traceback.print_exc(file=sys.stderr)
             dialog.show_message(str(e))
 
-    def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog):
+    def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog, broadcast_done=None):
         coins = self.get_coins()
         try:
             tx = self.wallet.make_unsigned_transaction(coins, outputs, self.config, None,
@@ -3210,6 +3211,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                     self.do_clear()
                 else:
                     self.broadcast_transaction(tx, desc)
+                    if broadcast_done:
+                        broadcast_done(tx)
 
         self.sign_tx_with_password(tx, sign_done, password)
 
@@ -3280,14 +3283,22 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             traceback.print_exc(file=sys.stderr)
             dialog.show_message(str(e))
 
-    def create_smart_contract(self, bytecode, constructor, args, gas_limit, gas_price, sender, dialog):
+    def create_smart_contract(self, name, bytecode, abi, constructor, args, gas_limit, gas_price, sender, dialog):
+
+        def broadcast_done(tx):
+            if is_opcreate_script(bfh(tx.outputs()[0].address)):
+                reversed_txid = binascii.a2b_hex(tx.txid())[::-1]
+                output_index = b'\x00\x00\x00\x00'
+                contract_addr = bh2u(hash_160(reversed_txid + output_index))
+                self.set_smart_contract(name, contract_addr, abi)
         try:
             abi_encoded = ''
             if constructor:
                 abi_encoded = eth_abi_encode(constructor, args)
             script = contract_script(gas_limit, gas_price, bytecode + abi_encoded, None, opcodes.OP_CREATE)
             outputs = [TxOutput(TYPE_SCRIPT, script, 0), ]
-            self._smart_contract_broadcast(outputs, 'contract create', gas_limit * gas_price, sender, dialog)
+            self._smart_contract_broadcast(outputs, 'create contract {}'.format(name), gas_limit * gas_price,
+                                           sender, dialog, broadcast_done)
         except (BaseException,) as e:
             import traceback, sys
             traceback.print_exc(file=sys.stderr)
