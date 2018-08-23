@@ -818,13 +818,7 @@ def export_meta(meta, file_name):
 
 
 def open_browser(url, new=0, autoraise=True):
-    for name in webbrowser._tryorder:
-        if name == 'MacOSX':
-            continue
-        browser = webbrowser.get(name)
-        if browser.open(url, new, autoraise):
-            return True
-    return False
+    return webbrowser.open(url, new, autoraise)
 
 
 def make_dir(path, allow_symlink=True):
