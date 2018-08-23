@@ -642,6 +642,21 @@ def contract_script(gas_limit, gas_price, datahex, contract_addr, opcode):
     return script
 
 
+def is_opcall_script(_bytes):
+    decoded = [x for x in script_GetOp(_bytes)]
+    return len(decoded) == 6 \
+           and decoded[0] == (1, b'\x04', 2) \
+           and decoded[-2][0] == 0x14 \
+           and decoded[-1][0] == opcodes.OP_CALL
+
+
+def is_opcreate_script(_bytes):
+    decoded = [x for x in script_GetOp(_bytes)]
+    return len(decoded) == 5 \
+           and decoded[0] == (1, b'\x04', 2) \
+           and decoded[-1][0] == opcodes.OP_CREATE
+
+
 class Transaction:
 
     def __str__(self):
