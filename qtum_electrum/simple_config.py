@@ -8,7 +8,7 @@ from copy import deepcopy
 from . import util
 from .util import user_dir, print_error, make_dir, print_stderr, PrintError
 from .i18n import _
-from .qtum import MAX_FEE_RATE, FEE_TARGETS
+from .qtum import FEE_TARGETS, FEERATE_STATIC_VALUES, FEERATE_MAX_DYNAMIC, FEERATE_DEFAULT_RELAY, FEERATE_FALLBACK_STATIC_FEE
 
 
 config = None
@@ -249,12 +249,18 @@ class SimpleConfig(PrintError):
             path = wallet.storage.path
             self.set_key('gui_last_wallet', path)
 
-    def max_fee_rate(self):
-        f = self.get('max_fee_rate', MAX_FEE_RATE)
-        if f==0:
-            f = MAX_FEE_RATE
-        return f
+    def impose_hard_limits_on_fee(func):
+        def get_fee_within_limits(self, *args, **kwargs):
+            fee = func(self, *args, **kwargs)
+            if fee is None:
+                return fee
+            fee = min(FEERATE_MAX_DYNAMIC, fee)
+            fee = max(FEERATE_DEFAULT_RELAY, fee)
+            return fee
+        return get_fee_within_limits
 
+
+    @impose_hard_limits_on_fee
     def dynfee(self, i):
         if i < 4:
             j = FEE_TARGETS[i]
@@ -264,8 +270,6 @@ class SimpleConfig(PrintError):
             fee = self.fee_estimates.get(2)
             if fee is not None:
                 fee += fee/2
-        if fee is not None:
-            fee = min(5*MAX_FEE_RATE, fee)
         return fee
 
     def reverse_dynfee(self, fee_per_kb):
@@ -283,26 +287,26 @@ class SimpleConfig(PrintError):
             return min_target
 
     def has_fee_estimates(self):
-        return len(self.fee_estimates)==4
+        return len(self.fee_estimates) == 4
 
     def is_dynfee(self):
         return self.get('dynamic_fees', False) and self.has_fee_estimates()
 
     def static_fee(self, i):
-        return self.max_fee_rate() * 0.4 + self.max_fee_rate() * 0.06 * i
+        return FEERATE_STATIC_VALUES[i]
 
     def static_fee_index(self, value):
-        index = int((value - self.max_fee_rate() * 0.4) / self.max_fee_rate() * 0.06)
-        index = min(0, index)
-        index = max(10, index)
-        return index
+        if value is None:
+            raise TypeError('static fee cannot be None')
+        dist = list(map(lambda x: abs(x - value), FEERATE_STATIC_VALUES))
+        return min(range(len(dist)), key=dist.__getitem__)
 
     def fee_per_kb(self):
         dyn = self.is_dynfee()
         if dyn:
             fee_rate = self.dynfee(self.get('fee_level', 2))
         else:
-            fee_rate = self.get('fee_per_kb', self.max_fee_rate()/2)
+            fee_rate = self.get('fee_per_kb', FEERATE_FALLBACK_STATIC_FEE)
         return fee_rate
 
     def estimate_fee(self, size):

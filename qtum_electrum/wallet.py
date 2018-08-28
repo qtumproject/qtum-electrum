@@ -67,7 +67,7 @@ TX_STATUS = [
 
 def relayfee(network):
     f = network.relay_fee if network and network.relay_fee else FEERATE_DEFAULT_RELAY
-    return min(f, MAX_FEE_RATE)
+    return min(f, FEERATE_MAX_DYNAMIC)
 
 
 def dust_threshold(network):
