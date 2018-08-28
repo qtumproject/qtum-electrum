@@ -1140,7 +1140,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                _('and you will have the possiblity, while it is unconfirmed, to replace it with a transaction that pays a higher fee.'),
                _('Note that some merchants do not accept non-final transactions until they are confirmed.')]
         self.rbf_checkbox.setToolTip('<p>' + ' '.join(msg) + '</p>')
-        self.rbf_checkbox.setVisible(False)
+        self.rbf_checkbox.setVisible(bool(self.config.get('use_rbf', True)))
 
         grid.addWidget(self.fee_e_label, 5, 0)
         grid.addWidget(self.fee_slider, 5, 1)
@@ -1267,20 +1267,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
             if fee is None:
                 return
-            rbf_policy = self.config.get('rbf_policy', 1)
-            if rbf_policy == 0:
-                b = True
-            elif rbf_policy == 1:
-                fee_rate = fee * 1000 / tx.estimated_size()
-                try:
-                    c = self.config.reverse_dynfee(fee_rate)
-                    b = c in [-1, 25]
-                except:
-                    b = False
-            elif rbf_policy == 2:
-                b = False
-            self.rbf_checkbox.setVisible(b)
-            self.rbf_checkbox.setChecked(b)
 
     def from_list_delete(self, item):
         i = self.from_list.indexOfTopLevelItem(item)
@@ -2597,15 +2583,26 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         feebox_cb.stateChanged.connect(on_feebox)
         fee_widgets.append((feebox_cb, None))
 
-        rbf_policy = self.config.get('rbf_policy', 1)
-        rbf_label = HelpLabel(_('Propose Replace-By-Fee') + ':', '')
-        rbf_combo = QComboBox()
-        rbf_combo.addItems([_('Always'), _('If the fee is low'), _('Never')])
-        rbf_combo.setCurrentIndex(rbf_policy)
-        def on_rbf(x):
-            self.config.set_key('rbf_policy', x)
-        rbf_combo.currentIndexChanged.connect(on_rbf)
-        fee_widgets.append((rbf_label, rbf_combo))
+        use_rbf_cb = QCheckBox(_('Use Replace-By-Fee'))
+        use_rbf_cb.setChecked(self.config.get('use_rbf', True))
+        use_rbf_cb.setToolTip(
+            _('If you check this box, your transactions will be marked as non-final,') + '\n' + \
+            _('and you will have the possibility, while they are unconfirmed, to replace them with transactions that pay higher fees.') + '\n' + \
+            _('Note that some merchants do not accept non-final transactions until they are confirmed.'))
+        def on_use_rbf(x):
+            self.config.set_key('use_rbf', x == Qt.Checked)
+        use_rbf_cb.stateChanged.connect(on_use_rbf)
+        fee_widgets.append((use_rbf_cb, None))
+
+        # rbf_policy = self.config.get('rbf_policy', 1)
+        # rbf_label = HelpLabel(_('Propose Replace-By-Fee') + ':', '')
+        # rbf_combo = QComboBox()
+        # rbf_combo.addItems([_('Always'), _('If the fee is low'), _('Never')])
+        # rbf_combo.setCurrentIndex(rbf_policy)
+        # def on_rbf(x):
+        #     self.config.set_key('rbf_policy', x)
+        # rbf_combo.currentIndexChanged.connect(on_rbf)
+        # fee_widgets.append((rbf_label, rbf_combo))
 
         msg = _('OpenAlias record, used to receive coins and to sign payment requests.') + '\n\n'\
               + _('The following alias providers are available:') + '\n'\
