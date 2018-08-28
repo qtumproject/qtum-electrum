@@ -295,3 +295,6 @@ class TokenSendDialog(QDialog, MessageBoxMixin):
 
     def do_send(self, pay_to, amount, gas_limit, gas_price):
         self.parent().do_token_pay(self.token, pay_to, amount, gas_limit, gas_price, self)
+        self.close()
+
+
