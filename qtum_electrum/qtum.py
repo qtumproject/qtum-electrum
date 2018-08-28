@@ -281,6 +281,13 @@ def redeem_script_to_address(txin_type, redeem_script):
         raise NotImplementedError(txin_type)
 
 
+def script_to_address(script, *, net=None):
+    from .transaction import get_address_from_output_script
+    t, addr = get_address_from_output_script(bfh(script), net=net)
+    assert t == TYPE_ADDRESS
+    return addr
+
+
 def address_to_script(addr):
     witver, witprog = segwit_addr.decode(constants.net.SEGWIT_HRP, addr)
     if witprog is not None:
