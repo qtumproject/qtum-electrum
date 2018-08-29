@@ -158,7 +158,7 @@ msgstr "退出(&Q)"
 
 #: electrum/gui/qt/main_window.py:473
 msgid "&Recently open"
-msgstr "最近开啟"
+msgstr "最近打开"
 
 #: electrum/gui/qt/main_window.py:551
 msgid "&Report Bug"
@@ -280,6 +280,12 @@ msgstr "采集费用"
 #: electrum/gui/qt/installwizard.py:394
 msgid "Add Cosigner"
 msgstr "加联合签名"
+
+#: qtum_electrum/gui/qt/main_window.py:530
+#: qtum_electrum/gui/qt/token_dialog.py:87
+#: qtum_electrum/gui/qt/token_list.py:55
+msgid "Add Token"
+msgstr "添加代币"
 
 #: electrum/base_wizard.py:164
 msgid "Add a cosigner to your multi-sig wallet"
@@ -2104,11 +2110,11 @@ msgstr "导入"
 
 #: qtum_electrum/base_wizard.py:170
 msgid "Import Qtum Addresses"
-msgstr "导入量子链地址"
+msgstr "导入Qtum地址"
 
 #: qtum_electrum/base_wizard.py:99
 msgid "Import Qtum addresses or private keys"
-msgstr "导入量子链地址或私钥"
+msgstr "导入Qtum地址或私钥"
 
 #: electrum/gui/qt/main_window.py:490 electrum/gui/qt/main_window.py:2587
 msgid "Import addresses"
@@ -2267,7 +2273,7 @@ msgstr "公钥无效"
 #: qtum_electrum/gui/kivy/uix/screens.py:260
 #: qtum_electrum/gui/qt/main_window.py:1376
 msgid "Invalid Qtum Address"
-msgstr "无效的量子链地址"
+msgstr "无效的Qtum地址"
 
 #: electrum/gui/kivy/uix/screens.py:258
 msgid "Invalid amount"
@@ -2275,7 +2281,7 @@ msgstr "无效的金额"
 
 #: qtum_electrum/gui/qt/main_window.py:1588
 msgid "Invalid qtum URI:"
-msgstr "无效的量子链 URI："
+msgstr "无效的Qtum URI："
 
 #: electrum/gui/qt/main_window.py:1711
 msgid "Invalid bitcoin URI:"
@@ -2452,7 +2458,7 @@ msgstr "确信在python3下安装"
 
 #: qtum_electrum/gui/qt/main_window.py:413
 msgid "Make sure you own the seed phrase or the private keys, before you request Qtums to be sent to this wallet."
-msgstr "在你要将量子链发送到这个钱包前，确保你拥有种子短语或者密钥。"
+msgstr "在你要将Qtum发送到这个钱包前，确保你拥有种子短语或者密钥。"
 
 
 #: electrum/gui/kivy/main_window.py:609 electrum/gui/kivy/main_window.py:611
@@ -2531,6 +2537,12 @@ msgstr "多人签名钱包"
 #: electrum/base_wizard.py:102
 msgid "Multi-signature wallet"
 msgstr "多重签名钱包"
+
+#: qtum_electrum/gui/qt/token_dialog.py:49
+#: qtum_electrum/gui/qt/token_dialog.py:146
+#: qtum_electrum/gui/qt/token_dialog.py:199
+msgid "My Address:"
+msgstr "我的地址"
 
 #: electrum/plugins/ledger/auth2fa.py:112
 #: electrum/plugins/ledger/auth2fa.py:150
