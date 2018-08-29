@@ -1,0 +1,22 @@
+#!/usr/bin/env python3
+import os
+import subprocess
+
+os.chdir(os.path.dirname(os.path.realpath(__file__)))
+os.chdir('..')
+
+cmd = "find qtum_electrum -type f -name '*.py' -o -name '*.kv'"
+
+files = subprocess.check_output(cmd, shell=True)
+
+with open("app.fil", "wb") as f:
+    f.write(files)
+
+print("Found {} files to translate".format(len(files.splitlines())))
+
+# Generate fresh translation template
+if not os.path.exists('qtum_electrum/locale'):
+    os.mkdir('qtum_electrum/locale')
+cmd = 'xgettext -s --from-code UTF-8 --language Python --no-wrap -f app.fil --output=qtum_electrum/locale/messages.pot'
+print('Generate template')
+os.system(cmd)
