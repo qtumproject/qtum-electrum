@@ -410,7 +410,7 @@ class Abstract_Wallet(AddressSynchronizer):
         try:
             tx = self.transactions.get(tx_hash)
             if tx.outputs()[0].type == TYPE_STAKE:
-                return 'stake mined'
+                return _('stake mined')
             elif tx.inputs()[0]['type'] == 'coinbase':
                 return 'coinbase'
         except (BaseException,) as e:

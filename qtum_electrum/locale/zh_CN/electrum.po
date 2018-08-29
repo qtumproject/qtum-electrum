@@ -204,15 +204,15 @@ msgstr "(点击 {} 的 {})"
 msgid "+"
 msgstr "+"
 
-#: electrum/gui/qt/util.py:42
+#: qtum_electrum/gui/qt/util.py:46
 msgid "1 day"
 msgstr "1天"
 
-#: electrum/gui/qt/util.py:41
+#: qtum_electrum/gui/qt/util.py:45
 msgid "1 hour"
 msgstr "1 小时"
 
-#: electrum/gui/qt/util.py:43
+#: qtum_electrum/gui/qt/util.py:47
 msgid "1 week"
 msgstr "1 周"
 
@@ -288,6 +288,10 @@ msgstr "向您的电子钱包中加入签名"
 #: electrum/plugins/virtualkeyboard/__init__.py:4
 msgid "Add an optional virtual keyboard to the password dialog."
 msgstr "在密码对话框中添加一个可选的虚拟键盘。"
+
+#: qtum_electrum/gui/qt/smart_contract_list.py:33
+msgid "Add contract"
+msgstr "添加合约"
 
 #: electrum/base_wizard.py:153
 msgid "Add cosigner"
@@ -514,6 +518,10 @@ msgstr "您的钱包使用的基本单位。"
 msgid "Before reporting a bug, upgrade to the most recent version of Electrum (latest release or git HEAD), and include the version number in your report."
 msgstr "在报告Bug之前，请把Electrum升级到最新版，并把版本号写在错误报告里。"
 
+#: qtum_electrum/gui/qt/token_list.py:20 qtum_electrum/gui/qt/token_list.py:81
+msgid "Bind Address"
+msgstr "绑定地址"
+
 #: electrum/plugins/audio_modem/qt.py:52
 msgid "Bit rate [kbps]: "
 msgstr "比特率 [kbps]: "
@@ -521,6 +529,11 @@ msgstr "比特率 [kbps]: "
 #: electrum/gui/kivy/uix/ui_screens/receive.kv:71
 msgid "Bitcoin Address"
 msgstr "比特币地址"
+
+#: qtum_electrum/gui/kivy/uix/ui_screens/network.kv:43
+#: qtum_electrum/gui/qt/network_dialog.py:303
+msgid "Blockchain"
+msgstr "区块链"
 
 #: electrum/gui/qt/main_window.py:1490
 msgid "Bitcoin Address is None"
@@ -533,11 +546,6 @@ msgstr "比特币收款地址。请注意每一笔比特币的交易使用的不
 #: electrum/gui/qt/main_window.py:1100
 msgid "Bitcoin transactions are in general not free. A transaction fee is paid by the sender of the funds."
 msgstr "在一般情况下，比特币交易不是免费的。比特币的发送者需要支付一定的手续费。"
-
-#: electrum/gui/kivy/uix/ui_screens/network.kv:43
-#: electrum/gui/qt/network_dialog.py:300
-msgid "Blockchain"
-msgstr "Blockchain"
 
 #: electrum/plugins/keepkey/qt.py:460 electrum/plugins/safe_t/qt.py:344
 #: electrum/plugins/trezor/qt.py:465
@@ -710,7 +718,7 @@ msgstr "选择种子类型"
 msgid "Choose a backup file:"
 msgstr "选择备份文件:"
 
-#: electrum/gui/qt/installwizard.py:23
+#: qtum_electrum/gui/qt/installwizard.py:21
 msgid "Choose a password to encrypt your wallet keys."
 msgstr "输入用来加密您的钱包的密码"
 
@@ -805,7 +813,7 @@ msgstr "代码"
 #: electrum/gui/kivy/uix/dialogs/settings.py:153
 #: electrum/gui/qt/main_window.py:2852
 msgid "Coin selection"
-msgstr "选择钱币"
+msgstr "硬币选择策略"
 
 #: electrum/gui/qt/main_window.py:2806
 msgid "Color theme"
@@ -938,10 +946,14 @@ msgstr "已确认"
 
 #: electrum/plugins/ledger/ledger.py:460 electrum/plugins/ledger/ledger.py:489
 msgid "Confirmed. Signing Transaction..."
-msgstr "已确认。 正在签署交易记录..."
+msgstr "已确认。 正在签署交易..."
 
 #: electrum/gui/qt/network_dialog.py:70
 msgid "Connected node"
+msgstr "已连接节点"
+
+#: qtum_electrum/gui/qt/network_dialog.py:68
+msgid "Connected Node"
 msgstr "已连接节点"
 
 #: electrum/gui/kivy/uix/ui_screens/network.kv:51
@@ -964,6 +976,16 @@ msgstr "Electrum服务器连接"
 #: electrum/gui/qt/main_window.py:503 electrum/gui/text.py:64
 msgid "Contacts"
 msgstr "联系人"
+
+#: qtum_electrum/gui/qt/token_dialog.py:44
+#: qtum_electrum/gui/qt/token_dialog.py:122
+msgid "Contract Address:"
+msgstr "合约地址："
+
+#: qtum_electrum/gui/qt/smart_contract_dialog.py:39
+#: qtum_electrum/gui/qt/smart_contract_dialog.py:332
+msgid "Contract Name:"
+msgstr "合约名称："
 
 #: electrum/gui/kivy/uix/ui_screens/receive.kv:124
 #: electrum/gui/qt/qrcodewidget.py:119 electrum/gui/qt/util.py:159
@@ -1033,6 +1055,10 @@ msgstr "创建一个数字提词器"
 #: electrum/base_wizard.py:157 electrum/plugins/trustedcoin/trustedcoin.py:457
 msgid "Create a new seed"
 msgstr "创建新种子"
+
+#: qtum_electrum/gui/qt/smart_contract_list.py:34
+msgid "Create contract"
+msgstr "创建新合约"
 
 #: electrum/plugins/digitalbitbox/digitalbitbox.py:208
 msgid "Create a wallet using the current seed"
@@ -2076,13 +2102,13 @@ msgstr "如果你的钱包包含资金，确保你已经保存了它的种子。
 msgid "Import"
 msgstr "导入"
 
-#: electrum/base_wizard.py:176
-msgid "Import Bitcoin Addresses"
-msgstr "导入比特币地址"
+#: qtum_electrum/base_wizard.py:170
+msgid "Import Qtum Addresses"
+msgstr "导入量子链地址"
 
-#: electrum/base_wizard.py:103
-msgid "Import Bitcoin addresses or private keys"
-msgstr "导入比特币地址或私钥"
+#: qtum_electrum/base_wizard.py:99
+msgid "Import Qtum addresses or private keys"
+msgstr "导入量子链地址或私钥"
 
 #: electrum/gui/qt/main_window.py:490 electrum/gui/qt/main_window.py:2587
 msgid "Import addresses"
@@ -2188,6 +2214,11 @@ msgstr "说明："
 msgid "Insufficient funds"
 msgstr "资金不足"
 
+#: qtum_electrum/gui/qt/smart_contract_dialog.py:47
+#: qtum_electrum/gui/qt/smart_contract_dialog.py:344
+msgid "Interface(ABI):"
+msgstr "接口(ABI)"
+
 #: electrum/gui/qt/main_window.py:1831
 msgid "Invalid Address"
 msgstr "地址无效"
@@ -2232,9 +2263,19 @@ msgstr "PIN 无效"
 msgid "Invalid Public key"
 msgstr "公钥无效"
 
+#: qtum_electrum/plugins/hw_wallet/plugin.py:68
+#: qtum_electrum/gui/kivy/uix/screens.py:260
+#: qtum_electrum/gui/qt/main_window.py:1376
+msgid "Invalid Qtum Address"
+msgstr "无效的量子链地址"
+
 #: electrum/gui/kivy/uix/screens.py:258
 msgid "Invalid amount"
 msgstr "无效的金额"
+
+#: qtum_electrum/gui/qt/main_window.py:1588
+msgid "Invalid qtum URI:"
+msgstr "无效的量子链 URI："
 
 #: electrum/gui/qt/main_window.py:1711
 msgid "Invalid bitcoin URI:"
@@ -2409,9 +2450,10 @@ msgstr "确保它处于正确的状态。"
 msgid "Make sure you install it with python3"
 msgstr "确信在python3下安装"
 
-#: electrum/gui/qt/main_window.py:401
-msgid "Make sure you own the seed phrase or the private keys, before you request Bitcoins to be sent to this wallet."
-msgstr "在你要去将比特币送到这个钱包前，确保你拥有种子短语或者密钥。"
+#: qtum_electrum/gui/qt/main_window.py:413
+msgid "Make sure you own the seed phrase or the private keys, before you request Qtums to be sent to this wallet."
+msgstr "在你要将量子链发送到这个钱包前，确保你拥有种子短语或者密钥。"
+
 
 #: electrum/gui/kivy/main_window.py:609 electrum/gui/kivy/main_window.py:611
 #: electrum/gui/kivy/uix/dialogs/installwizard.py:890
@@ -2750,7 +2792,7 @@ msgstr "每列一条结果。"
 
 #: electrum/gui/qt/main_window.py:2775
 msgid "Online Block Explorer"
-msgstr "在线查看区块数据"
+msgstr "在线区块链浏览器"
 
 #: electrum/plugins/hw_wallet/plugin.py:100
 msgid "Only OP_RETURN scripts, with one constant push, are supported."
@@ -2991,6 +3033,11 @@ msgstr "请输入你的电子邮件地址"
 msgid "Please enter your password"
 msgstr "请输入您的密码"
 
+#: qtum_electrum/gui/qt/installwizard.py:398
+#: qtum_electrum/gui/qt/installwizard.py:406
+msgid "Please enter your seed phrase in order to restore your wallet. \n"
+msgstr "请输入种子短语来恢复你的钱包。\n"
+
 #: electrum/plugins/cosigner_pool/qt.py:212
 msgid "Please enter your password to decrypt it."
 msgstr "请输入你的密码进行解密。"
@@ -3225,6 +3272,34 @@ msgstr "二维码复制到剪贴板"
 msgid "QR code saved to file"
 msgstr "二维码保存为文件"
 
+#: qtum_electrum/gui/qt/main_window.py:1373
+msgid "Qtum Address is None"
+msgstr "Qtum 地址为空"
+
+#: qtum_electrum/base_wizard.py:629
+msgid "Qtum Electrum is generating your addresses, please wait."
+msgstr "Qtum Electrum 正在生成地址，请稍等。"
+
+#: qtum_electrum/gui/qt/installwizard.py:407
+msgid "Qtum Electrum is not compatiable with qtum mobile wallet seed words yet. \n"
+msgstr "Qtum Electrum 不兼容Qtum手机钱包的助记词。 \n"
+
+#: qtum_electrum/gui/qt/main_window.py:2314
+msgid "Qtum Electrum was unable to produce a private key-export."
+msgstr "Qtum Electrum 无法导出私钥。"
+
+#: qtum_electrum/base_wizard.py:96
+msgid "Qtum Qt Core wallet compatible"
+msgstr "兼容 Qtum 全节点钱包"
+
+#: qtum_electrum/base_wizard.py:95
+msgid "Qtum mobile wallet compatible"
+msgstr "兼容 Qtum 手机钱包"
+
+#: qtum_electrum/gui/qt/main_window.py:1114
+msgid "Qtum transactions are in general not free. A transaction fee is paid by the sender of the funds."
+msgstr "通常 Qtum 交易不是免费的，一笔交易的手续费由发送方支付。"
+
 #: electrum/gui/kivy/uix/dialogs/question.py:51
 msgid "Question"
 msgstr "问题"
@@ -3346,7 +3421,7 @@ msgstr "请求已复制到剪贴板"
 
 #: electrum/gui/qt/main_window.py:829
 msgid "Request expires"
-msgstr "请求已过期"
+msgstr "请求过期时间"
 
 #: electrum/gui/qt/address_list.py:169
 msgid "Request payment"
@@ -3805,6 +3880,11 @@ msgstr "斯洛伐克语"
 msgid "Slovenian"
 msgstr "斯洛文尼亚语"
 
+#: qtum_electrum/gui/qt/main_window.py:163
+#: qtum_electrum/gui/qt/smart_contract_dialog.py:99
+msgid "Smart Contract"
+msgstr "智能合约"
+
 #: electrum/base_crash_reporter.py:53
 msgid "Something went wrong while executing Electrum."
 msgstr "执行Electrum时出现错误。很抱歉。"
@@ -3831,11 +3911,11 @@ msgstr "支付启于"
 
 #: electrum/gui/qt/main_window.py:2866
 msgid "Spend only confirmed coins"
-msgstr "只花费确认的货币"
+msgstr "只花费已确认的硬币"
 
 #: electrum/gui/qt/main_window.py:2867
 msgid "Spend only confirmed inputs."
-msgstr "只花费确认的输入。"
+msgstr "只花费已确认的输入。"
 
 #: electrum/base_wizard.py:525
 msgid "Standard"
@@ -4252,6 +4332,23 @@ msgstr "为了解决这个问题，我们现在将重新与您的设备配对。
 msgid "Toggle Encryption"
 msgstr "切换加密"
 
+#: qtum_electrum/gui/qt/main_window.py:528
+#: qtum_electrum/gui/qt/token_list.py:81
+msgid "Token"
+msgstr "代币"
+
+#: qtum_electrum/gui/qt/token_dialog.py:128
+msgid "Token Name:"
+msgstr "代币名称"
+
+#: qtum_electrum/gui/qt/token_dialog.py:134
+msgid "Token Symbol:"
+msgstr "代币符号"
+
+#: qtum_electrum/gui/qt/main_window.py:148
+msgid "Tokens"
+msgstr "代币"
+
 #: electrum/plugins/keepkey/clientbase.py:76
 #: electrum/plugins/safe_t/clientbase.py:81
 #: electrum/plugins/trezor/clientbase.py:81
@@ -4463,7 +4560,7 @@ msgstr "使用"
 
 #: electrum/gui/qt/main_window.py:2686
 msgid "Use Replace-By-Fee"
-msgstr "使用替换费用"
+msgstr "支持费用替代法"
 
 #: electrum/gui/qt/network_dialog.py:266
 msgid "Use Tor Proxy"
@@ -4483,15 +4580,23 @@ msgstr "用作服务器"
 
 #: electrum/gui/qt/main_window.py:2813
 msgid "Use change addresses"
-msgstr "使用变更地址"
+msgstr "使用找零地址"
+
+#: qtum_electrum/gui/qt/main_window.py:2585
+msgid "Use dynamic fees"
+msgstr "从服务器获取手续费率"
 
 #: electrum/gui/qt/main_window.py:2832
 msgid "Use multiple change addresses"
-msgstr "使用多个变更地址"
+msgstr "使用多个找零地址"
 
 #: electrum/gui/qt/network_dialog.py:237
 msgid "Use proxy"
 msgstr "使用代理"
+
+#: qtum_electrum/base_wizard.py:146 qtum_electrum/base_wizard.py:153
+msgid "Use public or private keys"
+msgstr "使用公钥或私钥"
 
 #: electrum/gui/qt/main_window.py:2727
 msgid "Use setconfig to set ssl_chain and ssl_privkey."
@@ -4503,7 +4608,7 @@ msgstr "用相机键扫描二维码。"
 
 #: electrum/gui/qt/password_dialog.py:247
 msgid "Use this dialog to add a password to your wallet."
-msgstr "用这个对话框在你的钱包中加入一个密码。"
+msgstr "用这个对话框在你的钱包中设置一个密码。"
 
 #: electrum/gui/qt/password_dialog.py:253
 msgid "Use this dialog to change your password."
@@ -4634,7 +4739,7 @@ msgstr "钱包备份已创建"
 
 #: electrum/gui/qt/transaction_dialog.py:285
 msgid "Wallet change address"
-msgstr "钱包变更地址"
+msgstr "钱包找零地址"
 
 #: electrum/gui/qt/main_window.py:2049
 msgid "Wallet name"
@@ -5002,6 +5107,10 @@ msgstr "修改"
 msgid "contacts"
 msgstr "联系人"
 
+#: qtum_electrum/gui/qt/history_list.py:174
+msgid "contract gas change"
+msgstr "合约gas找零"
+
 #: electrum/gui/qt/main_window.py:2066
 msgid "cosigner"
 msgstr "担保人"
@@ -5038,6 +5147,10 @@ msgstr "标签"
 msgid "ok"
 msgstr "成功"
 
+#: qtum_electrum/gui/qt/main_window.py:3155
+msgid "pay out {} {}"
+msgstr "支出 {} {}"
+
 #: electrum/plugins/revealer/qt.py:118
 msgid "on the same printer is not trustless towards the printer."
 msgstr "对打印机而言，在同一台打印机上打印是可靠的。"
@@ -5049,6 +5162,14 @@ msgstr "或者，另外的："
 #: electrum/gui/qt/main_window.py:1665
 msgid "please wait..."
 msgstr "请稍候..."
+
+#: qtum_electrum/gui/qt/smart_contract_dialog.py:368
+msgid "sender:"
+msgstr "调用者："
+
+#: qtum_electrum/gui/qt/history_list.py:173 qtum_electrum/wallet.py:413
+msgid "stake mined"
+msgstr "POS挖矿"
 
 #: electrum/plugins/revealer/qt.py:699
 msgid "print the calibration pdf and follow the instructions "

@@ -403,9 +403,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
             # if self.opt_bip39:
             #     options.append('bip39')
             message = ''.join([
-                _('Please enter your seed phrase in order to restore your wallet. \n'),
-                _('Qtum Electrum is not compatiable with qtum mobile wallet seed words yet. \n'),
-                _('You cannot restore your mobile wallet in Qtum Electrum for now.')])
+                _('Please enter your seed phrase in order to restore your wallet. \n')])
         return self.seed_input(title, message, test, options)
 
     @wizard_dialog

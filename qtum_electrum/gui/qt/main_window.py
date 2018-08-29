@@ -51,6 +51,7 @@ from qtum_electrum.address_synchronizer import AddTransactionException
 from qtum_electrum.wallet import Multisig_Wallet
 from qtum_electrum.tokens import Token
 from qtum_electrum.crypto import hash_160
+from qtum_electrum.i18n import _
 
 try:
     from qtum_electrum.plot import plot_history
@@ -1380,6 +1381,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         if not r:
             return
         outputs, fee, tx_desc, coins = r
+
         try:
             is_sweep = bool(self.tx_external_keypairs)
             tx = self.wallet.make_unsigned_transaction(coins, outputs, self.config, fee, is_sweep=is_sweep)
@@ -2748,6 +2750,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         tx_widgets.append((multiple_cb, None))
 
         def fmt_docs(key, klass):
+            print(key, klass)
             lines = [ln.lstrip(" ") for ln in klass.__doc__.split("\n")]
             return '\n'.join([key, "", " ".join(lines)])
 
@@ -3149,7 +3152,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             datahex = 'a9059cbb{}{:064x}'.format(pay_to.zfill(64), amount)
             script = contract_script(gas_limit, gas_price, datahex, token.contract_addr, opcodes.OP_CALL)
             outputs = [TxOutput(TYPE_SCRIPT, script, 0), ]
-            tx_desc = 'pay out {} {}'.format(amount / (10 ** token.decimals), token.symbol)
+            tx_desc = _('pay out {} {}').format(amount / (10 ** token.decimals), token.symbol)
             self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, token.bind_addr, dialog)
         except (BaseException,) as e:
             traceback.print_exc(file=sys.stderr)
