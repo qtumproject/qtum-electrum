@@ -41,6 +41,9 @@ from .keystore import xpubkey_to_address, xpubkey_to_pubkey
 NO_SIGNATURE = 'ff'
 PARTIAL_TXN_HEADER_MAGIC = b'EPTF\xff'
 
+class MalformedQtumScript(Exception):
+    pass
+
 TxOutput = NamedTuple("TxOutput", [('type', int), ('address', str), ('value', Union[int, str])])
 # ^ value is str when the output is set to max: '!'
 
@@ -259,13 +262,16 @@ def script_GetOp(_bytes : bytes):
         if opcode <= opcodes.OP_PUSHDATA4:
             nSize = opcode
             if opcode == opcodes.OP_PUSHDATA1:
-                nSize = _bytes[i]
+                try: nSize = _bytes[i]
+                except IndexError: raise MalformedQtumScript()
                 i += 1
             elif opcode == opcodes.OP_PUSHDATA2:
-                (nSize,) = struct.unpack_from('<H', _bytes, i)
+                try: (nSize,) = struct.unpack_from('<H', _bytes, i)
+                except struct.error: raise MalformedQtumScript()
                 i += 2
             elif opcode == opcodes.OP_PUSHDATA4:
-                (nSize,) = struct.unpack_from('<I', _bytes, i)
+                try: (nSize,) = struct.unpack_from('<I', _bytes, i)
+                except struct.error: raise MalformedQtumScript
                 i += 4
             vch = _bytes[i:i + nSize]
             i += nSize
@@ -277,19 +283,9 @@ def script_GetOpName(opcode):
     return (opcodes.whatis(opcode)).replace("OP_", "")
 
 
-def decode_script(bytes):
-    result = ''
-    for (opcode, vch, i) in script_GetOp(bytes):
-        if len(result) > 0: result += " "
-        if opcode <= opcodes.OP_PUSHDATA4:
-            result += "%d:"%(opcode,)
-            result += short_hex(vch)
-        else:
-            result += script_GetOpName(opcode)
-    return result
-
-
 def match_decoded(decoded, to_match):
+    if decoded is None:
+        return False
     if len(decoded) != len(to_match):
         return False
     for i in range(len(decoded)):
@@ -405,7 +401,10 @@ def parse_scriptSig(d, _bytes):
 
 
 def parse_redeemScript_multisig(redeem_script: bytes):
-    dec2 = [ x for x in script_GetOp(redeem_script) ]
+    try:
+        dec2 = [x for x in script_GetOp(redeem_script)]
+    except MalformedQtumScript:
+        raise NotRecognizedRedeemScript()
     try:
         m = dec2[0][0] - opcodes.OP_1 + 1
         n = dec2[-2][0] - opcodes.OP_1 + 1
@@ -426,7 +425,10 @@ def parse_redeemScript_multisig(redeem_script: bytes):
 
 
 def get_address_from_output_script(_bytes):
-    decoded = [x for x in script_GetOp(_bytes)]
+    try:
+        decoded = [x for x in script_GetOp(_bytes)]
+    except MalformedQtumScript:
+        decoded = None
 
     # The Genesis Block, self-payments, and pay-by-IP-address payments look like:
     # 65 BYTES:... CHECKSIG
@@ -643,7 +645,10 @@ def contract_script(gas_limit, gas_price, datahex, contract_addr, opcode):
 
 
 def is_opcall_script(_bytes):
-    decoded = [x for x in script_GetOp(_bytes)]
+    try:
+        decoded = [x for x in script_GetOp(_bytes)]
+    except MalformedQtumScript:
+        return False
     return len(decoded) == 6 \
            and decoded[0] == (1, b'\x04', 2) \
            and decoded[-2][0] == 0x14 \
@@ -651,7 +656,10 @@ def is_opcall_script(_bytes):
 
 
 def is_opcreate_script(_bytes):
-    decoded = [x for x in script_GetOp(_bytes)]
+    try:
+        decoded = [x for x in script_GetOp(_bytes)]
+    except MalformedQtumScript:
+        return False
     return len(decoded) == 5 \
            and decoded[0] == (1, b'\x04', 2) \
            and decoded[-1][0] == opcodes.OP_CREATE
