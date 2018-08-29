@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-08-29 15:10+0800\n"
+"POT-Creation-Date: 2018-08-29 15:37+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -424,10 +424,6 @@ msgstr ""
 msgid "Audio Modem Settings"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:583
-msgid "Auto connect"
-msgstr ""
-
 #: qtum_electrum/gui/kivy/uix/ui_screens/network.kv:36
 msgid "Auto-connect"
 msgstr ""
@@ -533,7 +529,6 @@ msgstr ""
 #: qtum_electrum/plugins/trezor/qt.py:64 qtum_electrum/gui/qt/util.py:187
 #: qtum_electrum/gui/qt/installwizard.py:70
 #: qtum_electrum/gui/qt/installwizard.py:106
-#: qtum_electrum/gui/qt/installwizard.py:586
 msgid "Cancel"
 msgstr ""
 
@@ -660,7 +655,7 @@ msgstr ""
 msgid "Choose on your {} device where to enter your passphrase"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:628
+#: qtum_electrum/gui/qt/installwizard.py:631
 msgid "Choose the number of signatures needed to unlock funds in your wallet:"
 msgstr ""
 
@@ -1148,10 +1143,6 @@ msgstr ""
 msgid "Electrum Plugins"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:577
-msgid "Electrum communicates with remote servers to get information about your transactions and addresses. The servers all fulfill the same purpose only differing in hardware. In most cases you simply want to let Electrum pick one at random.  However if you prefer feel free to select a server manually."
-msgstr ""
-
 #: qtum_electrum/gui/qt/network_dialog.py:287
 msgid "Electrum connects to several nodes in order to download block headers and find out the longest blockchain."
 msgstr ""
@@ -1588,7 +1579,7 @@ msgstr ""
 msgid "From"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:619
+#: qtum_electrum/gui/qt/installwizard.py:622
 #, python-format
 msgid "From %d cosigners"
 msgstr ""
@@ -1672,10 +1663,6 @@ msgstr ""
 #: qtum_electrum/gui/kivy/uix/ui_screens/proxy.kv:19
 #: qtum_electrum/gui/qt/network_dialog.py:138
 msgid "Host"
-msgstr ""
-
-#: qtum_electrum/gui/qt/installwizard.py:584
-msgid "How do you want to connect to a server? "
 msgstr ""
 
 #: qtum_electrum/gui/qt/seed_dialog.py:67
@@ -2083,7 +2070,7 @@ msgstr ""
 msgid "Mobile - Not paired"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:630
+#: qtum_electrum/gui/qt/installwizard.py:633
 msgid "Multi-Signature Wallet"
 msgstr ""
 
@@ -2926,7 +2913,7 @@ msgstr ""
 msgid "Requests"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:616
+#: qtum_electrum/gui/qt/installwizard.py:619
 #, python-format
 msgid "Require %d signatures"
 msgstr ""
@@ -3053,10 +3040,6 @@ msgstr ""
 
 #: qtum_electrum/gui/qt/network_dialog.py:212
 msgid "Select server automatically"
-msgstr ""
-
-#: qtum_electrum/gui/qt/installwizard.py:583
-msgid "Select server manually"
 msgstr ""
 
 #: qtum_electrum/gui/qt/main_window.py:977
@@ -4313,6 +4296,10 @@ msgstr ""
 
 #: qtum_electrum/gui/qt/history_list.py:173 qtum_electrum/wallet.py:413
 msgid "stake mined"
+msgstr ""
+
+#: qtum_electrum/gui/qt/main_window.py:401
+msgid "testnet"
 msgstr ""
 
 #: qtum_electrum/gui/qt/main_window.py:2392

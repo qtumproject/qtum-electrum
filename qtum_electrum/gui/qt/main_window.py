@@ -398,7 +398,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         title += '  [%s]'% ', '.join(extra)
 
         if constants.net.TESTNET:
-            title += '  -  testnet'
+            title += '  -  {}'.format(_('testnet'))
 
         self.setWindowTitle(title)
         self.password_menu.setEnabled(self.wallet.may_have_password())

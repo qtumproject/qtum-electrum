@@ -5183,6 +5183,10 @@ msgstr "调用者："
 msgid "stake mined"
 msgstr "POS挖矿"
 
+#: qtum_electrum/gui/qt/main_window.py:401
+msgid "testnet"
+msgstr "测试网络"
+
 #: electrum/plugins/revealer/qt.py:699
 msgid "print the calibration pdf and follow the instructions "
 msgstr "打印校准pdf并按照说明进行操作"
