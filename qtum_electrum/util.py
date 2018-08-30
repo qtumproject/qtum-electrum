@@ -838,3 +838,13 @@ VerifiedTxInfo = NamedTuple("VerifiedTxInfo", [("height", int),
                                                ("timestamp", int),
                                                ("txpos", int),
                                                ("header_hash", str)])
+
+
+def print_frames(depth=10):
+    print("--------------------")
+    for i in range(1, depth):
+        try:
+            frame = sys._getframe(i)
+            print(frame.f_code.co_name, frame.f_code.co_filename, frame.f_lineno)
+        except ValueError:
+            return

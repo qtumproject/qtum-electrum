@@ -74,8 +74,7 @@ def remove_chain(cp, chains):
 
 def check_header(header):
     if type(header) is not dict:
-        import traceback, sys
-        traceback.print_exc(file=sys.stderr)
+        util.print_frames()
         print_error('[check_header] header not dic')
         return False
     for b in blockchains.values():
