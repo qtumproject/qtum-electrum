@@ -421,7 +421,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         except FileNotFoundError as e:
             self.show_error(str(e))
             return
-        filename, __ = QFileDialog.getOpenFileName(self, "Select your wallet file", wallet_folder)
+        filename, __ = QFileDialog.getOpenFileName(self, _("Select your wallet file"), wallet_folder)
         if not filename:
             return
         self.gui_object.new_window(filename)

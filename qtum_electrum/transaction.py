@@ -561,8 +561,10 @@ def parse_output(vds, i):
     d['type'], d['address'] = get_address_from_output_script(scriptPubKey)
     d['scriptPubKey'] = bh2u(scriptPubKey)
     d['prevout_n'] = i
+
     # Qtum
     if not d['value'] and not d['address'] and not i and not d['scriptPubKey']:
+        # make then first output in stake tx as TYPE_STAKE
         d['type'] = TYPE_STAKE
     return d
 
