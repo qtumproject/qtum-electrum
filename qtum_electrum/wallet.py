@@ -671,10 +671,22 @@ class Abstract_Wallet(AddressSynchronizer):
     def add_input_sig_info(self, txin, address):
         raise NotImplementedError()  # implemented by subclasses
 
-    def add_input_info(self, txin):
+    def add_input_info(self, txin, check_p2pk=False):
         address = txin['address']
         if self.is_mine(address):
-            txin['type'] = self.get_txin_type(address)
+            if check_p2pk:
+                prevout_tx = self.transactions.get(txin['prevout_hash'])
+                if not prevout_tx:
+                    return
+                prevout_n = txin['prevout_n']
+                t = prevout_tx.outputs()[prevout_n].type
+                if t == TYPE_PUBKEY:
+                    txin['type'] = 'p2pk'
+
+            # check_p2pk==False or not p2pk
+            if txin.get('type') is None:
+                txin['type'] = self.get_txin_type(address)
+
             # segwit needs value to sign
             if txin.get('value') is None and Transaction.is_input_value_needed(txin):
                 received, spent = self.get_addr_io(address)
@@ -683,11 +695,11 @@ class Abstract_Wallet(AddressSynchronizer):
                 txin['value'] = value
             self.add_input_sig_info(txin, address)
 
-    def add_input_info_to_all_inputs(self, tx):
+    def add_input_info_to_all_inputs(self, tx, check_p2pk=False):
         if tx.is_complete():
             return
         for txin in tx.inputs():
-            self.add_input_info(txin)
+            self.add_input_info(txin, check_p2pk)
 
     def can_sign(self, tx):
         if tx.is_complete():
@@ -733,7 +745,7 @@ class Abstract_Wallet(AddressSynchronizer):
     def sign_transaction(self, tx, password):
         if self.is_watching_only():
             return
-        self.add_input_info_to_all_inputs(tx)
+        self.add_input_info_to_all_inputs(tx, check_p2pk=True)
         # hardware wallets require extra info
         if any([(isinstance(k, Hardware_KeyStore) and k.can_sign(tx)) for k in self.get_keystores()]):
             self.add_hw_info(tx)
@@ -1186,6 +1198,7 @@ class Imported_Wallet(Simple_Wallet):
         return redeem_script
 
     def get_txin_type(self, address):
+        # this cannot tell p2pkh and p2pk
         return self.addresses[address].get('type', 'address')
 
     def add_input_sig_info(self, txin, address):
@@ -1195,7 +1208,7 @@ class Imported_Wallet(Simple_Wallet):
             txin['x_pubkeys'] = [x_pubkey]
             txin['signatures'] = [None]
             return
-        if txin['type'] in ['p2pkh', 'p2wpkh', 'p2wpkh-p2sh']:
+        if txin['type'] in ['p2pkh', 'p2wpkh', 'p2wpkh-p2sh', 'p2pk']:
             pubkey = self.addresses[address]['pubkey']
             txin['num_sig'] = 1
             txin['x_pubkeys'] = [pubkey]
