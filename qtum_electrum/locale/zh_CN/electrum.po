@@ -34,6 +34,16 @@ msgstr "密钥备份工具"
 msgid "%2d minutes"
 msgstr " %2d 分钟"
 
+#: qtum_electrum/wallet.py:325
+#, python-format
+msgid "%d confirmations"
+msgstr "%d 个确认"
+
+#: qtum_electrum/gui/kivy/uix/ui_screens/network.kv:14
+#, python-format
+msgid "%d connections."
+msgstr "%d 个连接"
+
 #: electrum/plugins/safe_t/qt.py:113 electrum/plugins/trezor/qt.py:208
 #, python-format
 msgid "%d words"
@@ -2202,7 +2212,7 @@ msgstr "导入原始交易"
 
 #: electrum/gui/qt/transaction_dialog.py:278
 msgid "Inputs"
-msgstr "收入"
+msgstr "输入"
 
 #: electrum/gui/qt/installwizard.py:110
 msgid "Install Wizard"
@@ -2859,7 +2869,7 @@ msgstr "输出点"
 #: electrum/gui/kivy/uix/ui_screens/invoice.kv:62
 #: electrum/gui/qt/transaction_dialog.py:321
 msgid "Outputs"
-msgstr "转出"
+msgstr "输出"
 
 #: electrum/gui/qt/network_dialog.py:196
 msgid "Overview"
