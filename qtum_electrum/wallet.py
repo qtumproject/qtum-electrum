@@ -674,18 +674,16 @@ class Abstract_Wallet(AddressSynchronizer):
     def add_input_info(self, txin, check_p2pk=False):
         address = txin['address']
         if self.is_mine(address):
-            if check_p2pk:
+            txin_type = self.get_txin_type(address)
+            if check_p2pk and txin_type == 'p2pkh':
                 prevout_tx = self.transactions.get(txin['prevout_hash'])
                 if not prevout_tx:
                     return
                 prevout_n = txin['prevout_n']
                 t = prevout_tx.outputs()[prevout_n].type
                 if t == TYPE_PUBKEY:
-                    txin['type'] = 'p2pk'
-
-            # check_p2pk==False or not p2pk
-            if txin.get('type') is None:
-                txin['type'] = self.get_txin_type(address)
+                    txin_type = 'p2pk'
+            txin['type'] = txin_type
 
             # segwit needs value to sign
             if txin.get('value') is None and Transaction.is_input_value_needed(txin):
