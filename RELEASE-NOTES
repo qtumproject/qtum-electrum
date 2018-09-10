@@ -1,3 +1,13 @@
+# Release 0.18.8
+ * fix signing incorrect signature with p2pk utxos
+ * fix crash when clicking "View on block explorer"
+ * fix crash when creating a smart contract
+ * fix header writing failure in some case
+ * save contract information automatically after OP_CREATE transaction broadcasted
+ * improve Chinese translations
+ * expand max fee rate limit
+ * other minor optimisations
+
 # Release 0.18.7
  * fix a synchronization issue with save chunk
  * fix signing unsigned tx loaded from file
