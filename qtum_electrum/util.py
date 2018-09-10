@@ -54,9 +54,6 @@ unpack_uint16_from = Struct('<H').unpack_from
 unpack_uint32_from = Struct('<I').unpack_from
 unpack_uint64_from = Struct('<Q').unpack_from
 
-def normalize_version(v):
-    return [int(x) for x in re.sub(r'(\.0+)*$','', v).split(".")]
-
 
 class NotEnoughFunds(Exception): pass
 
