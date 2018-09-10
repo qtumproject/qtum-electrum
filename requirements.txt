@@ -1,7 +1,7 @@
-btchip-python==0.1.26
+btchip-python==0.1.28
 Cython==0.28.5
 cffi==1.11.5
-certifi==2018.1.18
+certifi==2018.8.24
 chardet==3.0.4
 dnspython==1.15.0
 ecdsa==0.13
@@ -9,8 +9,8 @@ keepkey==4.0.2
 hidapi==0.7.99.post21
 idna==2.7
 jsonrpclib-pelix==0.3.1
-libusb1==1.6.4
-protobuf==3.6.0
+libusb1==1.6.6
+protobuf==3.6.1
 pyaes==1.6.1
 pyblake2==1.1.1
 PySocks==1.6.8
@@ -19,9 +19,9 @@ qrcode==6.0
 requests==2.19.1
 rsa
 rlp==0.6.0
-setuptools==40.0.0
+setuptools==40.2.0
 six==1.11.0
 sip==4.19.8
 trezor==0.10.2
-typing>=3.0.0
+typing==3.6.6
 urllib3==1.23
