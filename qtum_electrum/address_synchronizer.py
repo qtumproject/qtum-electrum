@@ -394,6 +394,8 @@ class AddressSynchronizer(PrintError):
         for prevout_hash, d in _spent_outpoints.items():
             for prevout_n_str, spending_txid in d.items():
                 prevout_n = int(prevout_n_str)
+                if spending_txid not in self.transactions:
+                    continue
                 self.spent_outpoints[prevout_hash][prevout_n] = spending_txid
 
     def get_depending_transactions(self, tx_hash):
