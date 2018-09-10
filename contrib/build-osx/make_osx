@@ -96,7 +96,17 @@ done
 info "Building binary"
 pyinstaller --noconfirm --ascii --clean --name $VERSION contrib/build-osx/osx.spec || fail "Could not build binary"
 
+info "Adding qtum URI types to Info.plist"
+plutil -insert 'CFBundleURLTypes' \
+	-xml '<array><dict> <key>CFBundleURLName</key>
+	<string>qtum</string>
+	<key>CFBundleURLSchemes</key>
+	<array><string>qtum</string></array> </dict></array>' \
+	-- dist/${VOL_NAME}.app/Contents/Info.plist \
+	|| fail "Could not add keys to Info.plist. Make sure the program 'plutil' exists and is installed."
 
+
+info "Creating .DMG"
 hdiutil create -size 300m -fs HFS+ -volname "${VOL_NAME}" -ov ${TEMP_DMG_NAME}
 
 hdiutil mount ${TEMP_DMG_NAME}
