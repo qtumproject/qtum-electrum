@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PACKAGE VERSION\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2018-08-29 15:37+0800\n"
+"POT-Creation-Date: 2018-09-12 14:16+0800\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -25,11 +25,11 @@ msgstr ""
 msgid " Balance"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2662
+#: qtum_electrum/gui/qt/main_window.py:2668
 msgid " These settings affects the fields in the Send tab"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:618
+#: qtum_electrum/gui/qt/main_window.py:624
 #, python-format
 msgid "%(txs)s new transactions received. Total amount received in the new transactions %(amount)s"
 msgstr ""
@@ -64,151 +64,151 @@ msgstr ""
 msgid "%s is not covered by GreenAddress instant confirmation"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:569
+#: qtum_electrum/gui/qt/main_window.py:575
 msgid "&About"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:160
-#: qtum_electrum/gui/qt/main_window.py:508
+#: qtum_electrum/gui/qt/main_window.py:163
+#: qtum_electrum/gui/qt/main_window.py:514
 msgid "&Addresses"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:573
+#: qtum_electrum/gui/qt/main_window.py:579
 msgid "&Documentation"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:555
+#: qtum_electrum/gui/qt/main_window.py:561
 msgid "&Encrypt/decrypt message"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:503
-#: qtum_electrum/gui/qt/main_window.py:513
+#: qtum_electrum/gui/qt/main_window.py:509
+#: qtum_electrum/gui/qt/main_window.py:519
 msgid "&Export"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:485
+#: qtum_electrum/gui/qt/main_window.py:491
 msgid "&File"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:509
-#: qtum_electrum/gui/qt/main_window.py:516
+#: qtum_electrum/gui/qt/main_window.py:515
+#: qtum_electrum/gui/qt/main_window.py:522
 msgid "&Filter"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:564
+#: qtum_electrum/gui/qt/main_window.py:570
 msgid "&From QR code"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:561
+#: qtum_electrum/gui/qt/main_window.py:567
 msgid "&From file"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:562
+#: qtum_electrum/gui/qt/main_window.py:568
 msgid "&From text"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:563
+#: qtum_electrum/gui/qt/main_window.py:569
 msgid "&From the blockchain"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:568
+#: qtum_electrum/gui/qt/main_window.py:574
 msgid "&Help"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:515
+#: qtum_electrum/gui/qt/main_window.py:521
 msgid "&History"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:502
-#: qtum_electrum/gui/qt/main_window.py:512
+#: qtum_electrum/gui/qt/main_window.py:508
+#: qtum_electrum/gui/qt/main_window.py:518
 msgid "&Import"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:494
+#: qtum_electrum/gui/qt/main_window.py:500
 msgid "&Information"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:511
+#: qtum_electrum/gui/qt/main_window.py:517
 msgid "&Labels"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:560
+#: qtum_electrum/gui/qt/main_window.py:566
 msgid "&Load transaction"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:551
+#: qtum_electrum/gui/qt/main_window.py:557
 msgid "&Network"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:521
+#: qtum_electrum/gui/qt/main_window.py:527
 msgid "&New"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:488
+#: qtum_electrum/gui/qt/main_window.py:494
 msgid "&New/Restore"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:570
+#: qtum_electrum/gui/qt/main_window.py:576
 msgid "&Official website"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:487
+#: qtum_electrum/gui/qt/main_window.py:493
 msgid "&Open"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:497
+#: qtum_electrum/gui/qt/main_window.py:503
 msgid "&Password"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:558
+#: qtum_electrum/gui/qt/main_window.py:564
 msgid "&Pay to many"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:552
+#: qtum_electrum/gui/qt/main_window.py:558
 msgid "&Plugins"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:500
+#: qtum_electrum/gui/qt/main_window.py:506
 msgid "&Private keys"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:491
+#: qtum_electrum/gui/qt/main_window.py:497
 msgid "&Quit"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:486
+#: qtum_electrum/gui/qt/main_window.py:492
 msgid "&Recently open"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:575
+#: qtum_electrum/gui/qt/main_window.py:581
 msgid "&Report Bug"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:489
+#: qtum_electrum/gui/qt/main_window.py:495
 msgid "&Save Copy"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:498
+#: qtum_electrum/gui/qt/main_window.py:504
 msgid "&Seed"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:554
+#: qtum_electrum/gui/qt/main_window.py:560
 msgid "&Sign/verify message"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:501
+#: qtum_electrum/gui/qt/main_window.py:507
 msgid "&Sweep"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:547
+#: qtum_electrum/gui/qt/main_window.py:553
 msgid "&Tools"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:540
+#: qtum_electrum/gui/qt/main_window.py:546
 msgid "&View"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:493
+#: qtum_electrum/gui/qt/main_window.py:499
 msgid "&Wallet"
 msgstr ""
 
@@ -228,7 +228,7 @@ msgstr ""
 msgid "1 week"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:440
+#: qtum_electrum/gui/qt/main_window.py:446
 msgid "A copy of your wallet file was created in"
 msgstr ""
 
@@ -236,7 +236,7 @@ msgstr ""
 msgid "A library is probably missing."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1117
+#: qtum_electrum/gui/qt/main_window.py:1123
 msgid "A suggested fee is automatically added to this field. You may override it. The suggested fee increases with the size of the transaction."
 msgstr ""
 
@@ -249,11 +249,11 @@ msgid "About Electrum"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/dialogs/installwizard.py:791
-#: qtum_electrum/gui/qt/installwizard.py:385
+#: qtum_electrum/gui/qt/installwizard.py:384
 msgid "Add Cosigner"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:530
+#: qtum_electrum/gui/qt/main_window.py:536
 #: qtum_electrum/gui/qt/token_dialog.py:87
 #: qtum_electrum/gui/qt/token_list.py:55
 msgid "Add Token"
@@ -275,14 +275,14 @@ msgstr ""
 msgid "Add cosigner"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1419
+#: qtum_electrum/gui/qt/main_window.py:1425
 msgid "Additional fees"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/ui_screens/invoice.kv:37
-#: qtum_electrum/gui/qt/main_window.py:1899
-#: qtum_electrum/gui/qt/main_window.py:1984
-#: qtum_electrum/gui/qt/main_window.py:2057
+#: qtum_electrum/gui/qt/main_window.py:1905
+#: qtum_electrum/gui/qt/main_window.py:1990
+#: qtum_electrum/gui/qt/main_window.py:2063
 #: qtum_electrum/gui/qt/request_list.py:41 qtum_electrum/gui/qt/util.py:363
 #: qtum_electrum/gui/qt/address_list.py:60
 #: qtum_electrum/gui/qt/address_dialog.py:35
@@ -295,7 +295,7 @@ msgstr ""
 msgid "Address copied to clipboard"
 msgstr ""
 
-#: qtum_electrum/plugins/hw_wallet/plugin.py:71 qtum_electrum/wallet.py:872
+#: qtum_electrum/plugins/hw_wallet/plugin.py:71 qtum_electrum/wallet.py:884
 msgid "Address not in wallet."
 msgstr ""
 
@@ -338,8 +338,8 @@ msgstr ""
 #: qtum_electrum/gui/kivy/uix/ui_screens/send.kv:53
 #: qtum_electrum/gui/kivy/uix/ui_screens/invoice.kv:34
 #: qtum_electrum/gui/qt/invoice_list.py:35
-#: qtum_electrum/gui/qt/main_window.py:1096
-#: qtum_electrum/gui/qt/main_window.py:1729
+#: qtum_electrum/gui/qt/main_window.py:1102
+#: qtum_electrum/gui/qt/main_window.py:1735
 #: qtum_electrum/gui/qt/history_list.py:51
 #: qtum_electrum/gui/qt/history_list.py:54
 #: qtum_electrum/gui/qt/request_list.py:41 qtum_electrum/gui/qt/utxo_list.py:33
@@ -365,11 +365,11 @@ msgid "Amount sent:"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/screens.py:294
-#: qtum_electrum/gui/qt/main_window.py:1412
+#: qtum_electrum/gui/qt/main_window.py:1418
 msgid "Amount to be sent"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1092
+#: qtum_electrum/gui/qt/main_window.py:1098
 msgid "Amount to be sent."
 msgstr ""
 
@@ -377,12 +377,16 @@ msgstr ""
 msgid "Amount:"
 msgstr ""
 
+#: qtum_electrum/gui/qt/exception_window.py:46
+msgid "An Error Occurred"
+msgstr ""
+
 #: qtum_electrum/base_wizard.py:269
 #, python-format
 msgid "An unnamed %s"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2868
+#: qtum_electrum/gui/qt/main_window.py:2874
 msgid "Appearance"
 msgstr ""
 
@@ -404,11 +408,11 @@ msgstr ""
 msgid "Are you sure you want to proceed?"
 msgstr ""
 
-#: qtum_electrum/gui/qt/history_list.py:280
+#: qtum_electrum/gui/qt/history_list.py:285
 msgid "Are you sure you want to remove this transaction and {} child transactions?"
 msgstr ""
 
-#: qtum_electrum/gui/qt/history_list.py:277
+#: qtum_electrum/gui/qt/history_list.py:282
 msgid "Are you sure you want to remove this transaction?"
 msgstr ""
 
@@ -441,13 +445,13 @@ msgid "BIP39 seeds do not include a version number, which compromises compatibil
 msgstr ""
 
 #: qtum_electrum/gui/qt/installwizard.py:70
+#: qtum_electrum/gui/qt/installwizard.py:104
 #: qtum_electrum/gui/qt/installwizard.py:105
-#: qtum_electrum/gui/qt/installwizard.py:106
 msgid "Back"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/ui_screens/status.kv:32
-#: qtum_electrum/gui/qt/main_window.py:749
+#: qtum_electrum/gui/qt/main_window.py:755
 #: qtum_electrum/gui/qt/history_list.py:51
 #: qtum_electrum/gui/qt/history_list.py:54
 #: qtum_electrum/gui/qt/address_list.py:60
@@ -461,15 +465,15 @@ msgstr ""
 msgid "Banner"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2663
+#: qtum_electrum/gui/qt/main_window.py:2669
 msgid "Base unit"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2660
+#: qtum_electrum/gui/qt/main_window.py:2666
 msgid "Base unit of your wallet."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:600
+#: qtum_electrum/gui/qt/main_window.py:606
 msgid "Before reporting a bug, upgrade to the most recent version of Electrum (latest release or git HEAD), and include the version number in your report."
 msgstr ""
 
@@ -502,11 +506,11 @@ msgstr ""
 msgid "Broadcast"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1507
+#: qtum_electrum/gui/qt/main_window.py:1513
 msgid "Broadcasting transaction..."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3050
+#: qtum_electrum/gui/qt/main_window.py:3056
 msgid "Bump Fee"
 msgstr ""
 
@@ -522,13 +526,13 @@ msgstr ""
 msgid "Call"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3046
+#: qtum_electrum/gui/qt/main_window.py:3052
 msgid "Can't bump fee: unknown fee for original transaction."
 msgstr ""
 
 #: qtum_electrum/plugins/trezor/qt.py:64 qtum_electrum/gui/qt/util.py:187
 #: qtum_electrum/gui/qt/installwizard.py:70
-#: qtum_electrum/gui/qt/installwizard.py:106
+#: qtum_electrum/gui/qt/installwizard.py:105
 msgid "Cancel"
 msgstr ""
 
@@ -546,11 +550,11 @@ msgstr ""
 msgid "Cannot broadcast transaction"
 msgstr ""
 
-#: qtum_electrum/wallet.py:646
+#: qtum_electrum/wallet.py:648
 msgid "Cannot bump fee: cound not find suitable outputs"
 msgstr ""
 
-#: qtum_electrum/wallet.py:614
+#: qtum_electrum/wallet.py:616
 msgid "Cannot bump fee: transaction is final"
 msgstr ""
 
@@ -570,7 +574,7 @@ msgstr ""
 msgid "Cannot load wallet:"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:211
+#: qtum_electrum/gui/qt/installwizard.py:210
 msgid "Cannot read file"
 msgstr ""
 
@@ -604,11 +608,11 @@ msgstr ""
 msgid "Check your %s device to continue"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2993
+#: qtum_electrum/gui/qt/main_window.py:2999
 msgid "Child Pays for Parent"
 msgstr ""
 
-#: qtum_electrum/gui/qt/history_list.py:266
+#: qtum_electrum/gui/qt/history_list.py:271
 msgid "Child pays for parent"
 msgstr ""
 
@@ -632,7 +636,7 @@ msgstr ""
 msgid "Choose a server"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2760
+#: qtum_electrum/gui/qt/main_window.py:2766
 msgid ""
 "Choose coin (UTXO) selection method.  The following are available:\n"
 "\n"
@@ -655,7 +659,7 @@ msgstr ""
 msgid "Choose on your {} device where to enter your passphrase"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:631
+#: qtum_electrum/gui/qt/installwizard.py:609
 msgid "Choose the number of signatures needed to unlock funds in your wallet:"
 msgstr ""
 
@@ -663,7 +667,7 @@ msgstr ""
 msgid "Choose the type of addresses in your wallet."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2695
+#: qtum_electrum/gui/qt/main_window.py:2701
 msgid "Choose which online block explorer to use for functions that open a web browser"
 msgstr ""
 
@@ -671,12 +675,12 @@ msgstr ""
 msgid "Choose your chain"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:152
+#: qtum_electrum/gui/qt/installwizard.py:151
 msgid "Choose..."
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/ui_screens/send.kv:86
-#: qtum_electrum/gui/qt/main_window.py:1154
+#: qtum_electrum/gui/qt/main_window.py:1160
 msgid "Clear"
 msgstr ""
 
@@ -694,28 +698,28 @@ msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/ui_screens/about.kv:54
 #: qtum_electrum/gui/kivy/uix/ui_screens/invoice.kv:70
-#: qtum_electrum/gui/qt/main_window.py:2075
-#: qtum_electrum/gui/qt/main_window.py:2134 qtum_electrum/gui/qt/util.py:163
+#: qtum_electrum/gui/qt/main_window.py:2081
+#: qtum_electrum/gui/qt/main_window.py:2140 qtum_electrum/gui/qt/util.py:163
 #: qtum_electrum/gui/qt/qrcodewidget.py:128
 #: qtum_electrum/gui/qt/__init__.py:130
 #: qtum_electrum/gui/qt/transaction_dialog.py:135
 msgid "Close"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:161
+#: qtum_electrum/gui/qt/main_window.py:164
 msgid "Co&ins"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/dialogs/settings.py:160
-#: qtum_electrum/gui/qt/main_window.py:2762
+#: qtum_electrum/gui/qt/main_window.py:2768
 msgid "Coin selection"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:162
+#: qtum_electrum/gui/qt/main_window.py:165
 msgid "Con&sole"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:163
+#: qtum_electrum/gui/qt/main_window.py:166
 msgid "Con&tacts"
 msgstr ""
 
@@ -732,7 +736,7 @@ msgid "Confirm Password:"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/dialogs/installwizard.py:779
-#: qtum_electrum/gui/qt/installwizard.py:412
+#: qtum_electrum/gui/qt/installwizard.py:411
 msgid "Confirm Seed"
 msgstr ""
 
@@ -855,7 +859,7 @@ msgstr ""
 msgid "Constructor:"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:520 qtum_electrum/gui/text.py:63
+#: qtum_electrum/gui/qt/main_window.py:526 qtum_electrum/gui/text.py:63
 msgid "Contacts"
 msgstr ""
 
@@ -875,7 +879,7 @@ msgid "Copy"
 msgstr ""
 
 #: qtum_electrum/gui/qt/invoice_list.py:77
-#: qtum_electrum/gui/qt/history_list.py:253
+#: qtum_electrum/gui/qt/history_list.py:258
 #: qtum_electrum/gui/qt/request_list.py:118
 #: qtum_electrum/gui/qt/address_list.py:147
 #: qtum_electrum/gui/qt/contact_list.py:72
@@ -909,12 +913,16 @@ msgstr ""
 msgid "Cosign with hardware device"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2174
+#: qtum_electrum/gui/qt/main_window.py:2180
 msgid "Could not decode QR code"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/main_window.py:388
 msgid "Could not start Barcode Scanner."
+msgstr ""
+
+#: qtum_electrum/gui/qt/exception_window.py:102
+msgid "Crash report"
 msgstr ""
 
 #: qtum_electrum/base_wizard.py:89
@@ -946,7 +954,7 @@ msgstr ""
 msgid "Current Password:"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3052
+#: qtum_electrum/gui/qt/main_window.py:3058
 msgid "Current fee"
 msgstr ""
 
@@ -987,7 +995,7 @@ msgstr ""
 msgid "Decimals:"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2130
+#: qtum_electrum/gui/qt/main_window.py:2136
 msgid "Decrypt"
 msgstr ""
 
@@ -1001,7 +1009,7 @@ msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/ui_screens/status.kv:71
 #: qtum_electrum/gui/qt/invoice_list.py:81
-#: qtum_electrum/gui/qt/main_window.py:1755
+#: qtum_electrum/gui/qt/main_window.py:1761
 #: qtum_electrum/gui/qt/request_list.py:121
 #: qtum_electrum/gui/qt/contact_list.py:77
 #: qtum_electrum/gui/qt/smart_contract_list.py:45
@@ -1010,7 +1018,7 @@ msgid "Delete"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/screens.py:481
-#: qtum_electrum/gui/qt/main_window.py:1750
+#: qtum_electrum/gui/qt/main_window.py:1756
 msgid "Delete invoice?"
 msgstr ""
 
@@ -1030,8 +1038,8 @@ msgstr ""
 #: qtum_electrum/gui/kivy/uix/ui_screens/send.kv:71
 #: qtum_electrum/gui/kivy/uix/ui_screens/invoice.kv:46
 #: qtum_electrum/gui/qt/invoice_list.py:35
-#: qtum_electrum/gui/qt/main_window.py:822
-#: qtum_electrum/gui/qt/main_window.py:1079
+#: qtum_electrum/gui/qt/main_window.py:828
+#: qtum_electrum/gui/qt/main_window.py:1085
 #: qtum_electrum/gui/qt/history_list.py:51
 #: qtum_electrum/gui/qt/request_list.py:41
 #: qtum_electrum/gui/qt/transaction_dialog.py:232 qtum_electrum/gui/text.py:103
@@ -1039,14 +1047,14 @@ msgstr ""
 msgid "Description"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1077
+#: qtum_electrum/gui/qt/main_window.py:1083
 msgid "Description of the transaction (not mandatory)."
 msgstr ""
 
 #: qtum_electrum/gui/qt/invoice_list.py:78
-#: qtum_electrum/gui/qt/history_list.py:257
+#: qtum_electrum/gui/qt/history_list.py:262
 #: qtum_electrum/gui/qt/address_list.py:148
-#: qtum_electrum/gui/qt/utxo_list.py:69
+#: qtum_electrum/gui/qt/utxo_list.py:70
 msgid "Details"
 msgstr ""
 
@@ -1083,7 +1091,7 @@ msgstr ""
 msgid "Disconnected"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1152
+#: qtum_electrum/gui/qt/main_window.py:1158
 msgid "Display the details of your transactions before signing it."
 msgstr ""
 
@@ -1103,20 +1111,24 @@ msgstr ""
 msgid "Do you want to create a new wallet, or to restore a wallet using an existing key?"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:301
+#: qtum_electrum/gui/qt/installwizard.py:300
 #, python-format
 msgid "Do you want to delete '%s'?"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:279
+#: qtum_electrum/gui/qt/installwizard.py:278
 msgid "Do you want to delete the old file"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1655
+#: qtum_electrum/gui/qt/main_window.py:1661
 msgid "Do you want to remove"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1350
+#: qtum_electrum/base_crash_reporter.py:58
+msgid "Do you want to send this report?"
+msgstr ""
+
+#: qtum_electrum/gui/qt/main_window.py:1356
 msgid "Do you wish to continue?"
 msgstr ""
 
@@ -1128,18 +1140,18 @@ msgstr ""
 msgid "Edit"
 msgstr ""
 
-#: qtum_electrum/gui/qt/history_list.py:255
+#: qtum_electrum/gui/qt/history_list.py:260
 #: qtum_electrum/gui/qt/address_list.py:150
 #: qtum_electrum/gui/qt/contact_list.py:75
 #, python-format
 msgid "Edit %s"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2579
+#: qtum_electrum/gui/qt/main_window.py:2585
 msgid "Edit fees manually"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2927
+#: qtum_electrum/gui/qt/main_window.py:2933
 msgid "Electrum Plugins"
 msgstr ""
 
@@ -1147,7 +1159,7 @@ msgstr ""
 msgid "Electrum connects to several nodes in order to download block headers and find out the longest blockchain."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:550
+#: qtum_electrum/gui/qt/main_window.py:556
 msgid "Electrum preferences"
 msgstr ""
 
@@ -1159,11 +1171,11 @@ msgstr ""
 msgid "Electrum sends your wallet addresses to a single server, in order to receive your transaction history."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:167
+#: qtum_electrum/gui/qt/installwizard.py:166
 msgid "Electrum wallet"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:442
+#: qtum_electrum/gui/qt/main_window.py:448
 msgid "Electrum was unable to copy your wallet file to the specified location."
 msgstr ""
 
@@ -1171,15 +1183,15 @@ msgstr ""
 msgid "Electrum was unable to deserialize the transaction:"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2189
+#: qtum_electrum/gui/qt/main_window.py:2195
 msgid "Electrum was unable to open your transaction file"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2153
+#: qtum_electrum/gui/qt/main_window.py:2159
 msgid "Electrum was unable to parse your transaction"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2367
+#: qtum_electrum/gui/qt/main_window.py:2373
 msgid "Electrum was unable to produce a transaction export."
 msgstr ""
 
@@ -1207,7 +1219,7 @@ msgstr ""
 msgid "Enabled"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2126
+#: qtum_electrum/gui/qt/main_window.py:2132
 msgid "Encrypt"
 msgstr ""
 
@@ -1216,7 +1228,7 @@ msgstr ""
 msgid "Encrypt wallet file"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2103
+#: qtum_electrum/gui/qt/main_window.py:2109
 msgid "Encrypt/decrypt Message"
 msgstr ""
 
@@ -1224,7 +1236,7 @@ msgstr ""
 msgid "Encrypt/decrypt message"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2121
+#: qtum_electrum/gui/qt/main_window.py:2127
 msgid "Encrypted"
 msgstr ""
 
@@ -1260,7 +1272,7 @@ msgid "Enter Password"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/dialogs/installwizard.py:567
-#: qtum_electrum/gui/qt/installwizard.py:394
+#: qtum_electrum/gui/qt/installwizard.py:393
 msgid "Enter Seed"
 msgstr ""
 
@@ -1268,7 +1280,7 @@ msgstr ""
 msgid "Enter Transaction Label"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:432
+#: qtum_electrum/gui/qt/main_window.py:438
 msgid "Enter a filename for the copy of your wallet"
 msgstr ""
 
@@ -1280,7 +1292,7 @@ msgstr ""
 msgid "Enter a list of Qtum addresses (this will create a watching-only wallet), or a list of private keys."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1675
+#: qtum_electrum/gui/qt/main_window.py:1681
 msgid "Enter a list of outputs in the 'Pay to' field."
 msgstr ""
 
@@ -1294,7 +1306,7 @@ msgstr ""
 msgid "Enter a passphrase to generate this wallet.  Each time you use this wallet your %s will prompt you for the passphrase.  If you forget the passphrase you cannot access the bitcoins in the wallet."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2498
+#: qtum_electrum/gui/qt/main_window.py:2504
 msgid "Enter addresses"
 msgstr ""
 
@@ -1314,11 +1326,11 @@ msgstr ""
 msgid "Enter new PIN"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2505
+#: qtum_electrum/gui/qt/main_window.py:2511
 msgid "Enter private keys"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2424
+#: qtum_electrum/gui/qt/main_window.py:2430
 msgid "Enter private keys:"
 msgstr ""
 
@@ -1336,7 +1348,7 @@ msgid ""
 "Press BACKSPACE to go back a choice or word.\n"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:388
+#: qtum_electrum/gui/qt/installwizard.py:387
 msgid "Enter their master private key (xprv) if you want to be able to sign for them."
 msgstr ""
 
@@ -1378,30 +1390,30 @@ msgstr ""
 msgid "Enter your current PIN:"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:197
+#: qtum_electrum/gui/qt/installwizard.py:196
 msgid "Enter your password or choose another file."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1427
-#: qtum_electrum/gui/qt/main_window.py:3197
+#: qtum_electrum/gui/qt/main_window.py:1433
+#: qtum_electrum/gui/qt/main_window.py:3203
 msgid "Enter your password to proceed"
 msgstr ""
 
 #: qtum_electrum/gui/qt/util.py:219 qtum_electrum/gui/qt/__init__.py:193
 #: qtum_electrum/gui/qt/__init__.py:212 qtum_electrum/gui/qt/__init__.py:234
-#: qtum_electrum/gui/qt/installwizard.py:244
-#: qtum_electrum/gui/qt/installwizard.py:248
-#: qtum_electrum/gui/qt/installwizard.py:255
-#: qtum_electrum/gui/qt/installwizard.py:262 qtum_electrum/gui/text.py:358
+#: qtum_electrum/gui/qt/installwizard.py:243
+#: qtum_electrum/gui/qt/installwizard.py:247
+#: qtum_electrum/gui/qt/installwizard.py:254
+#: qtum_electrum/gui/qt/installwizard.py:261 qtum_electrum/gui/text.py:358
 #: qtum_electrum/gui/stdio.py:210
 msgid "Error"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:953
+#: qtum_electrum/gui/qt/main_window.py:959
 msgid "Error adding payment request"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3079
+#: qtum_electrum/gui/qt/main_window.py:3085
 msgid "Error bumping fee"
 msgstr ""
 
@@ -1437,7 +1449,7 @@ msgstr ""
 msgid "Expiration"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:842
+#: qtum_electrum/gui/qt/main_window.py:848
 msgid "Expiration date of your request."
 msgstr ""
 
@@ -1446,24 +1458,24 @@ msgstr ""
 msgid "Expired"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:844
+#: qtum_electrum/gui/qt/main_window.py:850
 msgid "Expired requests have to be deleted manually from your list, in order to free the corresponding Qtum addresses."
 msgstr ""
 
 #: qtum_electrum/gui/qt/invoice_list.py:35
-#: qtum_electrum/gui/qt/main_window.py:1738
+#: qtum_electrum/gui/qt/main_window.py:1744
 msgid "Expires"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:523
-#: qtum_electrum/gui/qt/main_window.py:527
-#: qtum_electrum/gui/qt/main_window.py:2247
-#: qtum_electrum/gui/qt/main_window.py:2355
+#: qtum_electrum/gui/qt/main_window.py:529
+#: qtum_electrum/gui/qt/main_window.py:533
+#: qtum_electrum/gui/qt/main_window.py:2253
+#: qtum_electrum/gui/qt/main_window.py:2361
 #: qtum_electrum/gui/qt/transaction_dialog.py:132
 msgid "Export"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2347
+#: qtum_electrum/gui/qt/main_window.py:2353
 msgid "Export History"
 msgstr ""
 
@@ -1471,7 +1483,7 @@ msgstr ""
 msgid "Export file"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2234
+#: qtum_electrum/gui/qt/main_window.py:2240
 msgid "Exposing a single private key can compromise your entire wallet!"
 msgstr ""
 
@@ -1484,40 +1496,40 @@ msgstr ""
 msgid "Failed to create a client for this device."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:256
+#: qtum_electrum/gui/qt/installwizard.py:255
 msgid "Failed to decrypt using this hardware device."
 msgstr ""
 
-#: qtum_electrum/util.py:82
+#: qtum_electrum/util.py:81
 msgid "Failed to export to file."
 msgstr ""
 
-#: qtum_electrum/util.py:74
+#: qtum_electrum/util.py:73
 msgid "Failed to import from file."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1867
+#: qtum_electrum/gui/qt/main_window.py:1873
 msgid "Failed to update password"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1118
+#: qtum_electrum/gui/qt/main_window.py:1124
 #: qtum_electrum/gui/qt/transaction_dialog.py:253 qtum_electrum/gui/text.py:175
 msgid "Fee"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3022
+#: qtum_electrum/gui/qt/main_window.py:3028
 msgid "Fee:"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2866
+#: qtum_electrum/gui/qt/main_window.py:2872
 msgid "Fees"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2869
+#: qtum_electrum/gui/qt/main_window.py:2875
 msgid "Fiat"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2860
+#: qtum_electrum/gui/qt/main_window.py:2866
 msgid "Fiat currency"
 msgstr ""
 
@@ -1529,11 +1541,11 @@ msgstr ""
 msgid "Filter:"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3064
+#: qtum_electrum/gui/qt/main_window.py:3070
 msgid "Final"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:533
+#: qtum_electrum/gui/qt/main_window.py:539
 msgid "Find"
 msgstr ""
 
@@ -1562,7 +1574,7 @@ msgstr ""
 msgid "Format"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1677
+#: qtum_electrum/gui/qt/main_window.py:1683
 msgid "Format: address, amount"
 msgstr ""
 
@@ -1574,12 +1586,12 @@ msgstr ""
 msgid "French"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1084
+#: qtum_electrum/gui/qt/main_window.py:1090
 #: qtum_electrum/gui/qt/history_list.py:80
 msgid "From"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:622
+#: qtum_electrum/gui/qt/installwizard.py:600
 #, python-format
 msgid "From %d cosigners"
 msgstr ""
@@ -1596,7 +1608,7 @@ msgstr ""
 msgid "Funded"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3188
+#: qtum_electrum/gui/qt/main_window.py:3194
 msgid "Gas fee"
 msgstr ""
 
@@ -1633,12 +1645,12 @@ msgstr ""
 msgid "Hello World"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:567
+#: qtum_electrum/gui/qt/installwizard.py:545
 msgid "Here is your master public key."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:249
-#: qtum_electrum/gui/qt/main_window.py:537
+#: qtum_electrum/gui/qt/main_window.py:255
+#: qtum_electrum/gui/qt/main_window.py:543
 msgid "Hide"
 msgstr ""
 
@@ -1646,7 +1658,7 @@ msgstr ""
 msgid "Hide seed"
 msgstr ""
 
-#: qtum_electrum/gui/kivy/main.kv:356 qtum_electrum/gui/qt/main_window.py:146
+#: qtum_electrum/gui/kivy/main.kv:356 qtum_electrum/gui/qt/main_window.py:149
 #: qtum_electrum/gui/qt/address_dialog.py:75 qtum_electrum/gui/text.py:63
 msgid "History"
 msgstr ""
@@ -1677,7 +1689,7 @@ msgstr ""
 msgid "I already have a seed"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2870
+#: qtum_electrum/gui/qt/main_window.py:2876
 msgid "Identity"
 msgstr ""
 
@@ -1693,11 +1705,11 @@ msgstr ""
 msgid "If you are not sure what this is, leave this field unchanged."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1140
+#: qtum_electrum/gui/qt/main_window.py:1146
 msgid "If you check this box, your transaction will be marked as non-final,"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2591
+#: qtum_electrum/gui/qt/main_window.py:2597
 msgid "If you check this box, your transactions will be marked as non-final,"
 msgstr ""
 
@@ -1717,15 +1729,15 @@ msgstr ""
 msgid "If you forget your PIN or lose your device, your seed phrase will be the only way to recover your funds."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:415
+#: qtum_electrum/gui/qt/installwizard.py:414
 msgid "If you lose your seed, your money will be permanently lost."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:257
+#: qtum_electrum/gui/qt/installwizard.py:256
 msgid "If you use a passphrase, make sure it is correct."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:991
+#: qtum_electrum/gui/qt/main_window.py:997
 msgid "If you want to create new addresses, use a deterministic wallet instead."
 msgstr ""
 
@@ -1733,9 +1745,9 @@ msgstr ""
 msgid "If your device is not detected on Windows, go to \"Settings\", \"Devices\", \"Connected devices\", and do \"Remove device\". Then, plug your device again."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:522
-#: qtum_electrum/gui/qt/main_window.py:526
-#: qtum_electrum/gui/qt/main_window.py:2476
+#: qtum_electrum/gui/qt/main_window.py:528
+#: qtum_electrum/gui/qt/main_window.py:532
+#: qtum_electrum/gui/qt/main_window.py:2482
 msgid "Import"
 msgstr ""
 
@@ -1747,8 +1759,8 @@ msgstr ""
 msgid "Import Qtum addresses or private keys"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:504
-#: qtum_electrum/gui/qt/main_window.py:2498
+#: qtum_electrum/gui/qt/main_window.py:510
+#: qtum_electrum/gui/qt/main_window.py:2504
 msgid "Import addresses"
 msgstr ""
 
@@ -1756,27 +1768,27 @@ msgstr ""
 msgid "Import file"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2505
+#: qtum_electrum/gui/qt/main_window.py:2511
 msgid "Import private keys"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2235
+#: qtum_electrum/gui/qt/main_window.py:2241
 msgid "In particular, DO NOT use 'redeem private key' services proposed by third parties."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2744
+#: qtum_electrum/gui/qt/main_window.py:2750
 msgid "In some cases, use up to 3 change addresses in order to break up large coin amounts and obfuscate the recipient address."
 msgstr ""
 
-#: qtum_electrum/util.py:49
+#: qtum_electrum/util.py:51
 msgid "In the next block"
 msgstr ""
 
-#: qtum_electrum/util.py:66
+#: qtum_electrum/util.py:65
 msgid "Incorrect password"
 msgstr ""
 
-#: qtum_electrum/gui/qt/history_list.py:262
+#: qtum_electrum/gui/qt/history_list.py:267
 msgid "Increase fee"
 msgstr ""
 
@@ -1785,7 +1797,7 @@ msgid "Indonesian"
 msgstr ""
 
 #: qtum_electrum/plugins/trezor/qt.py:606
-#: qtum_electrum/gui/qt/main_window.py:416 qtum_electrum/gui/qt/util.py:238
+#: qtum_electrum/gui/qt/main_window.py:422 qtum_electrum/gui/qt/util.py:238
 msgid "Information"
 msgstr ""
 
@@ -1797,11 +1809,11 @@ msgstr ""
 msgid "Initialized"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3010
+#: qtum_electrum/gui/qt/main_window.py:3016
 msgid "Input amount"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2194
+#: qtum_electrum/gui/qt/main_window.py:2200
 msgid "Input raw transaction"
 msgstr ""
 
@@ -1809,16 +1821,16 @@ msgstr ""
 msgid "Inputs"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:95
+#: qtum_electrum/gui/qt/installwizard.py:94
 msgid "Install Wizard"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2715
+#: qtum_electrum/gui/qt/main_window.py:2721
 msgid "Install the zbar package to enable this."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1389
-#: qtum_electrum/gui/qt/main_window.py:3169
+#: qtum_electrum/gui/qt/main_window.py:1395
+#: qtum_electrum/gui/qt/main_window.py:3175
 msgid "Insufficient funds"
 msgstr ""
 
@@ -1827,12 +1839,12 @@ msgstr ""
 msgid "Interface(ABI):"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1695
-#: qtum_electrum/gui/qt/main_window.py:3228
+#: qtum_electrum/gui/qt/main_window.py:1701
+#: qtum_electrum/gui/qt/main_window.py:3234
 msgid "Invalid Address"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1366 qtum_electrum/gui/text.py:327
+#: qtum_electrum/gui/qt/main_window.py:1372 qtum_electrum/gui/text.py:327
 #: qtum_electrum/gui/stdio.py:173
 msgid "Invalid Amount"
 msgstr ""
@@ -1841,7 +1853,7 @@ msgstr ""
 msgid "Invalid Bitcoin address"
 msgstr ""
 
-#: qtum_electrum/wallet.py:870
+#: qtum_electrum/wallet.py:882
 msgid "Invalid Bitcoin address."
 msgstr ""
 
@@ -1849,11 +1861,11 @@ msgstr ""
 msgid "Invalid Fee"
 msgstr ""
 
-#: qtum_electrum/util.py:805
+#: qtum_electrum/util.py:804
 msgid "Invalid JSON code."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1343
+#: qtum_electrum/gui/qt/main_window.py:1349
 msgid "Invalid Lines found:"
 msgstr ""
 
@@ -1862,13 +1874,13 @@ msgstr ""
 msgid "Invalid PIN"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2097
+#: qtum_electrum/gui/qt/main_window.py:2103
 msgid "Invalid Public key"
 msgstr ""
 
 #: qtum_electrum/plugins/hw_wallet/plugin.py:68
 #: qtum_electrum/gui/kivy/uix/screens.py:260
-#: qtum_electrum/gui/qt/main_window.py:1363
+#: qtum_electrum/gui/qt/main_window.py:1369
 msgid "Invalid Qtum Address"
 msgstr ""
 
@@ -1876,12 +1888,12 @@ msgstr ""
 msgid "Invalid amount"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1576
+#: qtum_electrum/gui/qt/main_window.py:1582
 msgid "Invalid qtum URI:"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/ui_screens/invoice.kv:14
-#: qtum_electrum/gui/qt/main_window.py:1724
+#: qtum_electrum/gui/qt/main_window.py:1730
 msgid "Invoice"
 msgstr ""
 
@@ -1889,12 +1901,12 @@ msgstr ""
 msgid "Invoice saved"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1747
+#: qtum_electrum/gui/qt/main_window.py:1753
 msgid "Invoice saved as "
 msgstr ""
 
-#: qtum_electrum/gui/kivy/main.kv:348 qtum_electrum/gui/qt/main_window.py:525
-#: qtum_electrum/gui/qt/main_window.py:1195
+#: qtum_electrum/gui/kivy/main.kv:348 qtum_electrum/gui/qt/main_window.py:531
+#: qtum_electrum/gui/qt/main_window.py:1201
 msgid "Invoices"
 msgstr ""
 
@@ -1902,11 +1914,11 @@ msgstr ""
 msgid "It also contains your master public key that allows watching your addresses."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2227
+#: qtum_electrum/gui/qt/main_window.py:2233
 msgid "It can not be \"backed up\" by simply exporting these private keys."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3090
+#: qtum_electrum/gui/qt/main_window.py:3096
 msgid "It conflicts with current history."
 msgstr ""
 
@@ -1918,7 +1930,7 @@ msgstr ""
 msgid "Japanese"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1095
+#: qtum_electrum/gui/qt/main_window.py:1101
 msgid "Keyboard shortcut: type \"!\" to send all your coins."
 msgstr ""
 
@@ -1948,7 +1960,7 @@ msgstr ""
 
 #: qtum_electrum/plugins/trezor/qt.py:467
 #: qtum_electrum/gui/kivy/uix/dialogs/settings.py:138
-#: qtum_electrum/gui/qt/main_window.py:2530
+#: qtum_electrum/gui/qt/main_window.py:2536
 msgid "Language"
 msgstr ""
 
@@ -1984,11 +1996,11 @@ msgstr ""
 msgid "Licence"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1343
+#: qtum_electrum/gui/qt/main_window.py:1349
 msgid "Line #"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2194
+#: qtum_electrum/gui/qt/main_window.py:2200
 msgid "Load transaction"
 msgstr ""
 
@@ -1996,7 +2008,7 @@ msgstr ""
 msgid "Local"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2208
+#: qtum_electrum/gui/qt/main_window.py:2214
 msgid "Lookup transaction"
 msgstr ""
 
@@ -2013,7 +2025,7 @@ msgstr ""
 msgid "Make sure you install it with python3"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:414
+#: qtum_electrum/gui/qt/main_window.py:420
 msgid "Make sure you own the seed phrase or the private keys, before you request Qtums to be sent to this wallet."
 msgstr ""
 
@@ -2021,12 +2033,12 @@ msgstr ""
 #: qtum_electrum/gui/kivy/uix/ui_screens/status.kv:53
 #: qtum_electrum/gui/kivy/uix/dialogs/installwizard.py:690
 #: qtum_electrum/gui/kivy/uix/dialogs/installwizard.py:694
-#: qtum_electrum/gui/qt/main_window.py:1940
-#: qtum_electrum/gui/qt/installwizard.py:573
+#: qtum_electrum/gui/qt/main_window.py:1946
+#: qtum_electrum/gui/qt/installwizard.py:551
 msgid "Master Public Key"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1937
+#: qtum_electrum/gui/qt/main_window.py:1943
 msgid "Master Public Keys"
 msgstr ""
 
@@ -2034,20 +2046,20 @@ msgstr ""
 msgid "Matrix"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1107
+#: qtum_electrum/gui/qt/main_window.py:1113
 msgid "Max"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3037
+#: qtum_electrum/gui/qt/main_window.py:3043
 msgid "Max fee exceeded"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1733
+#: qtum_electrum/gui/qt/main_window.py:1739
 msgid "Memo"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2051
-#: qtum_electrum/gui/qt/main_window.py:2109
+#: qtum_electrum/gui/qt/main_window.py:2057
+#: qtum_electrum/gui/qt/main_window.py:2115
 msgid "Message"
 msgstr ""
 
@@ -2056,9 +2068,13 @@ msgid "Method:"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/screens.py:295
-#: qtum_electrum/gui/qt/main_window.py:1413
-#: qtum_electrum/gui/qt/main_window.py:3187
+#: qtum_electrum/gui/qt/main_window.py:1419
+#: qtum_electrum/gui/qt/main_window.py:3193
 msgid "Mining fee"
+msgstr ""
+
+#: qtum_electrum/base_crash_reporter.py:66
+msgid "Missing report URL."
 msgstr ""
 
 #: qtum_electrum/plugins/ledger/auth2fa.py:167
@@ -2070,7 +2086,7 @@ msgstr ""
 msgid "Mobile - Not paired"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:633
+#: qtum_electrum/gui/qt/installwizard.py:611
 msgid "Multi-Signature Wallet"
 msgstr ""
 
@@ -2089,7 +2105,7 @@ msgstr ""
 msgid "NOT DEVICE PIN - see above"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1901
+#: qtum_electrum/gui/qt/main_window.py:1907
 #: qtum_electrum/gui/qt/contact_list.py:40
 #: qtum_electrum/gui/qt/smart_contract_list.py:20
 #: qtum_electrum/gui/qt/token_list.py:20
@@ -2101,13 +2117,14 @@ msgid "Name this {}.  If you have multiple devices their labels help distinguish
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/ui_screens/network.kv:3
-#: qtum_electrum/gui/kivy/main.kv:419 qtum_electrum/gui/qt/main_window.py:1820
+#: qtum_electrum/gui/kivy/main.kv:419 qtum_electrum/gui/qt/main_window.py:1826
 #: qtum_electrum/gui/qt/network_dialog.py:44 qtum_electrum/gui/text.py:149
 msgid "Network"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/screens.py:451
 #: qtum_electrum/gui/qt/invoice_list.py:48
+#: qtum_electrum/gui/qt/exception_window.py:79
 #: qtum_electrum/gui/qt/request_list.py:55 qtum_electrum/gui/qt/util.py:48
 msgid "Never"
 msgstr ""
@@ -2121,12 +2138,12 @@ msgid "Never type it on a website."
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/ui_screens/receive.kv:124
-#: qtum_electrum/gui/qt/main_window.py:858
+#: qtum_electrum/gui/qt/main_window.py:864
 msgid "New"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1891
-#: qtum_electrum/gui/qt/main_window.py:1893
+#: qtum_electrum/gui/qt/main_window.py:1897
+#: qtum_electrum/gui/qt/main_window.py:1899
 msgid "New Contact"
 msgstr ""
 
@@ -2138,7 +2155,7 @@ msgstr ""
 msgid "New contact"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3053
+#: qtum_electrum/gui/qt/main_window.py:3059
 msgid "New fee:"
 msgstr ""
 
@@ -2146,12 +2163,12 @@ msgstr ""
 msgid "New request added to your list."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:627
+#: qtum_electrum/gui/qt/main_window.py:633
 #, python-format
 msgid "New transaction received. %(amount)s"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:107
+#: qtum_electrum/gui/qt/installwizard.py:106
 msgid "Next"
 msgstr ""
 
@@ -2164,7 +2181,7 @@ msgstr ""
 msgid "No Amount"
 msgstr ""
 
-#: qtum_electrum/util.py:120
+#: qtum_electrum/util.py:119
 msgid "No Data"
 msgstr ""
 
@@ -2180,7 +2197,7 @@ msgstr ""
 msgid "No data"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:587
+#: qtum_electrum/gui/qt/main_window.py:593
 msgid "No donation address for this server"
 msgstr ""
 
@@ -2204,20 +2221,16 @@ msgstr ""
 msgid "No inputs found. (Note that inputs need to be confirmed)"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:943
+#: qtum_electrum/gui/qt/main_window.py:949
 msgid "No message or amount"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:989
+#: qtum_electrum/gui/qt/main_window.py:995
 msgid "No more addresses in your wallet."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1355
+#: qtum_electrum/gui/qt/main_window.py:1361
 msgid "No outputs"
-msgstr ""
-
-#: qtum_electrum/gui/qt/installwizard.py:458
-msgid "No transactions found for this seed"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/ui_screens/network.kv:30
@@ -2226,7 +2239,7 @@ msgstr ""
 #: qtum_electrum/gui/kivy/uix/dialogs/fx_dialog.py:103
 #: qtum_electrum/gui/kivy/uix/dialogs/settings.py:165
 #: qtum_electrum/gui/kivy/uix/dialogs/settings.py:230
-#: qtum_electrum/gui/qt/main_window.py:2792
+#: qtum_electrum/gui/qt/main_window.py:2798
 #: qtum_electrum/gui/qt/history_list.py:48
 #: qtum_electrum/gui/qt/network_dialog.py:354
 #: qtum_electrum/gui/qt/token_list.py:122
@@ -2235,6 +2248,10 @@ msgstr ""
 
 #: qtum_electrum/i18n.py:58
 msgid "Norwegian"
+msgstr ""
+
+#: qtum_electrum/gui/qt/exception_window.py:83
+msgid "Not Now"
 msgstr ""
 
 #: qtum_electrum/wallet.py:63
@@ -2247,14 +2264,14 @@ msgstr ""
 
 #: qtum_electrum/gui/kivy/main_window.py:817
 #: qtum_electrum/gui/kivy/uix/ui_screens/network.kv:14
-#: qtum_electrum/gui/qt/main_window.py:764
+#: qtum_electrum/gui/qt/main_window.py:770
 #: qtum_electrum/gui/qt/network_dialog.py:365 qtum_electrum/gui/text.py:142
 #: qtum_electrum/gui/stdio.py:123
 msgid "Not connected"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/screens.py:284
-#: qtum_electrum/gui/qt/main_window.py:1176
+#: qtum_electrum/gui/qt/main_window.py:1182
 msgid "Not enough funds"
 msgstr ""
 
@@ -2266,12 +2283,12 @@ msgstr ""
 msgid "Not verified"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1094
+#: qtum_electrum/gui/qt/main_window.py:1100
 msgid "Note that if you have frozen some of your addresses, the available funds will be lower than your total balance."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1142
-#: qtum_electrum/gui/qt/main_window.py:2593
+#: qtum_electrum/gui/qt/main_window.py:1148
+#: qtum_electrum/gui/qt/main_window.py:2599
 msgid "Note that some merchants do not accept non-final transactions until they are confirmed."
 msgstr ""
 
@@ -2284,7 +2301,7 @@ msgstr ""
 msgid "Note: If you enable this setting, you will need your hardware device to open your wallet."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3100
+#: qtum_electrum/gui/qt/main_window.py:3106
 msgid "Note: this is an offline transaction, if you want the network to see it, you need to broadcast it."
 msgstr ""
 
@@ -2292,7 +2309,7 @@ msgstr ""
 msgid "Nothing set !"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2551
+#: qtum_electrum/gui/qt/main_window.py:2557
 msgid "Number of zeros displayed after the decimal point. For example, if this is set to 2, \"1.\" will be displayed as \"1.00\""
 msgstr ""
 
@@ -2304,7 +2321,7 @@ msgid "OK"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/main_window.py:632
-#: qtum_electrum/gui/qt/main_window.py:732 qtum_electrum/gui/qt/__init__.py:167
+#: qtum_electrum/gui/qt/main_window.py:738 qtum_electrum/gui/qt/__init__.py:167
 #: qtum_electrum/gui/text.py:130
 msgid "Offline"
 msgstr ""
@@ -2318,11 +2335,11 @@ msgstr ""
 msgid "On Linux, you might have to add a new permission to your udev rules."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1676
+#: qtum_electrum/gui/qt/main_window.py:1682
 msgid "One output per line."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2696
+#: qtum_electrum/gui/qt/main_window.py:2702
 msgid "Online Block Explorer"
 msgstr ""
 
@@ -2338,15 +2355,15 @@ msgstr ""
 msgid "Open {} file"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2613
+#: qtum_electrum/gui/qt/main_window.py:2619
 msgid "OpenAlias"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2609
+#: qtum_electrum/gui/qt/main_window.py:2615
 msgid "OpenAlias record, used to receive coins and to sign payment requests."
 msgstr ""
 
-#: qtum_electrum/util.py:91
+#: qtum_electrum/util.py:90
 msgid "Operation timed out."
 msgstr ""
 
@@ -2363,7 +2380,7 @@ msgstr ""
 msgid "Outdated {} firmware for device labelled {}. Please download the updated firmware from {}"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3013
+#: qtum_electrum/gui/qt/main_window.py:3019
 msgid "Output amount"
 msgstr ""
 
@@ -2430,10 +2447,10 @@ msgid "Passphrases allow you to access new wallets, each hidden behind a particu
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/ui_screens/proxy.kv:47
-#: qtum_electrum/gui/qt/main_window.py:1814
+#: qtum_electrum/gui/qt/main_window.py:1820
 #: qtum_electrum/gui/qt/password_dialog.py:294
 #: qtum_electrum/gui/qt/network_dialog.py:248
-#: qtum_electrum/gui/qt/installwizard.py:162
+#: qtum_electrum/gui/qt/installwizard.py:161
 msgid "Password"
 msgstr ""
 
@@ -2441,11 +2458,11 @@ msgstr ""
 msgid "Password Strength"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1870
+#: qtum_electrum/gui/qt/main_window.py:1876
 msgid "Password is disabled, this wallet is not protected"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1869
+#: qtum_electrum/gui/qt/main_window.py:1875
 msgid "Password was updated successfully"
 msgstr ""
 
@@ -2465,12 +2482,12 @@ msgstr ""
 msgid "Pay Now"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1068
+#: qtum_electrum/gui/qt/main_window.py:1074
 #: qtum_electrum/gui/qt/contact_list.py:76 qtum_electrum/gui/text.py:172
 msgid "Pay to"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1680
+#: qtum_electrum/gui/qt/main_window.py:1686
 msgid "Pay to many"
 msgstr ""
 
@@ -2489,13 +2506,13 @@ msgstr ""
 
 #: qtum_electrum/gui/kivy/main_window.py:288
 #: qtum_electrum/gui/kivy/uix/screens.py:251
-#: qtum_electrum/gui/qt/main_window.py:1334
-#: qtum_electrum/gui/qt/main_window.py:1479
+#: qtum_electrum/gui/qt/main_window.py:1340
+#: qtum_electrum/gui/qt/main_window.py:1485
 msgid "Payment request has expired"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/main_window.py:803
-#: qtum_electrum/gui/qt/main_window.py:1501 qtum_electrum/gui/text.py:354
+#: qtum_electrum/gui/qt/main_window.py:1507 qtum_electrum/gui/text.py:354
 #: qtum_electrum/gui/stdio.py:206
 msgid "Payment sent."
 msgstr ""
@@ -2505,16 +2522,20 @@ msgstr ""
 msgid "Pending"
 msgstr ""
 
+#: qtum_electrum/base_crash_reporter.py:57
+msgid "Please briefly describe what led to the error (optional):"
+msgstr ""
+
 #: qtum_electrum/plugins/hw_wallet/qt.py:150
 #, python-format
 msgid "Please check your %s device"
 msgstr ""
 
-#: qtum_electrum/gui/qt/history_list.py:283
+#: qtum_electrum/gui/qt/history_list.py:288
 msgid "Please confirm"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:387
+#: qtum_electrum/gui/qt/installwizard.py:386
 msgid "Please enter the master public key (xpub) of your cosigner."
 msgstr ""
 
@@ -2522,13 +2543,13 @@ msgstr ""
 msgid "Please enter your Qtum Qt Core wallet private masterkey (xprv)."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:924
+#: qtum_electrum/gui/qt/main_window.py:930
 #: qtum_electrum/gui/qt/password_dialog.py:286
 msgid "Please enter your password"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:398
-#: qtum_electrum/gui/qt/installwizard.py:406
+#: qtum_electrum/gui/qt/installwizard.py:397
+#: qtum_electrum/gui/qt/installwizard.py:405
 msgid "Please enter your seed phrase in order to restore your wallet. \n"
 msgstr ""
 
@@ -2548,11 +2569,15 @@ msgstr ""
 msgid "Please paste your cosigners master public key, or scan it using the camera button."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:598
+#: qtum_electrum/gui/qt/main_window.py:604
 msgid "Please report any bugs as issues on github:<br/>"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2901
+#: qtum_electrum/gui/qt/exception_window.py:100
+msgid "Please report this issue manually."
+msgstr ""
+
+#: qtum_electrum/gui/qt/main_window.py:2907
 msgid "Please restart Electrum to activate the new GUI settings"
 msgstr ""
 
@@ -2574,7 +2599,7 @@ msgstr ""
 msgid "Please select which %s device to use:"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:568
+#: qtum_electrum/gui/qt/installwizard.py:546
 msgid "Please share it with your cosigners."
 msgstr ""
 
@@ -2602,7 +2627,7 @@ msgstr ""
 msgid "Please wait"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:110 qtum_electrum/gui/text.py:350
+#: qtum_electrum/gui/qt/installwizard.py:109 qtum_electrum/gui/text.py:350
 #: qtum_electrum/gui/stdio.py:202 qtum_electrum/wallet.py:578
 msgid "Please wait..."
 msgstr ""
@@ -2621,25 +2646,25 @@ msgstr ""
 msgid "Portuguese"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:550
-#: qtum_electrum/gui/qt/main_window.py:1817
-#: qtum_electrum/gui/qt/main_window.py:2520
+#: qtum_electrum/gui/qt/main_window.py:556
+#: qtum_electrum/gui/qt/main_window.py:1823
+#: qtum_electrum/gui/qt/main_window.py:2526
 msgid "Preferences"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:201
+#: qtum_electrum/gui/qt/installwizard.py:200
 msgid "Press 'Next' to choose device to decrypt."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:192
+#: qtum_electrum/gui/qt/installwizard.py:191
 msgid "Press 'Next' to create this wallet, or choose another file."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:208
+#: qtum_electrum/gui/qt/installwizard.py:207
 msgid "Press 'Next' to create/focus window."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:204
+#: qtum_electrum/gui/qt/installwizard.py:203
 msgid "Press 'Next' to open this wallet."
 msgstr ""
 
@@ -2651,26 +2676,26 @@ msgstr ""
 msgid "Press again to exit"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1151
+#: qtum_electrum/gui/qt/main_window.py:1157
 msgid "Preview"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1981
-#: qtum_electrum/gui/qt/main_window.py:1986
+#: qtum_electrum/gui/qt/main_window.py:1987
+#: qtum_electrum/gui/qt/main_window.py:1992
 #: qtum_electrum/gui/qt/address_list.py:153
 msgid "Private key"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2229
+#: qtum_electrum/gui/qt/main_window.py:2235
 msgid "Private keys"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2311
+#: qtum_electrum/gui/qt/main_window.py:2317
 msgid "Private keys exported."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1432
-#: qtum_electrum/gui/qt/main_window.py:3202
+#: qtum_electrum/gui/qt/main_window.py:1438
+#: qtum_electrum/gui/qt/main_window.py:3208
 msgid "Proceed?"
 msgstr ""
 
@@ -2707,7 +2732,7 @@ msgstr ""
 msgid "Pruned transaction outputs"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2117
+#: qtum_electrum/gui/qt/main_window.py:2123
 msgid "Public key"
 msgstr ""
 
@@ -2715,7 +2740,7 @@ msgstr ""
 msgid "Public keys"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1964
+#: qtum_electrum/gui/qt/main_window.py:1970
 msgid "QR code"
 msgstr ""
 
@@ -2727,7 +2752,7 @@ msgstr ""
 msgid "QR code saved to file"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1360
+#: qtum_electrum/gui/qt/main_window.py:1366
 msgid "Qtum Address is None"
 msgstr ""
 
@@ -2747,7 +2772,7 @@ msgstr ""
 msgid "Qtum Electrum is generating your addresses, please wait."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2302
+#: qtum_electrum/gui/qt/main_window.py:2308
 msgid "Qtum Electrum was unable to produce a private key-export."
 msgstr ""
 
@@ -2755,7 +2780,7 @@ msgstr ""
 msgid "Qtum Qt Core wallet compatible"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:814
+#: qtum_electrum/gui/qt/main_window.py:820
 msgid "Qtum address where the payment should be received. Note that each payment request uses a different Bitcoin address."
 msgstr ""
 
@@ -2763,7 +2788,7 @@ msgstr ""
 msgid "Qtum mobile wallet compatible"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1115
+#: qtum_electrum/gui/qt/main_window.py:1121
 msgid "Qtum transactions are in general not free. A transaction fee is paid by the sender of the funds."
 msgstr ""
 
@@ -2803,7 +2828,7 @@ msgstr ""
 msgid "Read from microphone"
 msgstr ""
 
-#: qtum_electrum/gui/kivy/main.kv:360 qtum_electrum/gui/qt/main_window.py:148
+#: qtum_electrum/gui/kivy/main.kv:360 qtum_electrum/gui/qt/main_window.py:151
 #: qtum_electrum/gui/text.py:63
 msgid "Receive"
 msgstr ""
@@ -2816,7 +2841,7 @@ msgstr ""
 msgid "Receiving"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:815
+#: qtum_electrum/gui/qt/main_window.py:821
 msgid "Receiving address"
 msgstr ""
 
@@ -2828,7 +2853,7 @@ msgstr ""
 msgid "Recipient not specified."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1065
+#: qtum_electrum/gui/qt/main_window.py:1071
 msgid "Recipient of the funds."
 msgstr ""
 
@@ -2836,21 +2861,17 @@ msgstr ""
 msgid "Recover from a seed you have previously written down"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:456
-msgid "Recovery successful"
-msgstr ""
-
-#: qtum_electrum/gui/qt/main_window.py:1991
+#: qtum_electrum/gui/qt/main_window.py:1997
 #: qtum_electrum/gui/qt/address_dialog.py:70
 msgid "Redeem Script"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1281
-#: qtum_electrum/gui/qt/history_list.py:251
+#: qtum_electrum/gui/qt/main_window.py:1287
+#: qtum_electrum/gui/qt/history_list.py:256
 msgid "Remove"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1705
+#: qtum_electrum/gui/qt/main_window.py:1711
 #, python-format
 msgid "Remove %s from your list of contacts?"
 msgstr ""
@@ -2859,19 +2880,23 @@ msgstr ""
 msgid "Remove from wallet"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3236
+#: qtum_electrum/gui/qt/main_window.py:3242
 msgid "Remove {} from your list of smart contracts?"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3125
+#: qtum_electrum/gui/qt/main_window.py:3131
 msgid "Remove {} from your list of tokens?"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1139 qtum_electrum/wallet.py:59
+#: qtum_electrum/gui/qt/main_window.py:1145 qtum_electrum/wallet.py:59
 msgid "Replaceable"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:603
+#: qtum_electrum/gui/qt/exception_window.py:60
+msgid "Report contents"
+msgstr ""
+
+#: qtum_electrum/gui/qt/main_window.py:609
 msgid "Reporting Bugs"
 msgstr ""
 
@@ -2883,7 +2908,7 @@ msgstr ""
 msgid "Request copied to clipboard"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:847
+#: qtum_electrum/gui/qt/main_window.py:853
 msgid "Request expires"
 msgstr ""
 
@@ -2891,7 +2916,7 @@ msgstr ""
 msgid "Request payment"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:981
+#: qtum_electrum/gui/qt/main_window.py:987
 msgid "Request saved successfully"
 msgstr ""
 
@@ -2899,21 +2924,21 @@ msgstr ""
 msgid "Request sent."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:827
+#: qtum_electrum/gui/qt/main_window.py:833
 msgid "Requested amount"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/ui_screens/invoice.kv:37
 #: qtum_electrum/gui/qt/invoice_list.py:35
-#: qtum_electrum/gui/qt/main_window.py:1727
+#: qtum_electrum/gui/qt/main_window.py:1733
 msgid "Requestor"
 msgstr ""
 
-#: qtum_electrum/gui/kivy/main.kv:364 qtum_electrum/gui/qt/main_window.py:872
+#: qtum_electrum/gui/kivy/main.kv:364 qtum_electrum/gui/qt/main_window.py:878
 msgid "Requests"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:619
+#: qtum_electrum/gui/qt/installwizard.py:597
 #, python-format
 msgid "Require %d signatures"
 msgstr ""
@@ -2922,7 +2947,7 @@ msgstr ""
 msgid "Required package 'PIL' is not available - Please install it or use the Trezor website instead."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2982
+#: qtum_electrum/gui/qt/main_window.py:2988
 msgid "Requires"
 msgstr ""
 
@@ -2938,11 +2963,11 @@ msgstr ""
 msgid "Russian"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2651
+#: qtum_electrum/gui/qt/main_window.py:2657
 msgid "SSL certificate"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2638
+#: qtum_electrum/gui/qt/main_window.py:2644
 msgid "SSL certificate used to sign payment requests."
 msgstr ""
 
@@ -2950,8 +2975,8 @@ msgstr ""
 msgid "SSL is used to authenticate and encrypt your connections with Electrum servers."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:855
-#: qtum_electrum/gui/qt/main_window.py:1748
+#: qtum_electrum/gui/qt/main_window.py:861
+#: qtum_electrum/gui/qt/main_window.py:1754
 #: qtum_electrum/gui/qt/token_dialog.py:57
 #: qtum_electrum/gui/qt/qrcodewidget.py:124
 #: qtum_electrum/gui/qt/smart_contract_dialog.py:53
@@ -2963,7 +2988,7 @@ msgstr ""
 msgid "Save as BIP70 file"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1742
+#: qtum_electrum/gui/qt/main_window.py:1748
 msgid "Save invoice to file"
 msgstr ""
 
@@ -2983,8 +3008,8 @@ msgstr ""
 msgid "Scrambled words"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1917
-#: qtum_electrum/gui/qt/main_window.py:1985
+#: qtum_electrum/gui/qt/main_window.py:1923
+#: qtum_electrum/gui/qt/main_window.py:1991
 msgid "Script type"
 msgstr ""
 
@@ -2997,7 +3022,7 @@ msgid "Security Card Challenge"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/main_window.py:887
-#: qtum_electrum/gui/qt/main_window.py:1818
+#: qtum_electrum/gui/qt/main_window.py:1824
 #: qtum_electrum/gui/qt/seed_dialog.py:196
 msgid "Seed"
 msgstr ""
@@ -3022,11 +3047,11 @@ msgstr ""
 msgid "Select date"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2243
+#: qtum_electrum/gui/qt/main_window.py:2249
 msgid "Select file to export your private keys to"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2351
+#: qtum_electrum/gui/qt/main_window.py:2357
 msgid "Select file to export your wallet transactions to"
 msgstr ""
 
@@ -3042,7 +3067,7 @@ msgstr ""
 msgid "Select server automatically"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:977
+#: qtum_electrum/gui/qt/main_window.py:983
 msgid "Select where to save your payment request"
 msgstr ""
 
@@ -3050,7 +3075,7 @@ msgstr ""
 msgid "Select where to save your signed transaction"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2529
+#: qtum_electrum/gui/qt/main_window.py:2535
 msgid "Select which language is used in the GUI (after restart)."
 msgstr ""
 
@@ -3062,16 +3087,24 @@ msgstr ""
 msgid "Select your server automatically"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2182
+#: qtum_electrum/gui/qt/main_window.py:2188
 msgid "Select your transaction file"
 msgstr ""
 
-#: qtum_electrum/gui/kivy/main.kv:352 qtum_electrum/gui/qt/main_window.py:147
-#: qtum_electrum/gui/qt/main_window.py:1153
+#: qtum_electrum/gui/qt/main_window.py:430
+msgid "Select your wallet file"
+msgstr ""
+
+#: qtum_electrum/gui/kivy/main.kv:352 qtum_electrum/gui/qt/main_window.py:150
+#: qtum_electrum/gui/qt/main_window.py:1159
 #: qtum_electrum/gui/qt/token_dialog.py:240
 #: qtum_electrum/gui/qt/token_dialog.py:292
 #: qtum_electrum/gui/qt/token_list.py:68 qtum_electrum/gui/text.py:63
 msgid "Send"
+msgstr ""
+
+#: qtum_electrum/gui/qt/exception_window.py:74
+msgid "Send Bug Report"
 msgstr ""
 
 #: qtum_electrum/plugins/email_requests/__init__.py:4
@@ -3114,7 +3147,7 @@ msgstr ""
 msgid "Server hosting your email acount"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:745
+#: qtum_electrum/gui/qt/main_window.py:751
 #, python-format
 msgid "Server is lagging (%d blocks)"
 msgstr ""
@@ -3164,12 +3197,12 @@ msgstr ""
 msgid "Should this transaction be replaceable?"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:249
-#: qtum_electrum/gui/qt/main_window.py:537
+#: qtum_electrum/gui/qt/main_window.py:255
+#: qtum_electrum/gui/qt/main_window.py:543
 msgid "Show"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2862
+#: qtum_electrum/gui/qt/main_window.py:2868
 msgid "Show Fiat balance for addresses"
 msgstr ""
 
@@ -3183,11 +3216,11 @@ msgstr ""
 msgid "Show as QR code"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2581
+#: qtum_electrum/gui/qt/main_window.py:2587
 msgid "Show fee edit box in send tab."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2861
+#: qtum_electrum/gui/qt/main_window.py:2867
 msgid "Show history rates"
 msgstr ""
 
@@ -3198,6 +3231,10 @@ msgstr ""
 #: qtum_electrum/plugins/hw_wallet/qt.py:234
 #: qtum_electrum/plugins/trezor/qt.py:178
 msgid "Show on {}"
+msgstr ""
+
+#: qtum_electrum/gui/qt/exception_window.py:57
+msgid "Show report contents"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/ui_screens/status.kv:64
@@ -3212,12 +3249,12 @@ msgstr ""
 msgid "Showing address ..."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2067
+#: qtum_electrum/gui/qt/main_window.py:2073
 #: qtum_electrum/gui/qt/transaction_dialog.py:117
 msgid "Sign"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2045
+#: qtum_electrum/gui/qt/main_window.py:2051
 msgid "Sign/verify Message"
 msgstr ""
 
@@ -3226,12 +3263,12 @@ msgid "Sign/verify message"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/ui_screens/invoice.kv:40
-#: qtum_electrum/gui/qt/main_window.py:1735
-#: qtum_electrum/gui/qt/main_window.py:2061
+#: qtum_electrum/gui/qt/main_window.py:1741
+#: qtum_electrum/gui/qt/main_window.py:2067
 msgid "Signature"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2040
+#: qtum_electrum/gui/qt/main_window.py:2046
 msgid "Signature verified"
 msgstr ""
 
@@ -3243,7 +3280,7 @@ msgstr ""
 msgid "Signing"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1469
+#: qtum_electrum/gui/qt/main_window.py:1475
 msgid "Signing transaction..."
 msgstr ""
 
@@ -3259,12 +3296,20 @@ msgstr ""
 msgid "Slovenian"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:164
+#: qtum_electrum/gui/qt/main_window.py:167
 #: qtum_electrum/gui/qt/smart_contract_dialog.py:99
 msgid "Smart Contract"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2863
+#: qtum_electrum/base_crash_reporter.py:53
+msgid "Something went wrong while executing Qtum Electrum."
+msgstr ""
+
+#: qtum_electrum/base_crash_reporter.py:54
+msgid "Sorry!"
+msgstr ""
+
+#: qtum_electrum/gui/qt/main_window.py:2869
 msgid "Source"
 msgstr ""
 
@@ -3280,11 +3325,11 @@ msgstr ""
 msgid "Spend from"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2776
+#: qtum_electrum/gui/qt/main_window.py:2782
 msgid "Spend only confirmed coins"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2777
+#: qtum_electrum/gui/qt/main_window.py:2783
 msgid "Spend only confirmed inputs."
 msgstr ""
 
@@ -3312,9 +3357,9 @@ msgstr ""
 msgid "Step {}/24.  Enter seed word as explained on your {}:"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1871
-#: qtum_electrum/gui/qt/main_window.py:2901
-#: qtum_electrum/gui/qt/main_window.py:3102
+#: qtum_electrum/gui/qt/main_window.py:1877
+#: qtum_electrum/gui/qt/main_window.py:2907
+#: qtum_electrum/gui/qt/main_window.py:3108
 msgid "Success"
 msgstr ""
 
@@ -3326,16 +3371,16 @@ msgstr ""
 msgid "Summary Text PIN is Disabled"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2440
+#: qtum_electrum/gui/qt/main_window.py:2446
 msgid "Sweep"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2420
+#: qtum_electrum/gui/qt/main_window.py:2426
 msgid "Sweep private keys"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/main_window.py:637
-#: qtum_electrum/gui/qt/main_window.py:742 qtum_electrum/gui/text.py:133
+#: qtum_electrum/gui/qt/main_window.py:748 qtum_electrum/gui/text.py:133
 #: qtum_electrum/gui/stdio.py:114
 msgid "Synchronizing..."
 msgstr ""
@@ -3366,58 +3411,58 @@ msgstr ""
 msgid "The PIN cannot be longer than 9 characters."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:845
+#: qtum_electrum/gui/qt/main_window.py:851
 msgid "The Qtum address never expires and will always be part of this wallet."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1116
+#: qtum_electrum/gui/qt/main_window.py:1122
 msgid "The amount of fee can be decided freely by the sender. However, transactions with low fees take more time to be processed."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1093
+#: qtum_electrum/gui/qt/main_window.py:1099
 msgid "The amount will be displayed in red if you do not have enough funds in your wallet."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1078
+#: qtum_electrum/gui/qt/main_window.py:1084
 msgid "The description is not sent to the recipient of the funds. It is stored in your wallet file, and displayed in the 'History' tab."
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/screens.py:298
-#: qtum_electrum/gui/qt/main_window.py:1423
-#: qtum_electrum/gui/qt/main_window.py:3193
+#: qtum_electrum/gui/qt/main_window.py:1429
+#: qtum_electrum/gui/qt/main_window.py:3199
 msgid "The fee for this transaction seems unusually high."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:298
+#: qtum_electrum/gui/qt/installwizard.py:297
 #, python-format
 msgid ""
 "The file '%s' contains an incompletely created wallet.\n"
 "Do you want to complete its creation now?"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:282
-#: qtum_electrum/gui/qt/installwizard.py:303
+#: qtum_electrum/gui/qt/installwizard.py:281
+#: qtum_electrum/gui/qt/installwizard.py:302
 msgid "The file was removed"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2489
+#: qtum_electrum/gui/qt/main_window.py:2495
 msgid "The following addresses were added"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2610
+#: qtum_electrum/gui/qt/main_window.py:2616
 msgid "The following alias providers are available:"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2491
+#: qtum_electrum/gui/qt/main_window.py:2497
 msgid "The following inputs could not be imported"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:287
+#: qtum_electrum/gui/qt/installwizard.py:286
 #, python-format
 msgid "The format of your wallet '%s' must be upgraded for Electrum. This change will not be backward compatible"
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:274
+#: qtum_electrum/gui/qt/installwizard.py:273
 #, python-format
 msgid ""
 "The wallet '%s' contains multiple accounts, which are no longer supported in Electrum 2.7.\n"
@@ -3425,23 +3470,27 @@ msgid ""
 "Do you want to split your wallet into multiple files?"
 msgstr ""
 
+#: qtum_electrum/gui/qt/exception_window.py:98
+msgid "There was a problem with the automatic reporting:"
+msgstr ""
+
 #: qtum_electrum/gui/qt/network_dialog.py:288
 msgid "This blockchain is used to verify the transactions sent by your transaction server."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:191
+#: qtum_electrum/gui/qt/installwizard.py:190
 msgid "This file does not exist."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:207
+#: qtum_electrum/gui/qt/installwizard.py:206
 msgid "This file is already open in memory."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:200
+#: qtum_electrum/gui/qt/installwizard.py:199
 msgid "This file is encrypted using a hardware device."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:196
+#: qtum_electrum/gui/qt/installwizard.py:195
 msgid "This file is encrypted with a password."
 msgstr ""
 
@@ -3449,20 +3498,20 @@ msgstr ""
 msgid "This function is only available for standard wallets when using {}."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:843
+#: qtum_electrum/gui/qt/main_window.py:849
 msgid "This information is seen by the recipient if you send them a signed payment request."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2222
+#: qtum_electrum/gui/qt/main_window.py:2228
 msgid "This is a watching-only wallet"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2016
-#: qtum_electrum/gui/qt/main_window.py:2084
+#: qtum_electrum/gui/qt/main_window.py:2022
+#: qtum_electrum/gui/qt/main_window.py:2090
 msgid "This is a watching-only wallet."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:399
+#: qtum_electrum/gui/qt/installwizard.py:398
 msgid "This is compatible with qtum mobile wallet. \n"
 msgstr ""
 
@@ -3470,15 +3519,15 @@ msgstr ""
 msgid "This is the height of your local copy of the blockchain."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2746
+#: qtum_electrum/gui/qt/main_window.py:2752
 msgid "This may result in higher transactions fees."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:413
+#: qtum_electrum/gui/qt/main_window.py:419
 msgid "This means you will not be able to spend qtums with it."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:924
+#: qtum_electrum/gui/qt/main_window.py:930
 msgid "This payment request will be signed."
 msgstr ""
 
@@ -3498,7 +3547,7 @@ msgstr ""
 msgid "This seed will allow you to recover your wallet in case of computer failure."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:593
+#: qtum_electrum/gui/qt/main_window.py:599
 msgid ""
 "This software is based on Electrum to support Qtum. Qtum Electrum's focus is speed, with low resource usage and simplifying Qtum. You do not need to perform regular backups, because your wallet can be recovered from a secret phrase that you can memorize or write on paper. Startup times are instant because it operates in conjunction with high-performance servers that handle the most complicated parts of the Bitcoin system.\n"
 "\n"
@@ -3508,8 +3557,8 @@ msgstr ""
 msgid "This transaction is not saved. Close anyway?"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1403
-#: qtum_electrum/gui/qt/main_window.py:3181
+#: qtum_electrum/gui/qt/main_window.py:1409
+#: qtum_electrum/gui/qt/main_window.py:3187
 msgid "This transaction requires a higher fee, or it will not be propagated by the network"
 msgstr ""
 
@@ -3518,7 +3567,7 @@ msgstr ""
 msgid "This type of script is not supported with {}."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1951
+#: qtum_electrum/gui/qt/main_window.py:1957
 msgid "This wallet has no seed"
 msgstr ""
 
@@ -3526,12 +3575,8 @@ msgstr ""
 msgid "This wallet is watching-only"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:412
+#: qtum_electrum/gui/qt/main_window.py:418
 msgid "This wallet is watching-only."
-msgstr ""
-
-#: qtum_electrum/gui/qt/installwizard.py:465
-msgid "This wallet was restored offline. It may contain more addresses than displayed."
 msgstr ""
 
 #: qtum_electrum/gui/qt/history_list.py:81
@@ -3546,7 +3591,11 @@ msgstr ""
 msgid "To create a watching-only wallet, please enter your master public key (xpub/ypub/zpub)."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:416
+#: qtum_electrum/base_crash_reporter.py:55
+msgid "To help us diagnose and fix the problem, you can send us a bug report that contains useful debug information:"
+msgstr ""
+
+#: qtum_electrum/gui/qt/installwizard.py:415
 msgid "To make sure that you have properly saved your seed, please retype it here."
 msgstr ""
 
@@ -3562,7 +3611,7 @@ msgstr ""
 msgid "Toggle Encryption"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:529
+#: qtum_electrum/gui/qt/main_window.py:535
 #: qtum_electrum/gui/qt/token_list.py:81
 msgid "Token"
 msgstr ""
@@ -3575,7 +3624,7 @@ msgstr ""
 msgid "Token Symbol:"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:149
+#: qtum_electrum/gui/qt/main_window.py:152
 msgid "Tokens"
 msgstr ""
 
@@ -3583,7 +3632,7 @@ msgstr ""
 msgid "Too long passphrase ({} > 50 chars)."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3007
+#: qtum_electrum/gui/qt/main_window.py:3013
 msgid "Total size"
 msgstr ""
 
@@ -3593,7 +3642,7 @@ msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/ui_screens/invoice.kv:54
 #: qtum_electrum/gui/kivy/uix/ui_screens/invoice.kv:57
-#: qtum_electrum/gui/qt/main_window.py:2208
+#: qtum_electrum/gui/qt/main_window.py:2214
 msgid "Transaction ID"
 msgstr ""
 
@@ -3605,11 +3654,11 @@ msgstr ""
 msgid "Transaction accepted by mobile phone. Waiting for confirmation."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3099
+#: qtum_electrum/gui/qt/main_window.py:3105
 msgid "Transaction added to wallet history."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3089
+#: qtum_electrum/gui/qt/main_window.py:3095
 msgid "Transaction could not be saved."
 msgstr ""
 
@@ -3626,11 +3675,11 @@ msgstr ""
 msgid "Transaction unrelated to your wallet"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2194
+#: qtum_electrum/gui/qt/main_window.py:2200
 msgid "Transaction:"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2867
+#: qtum_electrum/gui/qt/main_window.py:2873
 msgid "Transactions"
 msgstr ""
 
@@ -3642,7 +3691,7 @@ msgstr ""
 msgid "Try to connect again?"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:601
+#: qtum_electrum/gui/qt/main_window.py:607
 msgid "Try to explain not only what the bug is, but how it occurs."
 msgstr ""
 
@@ -3650,19 +3699,19 @@ msgstr ""
 msgid "Tx"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:442
+#: qtum_electrum/gui/qt/main_window.py:448
 msgid "Unable to create backup"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2305
+#: qtum_electrum/gui/qt/main_window.py:2311
 msgid "Unable to create csv"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2368
+#: qtum_electrum/gui/qt/main_window.py:2374
 msgid "Unable to export history"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2189
+#: qtum_electrum/gui/qt/main_window.py:2195
 msgid "Unable to read file or no transaction found"
 msgstr ""
 
@@ -3679,7 +3728,7 @@ msgstr ""
 msgid "Unfreeze"
 msgstr ""
 
-#: qtum_electrum/util.py:478 qtum_electrum/gui/kivy/uix/screens.py:408
+#: qtum_electrum/util.py:477 qtum_electrum/gui/kivy/uix/screens.py:408
 #: qtum_electrum/gui/kivy/uix/screens.py:414
 #: qtum_electrum/gui/qt/transaction_dialog.py:228
 #: qtum_electrum/exchange_rate.py:289
@@ -3706,7 +3755,7 @@ msgstr ""
 msgid "Upload a master private key"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2588
+#: qtum_electrum/gui/qt/main_window.py:2594
 msgid "Use Replace-By-Fee"
 msgstr ""
 
@@ -3727,19 +3776,19 @@ msgstr ""
 msgid "Use as server"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2722
+#: qtum_electrum/gui/qt/main_window.py:2728
 msgid "Use change addresses"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2573
+#: qtum_electrum/gui/qt/main_window.py:2579
 msgid "Use dynamic fees"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2575
+#: qtum_electrum/gui/qt/main_window.py:2581
 msgid "Use fees recommended by the server."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2741
+#: qtum_electrum/gui/qt/main_window.py:2747
 msgid "Use multiple change addresses"
 msgstr ""
 
@@ -3751,7 +3800,7 @@ msgstr ""
 msgid "Use public or private keys"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2639
+#: qtum_electrum/gui/qt/main_window.py:2645
 msgid "Use setconfig to set ssl_chain and ssl_privkey."
 msgstr ""
 
@@ -3779,11 +3828,11 @@ msgstr ""
 msgid "Username"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:594
+#: qtum_electrum/gui/qt/main_window.py:600
 msgid "Uses icons from the Icons8 icon pack (icons8.com)."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2732
+#: qtum_electrum/gui/qt/main_window.py:2738
 msgid "Using change addresses makes it more difficult for other people to track your transactions."
 msgstr ""
 
@@ -3799,7 +3848,7 @@ msgstr ""
 msgid "Verified block headers"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2071
+#: qtum_electrum/gui/qt/main_window.py:2077
 msgid "Verify"
 msgstr ""
 
@@ -3820,12 +3869,12 @@ msgid "Verifying..."
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/ui_screens/about.kv:13
-#: qtum_electrum/gui/qt/main_window.py:591
+#: qtum_electrum/gui/qt/main_window.py:597
 #: qtum_electrum/gui/qt/network_dialog.py:68
 msgid "Version"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2716
+#: qtum_electrum/gui/qt/main_window.py:2722
 msgid "Video Device"
 msgstr ""
 
@@ -3841,11 +3890,11 @@ msgstr ""
 msgid "View Token"
 msgstr ""
 
-#: qtum_electrum/gui/qt/history_list.py:268
+#: qtum_electrum/gui/qt/history_list.py:273
 msgid "View invoice"
 msgstr ""
 
-#: qtum_electrum/gui/qt/history_list.py:271
+#: qtum_electrum/gui/qt/history_list.py:276
 #: qtum_electrum/gui/qt/address_list.py:161
 #: qtum_electrum/gui/qt/contact_list.py:80
 #: qtum_electrum/gui/qt/smart_contract_list.py:48
@@ -3857,15 +3906,15 @@ msgstr ""
 msgid "WARNING"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2233
+#: qtum_electrum/gui/qt/main_window.py:2239
 msgid "WARNING: ALL your private keys are secret."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2226
+#: qtum_electrum/gui/qt/main_window.py:2232
 msgid "WARNING: This is a multi-signature wallet."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1349
+#: qtum_electrum/gui/qt/main_window.py:1355
 #, python-format
 msgid "WARNING: the alias \"%s\" could not be validated via an additional security check, DNSSEC, and thus may not be correct."
 msgstr ""
@@ -3874,15 +3923,15 @@ msgstr ""
 msgid "Waiting for authentication on your mobile phone"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1232
+#: qtum_electrum/gui/qt/main_window.py:1238
 msgid "Waiting for fee estimates..."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:149
+#: qtum_electrum/gui/qt/installwizard.py:148
 msgid "Wallet"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1909
+#: qtum_electrum/gui/qt/main_window.py:1915
 msgid "Wallet Information"
 msgstr ""
 
@@ -3890,7 +3939,7 @@ msgstr ""
 msgid "Wallet Name"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:440
+#: qtum_electrum/gui/qt/main_window.py:446
 msgid "Wallet backup created"
 msgstr ""
 
@@ -3902,7 +3951,7 @@ msgstr ""
 msgid "Wallet receive address"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1915
+#: qtum_electrum/gui/qt/main_window.py:1921
 msgid "Wallet type"
 msgstr ""
 
@@ -3915,14 +3964,14 @@ msgid "Wallets"
 msgstr ""
 
 #: qtum_electrum/gui/kivy/uix/screens.py:298
-#: qtum_electrum/gui/qt/main_window.py:1423
-#: qtum_electrum/gui/qt/main_window.py:3193 qtum_electrum/gui/qt/util.py:215
+#: qtum_electrum/gui/qt/main_window.py:1429
+#: qtum_electrum/gui/qt/main_window.py:3199 qtum_electrum/gui/qt/util.py:215
 #: qtum_electrum/gui/qt/seed_dialog.py:65
 #: qtum_electrum/gui/qt/transaction_dialog.py:170
 msgid "Warning"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:995
+#: qtum_electrum/gui/qt/main_window.py:1001
 msgid ""
 "Warning: The next address will not be recovered automatically if you restore your wallet from seed; you may need to add it manually.\n"
 "\n"
@@ -3960,19 +4009,19 @@ msgstr ""
 msgid "Within %d blocks"
 msgstr ""
 
-#: qtum_electrum/util.py:49
+#: qtum_electrum/util.py:51
 msgid "Within 10 blocks"
 msgstr ""
 
-#: qtum_electrum/util.py:49
+#: qtum_electrum/util.py:51
 msgid "Within 2 blocks"
 msgstr ""
 
-#: qtum_electrum/util.py:49
+#: qtum_electrum/util.py:51
 msgid "Within 25 blocks"
 msgstr ""
 
-#: qtum_electrum/util.py:49
+#: qtum_electrum/util.py:51
 msgid "Within 5 blocks"
 msgstr ""
 
@@ -3985,7 +4034,7 @@ msgstr ""
 msgid "Wrong key type"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2042
+#: qtum_electrum/gui/qt/main_window.py:2048
 msgid "Wrong signature"
 msgstr ""
 
@@ -4002,7 +4051,7 @@ msgstr ""
 msgid "You are using Qtum Electrum in offline mode; restart Qtum Electrum if you want to get connected"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:990
+#: qtum_electrum/gui/qt/main_window.py:996
 msgid "You are using a non-deterministic wallet, which cannot create new addresses."
 msgstr ""
 
@@ -4014,7 +4063,7 @@ msgstr ""
 msgid "You can set the homescreen on your device to personalize it.  You must choose a {} x {} monochrome black and white image."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1067
+#: qtum_electrum/gui/qt/main_window.py:1073
 msgid "You may enter a QTUM address, a label from your list of contacts (a list of completions will be proposed), or an alias (email-like address that forwards to a Qtum address)"
 msgstr ""
 
@@ -4022,7 +4071,7 @@ msgstr ""
 msgid "You may extend your seed with custom words."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1678
+#: qtum_electrum/gui/qt/main_window.py:1684
 msgid "You may load a CSV file using the file icon."
 msgstr ""
 
@@ -4049,7 +4098,7 @@ msgstr ""
 msgid "Your Ledger is locked. Please unlock it."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:279
+#: qtum_electrum/gui/qt/installwizard.py:278
 msgid "Your accounts have been moved to"
 msgstr ""
 
@@ -4081,7 +4130,7 @@ msgstr ""
 msgid "Your seed extension must be saved together with your seed."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:414
+#: qtum_electrum/gui/qt/installwizard.py:413
 msgid "Your seed is important!"
 msgstr ""
 
@@ -4103,11 +4152,11 @@ msgid "Your wallet file is encrypted."
 msgstr ""
 
 #: qtum_electrum/gui/qt/seed_dialog.py:199
-#: qtum_electrum/gui/qt/installwizard.py:423
+#: qtum_electrum/gui/qt/installwizard.py:422
 msgid "Your wallet generation seed is:"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2370
+#: qtum_electrum/gui/qt/main_window.py:2376
 msgid "Your wallet history has been successfully exported."
 msgstr ""
 
@@ -4119,7 +4168,7 @@ msgstr ""
 msgid "Your wallet is password protected and encrypted."
 msgstr ""
 
-#: qtum_electrum/gui/qt/installwizard.py:291
+#: qtum_electrum/gui/qt/installwizard.py:290
 msgid "Your wallet was upgraded successfully"
 msgstr ""
 
@@ -4132,7 +4181,7 @@ msgstr ""
 msgid "Your {} were successfully imported"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2552
+#: qtum_electrum/gui/qt/main_window.py:2558
 msgid "Zeros after decimal point"
 msgstr ""
 
@@ -4184,15 +4233,15 @@ msgstr ""
 msgid "amount: "
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2592
+#: qtum_electrum/gui/qt/main_window.py:2598
 msgid "and you will have the possibility, while they are unconfirmed, to replace them with transactions that pay higher fees."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1141
+#: qtum_electrum/gui/qt/main_window.py:1147
 msgid "and you will have the possiblity, while it is unconfirmed, to replace it with a transaction that pays a higher fee."
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1179
+#: qtum_electrum/gui/qt/main_window.py:1185
 msgid "are frozen"
 msgstr ""
 
@@ -4214,7 +4263,7 @@ msgstr ""
 msgid "contract gas change"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1932
+#: qtum_electrum/gui/qt/main_window.py:1938
 msgid "cosigner"
 msgstr ""
 
@@ -4222,7 +4271,7 @@ msgstr ""
 msgid "empty name not allowed"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1655
+#: qtum_electrum/gui/qt/main_window.py:1661
 msgid "from your wallet?"
 msgstr ""
 
@@ -4265,8 +4314,8 @@ msgstr ""
 msgid "json"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2338
 #: qtum_electrum/gui/qt/main_window.py:2344
+#: qtum_electrum/gui/qt/main_window.py:2350
 msgid "labels"
 msgstr ""
 
@@ -4282,11 +4331,11 @@ msgstr ""
 msgid "ok"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:3155
+#: qtum_electrum/gui/qt/main_window.py:3161
 msgid "pay out {} {}"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:1530
+#: qtum_electrum/gui/qt/main_window.py:1536
 msgid "please wait..."
 msgstr ""
 
@@ -4298,11 +4347,11 @@ msgstr ""
 msgid "stake mined"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:401
+#: qtum_electrum/gui/qt/main_window.py:407
 msgid "testnet"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2392
+#: qtum_electrum/gui/qt/main_window.py:2398
 msgid "unconfirmed"
 msgstr ""
 
@@ -4320,11 +4369,11 @@ msgstr ""
 msgid "unknown parser {!r} (choices: {})"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:2390
+#: qtum_electrum/gui/qt/main_window.py:2396
 msgid "unverified"
 msgstr ""
 
-#: qtum_electrum/gui/qt/main_window.py:397
+#: qtum_electrum/gui/qt/main_window.py:403
 msgid "watching only"
 msgstr ""
 

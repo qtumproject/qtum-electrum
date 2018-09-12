@@ -40,6 +40,8 @@ import inspect
 from locale import localeconv
 
 from .i18n import _
+import aiohttp
+from aiohttp_socks import SocksConnector, SocksVer
 
 
 def inv_dict(d):
@@ -845,3 +847,19 @@ def print_frames(depth=10):
             print(frame.f_code.co_name, frame.f_code.co_filename, frame.f_lineno)
         except ValueError:
             return
+
+
+def make_aiohttp_session(proxy):
+    if proxy:
+        connector = SocksConnector(
+            socks_ver=SocksVer.SOCKS5 if proxy['mode'] == 'socks5' else SocksVer.SOCKS4,
+            host=proxy['host'],
+            port=int(proxy['port']),
+            username=proxy.get('user', None),
+            password=proxy.get('password', None),
+            rdns=True
+        )
+        return aiohttp.ClientSession(headers={'User-Agent' : 'Qtum Electrum'}, timeout=aiohttp.ClientTimeout(total=10), connector=connector)
+    else:
+        return aiohttp.ClientSession(headers={'User-Agent' : 'Qtum Electrum'}, timeout=aiohttp.ClientTimeout(total=10))
+

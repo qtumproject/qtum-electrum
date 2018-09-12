@@ -37,6 +37,8 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
 
+from .exception_window import Exception_Hook
+
 from qtum_electrum import keystore, constants, ecc
 from qtum_electrum.qtum import COIN, is_address, TYPE_ADDRESS, TYPE_SCRIPT, is_hash160, eth_abi_encode
 from qtum_electrum.plugin import run_hook
@@ -105,6 +107,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         self.gui_object = gui_object
         self.config = config = gui_object.config
+        self.setup_exception_hook()
         self.network = gui_object.daemon.network
         self.fx = gui_object.daemon.fx
         self.invoices = wallet.invoices
@@ -216,6 +219,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def on_history(self, b):
         self.new_fx_history_signal.emit()
+
+    def setup_exception_hook(self):
+        Exception_Hook(self)
 
     def on_fx_history(self):
         self.history_list.refresh_headers()

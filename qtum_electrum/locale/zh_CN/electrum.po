@@ -3907,9 +3907,9 @@ msgstr "斯洛文尼亚语"
 msgid "Smart Contract"
 msgstr "智能合约"
 
-#: electrum/base_crash_reporter.py:53
-msgid "Something went wrong while executing Electrum."
-msgstr "执行Electrum时出现错误。很抱歉。"
+#: qtum_electrum/base_crash_reporter.py:53
+msgid "Something went wrong while executing Qtum Electrum."
+msgstr "运行 Qtum Electrum 时出现错误。很抱歉。"
 
 #: electrum/base_crash_reporter.py:54
 msgid "Sorry!"
