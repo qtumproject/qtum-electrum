@@ -68,8 +68,8 @@ class BaseCrashReporter:
         report = self.get_traceback_info()
         report.update(self.get_additional_info())
         report = json.dumps(report)
-        response = requests.post(BaseCrashReporter.report_server + endpoint, data=report, verify=False)
-        return response
+        response = requests.post(BaseCrashReporter.report_server + endpoint, data=report, verify=False, timeout=5)
+        return response.text
 
     def get_traceback_info(self):
         exc_string = str(self.exc_args[1])
