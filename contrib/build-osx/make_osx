@@ -102,7 +102,7 @@ plutil -insert 'CFBundleURLTypes' \
 	<string>qtum</string>
 	<key>CFBundleURLSchemes</key>
 	<array><string>qtum</string></array> </dict></array>' \
-	-- dist/${VOL_NAME}.app/Contents/Info.plist \
+	-- "dist/${VOL_NAME}.app/Contents/Info.plist" \
 	|| fail "Could not add keys to Info.plist. Make sure the program 'plutil' exists and is installed."
 
 

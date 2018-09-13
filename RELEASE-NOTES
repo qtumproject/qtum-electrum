@@ -6,6 +6,7 @@
  * save contract information automatically after OP_CREATE transaction broadcasted
  * improve Chinese translations
  * expand max fee rate limit
+ * add crash reporter
  * other minor optimisations
 
 # Release 0.18.7
