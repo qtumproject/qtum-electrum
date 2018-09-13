@@ -34,7 +34,7 @@ from .i18n import _
 from .util import make_aiohttp_session
 
 class BaseCrashReporter:
-    report_server = "https://electrum.crashhub.qtum.site"
+    report_server = "https://electrum-crashhub.qtum.site"
     config_key = "show_crash_reporter"
     issue_template = """<h2>Traceback</h2>
 <pre>
