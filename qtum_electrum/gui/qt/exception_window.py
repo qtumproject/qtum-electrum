@@ -91,8 +91,7 @@ class Exception_Window(BaseCrashReporter, QWidget, MessageBoxMixin):
 
     def send_report(self):
         try:
-            proxy = self.main_window.network.proxy
-            response = BaseCrashReporter.send_report(self, self.main_window.network.asyncio_loop, proxy)
+            response = BaseCrashReporter.send_report(self)
         except BaseException as e:
             traceback.print_exc(file=sys.stderr)
             self.main_window.show_critical(_('There was a problem with the automatic reporting:') + '\n' +
