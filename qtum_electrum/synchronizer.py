@@ -170,7 +170,7 @@ class Synchronizer(ThreadJob):
         self.print_error("received tx %s height: %d bytes: %d" %
                          (tx_hash, tx_height, len(tx.raw)))
         # callbacks
-        self.network.trigger_callback('new_transaction', tx)
+        self.network.trigger_callback('new_transaction', self.wallet, tx)
         if not self.requested_tx:
             self.network.trigger_callback('updated')
 
@@ -356,7 +356,6 @@ class Synchronizer(ThreadJob):
             if token and token.balance != result and isinstance(result, int):
                 token = token._replace(balance=result)
                 self.wallet.tokens[key] = token
-                # self.network.trigger_callback('on_token')
         except (BaseException,) as e:
             print('token_balance_response err', e)
 
