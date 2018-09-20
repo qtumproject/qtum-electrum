@@ -786,8 +786,6 @@ class Network(util.DaemonThread):
                     b.catch_up = None
 
     def new_interface(self, server, socket):
-        # todo: get tip first, then decide which checkpoint to use.
-        self.add_recent_server(server)
         interface = Interface(server, socket)
         interface.blockchain = None
         interface.tip_header = None
@@ -801,6 +799,7 @@ class Network(util.DaemonThread):
         self.queue_request('blockchain.headers.subscribe', [True], interface)
         if server == self.default_server:
             self.switch_to_interface(server)
+        self.add_recent_server(server)
 
     def maintain_sockets(self):
         '''Socket maintenance.'''
