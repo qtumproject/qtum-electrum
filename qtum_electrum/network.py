@@ -495,6 +495,7 @@ class Network(util.DaemonThread):
         self.protocol = protocol
         self.set_proxy(proxy)
         self.start_interfaces()
+        self.trigger_callback('network_updated')
 
     @with_interface_lock
     def stop_network(self):
@@ -508,6 +509,7 @@ class Network(util.DaemonThread):
         self.connecting = set()
         # Get a new queue - no old pending connections thanks!
         self.socket_queue = queue.Queue()
+        self.trigger_callback('network_updated')
 
     def set_parameters(self, host, port, protocol, proxy, auto_connect):
         proxy_str = serialize_proxy(proxy)
