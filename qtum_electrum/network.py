@@ -367,12 +367,12 @@ class Network(util.DaemonThread):
             value = self.banner
         elif key == 'fee':
             value = self.config.fee_estimates
-        elif key == 'updated':
-            value = (self.get_local_height(), self.get_server_height())
+        elif key == 'fee_histogram':
+            value = self.config.mempool_fees
         elif key == 'servers':
             value = self.get_servers()
-        elif key == 'interfaces':
-            value = self.get_interfaces()
+        else:
+            raise Exception('unexpected trigger key {}'.format(key))
         return value
 
     def notify(self, key):
@@ -537,7 +537,6 @@ class Network(util.DaemonThread):
             self.switch_to_interface(server)
         else:
             self.switch_lagging_interface()
-            self.notify('updated')
 
     def switch_to_random_interface(self):
         '''Switch to a random connected server other than the current one'''
@@ -572,13 +571,24 @@ class Network(util.DaemonThread):
         i = self.interfaces[server]
         if self.interface != i:
             self.print_error("switching to", server)
-            # stop any current interface in order to terminate subscriptions
-            # fixme: we don't want to close headers sub
-            #self.close_interface(self.interface)
+            blockchain_updated = False
+
+            if self.interface is not None:
+                blockchain_updated = i.blockchain != self.interface.blockchain
+                # Stop any current interface in order to terminate subscriptions,
+                # and to cancel tasks in interface.group.
+                # However, for headers sub, give preference to this interface
+                # over unknown ones, i.e. start it again right away.
+                old_server = self.interface.server
+                self.close_interface(self.interface)
+                if old_server != server and len(self.interfaces) <= self.num_server:
+                    self.start_interface(old_server)
+
             self.interface = i
             self.send_subscriptions()
             self.set_status('connected')
-            self.notify('updated')
+            self.trigger_callback('network_updated')
+            if blockchain_updated: self.trigger_callback('blockchain_updated')
 
     @with_interface_lock
     def close_interface(self, interface):
@@ -767,7 +777,7 @@ class Network(util.DaemonThread):
             self.set_status('disconnected')
         if server in self.interfaces:
             self.close_interface(self.interfaces[server])
-            self.notify('interfaces')
+            self.trigger_callback('network_updated')
         with self.blockchains_lock:
             for b in self.blockchains.values():
                 if b.catch_up == server:
@@ -789,7 +799,6 @@ class Network(util.DaemonThread):
         self.queue_request('blockchain.headers.subscribe', [True], interface)
         if server == self.default_server:
             self.switch_to_interface(server)
-        #self.notify('interfaces')
 
     def maintain_sockets(self):
         '''Socket maintenance.'''
@@ -877,7 +886,7 @@ class Network(util.DaemonThread):
             interface.mode = 'default'
             interface.print_error('catch up done', blockchain.height())
             blockchain.catch_up = None
-        self.notify('updated')
+        self.trigger_callback('network_updated')
 
     def on_get_header(self, interface, response):
         '''Handle receiving a single block header'''
@@ -903,6 +912,7 @@ class Network(util.DaemonThread):
                 interface.blockchain.save_header(header)
                 next_height = height + 1
                 interface.blockchain.catch_up = interface.server
+                self.trigger_callback('blockchain_updated')
             elif chain:
                 interface.print_error("binary search")
                 interface.mode = 'binary'
@@ -950,6 +960,7 @@ class Network(util.DaemonThread):
                         interface.blockchain = branch
                         next_height = interface.bad + 1
                         interface.blockchain.catch_up = interface.server
+                        self.trigger_callback('blockchain_updated')
                 else:
                     bh = interface.blockchain.height()
                     next_height = None
@@ -963,6 +974,7 @@ class Network(util.DaemonThread):
                             interface.mode = 'catch_up'
                             next_height = interface.bad + 1
                             interface.blockchain.catch_up = interface.server
+                            self.trigger_callback('blockchain_updated')
                     else:
                         assert bh == interface.good
                         if interface.blockchain.catch_up is None and bh < interface.tip:
@@ -971,13 +983,14 @@ class Network(util.DaemonThread):
                             next_height = bh + 1
                             interface.blockchain.catch_up = interface.server
 
-                self.notify('updated')
+                self.trigger_callback('network_updated')
 
         elif interface.mode == 'catch_up':
             can_connect = interface.blockchain.can_connect(header)
             if can_connect:
                 interface.blockchain.save_header(header)
                 next_height = height + 1 if height < interface.tip else None
+                self.trigger_callback('blockchain_updated')
             else:
                 # go back
                 interface.print_error("cannot connect", height)
@@ -991,7 +1004,6 @@ class Network(util.DaemonThread):
                 interface.print_error('catch up done', interface.blockchain.height())
                 interface.blockchain.catch_up = None
                 self.switch_lagging_interface()
-                self.notify('updated')
         else:
             raise Exception(interface.mode)
 
@@ -1008,9 +1020,9 @@ class Network(util.DaemonThread):
         if next_height is None:
             interface.mode = 'default'
             interface.request = None
-            self.notify('updated')
+
         # refresh network dialog
-        self.notify('interfaces')
+        self.trigger_callback('network_updated')
 
     def maintain_requests(self):
         with self.interface_lock:
@@ -1104,16 +1116,12 @@ class Network(util.DaemonThread):
         if b:
             interface.blockchain = b
             self.switch_lagging_interface()
-            self.notify('interfaces')
             return
         b = blockchain.can_connect(header)
         if b:
             interface.blockchain = b
             b.save_header(header)
             self.switch_lagging_interface()
-            self.notify('updated')
-            self.notify('interfaces')
-            self.notify('updated')
             return
         with self.blockchains_lock:
             tip = max([x.height() for x in self.blockchains.values()])
