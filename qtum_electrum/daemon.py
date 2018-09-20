@@ -259,6 +259,7 @@ class Daemon(DaemonThread):
 
     def stop_wallet(self, path):
         wallet = self.wallets.pop(path)
+        if not wallet: return
         wallet.stop_threads()
 
     def run_cmdline(self, config_options):
