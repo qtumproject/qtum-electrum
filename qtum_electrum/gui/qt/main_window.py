@@ -341,7 +341,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         elif event == 'verified':
             wallet, tx_hash, tx_mined_status = args
             if wallet == self.wallet:
-                self.history_list.update_item(*args)
+                self.history_list.update_item(tx_hash, tx_mined_status)
         elif event == 'fee':
             if self.config.is_dynfee():
                 self.fee_slider.update()
