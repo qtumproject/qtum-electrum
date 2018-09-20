@@ -365,6 +365,7 @@ class Synchronizer(ThreadJob):
         addresses, and request any transactions in its address history
         we don't have.
         '''
+        self.wallet.set_up_to_date(False)
         for history in self.wallet.history.values():
             # Old electrum servers returned ['*'] when all history for
             # the address was pruned.  This no longer happens but may
