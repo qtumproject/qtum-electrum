@@ -363,13 +363,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         wallet.thread = TaskThread(self, self.on_error)
         self.wallet = wallet
         self.update_recently_visited(wallet.storage.path)
-        # address used to create a dummy transaction and estimate transaction fee
-        self.history_list.update()
-        self.address_list.update()
-        self.utxo_list.update()
+        # update(==init) all tabs; expensive for large wallets..
+        # so delay it somewhat, hence __init__ can finish and the window can appear sooner
+        QTimer.singleShot(50, self.update_tabs)
         self.need_update.set()
         # Once GUI has been initialized check if we want to announce something since the callback has been called before the GUI was initialized
-        self.notify_transactions()
+
         # update menus
         self.seed_menu.setEnabled(self.wallet.has_seed())
         self.update_lock_icon()
@@ -668,6 +667,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         if self.require_fee_update:
             self.do_update_fee()
             self.require_fee_update = False
+        self.notify_transactions()
 
     def format_amount(self, x, is_diff=False, whitespaces=False):
         return format_satoshis(x, self.num_zeros, self.decimal_point, is_diff=is_diff, whitespaces=whitespaces)
