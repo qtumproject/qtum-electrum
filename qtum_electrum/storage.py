@@ -29,7 +29,7 @@ import json
 import copy
 import re
 import stat
-import hmac, hashlib
+import hashlib
 import base64
 import zlib
 from collections import defaultdict
@@ -75,7 +75,7 @@ class JsonDB(PrintError):
     def __init__(self, path):
         self.db_lock = threading.RLock()
         self.data = {}
-        self.path = path
+        self.path = os.path.normcase(os.path.abspath(path))
         self.modified = False
 
     def get(self, key, default=None):
@@ -144,8 +144,8 @@ class JsonDB(PrintError):
 class WalletStorage(JsonDB):
 
     def __init__(self, path):
-        self.print_error("wallet path", path)
         JsonDB.__init__(self, path)
+        self.print_error("wallet path", path)
         self.pubkey = None
         if self.file_exists():
             with open(self.path, "r", encoding='utf-8') as f:
