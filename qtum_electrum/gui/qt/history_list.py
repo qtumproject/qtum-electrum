@@ -23,6 +23,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import datetime
+from datetime import date
 from .util import *
 from qtum_electrum.i18n import _
 from qtum_electrum.util import block_explorer_URL, timestamp_to_datetime, profiler, open_browser, TxMinedStatus
@@ -139,7 +140,6 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
                                     from_timestamp=self.start_timestamp,
                                     to_timestamp=self.end_timestamp)
         if not self.years and h:
-            from datetime import date
             if timestamp_to_datetime(h[0][3]):
                 start_date = timestamp_to_datetime(h[0][3]).date()
             else:

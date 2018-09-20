@@ -32,12 +32,11 @@ import time
 import copy
 import errno
 import json
-import traceback
-import sys
 
 
 from .i18n import _
-from .util import NotEnoughFunds, UserCancelled, profiler, format_satoshis, InvalidPassword, WalletFileException, TimeoutException
+from .util import NotEnoughFunds, UserCancelled, profiler, format_satoshis, \
+    InvalidPassword, WalletFileException, TimeoutException, format_time
 from .qtum import *
 from .version import *
 from .keystore import load_keystore, Hardware_KeyStore
@@ -419,7 +418,6 @@ class Abstract_Wallet(AddressSynchronizer):
 
     def get_tx_status(self, tx_hash, tx_mined_status):
         # qtum diff
-        from .util import format_time
         height = tx_mined_status.height
         conf = tx_mined_status.conf
         timestamp = tx_mined_status.timestamp
