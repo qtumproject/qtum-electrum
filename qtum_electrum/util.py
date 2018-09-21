@@ -182,6 +182,7 @@ class DebugMem(ThreadJob):
             self.mem_stats()
             self.next_time = time.time() + self.interval
 
+
 class DaemonThread(threading.Thread, PrintError):
     """ daemon thread that terminates cleanly """
     verbosity_filter = 'd'

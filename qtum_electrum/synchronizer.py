@@ -172,7 +172,7 @@ class Synchronizer(ThreadJob):
         # callbacks
         self.network.trigger_callback('new_transaction', self.wallet, tx)
         if not self.requested_tx:
-            self.network.trigger_callback('updated')
+            self.network.trigger_callback('wallet_updated', self.wallet)
 
     def request_missing_txs(self, hist):
         # "hist" is a list of [tx_hash, tx_height] lists

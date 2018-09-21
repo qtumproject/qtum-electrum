@@ -461,7 +461,8 @@ class ElectrumWindow(App):
             activity.bind(on_new_intent=self.on_new_intent)
         # connect callbacks
         if self.network:
-            interests = ['updated', 'status', 'new_transaction', 'verified', 'interfaces']
+            interests = ['wallet_updated', 'network_updated', 'blockchain_updated',
+                         'status', 'new_transaction', 'verified']
             self.network.register_callback(self.on_network_event, interests)
             self.network.register_callback(self.on_quotes, ['on_quotes'])
             self.network.register_callback(self.on_history, ['on_history'])
@@ -599,12 +600,17 @@ class ElectrumWindow(App):
             self.server_host = self.network.interface.host
 
     def on_network_event(self, event, *args):
+        print('on_network_event', event)
         Logger.info('network event: '+ event)
-        if event == 'interfaces':
+        if event == 'network_updated':
             self._trigger_update_interfaces()
-        elif event == 'updated':
+            self._trigger_update_status()
+        elif event == 'wallet_updated':
             self._trigger_update_wallet()
             self._trigger_update_status()
+        elif event == 'blockchain_updated':
+            # to update number of confirmations in history
+            self._trigger_update_wallet()
         elif event == 'status':
             self._trigger_update_status()
         elif event == 'new_transaction':
@@ -664,6 +670,7 @@ class ElectrumWindow(App):
 
     #@profiler
     def update_wallet(self, *dt):
+        print('update_wallet')
         self._trigger_update_status()
         if self.wallet and (self.wallet.up_to_date or not self.network or not self.network.is_connected()):
             self.update_tabs()
