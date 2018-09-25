@@ -1123,6 +1123,7 @@ class Network(util.DaemonThread):
             interface.blockchain = b
             b.save_header(header)
             self.switch_lagging_interface()
+            self.trigger_callback('blockchain_updated')
             return
         with self.blockchains_lock:
             tip = max([x.height() for x in self.blockchains.values()])
