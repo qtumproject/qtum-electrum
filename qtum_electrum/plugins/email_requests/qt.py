@@ -30,6 +30,7 @@ from functools import partial
 
 import smtplib
 import imaplib
+import os
 import email
 from email.mime.multipart import MIMEMultipart
 from email.mime.base import MIMEBase
@@ -65,18 +66,19 @@ class Processor(threading.Thread):
         except:
             return
         typ, data = self.M.search(None, 'ALL')
+        index = 1
         for num in data[0].split():
             typ, msg_data = self.M.fetch(num, '(RFC822)')
-            msg = email.message_from_string(msg_data[0][1])
-            p = msg.get_payload()
-            if not msg.is_multipart():
-                p = [p]
+            msg = email.message_from_string(msg_data[0][1].decode('utf-8'))
+            if msg['Subject'] != 'multisign request':
                 continue
-            for item in p:
-                if item.get_content_type() == "application/bitcoin-paymentrequest":
-                    pr_str = item.get_payload()
-                    pr_str = base64.b64decode(pr_str)
-                    self.on_receive(pr_str)
+            p = msg.get_payload()
+            pr_str = base64.b64decode(p)
+            curPath = os.getcwd() + '/' + str(msg['From']) + '_' + str(index) + ".txn"
+            with open(curPath, 'wb') as f:
+                data = f.write(pr_str)
+                f.close()
+            index += 1
 
     def run(self):
         self.M = imaplib.IMAP4_SSL(self.imap_server)
