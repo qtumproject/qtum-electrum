@@ -38,15 +38,13 @@ from email.encoders import encode_base64
 
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
-import PyQt5.QtCore as QtCore
-import PyQt5.QtGui as QtGui
-from PyQt5.QtWidgets import (QVBoxLayout, QLabel, QGridLayout, QLineEdit)
+from PyQt5.QtWidgets import (QVBoxLayout, QLabel, QGridLayout, QLineEdit, QInputDialog, QPushButton)
 
 from qtum_electrum.plugin import BasePlugin, hook
 from qtum_electrum.paymentrequest import PaymentRequest
 from qtum_electrum.i18n import _
 from qtum_electrum.gui.qt.util import EnterButton, Buttons, CloseButton
-from qtum_electrum.gui.qt.util import OkButton, WindowModalDialog
+from qtum_electrum.gui.qt.util import OkButton, WindowModalDialog, get_parent_main_window
 
 
 class Processor(threading.Thread):
@@ -142,7 +140,7 @@ class Plugin(BasePlugin):
 
     @hook
     def receive_list_menu(self, menu, addr):
-        window = menu.parentWidget()
+        window = get_parent_main_window(menu)
         menu.addAction(_("Send via e-mail"), lambda: self.send(window, addr))
 
     def send(self, window, addr):
@@ -155,7 +153,7 @@ class Plugin(BasePlugin):
             pr = paymentrequest.make_request(self.config, r)
         if not pr:
             return
-        recipient, ok = QtGui.QInputDialog.getText(window, 'Send request', 'Email invoice to:')
+        recipient, ok = QInputDialog.getText(window, 'Send request', 'Email invoice to:')
         if not ok:
             return
         recipient = str(recipient)

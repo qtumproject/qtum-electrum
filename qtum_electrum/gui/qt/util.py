@@ -755,6 +755,19 @@ def export_meta_gui(electrum_window, title, exporter):
                                      .format(title, str(filename)))
 
 
+def get_parent_main_window(widget):
+    """Returns a reference to the ElectrumWindow this widget belongs to."""
+    from .main_window import ElectrumWindow
+    for _ in range(100):
+        if widget is None:
+            return None
+        if not isinstance(widget, ElectrumWindow):
+            widget = widget.parentWidget()
+        else:
+            return widget
+    return None
+
+
 float_validator = QRegExpValidator(QRegExp('^(-?\d+)(\.\d+)?$'))
 int_validator = QIntValidator(0, 10 ** 9 - 1)
 
