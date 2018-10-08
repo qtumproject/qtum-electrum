@@ -722,10 +722,10 @@ class AddressSynchronizer(PrintError):
                 is_partial = True
         if not is_mine:
             is_partial = False
-        for addr, value in tx.get_outputs():
-            v_out += value
-            if self.is_mine(addr):
-                v_out_mine += value
+        for o in tx.outputs():
+            v_out += o.value
+            if self.is_mine(o.address):
+                v_out_mine += o.value
                 is_relevant = True
         if is_pruned:
             # some inputs are mine:

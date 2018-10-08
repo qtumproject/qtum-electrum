@@ -702,7 +702,7 @@ class Transaction:
             self.deserialize()
         return self._inputs
 
-    def outputs(self):
+    def outputs(self) -> List[TxOutput]:
         if self._outputs is None:
             self.deserialize()
         return self._outputs
@@ -1262,11 +1262,9 @@ class Transaction:
             outputs.append((addr, o.value))      # consider using yield (addr, v)
         return outputs
 
-    def get_output_addresses(self):
-        return [addr for addr, val in self.get_outputs()]
-
-    def has_address(self, addr):
-        return (addr in self.get_output_addresses()) or (addr in (tx.get("address") for tx in self.inputs()))
+    def has_address(self, addr: str) -> bool:
+        return (addr in (o.address for o in self.outputs())) \
+               or (addr in (txin.get("address") for txin in self.inputs()))
 
     def as_dict(self):
         if self.raw is None:
