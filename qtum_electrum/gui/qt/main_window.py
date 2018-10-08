@@ -149,6 +149,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.tokens_tab = self.create_tokens_tab()
         self.smart_contract_tab = self.create_smart_contract_tab()
 
+        self.imap_server = self.config.get('email_server', '')
+        self.smtp_server = self.config.get('email_smtp', '')
+        self.username = self.config.get('email_username', '')
+        self.password = self.config.get('email_password', '')
+
         tabs.addTab(self.create_history_tab(), QIcon(":icons/tab_history.png"), _('History'))
         tabs.addTab(self.send_tab, QIcon(":icons/tab_send.png"), _('Send'))
         tabs.addTab(self.receive_tab, QIcon(":icons/tab_receive.png"), _('Receive'))
@@ -824,7 +829,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def show_transaction(self, tx, tx_desc = None):
         '''tx_desc is set only for txs created in the Send tab'''
-        show_transaction(tx, self, tx_desc)
+        show_transaction(self.config, tx, self, tx_desc)
 
     def create_receive_tab(self):
         # A 4-column grid layout.  All the stretch is in the last column.
@@ -1845,6 +1850,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         sb.addPermanentWidget(self.seed_button)
         self.status_button = StatusBarButton(QIcon(":icons/status_disconnected.png"), _("Network"), lambda: self.gui_object.show_network_dialog(self))
         sb.addPermanentWidget(self.status_button)
+        self.email_setting_button = StatusBarButton(QIcon(":icons/Emailsetting.png"), _("emailsetting"), self.do_process_setting_email)
+        sb.addPermanentWidget(self.email_setting_button)
+        self.email_setting_button = StatusBarButton(QIcon(":icons/import.png"), _("import"),self.do_process_import)
+        sb.addPermanentWidget(self.email_setting_button)
         run_hook('create_status_bar', sb)
         self.setStatusBar(sb)
 
@@ -3356,3 +3365,54 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         }
         d = ContractFuncDialog(self, contract)
         d.show()
+
+    def do_process_import(self):
+        tx = self.read_tx_from_file()
+        if tx:
+            self.show_transaction(tx)
+
+    def do_process_setting_email(self):
+        d = WindowModalDialog(self, _("Email settings"))
+        d.setMinimumSize(500, 200)
+
+        vbox = QVBoxLayout(d)
+        vbox.addWidget(QLabel(_('Server hosting your email acount')))
+        grid = QGridLayout()
+        vbox.addLayout(grid)
+        grid.addWidget(QLabel('Server (IMAP)'), 0, 0)
+        server_e = QLineEdit()
+        server_e.setText(self.imap_server)
+        grid.addWidget(server_e, 0, 1)
+
+        grid.addWidget(QLabel('Server (SMTP)'), 1, 0)
+        server_s = QLineEdit()
+        server_s.setText(self.smtp_server)
+        grid.addWidget(server_s, 1, 1)
+
+        grid.addWidget(QLabel('Username'), 2, 0)
+        username_e = QLineEdit()
+        username_e.setText(self.username)
+        grid.addWidget(username_e, 2, 1)
+
+        grid.addWidget(QLabel('Password'), 3, 0)
+        password_e = QLineEdit()
+        password_e.setText(self.password)
+        grid.addWidget(password_e, 3, 1)
+
+        vbox.addStretch()
+        vbox.addLayout(Buttons(CloseButton(d), OkButton(d)))
+
+        if not d.exec_():
+            return
+
+        server = str(server_e.text())
+        self.config.set_key('email_server', server)
+
+        smtp_server = str(server_s.text())
+        self.config.set_key('email_smtp', smtp_server)
+
+        username = str(username_e.text())
+        self.config.set_key('email_username', username)
+
+        password = str(password_e.text())
+        self.config.set_key('email_password', password)

@@ -26,6 +26,8 @@ import copy
 import datetime
 import json
 import traceback
+import smtplib
+import imaplib
 
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
@@ -47,9 +49,9 @@ SAVE_BUTTON_DISABLED_TOOLTIP = _("Please sign this transaction in order to save 
 dialogs = []  # Otherwise python randomly garbage collects the dialogs...
 
 
-def show_transaction(tx, parent, desc=None, prompt_if_unsaved=False):
+def show_transaction(config, tx, parent, desc=None, prompt_if_unsaved=False):
     try:
-        d = TxDialog(tx, parent, desc, prompt_if_unsaved)
+        d = TxDialog(config, tx, parent, desc, prompt_if_unsaved)
     except SerializationError as e:
         traceback.print_exc(file=sys.stderr)
         parent.show_critical(_("Electrum was unable to deserialize the transaction:") + "\n" + str(e))
@@ -60,7 +62,7 @@ def show_transaction(tx, parent, desc=None, prompt_if_unsaved=False):
 
 class TxDialog(QDialog, MessageBoxMixin):
 
-    def __init__(self, tx, parent, desc, prompt_if_unsaved):
+    def __init__(self, config, tx, parent, desc, prompt_if_unsaved):
         '''Transactions in the wallet will show their description.
         Pass desc to give a description for txs not yet in the wallet.
         '''
@@ -79,6 +81,12 @@ class TxDialog(QDialog, MessageBoxMixin):
         self.prompt_if_unsaved = prompt_if_unsaved
         self.saved = False
         self.desc = desc
+
+        self.config = config
+        self.imap_server = self.config.get('email_server', '')
+        self.username = self.config.get('email_username', '')
+        self.password = self.config.get('email_password', '')
+        self.smtp_server = self.config.get('email_smtp', '')
 
         # if the wallet can populate the inputs with more info, do it now.
         # as a result, e.g. we might learn an imported address tx is segwit,
@@ -138,12 +146,17 @@ class TxDialog(QDialog, MessageBoxMixin):
         b.setIcon(QIcon(":icons/qrcode.png"))
         b.clicked.connect(self.show_qr)
 
+        self.export_button = b = QPushButton(_("Export"))
+        b.clicked.connect(self.export)
+        self.email_button = QPushButton(_("Email"))
+        self.email_button.clicked.connect(self.sendEmail)
+
         self.copy_button = CopyButton(lambda: str(self.tx), parent.app)
 
         # Action buttons
         self.buttons = [self.sign_button, self.broadcast_button, self.cancel_button]
         # Transaction sharing buttons
-        self.sharing_buttons = [self.copy_button, self.qr_button, self.export_button, self.save_button]
+        self.sharing_buttons = [self.copy_button, self.qr_button, self.export_button, self.save_button, self.email_button]
 
         run_hook('transaction_dialog', self)
 
@@ -310,7 +323,37 @@ class TxDialog(QDialog, MessageBoxMixin):
             cursor.insertBlock()
         vbox.addWidget(o_text)
 
+    def sendEmail(self):
+        self.input_email_dialog = t = WindowModalDialog(self, _('input email address'))
+        t.setMinimumSize(500, 200)
+        vbox = QVBoxLayout(t)
+        vbox.addWidget(QLabel(_('input  email address')))
+        grid = QGridLayout()
+        vbox.addLayout(grid)
 
+        grid.addWidget(QLabel('address'), 0, 0)
+        address_e = QLineEdit()
+        address_e.clear()
+        grid.addWidget(address_e, 0, 1)
+
+        vbox.addStretch()
+        vbox.addLayout(Buttons(CloseButton(t), OkButton(t)))
+        print()
+
+        if not t.exec_():
+            return
+        toaddress = str(address_e.text())
+        from email.mime.text import MIMEText
+        msg = MIMEText(json.dumps(self.tx.as_dict(), indent=4) + '\n', 'plain', 'utf-8')
+        msg['From'] = self.username
+        msg['Subject'] = 'multisign request'
+        server = smtplib.SMTP(self.smtp_server, 25)
+        server.login(self.username, self.password)
+        server.sendmail(self.username, [toaddress], msg.as_string())
+        server.quit()
+
+        
 class QTextEditWithDefaultSize(QTextEdit):
     def sizeHint(self):
         return QSize(0, 100)
+
