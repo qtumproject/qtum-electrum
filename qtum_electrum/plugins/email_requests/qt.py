@@ -275,33 +275,13 @@ class Plugin(BasePlugin):
 
         self.processor = None
         if self.smtp_server and self.username and self.password:
-            check_connection = CheckConnectionThread(smtp_server, username, password, self.on_success)
-            check_connection.connection_error_signal.connect(lambda e: window.show_message(
-                _("Unable to connect to mail server:\n {}").format(e) + "\n" +
-                _("Please check your connection and credentials.")
-            ))
-            check_connection.start()
-
-    def on_success(self):
-        self.processor = Processor(self.smtp_server, self.username, self.password, self.on_receive)
-        self.processor.start()
-
-
-class CheckConnectionThread(QThread):
-    connection_error_signal = pyqtSignal(str)
-
-    def __init__(self, server, username, password, callback):
-        super().__init__()
-        self.server = server
-        self.username = username
-        self.password = password
-        self.callback = callback
-
-    def run(self):
-        try:
-            conn = smtplib.SMTP_SSL(self.server, timeout=5)
-            conn.login(self.username, self.password)
-        except BaseException as e:
-            self.connection_error_signal.emit(str(e))
-            return
-        self.callback()
+            try:
+                conn = smtplib.SMTP_SSL(self.smtp_server, timeout=5)
+                conn.login(self.username, self.password)
+                self.processor = Processor(self.smtp_server, self.username, self.password, self.on_receive)
+                self.processor.start()
+            except BaseException as e:
+                window.show_message(
+                    _("Unable to connect to mail server:\n {}").format(e) + "\n" +
+                    _("Please check your connection and credentials.")
+                )
