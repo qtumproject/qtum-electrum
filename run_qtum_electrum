@@ -424,7 +424,6 @@ def run():
         if fd is not None:
             plugins = init_plugins(config, config.get('gui', 'qt'))
             d = daemon.Daemon(config, fd, True)
-            d.start()
             d.init_gui(config, plugins)
             sys.exit(0)
         else:
@@ -445,7 +444,6 @@ def run():
                         sys.exit(0)
                 init_plugins(config, 'cmdline')
                 d = daemon.Daemon(config, fd, False)
-                d.start()
                 if config.get('websocket_server'):
                     from qtum_electrum import websockets
                     websockets.WebSocketServer(config, d.network).start()

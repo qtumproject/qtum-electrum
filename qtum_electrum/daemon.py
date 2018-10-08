@@ -134,7 +134,9 @@ class Daemon(DaemonThread):
         self.wallets = {}
 
         # Setup JSONRPC server
+        self.server = None
         self.init_server(config, fd, is_gui)
+        self.start()
 
     def init_server(self, config, fd, is_gui):
         host = config.get('rpchost', '127.0.0.1')
