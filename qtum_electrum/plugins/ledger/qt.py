@@ -3,6 +3,7 @@ from PyQt5.Qt import QInputDialog, QLineEdit, QVBoxLayout, QLabel
 from qtum_electrum.i18n import _
 from .ledger import LedgerPlugin
 from ..hw_wallet.qt import QtHandlerBase, QtPluginBase
+from ..hw_wallet.plugin import only_hook_if_libraries_available
 from qtum_electrum.plugin import hook
 from qtum_electrum.wallet import Standard_Wallet
 from qtum_electrum.gui.qt.util import *
@@ -16,6 +17,7 @@ class Plugin(LedgerPlugin, QtPluginBase):
     def create_handler(self, window):
         return Ledger_Handler(window)
 
+    @only_hook_if_libraries_available
     @hook
     def receive_menu(self, menu, addrs, wallet):
         if type(wallet) is not Standard_Wallet:
@@ -26,6 +28,7 @@ class Plugin(LedgerPlugin, QtPluginBase):
                 keystore.thread.add(partial(self.show_address, wallet, addrs[0]))
 
             menu.addAction(_("Show on Ledger"), show_address)
+
 
 class Ledger_Handler(QtHandlerBase):
     setup_signal = pyqtSignal()

@@ -12,6 +12,7 @@ from qtum_electrum.util import PrintError, UserCancelled, bh2u
 from qtum_electrum.wallet import Wallet, Standard_Wallet
 
 from ..hw_wallet.qt import QtHandlerBase, QtPluginBase
+from ..hw_wallet.plugin import only_hook_if_libraries_available
 from .trezor import (TrezorPlugin, TIM_NEW, TIM_RECOVER, TIM_MNEMONIC,
                      RECOVERY_TYPE_SCRAMBLED_WORDS, RECOVERY_TYPE_MATRIX)
 
@@ -165,6 +166,7 @@ class QtPlugin(QtPluginBase):
     def create_handler(self, window):
         return QtHandler(window, self.pin_matrix_widget_class(), self.device)
 
+    @only_hook_if_libraries_available
     @hook
     def receive_menu(self, menu, addrs, wallet):
         if len(addrs) != 1:
