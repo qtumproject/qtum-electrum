@@ -23,7 +23,6 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import datetime
-from datetime import date
 from .util import *
 from qtum_electrum.i18n import _
 from qtum_electrum.util import block_explorer_URL, timestamp_to_datetime, profiler, open_browser, TxMinedStatus
@@ -117,8 +116,8 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
         d.date = None
         vbox = QVBoxLayout()
 
-        def on_date(date):
-            d.date = date
+        def on_date(date_):
+            d.date = date_
 
         cal = QCalendarWidget()
         cal.setGridVisible(True)
@@ -143,11 +142,11 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
             if timestamp_to_datetime(h[0][3]):
                 start_date = timestamp_to_datetime(h[0][3]).date()
             else:
-                start_date = date.today()
+                start_date = datetime.date.today()
             if timestamp_to_datetime(h[-1][3]):
                 end_date = timestamp_to_datetime(h[-1][3]).date()
             else:
-                end_date = date.today()
+                end_date = datetime.date.today()
 
             self.years = [str(i) for i in range(start_date.year, end_date.year + 1)]
             self.period_combo.insertItems(1, self.years)

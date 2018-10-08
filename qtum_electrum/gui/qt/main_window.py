@@ -2785,7 +2785,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         tx_widgets.append((multiple_cb, None))
 
         def fmt_docs(key, klass):
-            print(key, klass)
             lines = [ln.lstrip(" ") for ln in klass.__doc__.split("\n")]
             return '\n'.join([key, "", " ".join(lines)])
 

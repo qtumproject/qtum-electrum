@@ -1008,6 +1008,17 @@ msgstr "合约名称："
 msgid "Copy"
 msgstr "复制"
 
+#: qtum_electrum/gui/qt/invoice_list.py:77
+#: qtum_electrum/gui/qt/history_list.py:258
+#: qtum_electrum/gui/qt/request_list.py:118
+#: qtum_electrum/gui/qt/address_list.py:147
+#: qtum_electrum/gui/qt/contact_list.py:72
+#: qtum_electrum/gui/qt/smart_contract_list.py:42
+#: qtum_electrum/gui/qt/token_list.py:66 qtum_electrum/gui/qt/token_list.py:136
+#, python-format
+msgid "Copy %s"
+msgstr "复制 %s"
+
 #: electrum/gui/qt/request_list.py:125
 msgid "Copy URI"
 msgstr "复制 URI"
@@ -4710,6 +4721,15 @@ msgstr "视频设备"
 msgid "Vietnamese"
 msgstr "越南语"
 
+#: qtum_electrum/gui/qt/token_list.py:67
+msgid "View Info"
+msgstr "查看信息"
+
+#: qtum_electrum/gui/qt/token_dialog.py:177
+msgid "View Token"
+msgstr "查看代币"
+
+
 #: electrum/gui/qt/history_list.py:363
 msgid "View invoice"
 msgstr "查看发票"
@@ -4717,7 +4737,7 @@ msgstr "查看发票"
 #: electrum/gui/qt/address_list.py:179 electrum/gui/qt/contact_list.py:82
 #: electrum/gui/qt/history_list.py:365
 msgid "View on block explorer"
-msgstr "在区块上查看交易"
+msgstr "在区块链浏览器上查看交易"
 
 #: electrum/gui/qt/seed_dialog.py:44 electrum/plugins/revealer/qt.py:117
 msgid "WARNING"
