@@ -822,7 +822,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def show_transaction(self, tx, tx_desc = None):
         '''tx_desc is set only for txs created in the Send tab'''
-        show_transaction(self.config, tx, self, tx_desc)
+        show_transaction(tx, self, tx_desc)
 
     def create_receive_tab(self):
         # A 4-column grid layout.  All the stretch is in the last column.
