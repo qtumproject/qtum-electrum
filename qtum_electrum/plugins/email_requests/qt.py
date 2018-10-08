@@ -195,6 +195,8 @@ class Plugin(BasePlugin):
 
     @hook
     def send_tx_layout(self, window, layout, tx):
+        if not self.processor:
+            return
         email_button = QPushButton(_("Email"))
         email_button.clicked.connect(lambda: self.send_tx(window, tx))
         layout.addWidget(email_button)
@@ -220,7 +222,7 @@ class Plugin(BasePlugin):
             traceback.print_exc(file=sys.stderr)
             window.show_message(str(e))
         else:
-            window.show_message(_('Request sent.'))
+            window.show_message(_('Transaction sent.'))
 
     def requires_settings(self):
         return True
