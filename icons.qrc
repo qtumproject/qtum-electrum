@@ -54,7 +54,5 @@
     <file>icons/unlock.png</file>
     <file>icons/warning.png</file>
     <file>icons/zoom.png</file>
-    <file>icons/import.png</file>
-    <file>icons/Emailsetting.png</file>
   </qresource>
 </RCC>
