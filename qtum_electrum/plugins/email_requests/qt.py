@@ -273,6 +273,7 @@ class Plugin(BasePlugin):
         self.config.set_key('email_password', password)
         self.password = password
 
+        self.processor = None
         if self.smtp_server and self.username and self.password:
             check_connection = CheckConnectionThread(smtp_server, username, password, self.on_success)
             check_connection.connection_error_signal.connect(lambda e: window.show_message(
@@ -280,8 +281,6 @@ class Plugin(BasePlugin):
                 _("Please check your connection and credentials.")
             ))
             check_connection.start()
-        else:
-            self.processor = None
 
     def on_success(self):
         self.processor = Processor(self.smtp_server, self.username, self.password, self.on_receive)
