@@ -135,6 +135,7 @@ class Plugin(BasePlugin):
         self.smtp_server = self.config.get('email_smtp', '')
         self.username = self.config.get('email_username', '')
         self.password = self.config.get('email_password', '')
+        self.processor = None
         if self.smtp_server and self.username and self.password:
             self.processor = Processor(self.smtp_server, self.username, self.password, self.on_receive)
             self.processor.start()
