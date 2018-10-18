@@ -4,7 +4,7 @@ __author__ = 'CodeFace'
 """
 import hashlib
 import hmac
-from typing import List
+from typing import List, Tuple
 from eth_abi import encode_abi
 from eth_utils import function_abi_to_4byte_selector
 
@@ -448,7 +448,7 @@ def serialize_privkey(secret: bytes, compressed: bool, txin_type: str, internal_
     return '{}:{}'.format(txin_type, base58_wif)
 
 
-def deserialize_privkey(key: str) -> (str, bytes, bool):
+def deserialize_privkey(key: str) -> Tuple[str, bytes, bool]:
     if is_minikey(key):
         return 'p2pkh', minikey_to_private_key(key), False
 

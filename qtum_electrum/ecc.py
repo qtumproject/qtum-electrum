@@ -24,9 +24,8 @@
 # SOFTWARE.
 
 import base64
-import hmac
 import hashlib
-from typing import Union
+from typing import Union, Tuple
 
 
 import ecdsa
@@ -110,7 +109,7 @@ def get_y_coord_from_x(x, odd=True):
     raise Exception('ECC_YfromX: No Y found')
 
 
-def ser_to_point(ser: bytes) -> (int, int):
+def ser_to_point(ser: bytes) -> Tuple[int, int]:
     if ser[0] not in (0x02, 0x03, 0x04):
         raise ValueError('Unexpected first byte: {}'.format(ser[0]))
     if ser[0] == 0x04:
@@ -227,7 +226,7 @@ class ECPubkey(object):
     def get_public_key_hex(self, compressed=True):
         return bh2u(self.get_public_key_bytes(compressed))
 
-    def point(self) -> (int, int):
+    def point(self) -> Tuple[int, int]:
         return self._pubkey.point.x(), self._pubkey.point.y()
 
     def __mul__(self, other: int):
