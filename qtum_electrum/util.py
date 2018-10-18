@@ -437,20 +437,27 @@ DECIMAL_POINT = localeconv()['decimal_point']
 
 
 def format_satoshis(x, num_zeros=0, decimal_point=8, precision=None, is_diff=False, whitespaces=False):
-    from locale import localeconv
     if x is None:
         return 'unknown'
     if precision is None:
         precision = decimal_point
-    decimal_format = ".0" + str(precision) if precision > 0 else ""
+    # format string
+    decimal_format = "." + str(precision) if precision > 0 else ""
     if is_diff:
         decimal_format = '+' + decimal_format
-    result = ("{:" + decimal_format + "f}").format(x / pow (10, decimal_point)).rstrip('0')
+    # initial result
+    scale_factor = pow(10, decimal_point)
+    if not isinstance(x, Decimal):
+        x = Decimal(x).quantize(Decimal('1E-8'))
+    result = ("{:" + decimal_format + "f}").format(x / scale_factor)
+    if "." not in result: result += "."
+    result = result.rstrip('0')
+    # extra decimal places
     integer_part, fract_part = result.split(".")
-    dp = DECIMAL_POINT
     if len(fract_part) < num_zeros:
         fract_part += "0" * (num_zeros - len(fract_part))
-    result = integer_part + dp + fract_part
+    result = integer_part + DECIMAL_POINT + fract_part
+    # leading/trailing whitespaces
     if whitespaces:
         result += " " * (decimal_point - len(fract_part))
         result = " " * (15 - len(result)) + result
@@ -461,8 +468,11 @@ FEERATE_PRECISION = 1  # num fractional decimal places for sat/byte fee rates
 _feerate_quanta = Decimal(10) ** (-FEERATE_PRECISION)
 
 
-def format_fee_satoshis(fee, num_zeros=0):
-    return format_satoshis(fee, num_zeros, 0, precision=FEERATE_PRECISION)
+def format_fee_satoshis(fee, *, num_zeros=0, precision=None):
+    if precision is None:
+        precision = FEERATE_PRECISION
+    num_zeros = min(num_zeros, FEERATE_PRECISION)  # no more zeroes than available prec
+    return format_satoshis(fee, num_zeros=num_zeros, decimal_point=0, precision=precision)
 
 
 def timestamp_to_datetime(timestamp):
