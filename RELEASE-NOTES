@@ -1,3 +1,8 @@
+# Release 0.18.9
+ * fix email plugin and support sending transaction via email (thank kangtingying for contributing)
+ * fix incorrect fee rate
+ * user experience improvement
+
 # Release 0.18.8
  * fix signing incorrect signature with p2pk utxos
  * fix crash when clicking "View on block explorer"
@@ -14,7 +19,7 @@
  * fix signing unsigned tx loaded from file
  * fix Trezor icon crash
  * fix pay to OP_RETURN on trezor
- * fix adding zero decimals token
+ * fix adding zero decimals token (thank TuoUP for contributing)
  * minor optimisations
 
 # Release 0.18.6
