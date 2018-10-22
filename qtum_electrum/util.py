@@ -569,9 +569,14 @@ def block_explorer_URL(config, params):
     if not be_tuple:
         return
 
-    if params.get('token'):
+    token = params.get('token')
+    addr = params.get('addr')
+
+    if token:
         if 'qtum.org' in be_tuple[0]:
-            return "{}/token/{}?a={}".format(be_tuple[0], params.get('token'), params.get('addr'))
+            return "{}/token/{}?a={}".format(be_tuple[0], token, addr)
+        if 'qtum.info' in be_tuple[0]:
+            return "{}/address/{}/token-balance?tokens={}".format(be_tuple[0], addr, token)
 
     url_parts = [be_tuple[0], ]
     for k, v in params.items():
