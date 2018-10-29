@@ -112,7 +112,7 @@ msgstr "导入(&I)"
 
 #: electrum/gui/qt/main_window.py:482
 msgid "&Information"
-msgstr "消息（&I）"
+msgstr "信息（&I）"
 
 #: electrum/gui/qt/main_window.py:495
 msgid "&Labels"
@@ -2193,7 +2193,7 @@ msgstr "印度尼西亚语"
 #: electrum/plugins/keepkey/qt.py:578 electrum/plugins/safe_t/qt.py:484
 #: electrum/plugins/trezor/qt.py:605
 msgid "Information"
-msgstr "消息"
+msgstr "信息"
 
 #: electrum/gui/qt/history_list.py:179
 msgid "Initial balance"
