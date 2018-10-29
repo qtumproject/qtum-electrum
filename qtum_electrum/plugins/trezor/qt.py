@@ -7,9 +7,8 @@ from PyQt5.Qt import QVBoxLayout, QLabel
 
 from qtum_electrum.gui.qt.util import *
 from qtum_electrum.i18n import _
-from qtum_electrum.plugin import hook, DeviceMgr
-from qtum_electrum.util import PrintError, UserCancelled, bh2u
-from qtum_electrum.wallet import Wallet, Standard_Wallet
+from qtum_electrum.plugin import hook
+from qtum_electrum.util import bh2u
 
 from ..hw_wallet.qt import QtHandlerBase, QtPluginBase
 from ..hw_wallet.plugin import only_hook_if_libraries_available
@@ -223,7 +222,7 @@ class QtPlugin(QtPluginBase):
             else:
                 msg = _("Enter the master private key beginning with xprv:")
                 def set_enabled():
-                    from qtum_electrum.keystore import is_xprv
+                    from qtum_electrum.bip32 import is_xprv
                     wizard.next_button.setEnabled(is_xprv(clean_text(text)))
                 text.textChanged.connect(set_enabled)
                 next_enabled = False

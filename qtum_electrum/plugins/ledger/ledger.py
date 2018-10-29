@@ -3,17 +3,17 @@ import hashlib
 import sys
 import traceback
 
-from qtum_electrum import qtum
-from qtum_electrum import bitcoin
+
 from qtum_electrum.bitcoin import TYPE_ADDRESS, int_to_hex, var_int, TYPE_SCRIPT
+from qtum_electrum.bip32 import serialize_xpub
 from qtum_electrum.i18n import _
-from qtum_electrum.plugin import BasePlugin
 from qtum_electrum.keystore import Hardware_KeyStore
 from qtum_electrum.transaction import Transaction
 from qtum_electrum.wallet import Standard_Wallet
-from ..hw_wallet import HW_PluginBase
 from qtum_electrum.util import print_error, bfh, bh2u, versiontuple
 from qtum_electrum.base_wizard import ScriptTypeNotSupported
+
+from ..hw_wallet import HW_PluginBase
 from ..hw_wallet.plugin import is_any_tx_output_on_change_branch
 
 try:
@@ -119,7 +119,7 @@ class Ledger_Client():
         depth = len(splitPath)
         lastChild = splitPath[len(splitPath) - 1].split('\'')
         childnum = int(lastChild[0]) if len(lastChild) == 1 else 0x80000000 | int(lastChild[0])
-        xpub = bitcoin.serialize_xpub(xtype, nodeData['chainCode'], publicKey, depth, self.i4b(fingerprint), self.i4b(childnum))
+        xpub = serialize_xpub(xtype, nodeData['chainCode'], publicKey, depth, self.i4b(fingerprint), self.i4b(childnum))
         return xpub
 
     def has_detached_pin_support(self, client):

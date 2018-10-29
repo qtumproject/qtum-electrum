@@ -21,9 +21,9 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from typing import Sequence, Optional
-
+from .crypto import Hash
 from .util import ThreadJob, bh2u, VerifiedTxInfo
-from .bitcoin import Hash, hash_decode, hash_encode
+from .bitcoin import hash_decode, hash_encode
 from .transaction import Transaction
 from .blockchain import hash_header
 

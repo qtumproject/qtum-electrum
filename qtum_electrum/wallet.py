@@ -33,22 +33,20 @@ import copy
 import errno
 import json
 
-
 from .i18n import _
 from .util import NotEnoughFunds, UserCancelled, profiler, format_satoshis, \
-    InvalidPassword, WalletFileException, TimeoutException, format_time
-from .qtum import *
+    InvalidPassword, WalletFileException, TimeoutException, format_time, bh2u
+from .qtum import (TYPE_ADDRESS, TYPE_STAKE, is_address, is_minikey,
+                   RECOMMEND_CONFIRMATIONS, COINBASE_MATURITY, TYPE_PUBKEY, b58_address_to_hash160,
+                   FEERATE_MAX_DYNAMIC, FEERATE_DEFAULT_RELAY)
 from .version import *
+from .crypto import Hash
 from .keystore import load_keystore, Hardware_KeyStore
 from .storage import multisig_type, STO_EV_PLAINTEXT, STO_EV_USER_PW, STO_EV_XPUB_PW
 from .plugin import run_hook
-from . import transaction
-from . import bitcoin
-from . import coinchooser
+from . import transaction, bitcoin, coinchooser, paymentrequest, ecc, bip32
 from .transaction import Transaction, TxOutput, TxOutputHwInfo
-from . import paymentrequest
-from .paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED
-from .paymentrequest import InvoiceStore
+from .paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED, InvoiceStore
 from .contacts import Contacts
 from .smart_contracts import SmartContracts
 from .address_synchronizer import (AddressSynchronizer, TX_HEIGHT_LOCAL,
@@ -396,6 +394,7 @@ class Abstract_Wallet(AddressSynchronizer):
         return label
 
     def get_default_label(self, tx_hash):
+        from .qtum import TYPE_STAKE
         # qtum diff
         if self.txi.get(tx_hash) == {}:
             d = self.txo.get(tx_hash, {})
@@ -413,7 +412,7 @@ class Abstract_Wallet(AddressSynchronizer):
             elif tx.inputs()[0]['type'] == 'coinbase':
                 return 'coinbase'
         except (BaseException,) as e:
-            print_error('get_default_label', e)
+            self.print_error('get_default_label', e, TYPE_STAKE)
         return ''
 
     def get_tx_status(self, tx_hash, tx_mined_status):
@@ -429,7 +428,7 @@ class Abstract_Wallet(AddressSynchronizer):
                 tx = self.token_txs.get(tx_hash)
             is_mined = tx.outputs()[0].type == TYPE_STAKE
         except (BaseException,) as e:
-            print_error('get_tx_status', e)
+            self.print_error('get_tx_status', e)
         if conf == 0:
             if not tx:
                 return 3, 'unknown'
@@ -1199,8 +1198,8 @@ class Imported_Wallet(Simple_Wallet):
 
     def add_input_sig_info(self, txin, address):
         if self.is_watching_only():
-            addrtype, hash160 = b58_address_to_hash160(address)
-            x_pubkey = 'fd' + bh2u(bytes([addrtype]) + hash160)
+            addrtype, hash160_ = b58_address_to_hash160(address)
+            x_pubkey = 'fd' + bh2u(bytes([addrtype]) + hash160_)
             txin['x_pubkeys'] = [x_pubkey]
             txin['signatures'] = [None]
             return
@@ -1365,7 +1364,7 @@ class Simple_Deterministic_Wallet(Simple_Wallet, Deterministic_Wallet):
     def load_keystore(self):
         self.keystore = load_keystore(self.storage, 'keystore')
         try:
-            xtype = bitcoin.xpub_type(self.keystore.xpub)
+            xtype = bip32.xpub_type(self.keystore.xpub)
         except:
             xtype = 'standard'
         self.txin_type = 'p2pkh' if xtype == 'standard' else xtype
@@ -1457,7 +1456,7 @@ class Multisig_Wallet(Deterministic_Wallet):
             name = 'x%d/'%(i+1)
             self.keystores[name] = load_keystore(self.storage, name)
         self.keystore = self.keystores['x1/']
-        xtype = bitcoin.xpub_type(self.keystore.xpub)
+        xtype = bip32.xpub_type(self.keystore.xpub)
         self.txin_type = 'p2sh' if xtype == 'standard' else xtype
 
     def save_keystore(self):

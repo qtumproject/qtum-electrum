@@ -3,11 +3,11 @@ import traceback
 import sys
 
 from qtum_electrum.util import bfh, bh2u, versiontuple, UserCancelled
-from qtum_electrum.qtum import (b58_address_to_hash160, xpub_from_pubkey,
-                                TYPE_ADDRESS, TYPE_SCRIPT, qtum_addr_to_bitcoin_addr, deserialize_xpub)
+from qtum_electrum.qtum import (TYPE_ADDRESS, TYPE_SCRIPT, qtum_addr_to_bitcoin_addr)
+from qtum_electrum.bip32 import deserialize_xpub, xpub_from_pubkey
 from qtum_electrum import constants
 from qtum_electrum.i18n import _
-from qtum_electrum.plugin import BasePlugin, Device
+from qtum_electrum.plugin import Device
 from qtum_electrum.transaction import deserialize, Transaction
 from qtum_electrum.keystore import Hardware_KeyStore, is_xpubkey, parse_xpubkey
 from qtum_electrum.base_wizard import ScriptTypeNotSupported

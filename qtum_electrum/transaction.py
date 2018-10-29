@@ -22,24 +22,24 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
-# Note: The deserialization code originally comes from ABE.
-from typing import Sequence, Union, NamedTuple, Tuple, Optional, Iterable, List, Dict
-from .util import print_error, profiler
-from . import bitcoin
-from . import ecc
-from .qtum import *
 import struct
 import traceback
 import sys
+# Note: The deserialization code originally comes from ABE.
+from typing import Sequence, Union, NamedTuple, Tuple, Optional, Iterable, List, Dict
+from .util import print_error, profiler, to_bytes, bh2u, bfh
+from . import ecc, bitcoin, constants, segwit_addr
+from .qtum import (TYPE_ADDRESS, TYPE_PUBKEY, TYPE_SCRIPT, TYPE_STAKE, hash_160,
+                   hash160_to_p2sh, hash160_to_p2pkh, hash_to_segwit_addr,
+                   hash_encode, var_int, TOTAL_COIN_SUPPLY_LIMIT_IN_BTC, COIN,
+                   op_push, int_to_hex, push_script, b58_address_to_hash160)
 
-#
-# Workalike python implementation of Bitcoin's CDataStream class.
-#
+from .crypto import Hash
 from .keystore import xpubkey_to_address, xpubkey_to_pubkey
 
 NO_SIGNATURE = 'ff'
 PARTIAL_TXN_HEADER_MAGIC = b'EPTF\xff'
+
 
 class MalformedQtumScript(Exception):
     pass
@@ -71,8 +71,8 @@ class NotRecognizedRedeemScript(Exception):
     pass
 
 
-
 class BCDataStream(object):
+    """Workalike python implementation of Bitcoin's CDataStream class."""
     def __init__(self):
         self.input = None
         self.read_cursor = 0
@@ -323,7 +323,7 @@ def parse_scriptSig(d, _bytes):
     if match_decoded(decoded, match):
         item = decoded[0][1]
         if item[0] == 0:
-            d['address'] = bitcoin.hash160_to_p2sh(bitcoin.hash_160(item))
+            d['address'] = bitcoin.hash160_to_p2sh(hash_160(item))
             if len(item) == 22:
                 d['type'] = 'p2wpkh-p2sh'
             elif len(item) == 34:
@@ -918,7 +918,7 @@ class Transaction:
         witver, witprog = segwit_addr.decode(constants.net.SEGWIT_HRP, addr)
         if witprog is not None:
             return 'p2wpkh'
-        addrtype, hash_160 = b58_address_to_hash160(addr)
+        addrtype, hash_160_ = b58_address_to_hash160(addr)
         if addrtype == constants.net.ADDRTYPE_P2PKH:
             return 'p2pkh'
         elif addrtype == constants.net.ADDRTYPE_P2SH:
@@ -993,7 +993,7 @@ class Transaction:
             return multisig_script(pubkeys, txin['num_sig'])
         elif txin['type'] in ['p2wpkh', 'p2wpkh-p2sh']:
             pubkey = pubkeys[0]
-            pkh = bh2u(bitcoin.hash_160(bfh(pubkey)))
+            pkh = bh2u(hash_160(bfh(pubkey)))
             return '76a9' + push_script(pkh) + '88ac'
         elif txin['type'] == 'p2pk':
             pubkey = pubkeys[0]

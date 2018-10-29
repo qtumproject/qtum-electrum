@@ -25,14 +25,19 @@
 # SOFTWARE.
 
 from unicodedata import normalize
-
-from . import bitcoin, ecc
-from .qtum import *
-from . import constants
+import hashlib
+from . import bitcoin, ecc, constants, bip32
+from .qtum import (deserialize_privkey, serialize_privkey,
+                      public_key_to_p2pkh, seed_type, is_seed)
+from .bip32 import (bip32_public_derivation, deserialize_xpub, CKD_pub,
+                    bip32_root, deserialize_xprv, bip32_private_derivation,
+                    bip32_private_key, bip32_derivation, BIP32_PRIME,
+                    is_xpub, is_xprv, CKD_priv)
 from .ecc import string_to_number, number_to_string
-from .crypto import pw_decode, pw_encode
+from .crypto import pw_decode, pw_encode, Hash
+from .util import (PrintError, InvalidPassword, hfu, WalletFileException,
+                   QtumException, bh2u, bfh, print_error, inv_dict)
 from .mnemonic import Mnemonic, load_wordlist
-from .util import PrintError, InvalidPassword, hfu, WalletFileException, QtumException
 
 
 class KeyStore(PrintError):
@@ -320,7 +325,7 @@ class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
 
     def add_xprv(self, xprv):
         self.xprv = xprv
-        self.xpub = bitcoin.xpub_from_xprv(xprv)
+        self.xpub = bip32.xpub_from_xprv(xprv)
 
     def add_xprv_from_seed(self, bip32_seed, xtype, derivation):
         xprv, xpub = bip32_root(bip32_seed, xtype)
@@ -784,7 +789,7 @@ def mobile_derivation():
 def from_private_key_list(text):
     keystore = Imported_KeyStore({})
     for x in get_private_keys(text):
-        keystore.import_key(x, None)
+        keystore.import_privkey(x, None)
     return keystore
 
 
@@ -840,6 +845,13 @@ def from_bip39_seed(seed, passphrase, derivation, xtype=None):
     return k
 
 
+PURPOSE48_SCRIPT_TYPES = {
+    'p2wsh-p2sh': 1,  # specifically multisig
+    'p2wsh': 2,       # specifically multisig
+}
+PURPOSE48_SCRIPT_TYPES_INV = inv_dict(PURPOSE48_SCRIPT_TYPES)
+
+
 def from_mobile_seed(seed):
     passphrase = ''
     bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
@@ -863,7 +875,7 @@ def from_xpub(xpub):
 
 
 def from_xprv(xprv):
-    xpub = bitcoin.xpub_from_xprv(xprv)
+    xpub = bip32.xpub_from_xprv(xprv)
     k = BIP32_KeyStore({})
     k.xprv = xprv
     k.xpub = xpub
