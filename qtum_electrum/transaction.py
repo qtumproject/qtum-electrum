@@ -1031,7 +1031,7 @@ class Transaction:
     def BIP_LI01_sort(self):
         # See https://github.com/kristovatlas/rfc/blob/master/bips/bip-li01.mediawiki
         self._inputs.sort(key = lambda i: (i['prevout_hash'], i['prevout_n']))
-        self._outputs.sort(key = lambda o: (o[2], self.pay_script(o[0], o[1])))
+        self._outputs.sort(key = lambda o: (o.value, self.pay_script(o.type, o.address)))
 
     def qtum_sort(self, sender):
         if not sender:
