@@ -24,7 +24,7 @@
 # SOFTWARE.
 
 # Note: The deserialization code originally comes from ABE.
-from typing import Sequence, Union, NamedTuple, Tuple, Optional, Iterable
+from typing import Sequence, Union, NamedTuple, Tuple, Optional, Iterable, List, Dict
 from .util import print_error, profiler
 from . import bitcoin
 from . import ecc
@@ -44,13 +44,19 @@ PARTIAL_TXN_HEADER_MAGIC = b'EPTF\xff'
 class MalformedQtumScript(Exception):
     pass
 
-TxOutput = NamedTuple("TxOutput", [('type', int), ('address', str), ('value', Union[int, str])])
+
+class TxOutput(NamedTuple):
+    type: int
+    address: str
+    value: Union[int, str]
 # ^ value is str when the output is set to max: '!'
 
-TxOutputHwInfo = NamedTuple("TxOutputHwInfo", [('address_index', Tuple),
-                                               ('sorted_xpubs', Iterable[str]),
-                                               ('num_sig', Optional[int]),
-                                               ('script_type', str)])
+
+class TxOutputHwInfo(NamedTuple):
+    address_index: Tuple
+    sorted_xpubs: Iterable[str]
+    num_sig: Optional[int]
+    script_type: str
 
 
 class SerializationError(Exception):
@@ -691,6 +697,7 @@ class Transaction:
         # this value will get properly set when deserializing
         self.is_partial_originally = True
         self._segwit_ser = None  # None means "don't know"
+        self.output_info = None  # type: Optional[Dict[str, TxOutputHwInfo]]
 
     def update(self, raw):
         self.raw = raw

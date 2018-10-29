@@ -4,13 +4,19 @@
 """
 __author__ = 'CodeFace'
 """
-from collections import namedtuple
+from typing import NamedTuple
 from .storage import ModelStorage
 from . import qtum
 from . import constants
 
-Token = namedtuple('Token', 'contract_addr bind_addr name symbol decimals balance')
 
+class Token(NamedTuple):
+    contract_addr: str
+    bind_addr: str
+    name: str
+    symbol: str
+    decimals: int
+    balance: int
 
 # bind_addr is base58 type
 

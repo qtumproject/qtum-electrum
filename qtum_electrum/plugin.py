@@ -22,7 +22,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from collections import namedtuple
+from typing import NamedTuple, Any, Union
 import traceback
 import sys
 import os
@@ -267,8 +267,20 @@ class DeviceNotFoundError(Exception):
 class DeviceUnpairableError(Exception):
     pass
 
-Device = namedtuple("Device", "path interface_number id_ product_key usage_page")
-DeviceInfo = namedtuple("DeviceInfo", "device label initialized")
+
+class Device(NamedTuple):
+    path: Union[str, bytes]
+    interface_number: int
+    id_: str
+    product_key: Any  # when using hid, often Tuple[int, int]
+    usage_page: int
+
+
+class DeviceInfo(NamedTuple):
+    device: Device
+    label: str
+    initialized: bool
+
 
 class DeviceMgr(ThreadJob, PrintError):
     '''Manages hardware clients.  A client communicates over a hardware

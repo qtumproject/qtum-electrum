@@ -3,7 +3,7 @@ import time
 import sys
 import platform
 from six.moves import queue
-from collections import namedtuple
+from typing import NamedTuple, Callable, Optional
 from functools import partial
 
 from PyQt5.QtGui import *
@@ -656,7 +656,12 @@ class TaskThread(QThread):
     '''Thread that runs background tasks.  Callbacks are guaranteed
     to happen in the context of its parent.'''
 
-    Task = namedtuple("Task", "task cb_success cb_done cb_error")
+    class Task(NamedTuple):
+        task: Callable
+        cb_success: Optional[Callable]
+        cb_done: Optional[Callable]
+        cb_error: Optional[Callable]
+
     doneSig = pyqtSignal(object, object, object)
 
     def __init__(self, parent, on_error=None):
@@ -672,7 +677,7 @@ class TaskThread(QThread):
 
     def run(self):
         while True:
-            task = self.tasks.get()
+            task = self.tasks.get()  # type: TaskThread.Task
             if not task:
                 break
             try:
