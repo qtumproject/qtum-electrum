@@ -30,11 +30,10 @@ import pkgutil
 import time
 import threading
 
-from .util import print_error
 from .i18n import _
-from .util import profiler, PrintError, DaemonThread, UserCancelled, ThreadJob
-from . import bip32
-from . import plugins
+from .util import print_error, profiler, PrintError, DaemonThread, UserCancelled, ThreadJob
+from . import bip32, plugins
+from .simple_config import SimpleConfig
 
 plugin_loaders = {}
 hook_names = set()
@@ -45,7 +44,7 @@ class Plugins(DaemonThread):
     verbosity_filter = 'p'
 
     @profiler
-    def __init__(self, config, is_local, gui_name):
+    def __init__(self, config: SimpleConfig, gui_name):
         DaemonThread.__init__(self)
         self.pkgpath = os.path.dirname(plugins.__file__)
         self.config = config
