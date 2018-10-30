@@ -4,7 +4,7 @@
 
 from setuptools import setup, find_packages
 import argparse
-import imp
+import importlib.util
 import os
 import platform
 import sys
@@ -15,7 +15,10 @@ with open('./requirements.txt') as f:
 
 requirements += ['eth-hash', 'eth-utils', 'eth-abi']
 
-version = imp.load_source('version', 'qtum_electrum/version.py')
+# load version.py; needlessly complicated alternative to "imp.load_source":
+version_spec = importlib.util.spec_from_file_location('version', 'qtum_electrum/version.py')
+version_module = version = importlib.util.module_from_spec(version_spec)
+version_spec.loader.exec_module(version_module)
 
 if sys.version_info[:3] < (3, 4, 0):
     sys.exit("Error: Electrum requires Python version >= 3.4.0...")
