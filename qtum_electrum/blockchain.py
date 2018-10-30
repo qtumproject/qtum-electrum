@@ -25,6 +25,7 @@ import threading
 import sqlite3
 from . import util
 from .qtum import *
+from .util import print_error
 
 
 blockchains = {}
@@ -236,7 +237,7 @@ class Blockchain(util.PrintError):
         parent.update_size()
         self.swaping.clear()
         parent.swaping.clear()
-        print_error('swap finished')
+        self.print_error('swap finished')
         parent.swap_with_parent()
 
     def write(self, raw_header, height):
