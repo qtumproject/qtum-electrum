@@ -3147,16 +3147,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         splitter.setOrientation(Qt.Vertical)
         return splitter
 
-    def set_token(self, token):
-        """
-        :type token: Token
-        :return:
-        """
+    def set_token(self, token: Token):
         self.wallet.add_token(token)
         self.token_balance_list.update()
         self.token_hist_list.update()
 
-    def delete_token(self, key):
+    def delete_token(self, key: str):
         if not self.question(_("Remove {} from your list of tokens?".format(
                 self.tokens[key].name))):
             return False
@@ -3168,17 +3164,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         d = TokenAddDialog(self)
         d.show()
 
-    def token_view_dialog(self, token):
-        """
-        :type token: Token
-        """
+    def token_view_dialog(self, token: Token):
         d = TokenInfoDialog(self, token)
         d.show()
 
-    def token_send_dialog(self, token):
-        """
-        :type token: Token
-        """
+    def token_send_dialog(self, token: Token):
         d = TokenSendDialog(self, token)
         d.show()
 
@@ -3251,14 +3241,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         self.sign_tx_with_password(tx, sign_done, password)
 
-    def set_smart_contract(self, name, address, interface):
-        """
-        :type name: str
-        :type address: str
-        :type interface: list
-        :type _type: str
-        :return: bool
-        """
+    def set_smart_contract(self, name: str, address: str, interface: list) -> bool:
         if not is_hash160(address):
             self.show_error(_('Invalid Address'))
             self.smart_contract_list.update()
