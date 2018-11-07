@@ -22,7 +22,7 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-from typing import NamedTuple, Any, Union
+from typing import NamedTuple, Any, Union, TYPE_CHECKING, Optional
 import traceback
 import sys
 import os
@@ -34,6 +34,11 @@ from .i18n import _
 from .util import print_error, profiler, PrintError, DaemonThread, UserCancelled, ThreadJob
 from . import bip32, plugins
 from .simple_config import SimpleConfig
+
+
+if TYPE_CHECKING:
+    from .plugins.hw_wallet import HW_PluginBase
+
 
 plugin_loaders = {}
 hook_names = set()
@@ -149,11 +154,17 @@ class Plugins(DaemonThread):
                 try:
                     p = self.get_plugin(name)
                     if p.is_enabled():
-                        out.append([name, details[2], p])
-                except:
+                        out.append(HardwarePluginToScan(name=name,
+                                                        description=details[2],
+                                                        plugin=p,
+                                                        exception=None))
+                except Exception as e:
                     traceback.print_exc()
                     self.print_error("cannot load plugin for:", name)
-        return out
+                    out.append(HardwarePluginToScan(name=name,
+                                                    description=details[2],
+                                                    plugin=None,
+                                                    exception=e))
 
     def register_wallet_type(self, name, gui_good, wallet_type):
         from .wallet import register_wallet_type, register_constructor
@@ -279,6 +290,13 @@ class DeviceInfo(NamedTuple):
     device: Device
     label: str
     initialized: bool
+
+
+class HardwarePluginToScan(NamedTuple):
+    name: str
+    description: str
+    plugin: Optional['HW_PluginBase']
+    exception: Optional[Exception]
 
 
 class DeviceMgr(ThreadJob, PrintError):
