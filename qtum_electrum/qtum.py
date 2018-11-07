@@ -290,25 +290,31 @@ def script_to_address(script, *, net=None):
     return addr
 
 
-def address_to_script(addr):
-    witver, witprog = segwit_addr.decode(constants.net.SEGWIT_HRP, addr)
+def address_to_script(addr: str, *, net=None) -> str:
+    if net is None:
+        net = constants.net
+    if not is_address(addr, net=net):
+        raise QtumException(f"invalid qtum address: {addr}")
+
+    witver, witprog = segwit_addr.decode(net.SEGWIT_HRP, addr)
     if witprog is not None:
-        assert (0 <= witver <= 16)
+        if not (0 <= witver <= 16):
+            raise QtumException(f'impossible witness version: {witver}')
         OP_n = witver + 0x50 if witver > 0 else 0
         script = bh2u(bytes([OP_n]))
         script += push_script(bh2u(bytes(witprog)))
         return script
     addrtype, hash_160_ = b58_address_to_hash160(addr)
-    if addrtype == constants.net.ADDRTYPE_P2PKH:
+    if addrtype == net.ADDRTYPE_P2PKH:
         script = '76a9'                                      # op_dup, op_hash_160
         script += push_script(bh2u(hash_160_))
         script += '88ac'                                     # op_equalverify, op_checksig
-    elif addrtype == constants.net.ADDRTYPE_P2SH:
+    elif addrtype == net.ADDRTYPE_P2SH:
         script = 'a9'                                        # op_hash_160
         script += push_script(bh2u(hash_160_))
         script += '87'                                       # op_equal
     else:
-        raise Exception('unknown address type')
+        raise QtumException(f'unknown address type: {addrtype}')
     return script
 
 def address_to_scripthash(addr):
@@ -489,27 +495,29 @@ def address_from_private_key(sec):
     return address
 
 
-def is_segwit_address(addr):
+def is_segwit_address(addr, *, net=None):
+    if net is None: net = constants.net
     try:
-        witver, witprog = segwit_addr.decode(constants.net.SEGWIT_HRP, addr)
-        return witprog is not None
-    except (BaseException,) as e:
+        witver, witprog = segwit_addr.decode(net.SEGWIT_HRP, addr)
+    except Exception as e:
         return False
+    return witprog is not None
 
 
-def is_b58_address(addr):
+def is_b58_address(addr, *, net=None):
+    if net is None: net = constants.net
     try:
         addrtype, h = b58_address_to_hash160(addr)
     except Exception as e:
         return False
-    if addrtype not in [constants.net.ADDRTYPE_P2PKH, constants.net.ADDRTYPE_P2SH]:
+    if addrtype not in [net.ADDRTYPE_P2PKH, net.ADDRTYPE_P2SH]:
         return False
     return addr == hash160_to_b58_address(h, addrtype)
 
-
-def is_address(addr):
-    return is_segwit_address(addr) or is_b58_address(addr)
-
+def is_address(addr, *, net=None):
+    if net is None: net = constants.net
+    return is_segwit_address(addr, net=net) \
+           or is_b58_address(addr, net=net)
 
 def is_p2pkh(addr):
     if is_address(addr):
