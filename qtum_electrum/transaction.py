@@ -1056,13 +1056,13 @@ class Transaction:
         # 8 byte value + 1 byte script len + script
         return 9 + len(script) // 2
 
-    def serialize_output(self, output):
+    def serialize_output(self, output: TxOutput) -> str:
         # qtum
-        output_type, data, amount = output
+        output_type = output.type
         if output_type == TYPE_STAKE:
             output_type = TYPE_SCRIPT
-        s = int_to_hex(amount, 8)
-        script = self.pay_script(output_type, addr=data)
+        s = int_to_hex(output.value, 8)
+        script = self.pay_script(output_type, addr=output.address)
         s += var_int(len(script)//2)
         s += script
         return s
