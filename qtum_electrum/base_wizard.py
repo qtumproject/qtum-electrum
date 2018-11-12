@@ -26,6 +26,7 @@
 import os
 import sys
 import traceback
+from typing import List, TYPE_CHECKING, Tuple
 
 from . import bitcoin
 from . import keystore
@@ -35,6 +36,9 @@ from .keystore import bip44_derivation, purpose48_derivation
 from .wallet import Imported_Wallet, Standard_Wallet, Multisig_Wallet, Mobile_Wallet, wallet_types, Qt_Core_Wallet
 from .storage import STO_EV_USER_PW, STO_EV_XPUB_PW, get_derivation_used_for_hw_device_encryption
 from .util import UserCancelled, InvalidPassword
+
+if TYPE_CHECKING:
+    from .plugin import DeviceInfo
 
 # hardware device setup purpose
 HWD_SETUP_NEW_WALLET, HWD_SETUP_DECRYPT_WALLET = range(0, 2)
@@ -224,7 +228,7 @@ class BaseWizard(object):
         # check available plugins
         supported_plugins = self.plugins.get_hardware_support()
         # scan devices
-        devices = []
+        devices = []  # type: List[Tuple[str, DeviceInfo]]
         devmgr = self.plugins.device_manager
         try:
             scanned_devices = devmgr.scan_devices()
@@ -248,6 +252,7 @@ class BaseWizard(object):
                     # FIXME: side-effect: unpaired_device_info sets client.handler
                     u = devmgr.unpaired_device_infos(None, plugin, devices=scanned_devices)
                 except BaseException as e:
+                    traceback.print_exc()
                     devmgr.print_error(f'error getting device infos for {name}: {e}')
                     indented_error_msg = '    '.join([''] + str(e).splitlines(keepends=True))
                     debug_msg += f'  {name}: (error getting device infos)\n{indented_error_msg}\n'
@@ -271,8 +276,9 @@ class BaseWizard(object):
         choices = []
         for name, info in devices:
             state = _("initialized") if info.initialized else _("wiped")
-            label = info.label or _("An unnamed %s")%name
-            descr = "%s [%s, %s]" % (label, name, state)
+            label = info.label or _("An unnamed {}").format(name)
+            descr = f"{label} [{name}, {state}]"
+            # TODO maybe expose info.device.path (mainly for transport type)
             choices.append(((name, info), descr))
         msg = _('Select a device') + ':'
         self.choice_dialog(title=title, message=msg, choices=choices,
