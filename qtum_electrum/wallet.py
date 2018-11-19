@@ -40,7 +40,7 @@ from .qtum import (TYPE_ADDRESS, TYPE_STAKE, is_address, is_minikey,
                    RECOMMEND_CONFIRMATIONS, COINBASE_MATURITY, TYPE_PUBKEY, b58_address_to_hash160,
                    FEERATE_MAX_DYNAMIC, FEERATE_DEFAULT_RELAY)
 from .version import *
-from .crypto import Hash
+from .crypto import sha256d
 from .keystore import load_keystore, Hardware_KeyStore
 from .storage import multisig_type, STO_EV_PLAINTEXT, STO_EV_USER_PW, STO_EV_XPUB_PW
 from .plugin import run_hook
@@ -860,7 +860,7 @@ class Abstract_Wallet(AddressSynchronizer):
 
     def make_payment_request(self, addr, amount, message, expiration):
         timestamp = int(time.time())
-        _id = bh2u(Hash(addr + "%d"%timestamp))[0:10]
+        _id = bh2u(sha256d(addr + "%d"%timestamp))[0:10]
         r = {'time':timestamp, 'amount':amount, 'exp':expiration, 'address':addr, 'memo':message, 'id':_id}
         return r
 

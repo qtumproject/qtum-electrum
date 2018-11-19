@@ -21,7 +21,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from typing import Sequence, Optional
-from .crypto import Hash
+from .crypto import sha256d
 from .util import ThreadJob, bh2u, VerifiedTxInfo
 from .bitcoin import hash_decode, hash_encode
 from .transaction import Transaction
@@ -121,7 +121,7 @@ class SPV(ThreadJob):
             raise MerkleVerificationFailure(e)
 
         for i, item in enumerate(merkle_branch_bytes):
-            h = Hash(item + h) if ((leaf_pos_in_tree >> i) & 1) else Hash(h + item)
+            h = sha256d(item + h) if ((leaf_pos_in_tree >> i) & 1) else sha256d(h + item)
             cls._raise_if_valid_tx(bh2u(h))
         return hash_encode(h)
 

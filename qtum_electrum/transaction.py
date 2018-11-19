@@ -34,7 +34,7 @@ from .qtum import (TYPE_ADDRESS, TYPE_PUBKEY, TYPE_SCRIPT, TYPE_STAKE, hash_160,
                    hash_encode, var_int, TOTAL_COIN_SUPPLY_LIMIT_IN_BTC, COIN,
                    push_script, int_to_hex, b58_address_to_hash160)
 
-from .crypto import Hash
+from .crypto import sha256d
 from .keystore import xpubkey_to_address, xpubkey_to_pubkey
 
 NO_SIGNATURE = 'ff'
@@ -743,7 +743,7 @@ class Transaction:
             sig = signatures[i]
             if sig in txin.get('signatures'):
                 continue
-            pre_hash = Hash(bfh(self.serialize_preimage(i)))
+            pre_hash = sha256d(bfh(self.serialize_preimage(i)))
             sig_string = ecc.sig_string_from_der_sig(bfh(sig[:-2]))
             for recid in range(4):
                 try:
@@ -1055,13 +1055,14 @@ class Transaction:
         # 8 byte value + 1 byte script len + script
         return 9 + len(script) // 2
 
-    def serialize_output(self, output: TxOutput) -> str:
+    @classmethod
+    def serialize_output(cls, output: TxOutput) -> str:
         # qtum
         output_type = output.type
         if output_type == TYPE_STAKE:
             output_type = TYPE_SCRIPT
         s = int_to_hex(output.value, 8)
-        script = self.pay_script(output_type, addr=output.address)
+        script = cls.pay_script(output_type, addr=output.address)
         s += var_int(len(script)//2)
         s += script
         return s
@@ -1075,9 +1076,9 @@ class Transaction:
         txin = inputs[i]
         # TODO: py3 hex
         if self.is_segwit_input(txin):
-            hashPrevouts = bh2u(Hash(bfh(''.join(self.serialize_outpoint(txin) for txin in inputs))))
-            hashSequence = bh2u(Hash(bfh(''.join(int_to_hex(txin.get('sequence', 0xffffffff - 1), 4) for txin in inputs))))
-            hashOutputs = bh2u(Hash(bfh(''.join(self.serialize_output(o) for o in outputs))))
+            hashPrevouts = bh2u(sha256d(bfh(''.join(self.serialize_outpoint(txin) for txin in inputs))))
+            hashSequence = bh2u(sha256d(bfh(''.join(int_to_hex(txin.get('sequence', 0xffffffff - 1), 4) for txin in inputs))))
+            hashOutputs = bh2u(sha256d(bfh(''.join(self.serialize_output(o) for o in outputs))))
             outpoint = self.serialize_outpoint(txin)
             preimage_script = self.get_preimage_script(txin)
             scriptCode = var_int(len(preimage_script) // 2) + preimage_script
@@ -1131,14 +1132,14 @@ class Transaction:
         if not all_segwit and not self.is_complete():
             return None
         ser = self.serialize_to_network(witness=False)
-        return bh2u(Hash(bfh(ser))[::-1])
+        return bh2u(sha256d(bfh(ser))[::-1])
 
     def wtxid(self):
         self.deserialize()
         if not self.is_complete():
             return None
         ser = self.serialize_to_network(witness=True)
-        return bh2u(Hash(bfh(ser))[::-1])
+        return bh2u(sha256d(bfh(ser))[::-1])
 
     def add_inputs(self, inputs):
         self._inputs.extend(inputs)
@@ -1249,7 +1250,7 @@ class Transaction:
         self.raw = self.serialize()
 
     def sign_txin(self, txin_index, privkey_bytes) -> str:
-        pre_hash = Hash(bfh(self.serialize_preimage(txin_index)))
+        pre_hash = sha256d(bfh(self.serialize_preimage(txin_index)))
         privkey = ecc.ECPrivkey(privkey_bytes)
         sig = privkey.sign_transaction(pre_hash)
         sig = bh2u(sig) + '01'

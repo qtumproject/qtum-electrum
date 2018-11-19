@@ -379,8 +379,7 @@ def assert_str(*args):
         assert isinstance(x, str)
 
 
-
-def to_string(x, enc):
+def to_string(x, enc) -> str:
     if isinstance(x, (bytes, bytearray)):
         return x.decode(enc)
     if isinstance(x, str):
@@ -388,7 +387,8 @@ def to_string(x, enc):
     else:
         raise TypeError("Not a string or bytes like object")
 
-def to_bytes(something, encoding='utf8'):
+
+def to_bytes(something, encoding='utf8') -> bytes:
     """
     cast string to bytes() like object, but for python2 support it's bytearray copy
     """
@@ -406,7 +406,7 @@ bfh = bytes.fromhex
 hfu = binascii.hexlify
 
 
-def bh2u(x):
+def bh2u(x: bytes) -> str:
     """
     str with hex representation of a bytes-like object
     >>> x = bytes((1, 2, 10))

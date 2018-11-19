@@ -34,7 +34,7 @@ from .bip32 import (bip32_public_derivation, deserialize_xpub, CKD_pub,
                     bip32_private_key, bip32_derivation, BIP32_PRIME,
                     is_xpub, is_xprv, CKD_priv)
 from .ecc import string_to_number, number_to_string
-from .crypto import pw_decode, pw_encode, Hash
+from .crypto import pw_decode, pw_encode, sha256d
 from .util import (PrintError, InvalidPassword, hfu, WalletFileException,
                    QtumException, bh2u, bfh, print_error, inv_dict)
 from .mnemonic import Mnemonic, load_wordlist
@@ -474,7 +474,7 @@ class Old_KeyStore(Deterministic_KeyStore):
 
     @classmethod
     def get_sequence(self, mpk, for_change, n):
-        return string_to_number(Hash(("%d:%d:"%(n, for_change)).encode('ascii') + bfh(mpk)))
+        return string_to_number(sha256d(("%d:%d:"%(n, for_change)).encode('ascii') + bfh(mpk)))
 
 
     @classmethod

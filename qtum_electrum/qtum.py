@@ -14,7 +14,7 @@ from . import version
 from . import constants
 from . import segwit_addr
 from . import ecc
-from .crypto import Hash, sha256, hash_160
+from .crypto import sha256d, sha256, hash_160
 
 TOKEN_TRANSFER_TOPIC = 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
 
@@ -212,7 +212,7 @@ is_seed = lambda x: bool(seed_type(x))
 def hash160_to_b58_address(h160: bytes, addrtype, witness_program_version=1):
     s = bytes([addrtype])
     s += h160
-    return base_encode(s+Hash(s)[0:4], base=58)
+    return base_encode(s+sha256d(s)[0:4], base=58)
 
 
 def b58_address_to_hash160(addr):
@@ -405,7 +405,7 @@ class InvalidChecksum(Exception):
     pass
 
 def EncodeBase58Check(vchIn):
-    hash = Hash(vchIn)
+    hash = sha256d(vchIn)
     return base_encode(vchIn + hash[0:4], base=58)
 
 
@@ -413,7 +413,7 @@ def DecodeBase58Check(psz):
     vchRet = base_decode(psz, None, base=58)
     key = vchRet[0:-4]
     csum = vchRet[-4:]
-    hash = Hash(key)
+    hash = sha256d(key)
     cs32 = hash[0:4]
     if cs32 != csum:
         raise InvalidChecksum('expected {}, actual {}'.format(bh2u(cs32), bh2u(csum)))
@@ -641,7 +641,7 @@ def hash_header(header):
         return '0' * 64
     if header.get('prev_block_hash') is None:
         header['prev_block_hash'] = '00' * 32
-    return hash_encode(Hash(bfh(serialize_header(header))))
+    return hash_encode(sha256d(bfh(serialize_header(header))))
 
 
 def serialize_header(res):
