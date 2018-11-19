@@ -262,6 +262,8 @@ class Interface(util.PrintError):
     - Member variable server.
     """
 
+    verbosity_filter = 'i'
+
     def __init__(self, server, socket):
         self.server = server
         self.host, _, _ = server.rsplit(':', 2)
