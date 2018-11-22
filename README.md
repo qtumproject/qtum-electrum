@@ -43,6 +43,10 @@ Check out the code from Github:
 
 Install dependencies::
 
+    sudo apt-get install libusb-1.0-0-dev libudev-dev
+    on osx:
+        brew install libusb
+        
     pip3 install -r requirements.txt
     pip3 install -r requirements-binaries.txt
     pip3 install -r requirements-fixed.txt
