@@ -3,6 +3,8 @@ app.fil
 *.pyc
 *.swp
 build/
+contrib/.DS_Store
+.DS_Store
 dist/
 *.egg/
 .eggs/
@@ -25,3 +27,4 @@ lib/paymentrequest_pb2.py
 .pytest_cache/
 contrib/build-osx/*.dylib
 qtum-electrum-data/
+
