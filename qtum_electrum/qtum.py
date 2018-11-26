@@ -663,7 +663,7 @@ def serialize_header(res):
 
 
 def deserialize_header(s, height):
-    hex_to_int = lambda s: int('0x' + bh2u(s[::-1]), 16)
+    hex_to_int = lambda s: int.from_bytes(s, byteorder='little')
     deserializer = Deserializer(s, start=BASIC_HEADER_SIZE)
     sig_length = deserializer.read_varint()
     h = {
@@ -710,7 +710,7 @@ def compact_from_uint256(target):
     c = ("%064x" % target)[2:]
     while c[:2] == '00' and len(c) > 6:
         c = c[2:]
-    bitsN, bitsBase = len(c) // 2, int('0x' + c[:6], 16)
+    bitsN, bitsBase = len(c) // 2, int.from_bytes(bfh(c[:6]), byteorder='big')
     if bitsBase >= 0x800000:
         bitsN += 1
         bitsBase >>= 8

@@ -343,8 +343,9 @@ class Blockchain(util.PrintError):
             # todo
             # 需要拿到value，计算新的target
         else:
-            if int('0x' + _hash, 16) > target:
-                raise Exception("insufficient proof of work: %s vs target %s" % (int('0x' + _hash, 16), target))
+            block_hash_as_num = int.from_bytes(bfh(_hash), byteorder='big')
+            if block_hash_as_num > target:
+                raise Exception(f"insufficient proof of work: {block_hash_as_num} vs target {target}")
 
     def check_header(self, header):
         header_hash = hash_header(header)
