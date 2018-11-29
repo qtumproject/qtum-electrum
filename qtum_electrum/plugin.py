@@ -52,6 +52,7 @@ class Plugins(DaemonThread):
     @profiler
     def __init__(self, config: SimpleConfig, gui_name):
         DaemonThread.__init__(self)
+        self.setName('Plugins')
         self.pkgpath = os.path.dirname(plugins.__file__)
         self.config = config
         self.hw_wallets = {}
@@ -65,16 +66,10 @@ class Plugins(DaemonThread):
 
     def load_plugins(self):
         for loader, name, ispkg in pkgutil.iter_modules([self.pkgpath]):
-            full_name = f'qtum_electrum.plugins.{name}'
-            spec = importlib.util.find_spec(full_name)
-            if spec is None:  # pkgutil found it but importlib can't ?!
-                raise Exception(f"Error pre-loading {full_name}: no spec")
-            try:
-                module = importlib.util.module_from_spec(spec)
-                spec.loader.exec_module(module)
-            except Exception as e:
-                raise Exception(f"Error pre-loading {full_name}: {repr(e)}") from e
-            d = module.__dict__
+            if name in ['plot', 'exchange_rate']:
+                continue
+            m = loader.find_module(name).load_module(name)
+            d = m.__dict__
             gui_good = self.gui_name in d.get('available_for', [])
             if not gui_good:
                 continue
@@ -102,14 +97,13 @@ class Plugins(DaemonThread):
         if name in self.plugins:
             return self.plugins[name]
         full_name = f'qtum_electrum.plugins.{name}.{self.gui_name}'
-        spec = importlib.util.find_spec(full_name)
-        if spec is None:
+        loader = pkgutil.find_loader(full_name)
+        if not loader:
             raise RuntimeError("%s implementation for %s plugin not found"
                                % (self.gui_name, name))
         try:
-            module = importlib.util.module_from_spec(spec)
-            spec.loader.exec_module(module)
-            plugin = module.Plugin(self, self.config, name)
+            p = loader.load_module()
+            plugin = p.Plugin(self, self.config, name)
         except Exception as e:
             raise Exception(f"Error loading {name} plugin: {repr(e)}") from e
         self.add_jobs(plugin.thread_jobs())
