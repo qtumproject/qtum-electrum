@@ -165,6 +165,7 @@ class Plugins(DaemonThread):
                                                     description=details[2],
                                                     plugin=None,
                                                     exception=e))
+        return out
 
     def register_wallet_type(self, name, gui_good, wallet_type):
         from .wallet import register_wallet_type, register_constructor
