@@ -56,7 +56,7 @@ class PasswordLayout(object):
 
     titles = [_("Enter Password"), _("Change Password"), _("Enter Passphrase")]
 
-    def __init__(self, wallet, msg, kind, OK_button, force_disable_encrypt_cb=False):
+    def __init__(self, msg, kind, OK_button, wallet=None, force_disable_encrypt_cb=False):
         self.wallet = wallet
 
         self.pw = QLineEdit()
@@ -165,11 +165,8 @@ class PasswordLayout(object):
 
 class PasswordLayoutForHW(object):
 
-    def __init__(self, wallet, msg, kind, OK_button):
+    def __init__(self, msg, wallet=None):
         self.wallet = wallet
-
-        self.kind = kind
-        self.OK_button = OK_button
 
         vbox = QVBoxLayout()
         label = QLabel(msg + "\n")
@@ -251,7 +248,10 @@ class ChangePasswordDialogForSW(ChangePasswordDialogBase):
                 msg = _('Your wallet is password protected and encrypted.')
             msg += ' ' + _('Use this dialog to change your password.')
         self.playout = PasswordLayout(
-            wallet, msg, PW_CHANGE, OK_button,
+            msg=msg,
+            kind=PW_CHANGE,
+            OK_button=OK_button,
+            wallet=wallet,
             force_disable_encrypt_cb=not wallet.can_have_keystore_encryption())
 
     def run(self):
@@ -272,7 +272,7 @@ class ChangePasswordDialogForHW(ChangePasswordDialogBase):
             msg = _('Your wallet file is encrypted.')
         msg += '\n' + _('Note: If you enable this setting, you will need your hardware device to open your wallet.')
         msg += '\n' + _('Use this dialog to toggle encryption.')
-        self.playout = PasswordLayoutForHW(wallet, msg, PW_CHANGE, OK_button)
+        self.playout = PasswordLayoutForHW(msg)
 
     def run(self):
         if not self.exec_():
