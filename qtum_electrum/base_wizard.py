@@ -182,19 +182,24 @@ class BaseWizard(object):
         # will be reflected on self.storage
         if keystore.is_address_list(text):
             w = Imported_Wallet(self.storage)
-            for x in text.split():
-                w.import_address(x)
+            addresses = text.split()
+            good_inputs, bad_inputs = w.import_addresses(addresses)
         elif keystore.is_private_key_list(text):
             k = keystore.Imported_KeyStore({})
             self.storage.put('keystore', k.dump())
             w = Imported_Wallet(self.storage)
-            for x in keystore.get_private_keys(text):
-                w.import_private_key(x, None)
+            keys = keystore.get_private_keys(text)
+            good_inputs, bad_inputs = w.import_private_keys(keys, None, write_to_disk=False)
             self.keystores.append(w.keystore)
         else:
             return self.terminate()
+        if bad_inputs:
+            msg = "\n".join(f"{key[:10]}... ({msg})" for key, msg in bad_inputs[:10])
+            if len(bad_inputs) > 10: msg += '\n...'
+            self.show_error(_("The following inputs could not be imported")
+                            + f' ({len(bad_inputs)}):\n' + msg)
+        # FIXME what if len(good_inputs) == 0 ?
         return self.run('create_wallet')
-
 
     def restore_from_key(self):
         if self.wallet_type == 'qtcore':
@@ -530,7 +535,7 @@ class BaseWizard(object):
 
     def on_password(self, password, *, encrypt_storage,
                     storage_enc_version=STO_EV_USER_PW, encrypt_keystore):
-
+        assert not self.storage.file_exists(), "file was created too soon! plaintext keys might have been written to disk"
         self.storage.set_keystore_encryption(bool(password) and encrypt_keystore)
 
         if encrypt_storage:

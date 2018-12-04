@@ -32,13 +32,14 @@ import time
 import copy
 import errno
 import json
+from typing import List, Tuple, Optional
 
 from .i18n import _
 from .util import NotEnoughFunds, UserCancelled, profiler, format_satoshis, \
     InvalidPassword, WalletFileException, TimeoutException, format_time, bh2u
 from .qtum import (TYPE_ADDRESS, TYPE_STAKE, is_address, is_minikey,
                    RECOMMEND_CONFIRMATIONS, COINBASE_MATURITY, TYPE_PUBKEY, b58_address_to_hash160,
-                   FEERATE_MAX_DYNAMIC, FEERATE_DEFAULT_RELAY)
+                   FEERATE_MAX_DYNAMIC, FEERATE_DEFAULT_RELAY, QtumException)
 from .version import *
 from .crypto import sha256d
 from .keystore import load_keystore, Hardware_KeyStore
@@ -1099,16 +1100,29 @@ class Imported_Wallet(Simple_Wallet):
     def get_change_addresses(self):
         return []
 
-    def import_address(self, address):
-        if not bitcoin.is_address(address):
-            return ''
-        if address in self.addresses:
-            return ''
-        self.addresses[address] = {}
-        self.add_address(address)
+    def import_addresses(self, addresses: List[str]) -> Tuple[List[str], List[Tuple[str, str]]]:
+        good_addr = []  # type: List[str]
+        bad_addr = []  # type: List[Tuple[str, str]]
+        for address in addresses:
+            if not bitcoin.is_address(address):
+                bad_addr.append((address, _('invalid address')))
+                continue
+            if address in self.addresses:
+                bad_addr.append((address, _('address already in wallet')))
+                continue
+            good_addr.append(address)
+            self.addresses[address] = {}
+            self.add_address(address)
         self.save_addresses()
         self.save_transactions(write=True)
-        return address
+        return good_addr, bad_addr
+
+    def import_address(self, address: str) -> str:
+        good_addr, bad_addr = self.import_addresses([address])
+        if good_addr and good_addr[0] == address:
+            return address
+        else:
+            raise QtumException(str(bad_addr[0][1]))
 
     def delete_address(self, address):
         if address not in self.addresses:
@@ -1165,28 +1179,34 @@ class Imported_Wallet(Simple_Wallet):
     def get_public_key(self, address):
         return self.addresses[address].get('pubkey')
 
-    def import_private_key(self, sec, pw, redeem_script=None):
-        try:
-            txin_type, pubkey = self.keystore.import_privkey(sec, pw)
-        except Exception:
-            neutered_privkey = str(sec)[:3] + '..' + str(sec)[-2:]
-            raise Exception('Invalid private key', neutered_privkey)
-        if txin_type in ['p2pkh', 'p2wpkh', 'p2wpkh-p2sh']:
-            if redeem_script is not None:
-                raise Exception('Cannot use redeem script with', txin_type)
+    def import_private_keys(self, keys: List[str], password: Optional[str],
+                            write_to_disk=True) -> Tuple[List[str], List[Tuple[str, str]]]:
+        good_addr = []  # type: List[str]
+        bad_keys = []  # type: List[Tuple[str, str]]
+        for key in keys:
+            try:
+                txin_type, pubkey = self.keystore.import_privkey(key, password)
+            except Exception:
+                bad_keys.append((key, _('invalid private key')))
+                continue
+            if txin_type not in ('p2pkh', 'p2wpkh', 'p2wpkh-p2sh'):
+                bad_keys.append((key, _('not implemented type') + f': {txin_type}'))
+                continue
             addr = bitcoin.pubkey_to_address(txin_type, pubkey)
-        elif txin_type in ['p2sh', 'p2wsh', 'p2wsh-p2sh']:
-            if redeem_script is None:
-                raise Exception('Redeem script required for', txin_type)
-            addr = bitcoin.redeem_script_to_address(txin_type, redeem_script)
-        else:
-            raise NotImplementedError(self.txin_type)
-        self.addresses[addr] = {'type': txin_type, 'pubkey': pubkey, 'redeem_script': redeem_script}
+            good_addr.append(addr)
+            self.addresses[addr] = {'type':txin_type, 'pubkey':pubkey, 'redeem_script':None}
+            self.add_address(addr)
         self.save_keystore()
-        self.add_address(addr)
         self.save_addresses()
-        self.save_transactions(write=True)
-        return addr
+        self.save_transactions(write=write_to_disk)
+        return good_addr, bad_keys
+
+    def import_private_key(self, key: str, password: Optional[str]) -> str:
+        good_addr, bad_keys = self.import_private_keys([key], password=password)
+        if good_addr:
+            return good_addr[0]
+        else:
+            raise QtumException(str(bad_keys[0][1]))
 
     def get_redeem_script(self, address):
         d = self.addresses[address]

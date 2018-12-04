@@ -39,11 +39,13 @@ from .util import bfh, bh2u, format_satoshis, json_decode, print_error
 from .import bitcoin
 from .bitcoin import is_address,  hash_160, COIN, TYPE_ADDRESS
 from .transaction import Transaction, multisig_script, TxOutput
-from .import paymentrequest
 from .paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED
-from .import contacts
+from .storage import WalletStorage
 from .plugin import run_hook
 from .i18n import _
+from . import keystore
+from .wallet import Wallet, Imported_Wallet, Abstract_Wallet
+from .mnemonic import Mnemonic
 
 known_commands = {}
 
@@ -126,17 +128,80 @@ class Commands:
         return ' '.join(sorted(known_commands.keys()))
 
     @command('')
-    def create(self, segwit=False):
+    def create(self, passphrase=None, password=None, encrypt_file=True, segwit=False):
         """Create a new wallet"""
-        raise Exception('Not a JSON-RPC command')
+        storage = WalletStorage(self.config.get_wallet_path())
+        if storage.file_exists():
+            raise Exception("Remove the existing wallet first!")
 
-    @command('wn')
-    def restore(self, text):
+        seed_type = 'segwit' if segwit else 'standard'
+        seed = Mnemonic('en').make_seed(seed_type)
+        k = keystore.from_seed(seed, passphrase)
+        storage.put('keystore', k.dump())
+        storage.put('wallet_type', 'standard')
+        wallet = Wallet(storage)
+        wallet.update_password(old_pw=None, new_pw=password, encrypt_storage=encrypt_file)
+        wallet.synchronize()
+        msg = "Please keep your seed in a safe place; if you lose it, you will not be able to restore your wallet."
+
+        wallet.storage.write()
+        return {'seed': seed, 'path': wallet.storage.path, 'msg': msg}
+
+    @command('')
+    def restore(self, text, passphrase=None, password=None, encrypt_file=True):
         """Restore a wallet from text. Text can be a seed phrase, a master
         public key, a master private key, a list of bitcoin addresses
         or bitcoin private keys. If you want to be prompted for your
         seed, type '?' or ':' (concealed) """
-        raise Exception('Not a JSON-RPC command')
+        storage = WalletStorage(self.config.get_wallet_path())
+        if storage.file_exists():
+            raise Exception("Remove the existing wallet first!")
+
+        text = text.strip()
+        if keystore.is_address_list(text):
+            wallet = Imported_Wallet(storage)
+            addresses = text.split()
+            good_inputs, bad_inputs = wallet.import_addresses(addresses)
+            # FIXME tell user about bad_inputs
+            if not good_inputs:
+                raise Exception("None of the given addresses can be imported")
+        elif keystore.is_private_key_list(text, allow_spaces_inside_key=False):
+            k = keystore.Imported_KeyStore({})
+            storage.put('keystore', k.dump())
+            wallet = Imported_Wallet(storage)
+            keys = keystore.get_private_keys(text)
+            good_inputs, bad_inputs = wallet.import_private_keys(keys, None, write_to_disk=False)
+            # FIXME tell user about bad_inputs
+            if not good_inputs:
+                raise Exception("None of the given privkeys can be imported")
+        else:
+            if keystore.is_seed(text):
+                k = keystore.from_seed(text, passphrase)
+            elif keystore.is_master_key(text):
+                k = keystore.from_master_key(text)
+            else:
+                raise Exception("Seed or key not recognized")
+            storage.put('keystore', k.dump())
+            storage.put('wallet_type', 'standard')
+            wallet = Wallet(storage)
+
+        assert not storage.file_exists(), "file was created too soon! plaintext keys might have been written to disk"
+        wallet.update_password(old_pw=None, new_pw=password, encrypt_storage=encrypt_file)
+        wallet.synchronize()
+
+        if self.network:
+            wallet.start_network(self.network)
+            print_error("Recovering wallet...")
+            wallet.wait_until_synchronized()
+            wallet.stop_threads()
+            # note: we don't wait for SPV
+            msg = "Recovery successful" if wallet.is_found() else "Found no history for this wallet"
+        else:
+            msg = ("This wallet was restored offline. It may contain more addresses than displayed. "
+                   "Start a daemon (not offline) to sync history.")
+
+        wallet.storage.write()
+        return {'path': wallet.storage.path, 'msg': msg}
 
     @command('wp')
     def password(self, password=None, new_password=None):
@@ -693,6 +758,16 @@ class Commands:
         # for the python console
         return sorted(known_commands.keys())
 
+
+def eval_bool(x: str) -> bool:
+    if x == 'false': return False
+    if x == 'true': return True
+    try:
+        return bool(ast.literal_eval(x))
+    except:
+        return bool(x)
+
+
 param_descriptions = {
     'privkey': 'Private key. Type \'?\' to get a prompt.',
     'destination': 'Bitcoin address, contact or alias',
@@ -715,6 +790,7 @@ param_descriptions = {
 command_options = {
     'password': ("-W", "Password"),
     'new_password': (None, "New Password"),
+    'encrypt_file':(None, "Whether the file on disk should be encrypted with the provided password"),
     'receiving': (None, "Show only receiving addresses"),
     'change': (None, "Show only change addresses"),
     'frozen': (None, "Show only frozen addresses"),
@@ -731,6 +807,7 @@ command_options = {
     'nbits': (None, "Number of bits of entropy"),
     'segwit': (None, "Create segwit seed"),
     'language': ("-L", "Default language for wordlist"),
+    'passphrase':  (None, "Seed extension"),
     'privkey': (None, "Private key. Set to '?' to get a prompt."),
     'unsigned': ("-u", "Do not sign transaction"),
     'rbf': (None, "Replace-by-fee transaction"),
@@ -761,6 +838,7 @@ arg_types = {
     'fee': lambda x: str(Decimal(x)) if x is not None else None,
     'amount': lambda x: str(Decimal(x)) if x != '!' else '!',
     'locktime': int,
+    'encrypt_file': eval_bool,
 }
 
 config_variables = {
@@ -846,12 +924,12 @@ def add_global_options(parser):
 def get_parser():
     # create main parser
     parser = argparse.ArgumentParser(
-        epilog="Run 'qtum_electrum help <command>' to see the help for a command")
+        epilog="Run 'run_qtum_electrum help <command>' to see the help for a command")
     add_global_options(parser)
     subparsers = parser.add_subparsers(dest='cmd', metavar='<command>')
     # gui
     parser_gui = subparsers.add_parser('gui', description="Run Electrum's Graphical User Interface.", help="Run GUI (default)")
-    parser_gui.add_argument("uri", nargs='?', default=None, help="qtum URI (or bip70 file)")
+    parser_gui.add_argument("url", nargs='?', default=None, help="qtum URI (or bip70 file)")
     parser_gui.add_argument("-g", "--gui", dest="gui", help="select graphical user interface", choices=['qt', 'kivy', 'text', 'stdio'])
     parser_gui.add_argument("-o", "--offline", action="store_true", dest="offline", default=False, help="Run offline")
     parser_gui.add_argument("-m", action="store_true", dest="hide_gui", default=False, help="hide GUI on startup")
@@ -869,12 +947,10 @@ def get_parser():
         cmd = known_commands[cmdname]
         p = subparsers.add_parser(cmdname, help=cmd.help, description=cmd.description)
         add_global_options(p)
-        if cmdname == 'restore':
-            p.add_argument("-o", "--offline", action="store_true", dest="offline", default=False, help="Run offline")
         for optname, default in zip(cmd.options, cmd.defaults):
             a, help = command_options[optname]
             b = '--' + optname
-            action = "store_true" if type(default) is bool else 'store'
+            action = "store_true" if default is False else 'store'
             args = (a, b) if a else (b,)
             if action == 'store':
                 _type = arg_types.get(optname, str)

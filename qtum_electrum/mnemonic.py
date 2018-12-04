@@ -129,6 +129,7 @@ class Mnemonic(object):
     def mnemonic_to_seed(self, mnemonic, passphrase):
         PBKDF2_ROUNDS = 2048
         mnemonic = normalize_text(mnemonic)
+        passphrase = passphrase or ''
         passphrase = normalize_text(passphrase)
         # Qtum
         return hashlib.pbkdf2_hmac('sha512', mnemonic.encode('utf-8'), b'mnemonic' + passphrase.encode('utf-8'), iterations=PBKDF2_ROUNDS)

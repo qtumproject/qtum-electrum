@@ -93,81 +93,6 @@ def prompt_password(prompt, confirm=True):
     return password
 
 
-def run_non_RPC(config):
-    cmdname = config.get('cmd')
-
-    storage = WalletStorage(config.get_wallet_path())
-    if storage.file_exists():
-        sys.exit("Error: Remove the existing wallet first!")
-
-    def password_dialog():
-        return prompt_password("Password (hit return if you do not wish to encrypt your wallet):")
-
-    if cmdname == 'restore':
-        text = config.get('text').strip()
-        passphrase = config.get('passphrase', '')
-        password = password_dialog() if keystore.is_private(text) else None
-        if keystore.is_address_list(text):
-            wallet = Imported_Wallet(storage)
-            for x in text.split():
-                wallet.import_address(x)
-        elif keystore.is_private_key_list(text):
-            k = keystore.Imported_KeyStore({})
-            storage.put('keystore', k.dump())
-            storage.put('use_encryption', bool(password))
-            wallet = Imported_Wallet(storage)
-            for x in text.split():
-                wallet.import_private_key(x, password)
-            storage.write()
-        else:
-            if keystore.is_seed(text):
-                k = keystore.from_seed(text, passphrase)
-            elif keystore.is_master_key(text):
-                k = keystore.from_master_key(text)
-            else:
-                sys.exit("Error: Seed or key not recognized")
-            if password:
-                k.update_password(None, password)
-            storage.put('keystore', k.dump())
-            storage.put('wallet_type', 'standard')
-            storage.put('use_encryption', bool(password))
-            storage.write()
-            wallet = Wallet(storage)
-        if not config.get('offline'):
-            network = Network(config)
-            network.start()
-            wallet.start_threads(network)
-            print_msg("Recovering wallet...")
-            wallet.synchronize()
-            wallet.wait_until_synchronized()
-            wallet.stop_threads()
-            # note: we don't wait for SPV
-            msg = "Recovery successful" if wallet.is_found() else "Found no history for this wallet"
-        else:
-            msg = "This wallet was restored offline. It may contain more addresses than displayed."
-        print_msg(msg)
-
-    elif cmdname == 'create':
-        password = password_dialog()
-        passphrase = config.get('passphrase', '')
-        seed_type = 'segwit' if config.get('segwit') else 'standard'
-        seed = Mnemonic('en').make_seed(seed_type)
-        k = keystore.from_seed(seed, passphrase)
-        k.update_password(None, password)
-        storage.put('keystore', k.dump())
-        storage.put('wallet_type', 'standard')
-        storage.put('use_encryption', bool(password))
-        storage.write()
-        wallet = Wallet(storage)
-        wallet.synchronize()
-        print_msg("Your wallet generation seed is:\n\"%s\"" % seed)
-        print_msg("Please keep it in a safe place; if you lose it, you will not be able to restore your wallet.")
-
-    wallet.storage.write()
-    print_msg("Wallet saved in '%s'" % wallet.storage.path)
-    sys.exit(0)
-
-
 def init_daemon(config_options):
     config = SimpleConfig(config_options)
     storage = WalletStorage(config.get_wallet_path())
@@ -235,7 +160,7 @@ def init_cmdline(config_options, server):
     else:
         password = None
 
-    config_options['password'] = password
+    config_options['password'] = config_options.get('password') or password
 
     if cmd.name == 'password':
         new_password = prompt_password('New password:')
@@ -300,7 +225,7 @@ def run_offline_command(config, config_options, plugins):
     # check password
     if cmd.requires_password and wallet.has_password():
         try:
-            seed = wallet.check_password(password)
+            wallet.check_password(password)
         except InvalidPassword:
             print_msg("Error: This password does not decode this wallet.")
             sys.exit(1)
@@ -414,11 +339,6 @@ def run():
 
     if config.get('testnet'):
         constants.set_testnet()
-
-    # run non-RPC commands separately
-    if cmdname in ['create', 'restore']:
-        run_non_RPC(config)
-        sys.exit(0)
 
     if cmdname == 'gui':
         fd, server = daemon.get_fd_or_server(config)
