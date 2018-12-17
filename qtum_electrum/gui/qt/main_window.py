@@ -2418,10 +2418,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         history = wallet.get_history()
         lines = []
         for item in history:
-            tx_hash, height, confirmations, timestamp, value, balance = item
-            if height>0:
-                if timestamp is not None:
-                    time_string = format_time(timestamp)
+            tx_hash, tx_mined_status, value, balance = item
+            if tx_mined_status.height > 0:
+                if tx_mined_status.timestamp is not None:
+                    time_string = format_time(tx_mined_status.timestamp)
                 else:
                     time_string = _("unverified")
             else:
@@ -2438,19 +2438,19 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 label = ""
 
             if is_csv:
-                lines.append([tx_hash, label, confirmations, value_string, time_string])
+                lines.append([tx_hash, label, tx_mined_status.conf, value_string, time_string])
             else:
                 lines.append({'txid':tx_hash, 'date':"%16s"%time_string, 'label':label, 'value':value_string})
 
         with open(fileName, "w+") as f:
             if is_csv:
                 transaction = csv.writer(f, lineterminator='\n')
-                transaction.writerow(["transaction_hash","label", "confirmations", "value", "timestamp"])
+                transaction.writerow(["transaction_hash", "label", "confirmations", "value", "timestamp"])
                 for line in lines:
                     transaction.writerow(line)
             else:
                 import json
-                f.write(json.dumps(lines, indent = 4))
+                f.write(json.dumps(lines, indent=4))
 
     def sweep_key_dialog(self):
         d = WindowModalDialog(self, title=_('Sweep private keys'))
