@@ -1,3 +1,7 @@
+# Release 0.18.10
+ * fix history export crash
+ * prepend server transaction_broadcast error messages with explanatory message. render error messages as plain text.
+
 # Release 0.18.9
  * fix email plugin and support sending transaction via email (thank kangtingying for contributing)
  * fix incorrect fee rate
