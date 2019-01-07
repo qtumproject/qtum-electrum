@@ -104,6 +104,10 @@ class UserCancelled(Exception):
     pass
 
 
+class UserFacingException(Exception):
+    """Exception that contains information intended to be shown to the user."""
+
+
 class Fiat(object):
     def __new__(cls, value, ccy):
         self = super(Fiat, cls).__new__(cls)

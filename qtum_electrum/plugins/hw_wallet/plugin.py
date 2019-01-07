@@ -27,7 +27,7 @@
 from qtum_electrum.plugin import BasePlugin, hook
 from qtum_electrum.i18n import _
 from qtum_electrum.qtum import is_address, TYPE_SCRIPT
-from qtum_electrum.util import bfh
+from qtum_electrum.util import bfh, versiontuple, UserFacingException
 from qtum_electrum.transaction import opcodes, TxOutput, Transaction
 
 
@@ -37,6 +37,8 @@ class HW_PluginBase(BasePlugin):
     #  class-static variables: client_class, firmware_URL, handler_class,
     #     libraries_available, libraries_URL, minimum_firmware,
     #     wallet_class, ckd_public, types, HidTransport
+
+    minimum_library = (0,)
 
     def __init__(self, parent, config, name):
         BasePlugin.__init__(self, parent, config, name)
@@ -74,6 +76,42 @@ class HW_PluginBase(BasePlugin):
             return False
         return True
 
+    def get_library_version(self) -> str:
+        """Returns the version of the 3rd party python library
+        for the hw wallet. For example '0.9.0'
+
+        Returns 'unknown' if library is found but cannot determine version.
+        Raises 'ImportError' if library is not found.
+        Raises 'LibraryFoundButUnusable' if found but there was some problem (includes version num).
+        """
+        raise NotImplementedError()
+
+    def check_libraries_available(self) -> bool:
+        def version_str(t):
+            return ".".join(str(i) for i in t)
+
+        try:
+            # this might raise ImportError or LibraryFoundButUnusable
+            library_version = self.get_library_version()
+            # if no exception so far, we might still raise LibraryFoundButUnusable
+            if (library_version == 'unknown'
+                    or versiontuple(library_version) < self.minimum_library
+                    or hasattr(self, "maximum_library") and versiontuple(library_version) >= self.maximum_library):
+                raise LibraryFoundButUnusable(library_version=library_version)
+        except ImportError:
+            return False
+        except LibraryFoundButUnusable as e:
+            library_version = e.library_version
+            max_version_str = version_str(self.maximum_library) if hasattr(self, "maximum_library") else "inf"
+            self.libraries_available_message = (
+                    _("Library version for '{}' is incompatible.").format(self.name)
+                    + '\nInstalled: {}, Needed: {} <= x < {}'
+                    .format(library_version, version_str(self.minimum_library), max_version_str))
+            self.print_stderr(self.libraries_available_message)
+            return False
+
+        return True
+
 
 def is_any_tx_output_on_change_branch(tx: Transaction):
     if not tx.output_info:
@@ -92,9 +130,9 @@ def trezor_validate_op_return_output_and_get_data(output: TxOutput) -> bytes:
     script = bfh(output.address)
     if not (script[0] == opcodes.OP_RETURN and
             script[1] == len(script) - 2 and script[1] <= 75):
-        raise Exception(_("Only OP_RETURN scripts, with one constant push, are supported."))
+        raise UserFacingException(_("Only OP_RETURN scripts, with one constant push, are supported."))
     if output.value != 0:
-        raise Exception(_("Amount for OP_RETURN output must be zero."))
+        raise UserFacingException(_("Amount for OP_RETURN output must be zero."))
     return script[2:]
 
 
@@ -105,3 +143,8 @@ def only_hook_if_libraries_available(func):
         if not self.libraries_available: return None
         return func(self, *args, **kwargs)
     return wrapper
+
+
+class LibraryFoundButUnusable(Exception):
+    def __init__(self, library_version='unknown'):
+        self.library_version = library_version

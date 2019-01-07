@@ -32,7 +32,7 @@ import threading
 import importlib.util
 
 from .i18n import _
-from .util import print_error, profiler, PrintError, DaemonThread, UserCancelled, ThreadJob
+from .util import print_error, profiler, PrintError, DaemonThread, UserCancelled, UserFacingException, ThreadJob
 from . import bip32, plugins
 from .simple_config import SimpleConfig
 
@@ -504,6 +504,8 @@ class DeviceMgr(ThreadJob, PrintError):
                 continue
             try:
                 client = self.create_client(device, handler, plugin)
+            except UserFacingException:
+                raise
             except BaseException as e:
                 self.print_error(f'failed to create client for {plugin.name} at {device.path}: {repr(e)}')
                 continue

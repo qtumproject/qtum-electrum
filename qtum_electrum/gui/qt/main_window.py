@@ -45,7 +45,7 @@ from qtum_electrum.qtum import COIN, is_address, TYPE_ADDRESS, TYPE_SCRIPT, is_h
 from qtum_electrum.plugin import run_hook
 from qtum_electrum.i18n import _
 from qtum_electrum.util import (bh2u, bfh, format_time, format_satoshis, format_fee_satoshis,PrintError, format_satoshis_plain,
-                                NotEnoughFunds, UserCancelled, profiler, export_meta, import_meta, open_browser,
+                                NotEnoughFunds, UserCancelled, UserFacingException, profiler, export_meta, import_meta, open_browser,
                                 InvalidPassword)
 from qtum_electrum import util, bitcoin, commands, coinchooser
 from qtum_electrum import paymentrequest
@@ -305,12 +305,17 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.raise_()
 
     def on_error(self, exc_info):
-        if not isinstance(exc_info[1], UserCancelled):
+        e = exc_info[1]
+        if isinstance(e, UserCancelled):
+            pass
+        elif isinstance(e, UserFacingException):
+            self.show_error(str(e))
+        else:
             try:
                 traceback.print_exception(*exc_info)
             except OSError:
-                pass
-            self.show_error(str(exc_info[1]))
+                pass  # see #4418
+            self.show_error(str(e))
 
     def on_network(self, event, *args):
         if event == 'wallet_updated':
