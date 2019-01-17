@@ -23,6 +23,7 @@
 import os
 import threading
 import sqlite3
+from typing import Optional
 from . import util
 from .qtum import *
 from .util import print_error
@@ -401,6 +402,11 @@ class Blockchain(util.PrintError):
             self.verify_header(header, prev_header, bits, target)
             pprev_header = prev_header
             prev_header = header
+
+    def header_at_tip(self) -> Optional[dict]:
+        """Return latest header."""
+        height = self.height()
+        return self.read_header(height)
 
     def get_hash(self, height):
         if height == -1:
