@@ -57,7 +57,7 @@ class BaseWizard(object):
         self.storage = storage
         self.wallet = None
         self.plugin = None
-        self.stack = []
+        self._stack = []
         self.keystores = []
         self.is_kivy = config.get('gui') == 'kivy'
         self.seed_type = None
@@ -65,7 +65,7 @@ class BaseWizard(object):
     def run(self, *args):
         action = args[0]
         args = args[1:]
-        self.stack.append((action, args))
+        self._stack.append((action, args))
         if not action:
             return
         if type(action) is tuple:
@@ -80,14 +80,17 @@ class BaseWizard(object):
             raise Exception("unknown action", action)
 
     def can_go_back(self):
-        return len(self.stack)>1
+        return len(self._stack) > 1
 
     def go_back(self):
         if not self.can_go_back():
             return
-        self.stack.pop()
-        action, args = self.stack.pop()
+        self._stack.pop()
+        action, args = self._stack.pop()
         self.run(action, *args)
+
+    def reset_stack(self):
+        self._stack = []
 
     def new(self):
         name = os.path.basename(self.storage.path)
@@ -487,7 +490,7 @@ class BaseWizard(object):
             self.keystores.append(k)
             if len(self.keystores) == 1:
                 xpub = k.get_master_public_key()
-                self.stack = []
+                self.reset_stack()
                 self.run('show_xpub_and_add_cosigners', xpub)
             elif len(self.keystores) < self.n:
                 self.run('choose_keystore')
