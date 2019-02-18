@@ -26,7 +26,7 @@
 import os
 import sys
 import traceback
-from typing import List, TYPE_CHECKING, Tuple
+from typing import List, TYPE_CHECKING, Tuple, NamedTuple, Any
 
 from . import bitcoin
 from . import keystore
@@ -46,7 +46,15 @@ HWD_SETUP_NEW_WALLET, HWD_SETUP_DECRYPT_WALLET = range(0, 2)
 
 class ScriptTypeNotSupported(Exception): pass
 
+
 class GoBack(Exception): pass
+
+
+class WizardStackItem(NamedTuple):
+    action: Any
+    args: Any
+    storage_data: dict
+
 
 class BaseWizard(object):
 
@@ -57,7 +65,7 @@ class BaseWizard(object):
         self.storage = storage
         self.wallet = None
         self.plugin = None
-        self._stack = []
+        self._stack = [] # type: List[WizardStackItem]
         self.keystores = []
         self.is_kivy = config.get('gui') == 'kivy'
         self.seed_type = None
@@ -65,7 +73,8 @@ class BaseWizard(object):
     def run(self, *args):
         action = args[0]
         args = args[1:]
-        self._stack.append((action, args))
+        storage_data = self.storage.get_all_data()
+        self._stack.append(WizardStackItem(action, args, storage_data))
         if not action:
             return
         if type(action) is tuple:
@@ -85,9 +94,15 @@ class BaseWizard(object):
     def go_back(self):
         if not self.can_go_back():
             return
+        # pop 'current' frame
         self._stack.pop()
-        action, args = self._stack.pop()
-        self.run(action, *args)
+        # pop 'previous' frame
+        stack_item = self._stack.pop()
+        # try to undo side effects since we last entered 'previous' frame
+        # FIXME only self.storage is properly restored
+        self.storage.overwrite_all_data(stack_item.storage_data)
+        # rerun 'previous' frame
+        self.run(stack_item.action, *stack_item.args)
 
     def reset_stack(self):
         self._stack = []
@@ -131,8 +146,8 @@ class BaseWizard(object):
 
     def choose_multisig(self):
         def on_multisig(m, n):
-            self.multisig_type = "%dof%d"%(m, n)
-            self.storage.put('wallet_type', self.multisig_type)
+            multisig_type = "%dof%d" % (m, n)
+            self.storage.put('wallet_type', multisig_type)
             self.n = n
             self.run('choose_keystore')
         self.multisig_dialog(run_next=on_multisig)
