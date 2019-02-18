@@ -407,7 +407,6 @@ def to_bytes(something, encoding='utf8') -> bytes:
 
 
 bfh = bytes.fromhex
-hfu = binascii.hexlify
 
 
 def bh2u(x: bytes) -> str:
@@ -419,7 +418,7 @@ def bh2u(x: bytes) -> str:
     :param x: bytes
     :rtype: str
     """
-    return hfu(x).decode('ascii')
+    return x.hex()
 
 
 def user_dir():
