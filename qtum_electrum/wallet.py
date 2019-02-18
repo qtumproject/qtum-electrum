@@ -125,7 +125,7 @@ def sweep_preparations(privkeys, network, imax=100):
     return inputs, keypairs
 
 
-def sweep(privkeys, network, config, recipient, fee=None, imax=100, *, locktime=None):
+def sweep(privkeys, network, config, recipient, fee=None, imax=100, *, locktime=None, tx_version=None):
     inputs, keypairs = sweep_preparations(privkeys, network, imax)
     total = sum(i.get('value') for i in inputs)
     if fee is None:
@@ -142,7 +142,7 @@ def sweep(privkeys, network, config, recipient, fee=None, imax=100, *, locktime=
     if locktime is None:
         locktime = get_locktime_for_new_transaction(network)
 
-    tx = Transaction.from_io(inputs, outputs, locktime=locktime)
+    tx = Transaction.from_io(inputs, outputs, locktime=locktime, version=tx_version)
     tx.BIP_LI01_sort()
     tx.set_rbf(True)
     tx.sign(keypairs)
@@ -572,9 +572,11 @@ class Abstract_Wallet(AddressSynchronizer):
         run_hook('make_unsigned_transaction', self, tx)
         return tx
 
-    def mktx(self, outputs, password, config, fee=None, change_addr=None, domain=None):
+    def mktx(self, outputs, password, config, fee=None, change_addr=None, domain=None, *, tx_version=None):
         coins = self.get_spendable_coins(domain, config)
         tx = self.make_unsigned_transaction(coins, outputs, config, fee, change_addr)
+        if tx_version is not None:
+            tx.version = tx_version
         self.sign_transaction(tx, password)
         return tx
 
