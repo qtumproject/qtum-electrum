@@ -614,6 +614,7 @@ class ButtonsWidget(QWidget):
         button.setStyleSheet("QToolButton { border: none; hover {border: 1px} pressed {border: 1px} padding: 0px; }")
         button.setVisible(True)
         button.setToolTip(tooltip)
+        button.setCursor(QCursor(Qt.PointingHandCursor))
         button.clicked.connect(on_click)
         self.buttons.append(button)
         return button
