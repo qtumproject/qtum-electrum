@@ -1,17 +1,17 @@
-from qtum_electrum.util import print_msg, print_error
+from qtum_electrum.util import print_error, print_stderr
 
 
 class CmdLineHandler:
 
     def get_passphrase(self, msg, confirm):
         import getpass
-        print_msg(msg)
+        print_stderr(msg)
         return getpass.getpass('')
 
     def get_pin(self, msg):
         t = { 'a':'7', 'b':'8', 'c':'9', 'd':'4', 'e':'5', 'f':'6', 'g':'1', 'h':'2', 'i':'3'}
-        print_msg(msg)
-        print_msg("a b c\nd e f\ng h i\n-----")
+        print_stderr(msg)
+        print_stderr("a b c\nd e f\ng h i\n-----")
         o = input()
         try:
             return ''.join(map(lambda x: t[x], o))
@@ -19,25 +19,25 @@ class CmdLineHandler:
             raise Exception("Character {} not in matrix!".format(e)) from e
 
     def show_error(self, msg, blocking=False):
-        print_msg(msg)
+        print_stderr(msg)
 
     def prompt_auth(self, msg):
         import getpass
-        print_msg(msg)
+        print_stderr(msg)
         response = getpass.getpass('')
         if len(response) == 0:
             return None
         return response
 
     def yes_no_question(self, msg):
-        print_msg(msg)
+        print_stderr(msg)
         return input() in 'yY'
 
     def stop(self):
         pass
 
     def show_message(self, msg, on_cancel):
-        print_msg(msg)
+        print_stderr(msg)
 
     def update_status(self, b):
         print_error('hw device status', b)
