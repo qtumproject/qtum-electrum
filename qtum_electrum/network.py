@@ -398,17 +398,14 @@ class Network(util.DaemonThread):
 
     @with_recent_servers_lock
     def get_servers(self):
-        out = constants.net.DEFAULT_SERVERS
-        if self.irc_servers:
-            out.update(filter_version(self.irc_servers.copy()))
-        else:
-            for s in self.recent_servers:
-                try:
-                    host, port, protocol = deserialize_server(s)
-                except:
-                    continue
-                if host not in out:
-                    out[host] = { protocol:port }
+        out = dict(constants.net.DEFAULT_SERVERS)  # copy
+        for s in self.recent_servers:
+            try:
+                host, port, protocol = deserialize_server(s)
+            except:
+                continue
+            if host not in out:
+                out[host] = {protocol: port}
         return out
 
     @with_interface_lock
