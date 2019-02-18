@@ -35,7 +35,7 @@ import zlib
 from collections import defaultdict
 
 from .util import PrintError, profiler, InvalidPassword, \
-    export_meta, import_meta, print_error, bfh, WalletFileException
+    export_meta, import_meta, print_error, bfh, WalletFileException, standardize_path
 from .plugin import run_hook, plugin_loaders
 from .keystore import bip44_derivation
 from . import ecc
@@ -75,7 +75,7 @@ class JsonDB(PrintError):
     def __init__(self, path):
         self.db_lock = threading.RLock()
         self.data = {}
-        self.path = os.path.normcase(os.path.abspath(path))
+        self.path = standardize_path(path)
         self._file_exists = self.path and os.path.exists(self.path)
         self.modified = False
 
@@ -163,7 +163,7 @@ class WalletStorage(JsonDB):
 
     def __init__(self, path):
         JsonDB.__init__(self, path)
-        self.print_error("wallet path", path)
+        self.print_error("wallet path", self.path)
         self.pubkey = None
         if self.file_exists():
             with open(self.path, "r", encoding='utf-8') as f:

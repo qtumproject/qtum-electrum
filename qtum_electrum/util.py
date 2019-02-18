@@ -363,6 +363,10 @@ def assert_file_in_datadir_available(path, config_path):
             'Should be at {}'.format(path))
 
 
+def standardize_path(path):
+    return os.path.normcase(os.path.realpath(os.path.abspath(path)))
+
+
 def assert_bytes(*args):
     """
     porting helper, assert args type
