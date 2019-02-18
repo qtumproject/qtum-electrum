@@ -410,7 +410,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.setGeometry(100, 100, 780, 400)
 
     def watching_only_changed(self):
-        title = 'Electrum for Qtum <Beta> %s  -  %s' % (self.wallet.electrum_version,
+        title = 'Electrum for Qtum %s  -  %s' % (self.wallet.electrum_version,
                                                         self.wallet.basename())
         extra = [self.wallet.storage.get('wallet_type', '?')]
         if self.wallet.is_watching_only():
