@@ -139,6 +139,8 @@ class JsonDB(PrintError):
             os.fsync(f.fileno())
 
         mode = os.stat(self.path).st_mode if self.file_exists() else stat.S_IREAD | stat.S_IWRITE
+        if not self.file_exists():
+            assert not os.path.exists(self.path)
         # perform atomic write on POSIX systems
         try:
             os.rename(temp_path, self.path)
