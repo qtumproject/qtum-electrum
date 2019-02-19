@@ -42,6 +42,5 @@ sudo apt-get install mingw-w64 autotools-dev autoconf libtool
 
 3. Make sure `/opt` is writable by the current user.
 4. Run `sudo chmod +x ./*.sh`
-5. Run `./prepare-wine.sh`
 6. Run `./build.sh`.
 7. The generated binaries are in `./dist`.
