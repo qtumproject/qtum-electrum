@@ -1,15 +1,6 @@
 #!/bin/bash
 
-RED='\033[0;31m'
-BLUE='\033[0,34m'
-NC='\033[0m' # No Color
-function info {
-	printf "\r💬 ${BLUE}INFO:${NC} ${1}\n"
-}
-function fail {
-    printf "\r🗯 ${RED}ERROR:${NC} ${1}\n"
-    exit 1
-}
+. $(dirname "$0")/../build_tools_util.sh
 
 build_dir=$(dirname "$0")
 test -n "$build_dir" -a -d "$build_dir" || exit
@@ -26,13 +17,6 @@ LIBSECP_VERSION=b408c6a8b287003d1ade5709e6f7bc3c7f1d5be7
 # export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;
 
 rm -rf ${STAGING_DIR} ${TEMP_DMG_NAME}
-
-download_if_not_exist() {
-    local file_name=$1 url=$2
-    if [ ! -e $file_name ] ; then
-        wget -O $PWD/$file_name "$url"
-    fi
-}
 
 which brew > /dev/null 2>&1 || fail "Please install brew from https://brew.sh/ to continue"
 

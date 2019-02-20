@@ -22,7 +22,7 @@ rm -rf "$BUILDDIR"
 mkdir -p "$APPDIR" "$CACHEDIR" "$DISTDIR"
 
 
-# . "$CONTRIB"/build_tools_util.sh
+. "$CONTRIB"/build_tools_util.sh
 
 
 info "downloading some dependencies."
