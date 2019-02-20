@@ -19,6 +19,7 @@ RUN apt-get update -q && \
         libudev-dev \
         gettext \
         libzbar0  \
+        libsqlite3-dev \
         && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get autoremove -y && \
