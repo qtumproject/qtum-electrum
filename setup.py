@@ -10,18 +10,22 @@ import platform
 import sys
 from setuptools import setup
 
+MIN_PYTHON_VERSION = "3.6.1"
+_min_python_version_tuple = tuple(map(int, (MIN_PYTHON_VERSION.split("."))))
+
+if sys.version_info[:3] < _min_python_version_tuple:
+    sys.exit("Error: Electrum requires Python version >= %s..." % MIN_PYTHON_VERSION)
+
 with open('./requirements.txt') as f:
     requirements = f.read().splitlines()
 
 requirements += ['eth-hash', 'eth-utils', 'eth-abi']
 
+
 # load version.py; needlessly complicated alternative to "imp.load_source":
 version_spec = importlib.util.spec_from_file_location('version', 'qtum_electrum/version.py')
 version_module = version = importlib.util.module_from_spec(version_spec)
 version_spec.loader.exec_module(version_module)
-
-if sys.version_info[:3] < (3, 4, 0):
-    sys.exit("Error: Electrum requires Python version >= 3.4.0...")
 
 data_files = []
 
@@ -46,6 +50,7 @@ if platform.system() in ['Linux', 'FreeBSD', 'DragonFly']:
 setup(
     name="Qtum Electrum",
     version=version.ELECTRUM_VERSION,
+    python_requires='>={}'.format(MIN_PYTHON_VERSION),
     install_requires=requirements,
     extras_require={
         'full': ['Cython>=0.27', 'rlp==0.6.0', 'trezor[hidapi]>=0.9.0',
@@ -72,7 +77,7 @@ setup(
             'locale/*/LC_MESSAGES/electrum.mo',
         ]
     },
-    scripts=['run_qtum_electrum'],
+    scripts=['qtum-electrum/qtum_electrum'],
     data_files=data_files,
     description="Lightweight Qtum Wallet",
     author="CodeFace",
