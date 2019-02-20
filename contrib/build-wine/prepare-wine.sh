@@ -1,9 +1,9 @@
 #!/bin/bash
 
 # Please update these carefully, some versions won't work under Wine
-NSIS_FILENAME=nsis-3.03-setup.exe
+NSIS_FILENAME=nsis-3.04-setup.exe
 NSIS_URL=https://prdownloads.sourceforge.net/nsis/$NSIS_FILENAME?download
-NSIS_SHA256=bd3b15ab62ec6b0c7a00f46022d441af03277be893326f6fea8e212dc2d77743
+NSIS_SHA256=4e1db5a7400e348b1b46a4a11b6d9557fd84368e4ad3d4bc4c1be636c89638aa
 
 ZBAR_FILENAME=zbarw-20121031-setup.exe
 ZBAR_URL=https://sourceforge.net/projects/zbarw/files/$ZBAR_FILENAME/download
@@ -46,15 +46,6 @@ for msifile in core dev exe lib pip tools; do
     wine msiexec /i "${msifile}.msi" /qb TARGETDIR=C:/python$PYTHON_VERSION
 done
 
-# upgrade pip
-$PYTHON -m pip install pip --upgrade
-
-# Install pywin32-ctypes
-$PYTHON -m pip install pywin32-ctypes==0.1.2
-
-# install PySocks
-$PYTHON -m pip install win_inet_pton==1.0.1
-
 $PYTHON -m pip install -r $here/../../requirements-binaries.txt
 
 # Install PyInstaller
@@ -64,9 +55,6 @@ $PYTHON -m pip install pyinstaller==3.4 --no-use-pep517
 download_if_not_exist $ZBAR_FILENAME "$ZBAR_URL"
 verify_hash $ZBAR_FILENAME "$ZBAR_SHA256"
 wine "$PWD/$ZBAR_FILENAME" /S
-
-# Upgrade setuptools (so Electrum can be installed later)
-$PYTHON -m pip install setuptools --upgrade
 
 # Install NSIS installer
 download_if_not_exist $NSIS_FILENAME "$NSIS_URL"

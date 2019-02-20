@@ -20,6 +20,7 @@ hiddenimports += collect_submodules('btchip')
 hiddenimports += collect_submodules('keepkeylib')
 hiddenimports += collect_submodules('websocket')
 
+
 # Add libusb binary
 binaries = [("c:/python3.6.6/libusb-1.0.dll", ".")]
 binaries += [('C:/tmp/libsecp256k1.dll', '.')]
