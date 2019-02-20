@@ -75,6 +75,7 @@ setup(
         'qtum_electrum': [
             'wordlist/*.txt',
             'locale/*/LC_MESSAGES/electrum.mo',
+            'icons/*',
         ]
     },
     scripts=['qtum-electrum/qtum_electrum'],
