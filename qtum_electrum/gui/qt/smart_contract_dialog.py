@@ -122,7 +122,7 @@ class ContractFuncLayout(QGridLayout):
         address_lb = QLabel(_("Address:"))
         self.address_e = ButtonsLineEdit()
         qr_show = lambda: dialog.parent().show_qrcode(str(self.address_e.text()), 'Address', parent=dialog)
-        self.address_e.addButton(":icons/qrcode.png", qr_show, _("Show as QR code"))
+        self.address_e.addButton("qrcode.png", qr_show, _("Show as QR code"))
         self.address_e.setText(self.contract['address'])
         self.address_e.setReadOnly(True)
         self.addWidget(address_lb, 1, 0)

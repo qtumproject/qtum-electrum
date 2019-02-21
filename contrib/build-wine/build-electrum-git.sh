@@ -54,9 +54,6 @@ cp -r ../../../qtum_electrum/locale $WINEPREFIX/drive_c/qtum-electrum/qtum_elect
 # Install frozen dependencies
 $PYTHON -m pip install -r ../../../requirements.txt
 
-# Build Qt resources
-wine $WINEPREFIX/drive_c/python$PYTHON_VERSION/Scripts/pyrcc5.exe C:/qtum-electrum/icons.qrc -o C:/qtum-electrum/qtum_electrum/gui/qt/icons_rc.py
-
 pushd $WINEPREFIX/drive_c/qtum-electrum
 $PYTHON setup.py install
 popd

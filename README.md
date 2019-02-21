@@ -51,11 +51,6 @@ Install dependencies::
     pip3 install -r requirements-binaries.txt
     pip3 install -r requirements-fixed.txt
 
-Compile the icons file for Qt:
-
-    sudo apt-get install pyqt5-dev-tools
-    pyrcc5 icons.qrc -o qtum_electrum/gui/qt/icons_rc.py
-
 Compile the protobuf description file:
 
     sudo apt-get install protobuf-compiler

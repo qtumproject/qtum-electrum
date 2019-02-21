@@ -33,7 +33,8 @@ datas = [
     (home+'qtum_electrum/wordlist/english.txt', 'qtum_electrum/wordlist'),
     (home+'qtum_electrum/locale', 'qtum_electrum/locale'),
     (home+'qtum_electrum/plugins', 'qtum_electrum/plugins'),
-    ('C:\\Program Files (x86)\\ZBar\\bin\\', '.')
+    ('C:\\Program Files (x86)\\ZBar\\bin\\', '.'),
+    (home+'qtum_electrum/gui/icons', 'qtum_electrum/gui/icons'),
 ]
 datas += collect_data_files('trezorlib')
 datas += collect_data_files('btchip')
@@ -65,6 +66,24 @@ for d in a.datas:
         a.datas.remove(d)
         break
 
+# Strip out parts of Qt that we never use. Reduces binary size by tens of MBs. see #4815
+qt_bins2remove=('qt5web', 'qt53d', 'qt5game', 'qt5designer', 'qt5quick',
+                'qt5location', 'qt5test', 'qt5xml', r'pyqt5\qt\qml\qtquick')
+print("Removing Qt binaries:", *qt_bins2remove)
+for x in a.binaries.copy():
+    for r in qt_bins2remove:
+        if x[0].lower().startswith(r):
+            a.binaries.remove(x)
+            print('----> Removed x =', x)
+
+qt_data2remove=(r'pyqt5\qt\translations\qtwebengine_locales', )
+print("Removing Qt datas:", *qt_data2remove)
+for x in a.datas.copy():
+    for r in qt_data2remove:
+        if x[0].lower().startswith(r):
+            a.datas.remove(x)
+            print('----> Removed x =', x)
+
 # hotfix for #3171 (pre-Win10 binaries)
 a.binaries = [x for x in a.binaries if not x[1].lower().startswith(r'c:\windows')]
 
@@ -81,7 +100,7 @@ exe_standalone = EXE(
       debug=False,
       strip=None,
       upx=False,
-      icon=home+'icons/electrum.ico',
+      icon=home+'qtum_electrum/gui/icons/electrum.ico',
       console=False)
       # The console True makes an annoying black box pop up, but it does make Electrum output command line commands, with this turned off no output will be given but commands can still be used
 
@@ -94,7 +113,7 @@ exe_portable = EXE(
       debug=False,
       strip=None,
       upx=False,
-      icon=home+'icons/electrum.ico',
+      icon=home+'qtum_electrum/gui/icons/electrum.ico',
       console=False)
 
 #####
@@ -109,7 +128,7 @@ exe_dependent = EXE(
     debug=False,
     strip=None,
     upx=False,
-    icon=home+'icons/electrum.ico',
+    icon=home+'qtum_electrum/gui/icons/electrum.ico',
     console=False)
 
 
@@ -121,6 +140,6 @@ coll = COLLECT(
     strip=None,
     upx=True,
     debug=False,
-    icon=home+'icons/electrum.ico',
+    icon=home+'qtum_electrum/gui/icons/electrum.ico',
     console=False,
     name=os.path.join('dist', 'electrum'))

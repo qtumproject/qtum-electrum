@@ -100,7 +100,7 @@ class TokenHistoryList(MyTreeWidget):
             balance_str += '{}'.format(amount / 10 ** token.decimals)
             tx_mined_status = TxMinedStatus(height, conf, timestamp, None)
             status, status_str = wallet.get_tx_status(txid, tx_mined_status)
-            icon = self.icon_cache.get(":icons/" + TX_ICONS[status])
+            icon = read_QIcon(TX_ICONS[status])
 
             item = QTreeWidgetItem(['', status_str, token.bind_addr, token.symbol, balance_str])
             item.setIcon(0, icon)

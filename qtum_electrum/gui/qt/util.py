@@ -4,14 +4,14 @@ import sys
 import platform
 from six.moves import queue
 from typing import NamedTuple, Callable, Optional
-from functools import partial
+from functools import partial, lru_cache
 
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
 
-from qtum_electrum.i18n import _
-from qtum_electrum.util import FileImportFailed, FileExportFailed
+from qtum_electrum.i18n import _, languages
+from qtum_electrum.util import FileImportFailed, FileExportFailed, resource_path
 from qtum_electrum.paymentrequest import PR_UNPAID, PR_PAID, PR_UNKNOWN, PR_EXPIRED
 
 if platform.system() == 'Windows':
@@ -30,9 +30,9 @@ BLACK_FG = "QWidget {color:black;}"
 dialogs = []
 
 pr_icons = {
-    PR_UNPAID:":icons/unpaid.png",
-    PR_PAID:":icons/confirmed.png",
-    PR_EXPIRED:":icons/expired.png"
+    PR_UNPAID: "unpaid.png",
+    PR_PAID: "confirmed.png",
+    PR_EXPIRED: "expired.png"
 }
 
 pr_tooltips = {
@@ -436,8 +436,6 @@ class MyTreeWidget(QTreeWidget):
         self.addChild = self.addTopLevelItem
         self.insertChild = self.insertTopLevelItem
 
-        self.icon_cache = IconCache()
-
         # Control which columns are editable
         self.editor = None
         self.pending_update = False
@@ -610,7 +608,7 @@ class ButtonsWidget(QWidget):
 
     def addButton(self, icon_name, on_click, tooltip):
         button = QToolButton(self)
-        button.setIcon(QIcon(icon_name))
+        button.setIcon(read_QIcon(icon_name))
         button.setStyleSheet("QToolButton { border: none; hover {border: 1px} pressed {border: 1px} padding: 0px; }")
         button.setVisible(True)
         button.setToolTip(tooltip)
@@ -621,7 +619,7 @@ class ButtonsWidget(QWidget):
 
     def addCopyButton(self, app):
         self.app = app
-        self.addButton(":icons/copy.png", self.on_copy, _("Copy to clipboard"))
+        self.addButton("copy.png", self.on_copy, _("Copy to clipboard"))
 
     def on_copy(self):
         self.app.clipboard().setText(self.text())
@@ -783,15 +781,18 @@ float_validator = QRegExpValidator(QRegExp('^(-?\d+)(\.\d+)?$'))
 int_validator = QIntValidator(0, 10 ** 9 - 1)
 
 
-class IconCache:
+def icon_path(icon_basename):
+    return resource_path('gui', 'icons', icon_basename)
 
-    def __init__(self):
-        self.__cache = {}
 
-    def get(self, file_name):
-        if file_name not in self.__cache:
-            self.__cache[file_name] = QIcon(file_name)
-        return self.__cache[file_name]
+@lru_cache(maxsize=1000)
+def read_QIcon(icon_basename):
+    return QIcon(icon_path(icon_basename))
+
+
+def get_default_language():
+    name = QLocale.system().name()
+    return name if name in languages else 'en_UK'
 
 
 if __name__ == "__main__":

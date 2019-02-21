@@ -439,6 +439,14 @@ def user_dir():
         return
 
 
+# absolute path to python package folder of electrum ("lib")
+pkg_dir = os.path.split(os.path.realpath(__file__))[0]
+
+
+def resource_path(*parts):
+    return os.path.join(pkg_dir, *parts)
+
+
 def format_satoshis_plain(x, decimal_point = 8):
     """Display a satoshi amount scaled.  Always uses a '.' as a decimal
     point and has no thousands separator"""

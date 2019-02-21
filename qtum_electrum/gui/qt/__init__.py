@@ -47,15 +47,7 @@ from qtum_electrum.util import (DebugMem, UserCancelled, InvalidPassword, print_
 from .installwizard import InstallWizard
 
 
-try:
-    from . import icons_rc
-except Exception as e:
-    print(e)
-    print("Error: Could not find icons file.")
-    print("Please run 'pyrcc5 icons.qrc -o gui/qt/icons_rc.py', and reinstall Qtum Electrum")
-    sys.exit(1)
-
-from .util import *   # * needed for plugins
+from .util import get_default_language, read_QIcon, Timer
 from .main_window import ElectrumWindow
 from .network_dialog import NetworkDialog
 
@@ -104,6 +96,7 @@ class ElectrumGui:
         self.efilter = OpenFileEventFilter(self.windows)
         self.app = QElectrumApplication(sys.argv)
         self.app.installEventFilter(self.efilter)
+        self.app.setWindowIcon(read_QIcon("electrum.png"))
         self.timer = Timer()
         self.nd = None
         self.network_updated_signal_obj = QNetworkUpdatedSignalObject()
@@ -137,9 +130,9 @@ class ElectrumGui:
 
     def tray_icon(self):
         if self.dark_icon:
-            return QIcon(':icons/electrum_dark_icon.png')
+            return read_QIcon('electrum_dark_icon.png')
         else:
-            return QIcon(':icons/electrum_light_icon.png')
+            return read_QIcon('electrum_light_icon.png')
 
     def toggle_tray_icon(self):
         self.dark_icon = not self.dark_icon

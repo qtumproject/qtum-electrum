@@ -44,7 +44,7 @@ if platform.system() in ['Linux', 'FreeBSD', 'DragonFly']:
             usr_share = os.path.expanduser('~/.local/share')
     data_files += [
         (os.path.join(usr_share, 'applications/'), ['qtum-electrum.desktop']),
-        (os.path.join(usr_share, icons_dirname), ['icons/electrum.png'])
+        (os.path.join(usr_share, icons_dirname), ['qtum_electrum/gui/icons/electrum.png'])
     ]
 
 setup(
@@ -75,8 +75,10 @@ setup(
         'qtum_electrum': [
             'wordlist/*.txt',
             'locale/*/LC_MESSAGES/electrum.mo',
+        ],
+        'qtum_electrum.gui': [
             'icons/*',
-        ]
+        ],
     },
     scripts=['run_qtum_electrum'],
     data_files=data_files,

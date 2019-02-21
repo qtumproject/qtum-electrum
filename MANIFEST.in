@@ -9,9 +9,6 @@ include requirements-binaries.txt
 recursive-include qtum_electrum *.py
 recursive-include packages *.py
 recursive-include packages cacert.pem
-include icons.qrc
-recursive-include icons *
-recursive-include scripts *
 
 global-exclude __pycache__
 global-exclude *.py[co~]

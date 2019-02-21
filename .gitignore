@@ -10,7 +10,6 @@ dist/
 .eggs/
 contrib/pyinstaller/
 Qtum_Electrum.egg-info/
-qtum_electrum/gui/qt/icons_rc.py
 qtum_electrum/locale/*/LC_MESSAGES/
 .devlocaltmp/
 *_trial_temp

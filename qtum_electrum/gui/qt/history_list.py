@@ -165,7 +165,7 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
             conf = tx_mined_status.conf
 
             has_invoice = self.wallet.invoices.paid.get(tx_hash)
-            icon = self.icon_cache.get(":icons/" + TX_ICONS[status])
+            icon = read_QIcon(TX_ICONS[status])
             v_str = self.parent.format_amount(delta, True, whitespaces=True)
             balance_str = self.parent.format_amount(balance, whitespaces=True)
             label = self.wallet.get_label(tx_hash)
@@ -181,7 +181,7 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
             item.setIcon(0, icon)
             item.setToolTip(0, str(conf) + " confirmation" + ("s" if conf != 1 else ""))
             if has_invoice:
-                item.setIcon(3, self.icon_cache.get(":icons/seal"))
+                item.setIcon(3, read_QIcon("seal"))
             for i in range(len(entry)):
                 if i > 3:
                     item.setTextAlignment(i, Qt.AlignRight | Qt.AlignVCenter)
@@ -217,7 +217,7 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
             return
         conf = tx_mined_status.conf
         status, status_str = self.wallet.get_tx_status(tx_hash, tx_mined_status)
-        icon = self.icon_cache.get(":icons/" + TX_ICONS[status])
+        icon = read_QIcon(TX_ICONS[status])
         items = self.findItems(tx_hash, Qt.MatchExactly, column=1)
         if items:
             item = items[0]
@@ -268,7 +268,7 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
                 if child_tx:
                     menu.addAction(_("Child pays for parent"), lambda: self.parent.cpfp(tx, child_tx))
         if pr_key:
-            menu.addAction(self.icon_cache.get(":icons/seal"), _("View invoice"),
+            menu.addAction(read_QIcon("seal"), _("View invoice"),
                            lambda: self.parent.show_invoice(pr_key))
         if tx_URL:
             menu.addAction(_("View on block explorer"), lambda: open_browser(tx_URL))
