@@ -1,3 +1,13 @@
+# Release 0.18.11
+ * allow to copy raw transaction in history list
+ * add preview for sending token and raw contract transactions
+ * distribute self-contained binaries for x86_64 Linux in the form of an AppImage
+ * hw wallets: fix a regression during transaction signing that prompts
+   the user too many times for confirmations
+ * transactions now set nVersion to 2, to mimic Qtum Core
+ * fix bugs in wallet creation wizard that resulted in corrupted
+   wallets being created in rare cases
+
 # Release 0.18.10
  * fix history export crash
  * prepend server transaction_broadcast error messages with explanatory message. render error messages as plain text.
