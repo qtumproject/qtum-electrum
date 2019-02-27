@@ -1035,6 +1035,10 @@ msgstr "用复制粘贴键复制并粘贴收件人地址，或者扫描二维码
 msgid "Copy to clipboard"
 msgstr "复制到剪切板"
 
+#: qtum_electrum/gui/qt/history_list.py:276
+msgid "Copy raw transaction"
+msgstr "复制原始交易"
+
 #: electrum/gui/qt/address_list.py:165 electrum/gui/qt/contact_list.py:74
 #: electrum/gui/qt/history_list.py:348 electrum/gui/qt/invoice_list.py:78
 #: electrum/gui/qt/request_list.py:124

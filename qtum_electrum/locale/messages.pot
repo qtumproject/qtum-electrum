@@ -909,6 +909,11 @@ msgstr ""
 msgid "Copy to clipboard"
 msgstr ""
 
+#: qtum_electrum/gui/qt/history_list.py:276
+msgid "Copy raw transaction"
+msgstr ""
+
+
 #: qtum_electrum/base_wizard.py:164
 msgid "Cosign with hardware device"
 msgstr ""

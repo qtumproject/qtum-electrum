@@ -253,7 +253,7 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
         if height == TX_HEIGHT_LOCAL:
             menu.addAction(_("Remove"), lambda: self.remove_local_tx(tx_hash))
 
-        menu.addAction(_("Copy %s")%column_title, lambda: self.parent.app.clipboard().setText(column_data))
+        menu.addAction(_("Copy %s") %column_title, lambda: self.parent.app.clipboard().setText(column_data))
         if column in self.editable_columns:
             menu.addAction(_("Edit %s")%column_title, lambda: self.editItem(item, column))
 
@@ -272,6 +272,9 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
                            lambda: self.parent.show_invoice(pr_key))
         if tx_URL:
             menu.addAction(_("View on block explorer"), lambda: open_browser(tx_URL))
+
+        menu.addAction(_("Copy raw transaction"), lambda: self.parent.app.clipboard().setText(str(tx)))
+
         menu.exec_(self.viewport().mapToGlobal(position))
 
     def remove_local_tx(self, delete_tx):
