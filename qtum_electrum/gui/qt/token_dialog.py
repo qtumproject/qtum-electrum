@@ -248,6 +248,9 @@ class TokenSendLayout(QGridLayout):
         self.addLayout(buttons, 5, 2, 2, -1)
 
     def parse_values(self):
+        if len(self.amount_e.text()) < 1:
+            raise Exception("amount should not be empty")
+
         def parse_edit_value(edit, times=10 ** 8):
             return int(edit.get_amount() * times)
 
@@ -260,18 +263,18 @@ class TokenSendLayout(QGridLayout):
         except (BaseException,) as e:
             raise e
         if self.token.balance < amount:
-            raise Exception('token not enough')
+            raise Exception(_('token not enough'))
         address_to = self.address_to_e.text().rstrip().lstrip()
         if is_b58_address(address_to):
             addr_type, hash160 = b58_address_to_hash160(address_to)
             if addr_type == constants.net.ADDRTYPE_P2PKH:
                 hash160 = bh2u(hash160)
             else:
-                raise Exception('invalid address')
+                raise Exception(_('invalid address to send to'))
         elif is_hash160(address_to):
             hash160 = address_to.lower()
         else:
-            raise Exception('invalid address')
+            raise Exception(_('invalid address to send to'))
         return hash160, amount, gas_limit, gas_price
 
     def preview(self):
