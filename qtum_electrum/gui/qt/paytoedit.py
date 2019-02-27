@@ -95,9 +95,7 @@ class PayToEdit(CompletionTextEdit, ScanQRTextEdit):
         script = ''
         for word in x.split():
             if word[0:3] == 'OP_':
-                assert word in opcodes.lookup
-                # script += chr(opcodes.lookup[word])
-                opcode_int = opcodes.lookup[word]
+                opcode_int = opcodes[word]
                 assert opcode_int < 256  # opcode is single-byte
                 script += bitcoin.int_to_hex(opcode_int)
             else:
