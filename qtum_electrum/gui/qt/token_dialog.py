@@ -183,7 +183,7 @@ class TokenInfoDialog(QDialog, MessageBoxMixin):
 
 
 class TokenSendLayout(QGridLayout):
-    def __init__(self, dialog, token, callback):
+    def __init__(self, dialog, token, send_callback):
         """
         :type dialog: QDialog
         :type token: Token
@@ -194,7 +194,7 @@ class TokenSendLayout(QGridLayout):
         self.setColumnStretch(3, 1)
         self.dialog = dialog
         self.token = token
-        self.callback = callback
+        self.send_callback = send_callback
 
         address_lb = QLabel(_("My Address:"))
         self.address_e = QLineEdit()
@@ -236,11 +236,14 @@ class TokenSendLayout(QGridLayout):
         optional_widget.setLayout(optional_layout)
         self.addWidget(optional_widget, 4, 1, 1, -1)
 
+        self.preview_btn = QPushButton(_('Preview'))
+        self.preview_btn.setDefault(False)
+        self.preview_btn.clicked.connect(self.preview)
         self.cancel_btn = CancelButton(dialog)
         self.send_btn = QPushButton(_('Send'))
         self.send_btn.setDefault(True)
         self.send_btn.clicked.connect(self.send)
-        buttons = Buttons(*[self.cancel_btn, self.send_btn])
+        buttons = Buttons(*[self.cancel_btn, self.preview_btn, self.send_btn])
         buttons.addStretch()
         self.addLayout(buttons, 5, 2, 2, -1)
 
@@ -251,29 +254,34 @@ class TokenSendLayout(QGridLayout):
         return parse_edit_value(self.gas_limit_e, 1), parse_edit_value(self.gas_price_e), parse_edit_value(
             self.amount_e, 10 ** self.token.decimals)
 
-    def send(self):
+    def get_inputs(self):
         try:
             gas_limit, gas_price, amount = self.parse_values()
         except (BaseException,) as e:
-            self.dialog.show_message(e)
-            return
+            raise e
         if self.token.balance < amount:
-            self.dialog.show_message('token not enough')
-            return
+            raise Exception('token not enough')
         address_to = self.address_to_e.text().rstrip().lstrip()
         if is_b58_address(address_to):
             addr_type, hash160 = b58_address_to_hash160(address_to)
             if addr_type == constants.net.ADDRTYPE_P2PKH:
                 hash160 = bh2u(hash160)
             else:
-                self.dialog.show_message('invalid address')
-                return
+                raise Exception('invalid address')
         elif is_hash160(address_to):
             hash160 = address_to.lower()
         else:
-            self.dialog.show_message('invalid address')
-            return
-        self.callback(hash160, amount, gas_limit, gas_price)
+            raise Exception('invalid address')
+        return hash160, amount, gas_limit, gas_price
+
+    def preview(self):
+        self.send(preview=True)
+
+    def send(self, preview=False):
+        try:
+            self.send_callback(*self.get_inputs(), preview)
+        except BaseException as e:
+            self.dialog.show_message(str(e))
 
 
 class TokenSendDialog(QDialog, MessageBoxMixin):
@@ -293,8 +301,9 @@ class TokenSendDialog(QDialog, MessageBoxMixin):
         layout = TokenSendLayout(self, token, self.do_send)
         self.setLayout(layout)
 
-    def do_send(self, pay_to, amount, gas_limit, gas_price):
-        self.parent().do_token_pay(self.token, pay_to, amount, gas_limit, gas_price, self)
-        self.close()
+    def do_send(self, pay_to, amount, gas_limit, gas_price, preview):
+        self.parent().do_token_pay(self.token, pay_to, amount, gas_limit, gas_price, self, preview)
+        if not preview:
+            self.close()
 
 

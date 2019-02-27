@@ -3181,18 +3181,19 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         d = TokenSendDialog(self, token)
         d.show()
 
-    def do_token_pay(self, token, pay_to, amount, gas_limit, gas_price, dialog):
+    def do_token_pay(self, token, pay_to, amount, gas_limit, gas_price, dialog, preview=False):
         try:
             datahex = 'a9059cbb{}{:064x}'.format(pay_to.zfill(64), amount)
             script = contract_script(gas_limit, gas_price, datahex, token.contract_addr, opcodes.OP_CALL)
             outputs = [TxOutput(TYPE_SCRIPT, script, 0), ]
             tx_desc = _('pay out {} {}').format(amount / (10 ** token.decimals), token.symbol)
-            self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, token.bind_addr, dialog)
+            self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price,
+                                           token.bind_addr, dialog, None, preview)
         except (BaseException,) as e:
             traceback.print_exc(file=sys.stderr)
             dialog.show_message(str(e))
 
-    def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog, broadcast_done=None):
+    def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog, broadcast_done=None, preview=False):
         coins = self.get_coins()
         try:
             tx = self.wallet.make_unsigned_transaction(coins, outputs, self.config, None,
@@ -3205,6 +3206,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         except BaseException as e:
             traceback.print_exc(file=sys.stdout)
             dialog.show_message(str(e))
+            return
+        if preview:
+            self.show_transaction(tx, desc)
             return
 
         amount = sum(map(lambda y: y[2], outputs))
@@ -3298,19 +3302,19 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             return
         dialog.show_message(result)
 
-    def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog):
+    def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog, preview):
         try:
             abi_encoded = eth_abi_encode(abi, args)
             script = contract_script(gas_limit, gas_price, abi_encoded, address, opcodes.OP_CALL)
             outputs = [TxOutput(TYPE_SCRIPT, script, amount), ]
             tx_desc = 'contract sendto {}'.format(self.smart_contracts[address][0])
-            self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog)
+            self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog, None, preview)
         except (BaseException,) as e:
             import traceback, sys
             traceback.print_exc(file=sys.stderr)
             dialog.show_message(str(e))
 
-    def create_smart_contract(self, name, bytecode, abi, constructor, args, gas_limit, gas_price, sender, dialog):
+    def create_smart_contract(self, name, bytecode, abi, constructor, args, gas_limit, gas_price, sender, dialog, preview):
 
         def broadcast_done(tx):
             if is_opcreate_script(bfh(tx.outputs()[0].address)):
@@ -3325,7 +3329,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             script = contract_script(gas_limit, gas_price, bytecode + abi_encoded, None, opcodes.OP_CREATE)
             outputs = [TxOutput(TYPE_SCRIPT, script, 0), ]
             self._smart_contract_broadcast(outputs, 'create contract {}'.format(name), gas_limit * gas_price,
-                                           sender, dialog, broadcast_done)
+                                           sender, dialog, broadcast_done, preview)
         except (BaseException,) as e:
             import traceback, sys
             traceback.print_exc(file=sys.stderr)

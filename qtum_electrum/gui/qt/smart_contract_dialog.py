@@ -195,7 +195,9 @@ class ContractFuncLayout(QGridLayout):
         buttons.addStretch(1)
         self.call_button = EnterButton(_("Call"), self.do_call)
         self.sendto_button = EnterButton(_("Send to"), self.do_sendto)
+        self.preview_btn = EnterButton(_("Preview"), self.do_preview)
         buttons.addWidget(self.call_button)
+        buttons.addWidget(self.preview_btn)
         buttons.addWidget(self.sendto_button)
         buttons.addStretch()
         self.addLayout(buttons, 5, 1, 1, -1)
@@ -206,6 +208,7 @@ class ContractFuncLayout(QGridLayout):
         abi_index = self.abi_signatures[self.abi_combo.currentIndex()][0]
         self.sendto_button.setHidden(True)
         self.call_button.setHidden(True)
+        self.preview_btn.setHidden(True)
 
         def show_call():
             self.optional_widget.setEnabled(False)
@@ -216,6 +219,7 @@ class ContractFuncLayout(QGridLayout):
             self.amount_e.clear()
             self.amount_e.setEnabled(payable)
             self.sendto_button.setHidden(False)
+            self.preview_btn.setHidden(False)
 
         if abi_index == -1:
             show_sendto(True)
@@ -282,7 +286,10 @@ class ContractFuncLayout(QGridLayout):
             return
         self.dialog.do_call(abi, args, sender)
 
-    def do_sendto(self):
+    def do_preview(self):
+        self.do_sendto(preview=True)
+
+    def do_sendto(self, preview=False):
         try:
             abi, args, sender = self.parse_args()
         except (ParseArgsException,) as e:
@@ -294,11 +301,11 @@ class ContractFuncLayout(QGridLayout):
             self.dialog.show_message(str(e))
             return
         if not sender:
-            self.dialog.show_message('no sender selected')
+            self.dialog.show_message(_('no sender selected'))
             return
 
         gas_limit, gas_price, amount = self.parse_values()
-        self.dialog.do_sendto(abi, args, gas_limit, gas_price, amount, sender)
+        self.dialog.do_sendto(abi, args, gas_limit, gas_price, amount, sender, preview)
 
 
 class ContractFuncDialog(QDialog, MessageBoxMixin):
@@ -316,9 +323,9 @@ class ContractFuncDialog(QDialog, MessageBoxMixin):
         address = self.contract['address']
         self.parent().call_smart_contract(address, abi, args, sender, self)
 
-    def do_sendto(self, abi, ars, gas_limit, gas_price, amount, sender):
+    def do_sendto(self, abi, ars, gas_limit, gas_price, amount, sender, preview=False):
         address = self.contract['address']
-        self.parent().sendto_smart_contract(address, abi, ars, gas_limit, gas_price, amount, sender, self)
+        self.parent().sendto_smart_contract(address, abi, ars, gas_limit, gas_price, amount, sender, self, preview)
 
 
 class ContractCreateLayout(QVBoxLayout):
@@ -379,10 +386,13 @@ class ContractCreateLayout(QVBoxLayout):
         optional_layout.addWidget(self.sender_combo)
 
         self.cancel_btn = CancelButton(dialog)
+        self.preview_btn = QPushButton(_('Preview'))
+        self.preview_btn.setDefault(False)
+        self.preview_btn.clicked.connect(self.preview)
         self.create_btn = QPushButton(_('Create'))
         self.create_btn.setDefault(True)
         self.create_btn.clicked.connect(self.create)
-        self.addLayout(Buttons(*[self.cancel_btn, self.create_btn]))
+        self.addLayout(Buttons(*[self.cancel_btn, self.preview_btn, self.create_btn]))
 
     def parse_args(self):
         sender = None
@@ -421,7 +431,10 @@ class ContractCreateLayout(QVBoxLayout):
 
         return parse_edit_value(self.gas_limit_e, 1), parse_edit_value(self.gas_price_e)
 
-    def create(self):
+    def preview(self):
+        self.create(preview=True)
+
+    def create(self, preview=False):
         try:
             constructor, args, sender = self.parse_args()
         except (ParseArgsException,) as e:
@@ -434,7 +447,11 @@ class ContractCreateLayout(QVBoxLayout):
             return
         gas_limit, gas_price = self.parse_values()
         bytecode = self.bytecode_e.text()
-        self.dialog.do_create(self.name_e.text(), bytecode, self.abi, constructor, args, gas_limit, gas_price, sender)
+        if len(bytecode) < 1:
+            self.dialog.show_message('Please input bytecode')
+            return
+        self.dialog.do_create(self.name_e.text(), bytecode, self.abi, constructor, args,
+                              gas_limit, gas_price, sender, preview)
 
     def interface_changed(self):
         interface_text = self.interface_e.text()
@@ -475,5 +492,6 @@ class ContractCreateDialog(QDialog, MessageBoxMixin):
         layout = ContractCreateLayout(self)
         self.setLayout(layout)
 
-    def do_create(self, name, bytecode, abi, constructor, args, gas_limit, gas_price, sender):
-        self.parent().create_smart_contract(name, bytecode, abi, constructor, args, gas_limit, gas_price, sender, self)
+    def do_create(self, name, bytecode, abi, constructor, args, gas_limit, gas_price, sender, preview):
+        self.parent().create_smart_contract(name, bytecode, abi, constructor,
+                                            args, gas_limit, gas_price, sender, self, preview)
