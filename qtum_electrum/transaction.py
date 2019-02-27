@@ -32,7 +32,7 @@ from . import ecc, bitcoin, constants, segwit_addr
 from .qtum import (TYPE_ADDRESS, TYPE_PUBKEY, TYPE_SCRIPT, TYPE_STAKE, hash_160,
                    hash160_to_p2sh, hash160_to_p2pkh, hash_to_segwit_addr,
                    hash_encode, var_int, TOTAL_COIN_SUPPLY_LIMIT_IN_BTC, COIN,
-                   push_script, int_to_hex, b58_address_to_hash160, opcodes)
+                   push_script, int_to_hex, b58_address_to_hash160, opcodes, add_number_to_script)
 
 from .crypto import sha256d
 from .keystore import xpubkey_to_address, xpubkey_to_pubkey
@@ -532,10 +532,10 @@ def deserialize(raw: str, force_full_parse=False) -> dict:
 def multisig_script(public_keys: Sequence[str], m: int) -> str:
     n = len(public_keys)
     assert 1 <= m <= n <= 15, f'm {m}, n {n}'
-    op_m = bh2u(bytes([opcodes.OP_1 - 1 + m]))
-    op_n = bh2u(bytes([opcodes.OP_1 - 1 + n]))
+    op_m = bh2u(add_number_to_script(m))
+    op_n = bh2u(add_number_to_script(n))
     keylist = [push_script(k) for k in public_keys]
-    return op_m + ''.join(keylist) + op_n + 'ae'
+    return op_m + ''.join(keylist) + op_n + opcodes.OP_CHECKMULTISIG.hex()
 
 
 def contract_encode_number(n):
@@ -883,7 +883,7 @@ class Transaction:
             scriptSig = bitcoin.p2wsh_nested_script(witness_script)
             return push_script(scriptSig)
         elif _type == 'address':
-            return 'ff00' + push_script(pubkeys[0])  # fd extended pubkey
+            return bytes([opcodes.OP_INVALIDOPCODE, opcodes.OP_0]).hex() + push_script(pubkeys[0])
         elif _type == 'unknown':
             return txin['scriptSig']
         return script

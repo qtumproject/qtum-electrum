@@ -23,7 +23,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 from qtum_electrum.i18n import _
-from qtum_electrum.mnemonic import Mnemonic
+from qtum_electrum.mnemonic import Mnemonic, seed_type
 
 from .util import *
 from .qrtextedit import ShowQRTextEdit, ScanQRTextEdit
@@ -150,7 +150,6 @@ class SeedLayout(QVBoxLayout):
         return ' '.join(text.split())
 
     def on_edit(self):
-        from qtum_electrum.bitcoin import seed_type
         s = self.get_seed()
         b = self.is_seed(s)
         if not self.is_bip39:

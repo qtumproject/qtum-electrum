@@ -30,10 +30,9 @@ import unicodedata
 import string
 
 import ecdsa
-from .util import print_error
-from .bitcoin import is_old_seed, is_new_seed
+from .util import print_error, bfh, bh2u, resource_path
 from . import version
-from . import i18n
+from .crypto import hmac_oneshot
 
 
 # http://www.asahi-net.or.jp/~ax2s-kmtn/ref/unicode/e_asia.html
@@ -89,9 +88,11 @@ def normalize_text(seed):
     seed = u''.join([seed[i] for i in range(len(seed)) if not (seed[i] in string.whitespace and is_CJK(seed[i-1]) and is_CJK(seed[i+1]))])
     return seed
 
+
 def load_wordlist(filename):
-    path = os.path.join(os.path.dirname(__file__), 'wordlist', filename)
-    s = open(path,'r').read().strip()
+    path = resource_path('wordlist', filename)
+    with open(path, 'r', encoding='utf-8') as f:
+        s = f.read().strip()
     s = unicodedata.normalize('NFKD', s)
     lines = s.split('\n')
     wordlist = []
@@ -111,7 +112,6 @@ filenames = {
     'pt':'portuguese.txt',
     'zh':'chinese_simplified.txt'
 }
-
 
 
 class Mnemonic(object):
@@ -181,3 +181,41 @@ class Mnemonic(object):
                 break
         print_error('%d words'%len(seed.split()))
         return seed
+
+
+def is_new_seed(x, prefix=version.SEED_PREFIX):
+    x = normalize_text(x)
+    s = bh2u(hmac_oneshot(b"Seed version", x.encode('utf8')))
+    return s.startswith(prefix)
+
+
+def is_old_seed(seed):
+    from . import old_mnemonic
+    words = seed.strip().split()
+    try:
+        old_mnemonic.mn_decode(words)
+        uses_electrum_words = True
+    except Exception:
+        uses_electrum_words = False
+    try:
+        seed = bfh(seed)
+        is_hex = (len(seed) == 16 or len(seed) == 32)
+    except Exception:
+        is_hex = False
+    return is_hex or (uses_electrum_words and (len(words) == 12 or len(words) == 24))
+
+
+def seed_type(x):
+    # if is_old_seed(x):
+    #     return 'old'
+    if is_new_seed(x):
+        return 'standard'
+    elif is_new_seed(x, version.SEED_PREFIX_SW):
+        return 'segwit'
+    # elif is_new_seed(x, version.SEED_PREFIX_2FA):
+    #     # disable 2fa for now
+    #     return '2fa'
+    return ''
+
+
+is_seed = lambda x: bool(seed_type(x))

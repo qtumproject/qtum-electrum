@@ -30,6 +30,7 @@ from typing import List, TYPE_CHECKING, Tuple, NamedTuple, Any
 
 from . import bitcoin
 from . import keystore
+from . import mnemonic
 from .bip32 import is_bip32_derivation, xpub_type
 from .i18n import _
 from .keystore import bip44_derivation, purpose48_derivation
@@ -418,12 +419,12 @@ class BaseWizard(object):
     def restore_from_seed(self):
         self.opt_bip39 = True
         self.opt_ext = True
-        is_cosigning_seed = lambda x: bitcoin.seed_type(x) in ['standard', 'segwit']
+        is_cosigning_seed = lambda x: mnemonic.seed_type(x) in ['standard', 'segwit']
         test = None
         if self.wallet_type == 'mobile':
             test = lambda x: len(list(x.split())) == 12
         elif self.wallet_type == 'standard':
-            test = bitcoin.is_seed
+            test = mnemonic.is_seed
         else:
             test = is_cosigning_seed
         self.restore_seed_dialog(run_next=self.on_restore_seed, test=test)
@@ -432,7 +433,7 @@ class BaseWizard(object):
         if self.wallet_type == 'mobile':
             self.seed_type = 'standard'
         else:
-            self.seed_type = 'bip39' if is_bip39 else bitcoin.seed_type(seed)
+            self.seed_type = 'bip39' if is_bip39 else mnemonic.seed_type(seed)
 
         if self.seed_type == 'bip39':
             f = lambda passphrase: self.on_restore_bip39(seed, passphrase)

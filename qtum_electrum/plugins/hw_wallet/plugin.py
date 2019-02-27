@@ -26,9 +26,9 @@
 
 from qtum_electrum.plugin import BasePlugin, hook
 from qtum_electrum.i18n import _
-from qtum_electrum.qtum import is_address, TYPE_SCRIPT
+from qtum_electrum.qtum import is_address, TYPE_SCRIPT, opcodes
 from qtum_electrum.util import bfh, versiontuple, UserFacingException
-from qtum_electrum.transaction import opcodes, TxOutput, Transaction
+from qtum_electrum.transaction import TxOutput, Transaction
 
 
 class HW_PluginBase(BasePlugin):

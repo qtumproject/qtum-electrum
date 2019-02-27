@@ -32,7 +32,8 @@ import re
 from decimal import Decimal
 from qtum_electrum import bitcoin
 from qtum_electrum.util import bfh
-from qtum_electrum.transaction import TxOutput
+from qtum_electrum.transaction import push_script, TxOutput
+from qtum_electrum.qtum import opcodes
 
 from . import util
 
@@ -91,7 +92,6 @@ class PayToEdit(CompletionTextEdit, ScanQRTextEdit):
             return bitcoin.TYPE_SCRIPT, script
 
     def parse_script(self, x):
-        from qtum_electrum.transaction import opcodes, push_script
         script = ''
         for word in x.split():
             if word[0:3] == 'OP_':

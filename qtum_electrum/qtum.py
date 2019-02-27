@@ -271,16 +271,15 @@ def witness_push(item: str) -> str:
     return var_int(len(item) // 2) + item
 
 
-def op_push(i: int) -> str:
-    if i < 0x4c:  # OP_PUSHDATA1
+def _op_push(i: int) -> str:
+    if i < opcodes.OP_PUSHDATA1:
         return int_to_hex(i)
     elif i <= 0xff:
-        return '4c' + int_to_hex(i)
+        return opcodes.OP_PUSHDATA1.hex() + int_to_hex(i, 1)
     elif i <= 0xffff:
-        return '4d' + int_to_hex(i,2)
+        return opcodes.OP_PUSHDATA2.hex() + int_to_hex(i, 2)
     else:
-        return '4e' + int_to_hex(i,4)
-
+        return opcodes.OP_PUSHDATA4.hex() + int_to_hex(i, 4)
 
 def push_script(data: str) -> str:
     """Returns pushed data to the script, automatically
@@ -290,19 +289,18 @@ def push_script(data: str) -> str:
     ported from https://github.com/btcsuite/btcd/blob/fdc2bc867bda6b351191b5872d2da8270df00d13/txscript/scriptbuilder.go#L128
     """
     data = bfh(data)
-    from .transaction import opcodes
-
     data_len = len(data)
 
     # "small integer" opcodes
     if data_len == 0 or data_len == 1 and data[0] == 0:
-        return bh2u(bytes([opcodes.OP_0]))
+        return opcodes.OP_0.hex()
     elif data_len == 1 and data[0] <= 16:
         return bh2u(bytes([opcodes.OP_1 - 1 + data[0]]))
     elif data_len == 1 and data[0] == 0x81:
-        return bh2u(bytes([opcodes.OP_1NEGATE]))
+        return opcodes.OP_1NEGATE.hex()
 
-    return op_push(data_len) + bh2u(data)
+    return _op_push(data_len) + bh2u(data)
+
 
 def add_number_to_script(i: int) -> bytes:
     return bfh(push_script(script_num_to_hex(i)))
@@ -311,46 +309,6 @@ def add_number_to_script(i: int) -> bytes:
 hash_encode = lambda x: bh2u(x[::-1])
 hash_decode = lambda x: bfh(x)[::-1]
 hmac_sha_512 = lambda x, y: hmac.new(x, y, hashlib.sha512).digest()
-
-
-################################## electrum seeds
-
-def is_new_seed(x, prefix=version.SEED_PREFIX):
-    from . import mnemonic
-    x = mnemonic.normalize_text(x)
-    s = bh2u(hmac_sha_512(b"Seed version", x.encode('utf8')))
-    return s.startswith(prefix)
-
-
-def is_old_seed(seed):
-    from . import old_mnemonic
-    words = seed.strip().split()
-    try:
-        old_mnemonic.mn_decode(words)
-        uses_electrum_words = True
-    except Exception:
-        uses_electrum_words = False
-    try:
-        seed = bfh(seed)
-        is_hex = (len(seed) == 16 or len(seed) == 32)
-    except Exception:
-        is_hex = False
-    return is_hex or (uses_electrum_words and (len(words) == 12 or len(words) == 24))
-
-
-def seed_type(x):
-    # if is_old_seed(x):
-    #     return 'old'
-    if is_new_seed(x):
-        return 'standard'
-    elif is_new_seed(x, version.SEED_PREFIX_SW):
-        return 'segwit'
-    # elif is_new_seed(x, version.SEED_PREFIX_2FA):
-    #     # disable 2fa for now
-    #     return '2fa'
-    return ''
-
-is_seed = lambda x: bool(seed_type(x))
 
 
 ############ functions from pywallet #####################
@@ -438,28 +396,25 @@ def script_to_address(script, *, net=None):
 
 
 def address_to_script(addr: str, *, net=None) -> str:
-    if net is None:
-        net = constants.net
+    if net is None: net = constants.net
     if not is_address(addr, net=net):
-        raise QtumException(f"invalid qtum address: {addr}")
-
+        raise QtumException(f"invalid bitcoin address: {addr}")
     witver, witprog = segwit_addr.decode(net.SEGWIT_HRP, addr)
     if witprog is not None:
         if not (0 <= witver <= 16):
             raise QtumException(f'impossible witness version: {witver}')
-        OP_n = witver + 0x50 if witver > 0 else 0
-        script = bh2u(bytes([OP_n]))
+        script = bh2u(add_number_to_script(witver))
         script += push_script(bh2u(bytes(witprog)))
         return script
     addrtype, hash_160_ = b58_address_to_hash160(addr)
     if addrtype == net.ADDRTYPE_P2PKH:
-        script = '76a9'                                      # op_dup, op_hash_160
+        script = bytes([opcodes.OP_DUP, opcodes.OP_HASH160]).hex()
         script += push_script(bh2u(hash_160_))
-        script += '88ac'                                     # op_equalverify, op_checksig
+        script += bytes([opcodes.OP_EQUALVERIFY, opcodes.OP_CHECKSIG]).hex()
     elif addrtype == net.ADDRTYPE_P2SH:
-        script = 'a9'                                        # op_hash_160
+        script = opcodes.OP_HASH160.hex()
         script += push_script(bh2u(hash_160_))
-        script += '87'                                       # op_equal
+        script += opcodes.OP_EQUAL.hex()
     else:
         raise QtumException(f'unknown address type: {addrtype}')
     return script
@@ -474,9 +429,7 @@ def script_to_scripthash(script):
     return bh2u(bytes(reversed(h)))
 
 def public_key_to_p2pk_script(pubkey):
-    script = push_script(pubkey)
-    script += 'ac'
-    return script
+    return push_script(pubkey) + opcodes.OP_CHECKSIG.hex()
 
 
 __b58chars = b'123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'
