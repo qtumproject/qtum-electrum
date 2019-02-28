@@ -7,7 +7,7 @@ import os
 PACKAGE='Qtum Electrum'
 PYPKG='qtum_electrum'
 MAIN_SCRIPT='run_qtum_electrum'
-ICONS_FILE='qtum-electrum.icns'
+ICONS_FILE=PYPKG + '/gui/icons/electrum.icns'
 
 for i, x in enumerate(sys.argv):
     if x == '--name':
@@ -31,6 +31,7 @@ datas = [
     (electrum+'qtum_electrum/wordlist/english.txt', PYPKG + '/wordlist'),
     (electrum+'qtum_electrum/locale', PYPKG + '/locale'),
     (electrum+'qtum_electrum/plugins', PYPKG + '/plugins'),
+    (electrum+'qtum_electrum/gui/icons', PYPKG + '/gui/icons'),
 ]
 
 datas += collect_data_files('trezorlib')
@@ -69,6 +70,15 @@ for d in a.datas:
     if 'pyconfig' in d[0]:
         a.datas.remove(d)
         break
+
+# Strip out parts of Qt that we never use. Reduces binary size by tens of MBs. see #4815
+qt_bins2remove=('qtweb', 'qt3d', 'qtgame', 'qtdesigner', 'qtquick', 'qtlocation', 'qttest', 'qtxml')
+print("Removing Qt binaries:", *qt_bins2remove)
+for x in a.binaries.copy():
+    for r in qt_bins2remove:
+        if x[0].lower().startswith(r):
+            a.binaries.remove(x)
+            print('----> Removed x =', x)
 
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
