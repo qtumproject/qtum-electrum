@@ -10,7 +10,7 @@ export PYTHONHASHSEED=22
 PYTHON_VERSION=3.6.4
 VERSION=`git describe --tags --dirty --always`
 STAGING_DIR="dist"
-VOL_NAME="Qtum Electrum"
+PACKAGE="Qtum Electrum"
 TEMP_DMG_NAME="/tmp/qtum-electrum.dmg"
 DMG_NAME="${STAGING_DIR}/Qtum-electrum-osx-${VERSION}.dmg"
 LIBSECP_VERSION=b408c6a8b287003d1ade5709e6f7bc3c7f1d5be7
@@ -35,8 +35,9 @@ fi
 PYTHON_CONFIGURE_OPTS="--enable-framework" pyenv install -s $PYTHON_VERSION && \
 pyenv global $PYTHON_VERSION || fail "Unable to use Python $PYTHON_VERSION"
 
+
 info "Upgrade pip"
-$PYTHON -m pip install pip==19.0.1
+python3 -m pip install pip==19.0.3 --user
 
 info "Installing pyinstaller"
 python3 -m pip install -I --user pyinstaller==3.4 --no-use-pep517 || fail "Could not install pyinstaller"
@@ -78,7 +79,7 @@ fail "Could not install requirements"
 
 
 info "Building $PACKAGE..."
-python3 -m pip install --user > /dev/null || fail "Could not build $PACKAGE"
+python3 -m pip install --user . > /dev/null || fail "Could not build $PACKAGE"
 
 
 info "Faking timestamps..."
@@ -98,18 +99,18 @@ plutil -insert 'CFBundleURLTypes' \
 	<string>qtum</string>
 	<key>CFBundleURLSchemes</key>
 	<array><string>qtum</string></array> </dict></array>' \
-	-- "dist/${VOL_NAME}.app/Contents/Info.plist" \
+	-- "dist/${PACKAGE}.app/Contents/Info.plist" \
 	|| fail "Could not add keys to Info.plist. Make sure the program 'plutil' exists and is installed."
 
 
 info "Creating .DMG"
-hdiutil create -size 300m -fs HFS+ -volname "${VOL_NAME}" -ov ${TEMP_DMG_NAME}
+hdiutil create -size 300m -fs HFS+ -volname "${PACKAGE}" -ov ${TEMP_DMG_NAME}
 
 hdiutil mount ${TEMP_DMG_NAME}
-cp -R "dist/${VOL_NAME}.app" "/Volumes/${VOL_NAME}/${VOL_NAME}.app"
-ln -s /Applications "/Volumes/${VOL_NAME}/Applications"
+cp -R "dist/${PACKAGE}.app" "/Volumes/${PACKAGE}/${PACKAGE}.app"
+ln -s /Applications "/Volumes/${PACKAGE}/Applications"
 
-hdiutil detach "/Volumes/${VOL_NAME}"
+hdiutil detach "/Volumes/${PACKAGE}"
 sleep 2
 
 hdiutil convert ${TEMP_DMG_NAME} -format UDZO -o ${DMG_NAME}

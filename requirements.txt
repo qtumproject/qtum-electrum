@@ -21,7 +21,7 @@ qrcode==6.0
 requests==2.20.1
 rsa
 rlp==0.6.0
-setuptools==40.6.2
+setuptools==40.8.0
 six==1.11.0
 sip==4.19.8
 trezor==0.11.0

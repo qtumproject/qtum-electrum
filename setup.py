@@ -8,7 +8,6 @@ import importlib.util
 import os
 import platform
 import sys
-from setuptools import setup
 
 MIN_PYTHON_VERSION = "3.6.1"
 _min_python_version_tuple = tuple(map(int, (MIN_PYTHON_VERSION.split("."))))
