@@ -1,5 +1,4 @@
 #!/bin/bash
-PYTHON_VERSION=3.6.6
 
 ETH_HASH_GIT_URL=https://github.com/icodeface/eth-hash
 ETH_UTILS_GIT_URL=https://github.com/icodeface/eth-utils
@@ -7,7 +6,7 @@ ETH_ABI_GIT_URL=https://github.com/icodeface/eth-abi
 BRANCH=master
 
 export WINEPREFIX=/opt/wine64
-PYHOME=c:/python$PYTHON_VERSION
+PYHOME=c:/python3
 PYTHON="wine $PYHOME/python.exe -OO -B"
 
 cd `dirname $0`

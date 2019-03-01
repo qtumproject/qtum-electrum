@@ -4,14 +4,13 @@
 ELECTRUM_GIT_URL=https://github.com/qtumproject/qtum-electrum.git
 BRANCH=master
 NAME_ROOT=Qtum-electrum
-PYTHON_VERSION=3.6.6
 
 # These settings probably don't need any change
 export WINEPREFIX=/opt/wine64
 export PYTHONHASHSEED=22
 export PYTHONDONTWRITEBYTECODE=1
 
-PYHOME=c:/python$PYTHON_VERSION
+PYHOME=c:/python3
 PYTHON="wine $PYHOME/python.exe -OO -B"
 
 # Let's begin!
