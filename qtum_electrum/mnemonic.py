@@ -185,7 +185,7 @@ class Mnemonic(object):
 
 def is_new_seed(x, prefix=version.SEED_PREFIX):
     x = normalize_text(x)
-    s = bh2u(hmac_oneshot(b"Seed version", x.encode('utf8')))
+    s = bh2u(hmac_oneshot(b"Seed version", x.encode('utf8'), hashlib.sha512))
     return s.startswith(prefix)
 
 
