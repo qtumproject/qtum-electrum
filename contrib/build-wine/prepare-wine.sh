@@ -14,13 +14,13 @@ LIBUSB_URL=https://prdownloads.sourceforge.net/project/libusb/libusb-1.0/libusb-
 LIBUSB_SHA256=671f1a420757b4480e7fadc8313d6fb3cbb75ca00934c417c1efa6e77fb8779b
 
 PYTHON_VERSION=3.6.8
+PYTHON_FOLDER="python3"
+PYHOME="c:/$PYTHON_FOLDER"
+PYTHON="wine $PYHOME/python.exe -OO -B"
 
 ## These settings probably don't need change
 export WINEPREFIX=/opt/wine64
 #export WINEARCH='win32'
-
-PYHOME=c:/python$PYTHON_VERSION
-PYTHON="wine $PYHOME/python.exe -OO -B"
 
 # Let's begin!
 here=$(dirname $(readlink -e $0))
@@ -43,8 +43,11 @@ for msifile in core dev exe lib pip tools; do
     wget -N -c "https://www.python.org/ftp/python/$PYTHON_VERSION/win32/${msifile}.msi"
     wget -N -c "https://www.python.org/ftp/python/$PYTHON_VERSION/win32/${msifile}.msi.asc"
     verify_signature "${msifile}.msi.asc" $KEYRING_PYTHON_DEV
-    wine msiexec /i "${msifile}.msi" /qb TARGETDIR=C:/python$PYTHON_VERSION
+    wine msiexec /i "${msifile}.msi" /qb TARGETDIR=$PYHOME
 done
+
+info "Upgrade pip"
+$PYTHON -m pip install pip==19.0.1
 
 $PYTHON -m pip install -r $here/../../requirements-binaries.txt
 
@@ -65,10 +68,10 @@ wine "$PWD/$NSIS_FILENAME" /S
 download_if_not_exist $LIBUSB_FILENAME "$LIBUSB_URL"
 verify_hash $LIBUSB_FILENAME "$LIBUSB_SHA256"
 7z x -olibusb $LIBUSB_FILENAME -aoa
-cp libusb/MS32/dll/libusb-1.0.dll $WINEPREFIX/drive_c/python$PYTHON_VERSION/
+cp libusb/MS32/dll/libusb-1.0.dll $WINEPREFIX/drive_c/$PYTHON_FOLDER/
 
 # add dlls needed for pyinstaller:
-cp $WINEPREFIX/drive_c/python$PYTHON_VERSION/Lib/site-packages/PyQt5/Qt/bin/* $WINEPREFIX/drive_c/python$PYTHON_VERSION/
+cp $WINEPREFIX/drive_c/$PYTHON_FOLDER/Lib/site-packages/PyQt5/Qt/bin/* $WINEPREFIX/drive_c/$PYTHON_FOLDER/
 
 $here/build-secp256k1.sh || exit 1
 mkdir -p $WINEPREFIX/drive_c/tmp
