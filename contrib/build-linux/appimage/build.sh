@@ -16,7 +16,7 @@ LIBSECP_VERSION="b408c6a8b287003d1ade5709e6f7bc3c7f1d5be7"
 
 
 VERSION=`git describe --tags --dirty --always`
-APPIMAGE="$DISTDIR/qtum-electrum-$VERSION-x86_64.AppImage"
+APPIMAGE="$DISTDIR/Qtum-electrum-linux-$VERSION-x86_64.AppImage"
 
 rm -rf "$BUILDDIR"
 mkdir -p "$APPDIR" "$CACHEDIR" "$DISTDIR"
