@@ -151,6 +151,19 @@ class HelpButton(QPushButton):
     def onclick(self):
         QMessageBox.information(self, 'Help', self.help_text)
 
+
+class InfoButton(QPushButton):
+    def __init__(self, text):
+        QPushButton.__init__(self, 'Info')
+        self.help_text = text
+        self.setFocusPolicy(Qt.NoFocus)
+        self.setFixedWidth(60)
+        self.clicked.connect(self.onclick)
+
+    def onclick(self):
+        QMessageBox.information(self, 'Info', self.help_text)
+
+
 class Buttons(QHBoxLayout):
     def __init__(self, *buttons):
         QHBoxLayout.__init__(self)
