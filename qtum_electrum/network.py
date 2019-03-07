@@ -310,7 +310,7 @@ class Network(util.DaemonThread):
                     del self.blockchains[k]
         return result
 
-    def set_status(self, status):
+    def _set_status(self, status):
         self.connection_status = status
         self.notify('status')
 
@@ -413,7 +413,7 @@ class Network(util.DaemonThread):
         if (not server in self.interfaces and not server in self.connecting):
             if server == self.default_server:
                 self.print_error("connecting to %s as new interface" % server)
-                self.set_status('connecting')
+                self._set_status('connecting')
             self.connecting.add(server)
             c = Connection(server, self.socket_queue, self.config.path)
 
@@ -587,7 +587,7 @@ class Network(util.DaemonThread):
 
             self.interface = i
             self.send_subscriptions()
-            self.set_status('connected')
+            self._set_status('connected')
             self.trigger_callback('network_updated')
             if blockchain_updated: self.trigger_callback('blockchain_updated')
 
@@ -775,7 +775,7 @@ class Network(util.DaemonThread):
         We distinguish by whether it is in self.interfaces.'''
         self.disconnected_servers.add(server)
         if server == self.default_server:
-            self.set_status('disconnected')
+            self._set_status('disconnected')
         if server in self.interfaces:
             self.close_interface(self.interfaces[server])
             self.trigger_callback('network_updated')
