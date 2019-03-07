@@ -886,7 +886,6 @@ class Network(util.DaemonThread):
             interface.mode = 'default'
             interface.print_error('catch up done', blockchain.height())
             blockchain.catch_up = None
-        self.trigger_callback('network_updated')
 
     def on_get_header(self, interface, response):
         '''Handle receiving a single block header'''
@@ -983,8 +982,6 @@ class Network(util.DaemonThread):
                             next_height = bh + 1
                             interface.blockchain.catch_up = interface.server
 
-                self.trigger_callback('network_updated')
-
         elif interface.mode == 'catch_up':
             can_connect = interface.blockchain.can_connect(header)
             if can_connect:
@@ -1020,9 +1017,6 @@ class Network(util.DaemonThread):
         if next_height is None:
             interface.mode = 'default'
             interface.request = None
-
-        # refresh network dialog
-        self.trigger_callback('network_updated')
 
     def maintain_requests(self):
         with self.interface_lock:
