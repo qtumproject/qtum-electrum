@@ -13,6 +13,7 @@ from .bitcoin import rev_hex, int_to_hex, EncodeBase58Check, DecodeBase58Check
 
 
 BIP32_PRIME = 0x80000000
+UINT32_MAX = (1 << 32) - 1
 
 
 def protect_against_invalid_ecpoint(func):
@@ -216,12 +217,6 @@ def convert_bip32_path_to_list_of_uint32(n: str) -> List[int]:
         path.append(abs(int(x)) | prime)
     return path
 
-def is_bip32_derivation(x):
-    try:
-        [ i for i in bip32_derivation(x)]
-        return True
-    except :
-        return False
 
 def bip32_private_derivation(xprv, branch, sequence):
     if not sequence.startswith(branch):
@@ -267,3 +262,38 @@ def bip32_private_key(sequence, k, chain):
     for i in sequence:
         k, chain = CKD_priv(k, chain, i)
     return k
+
+
+def is_bip32_derivation(s: str) -> bool:
+    try:
+        if not (s == 'm' or s.startswith('m/')):
+            return False
+        convert_bip32_path_to_list_of_uint32(s)
+    except:
+        return False
+    else:
+        return True
+
+
+def convert_bip32_intpath_to_strpath(path: List[int]) -> str:
+    s = "m/"
+    for child_index in path:
+        if not isinstance(child_index, int):
+            raise TypeError(f"bip32 path child index must be int: {child_index}")
+        if not (0 <= child_index <= UINT32_MAX):
+            raise ValueError(f"bip32 path child index out of range: {child_index}")
+        prime = ""
+        if child_index & BIP32_PRIME:
+            prime = "'"
+            child_index = child_index ^ BIP32_PRIME
+        s += str(child_index) + prime + '/'
+    # cut trailing "/"
+    s = s[:-1]
+    return s
+
+
+def normalize_bip32_derivation(s: str) -> str:
+    if not is_bip32_derivation(s):
+        raise ValueError(f"invalid bip32 derivation: {s}")
+    ints = convert_bip32_path_to_list_of_uint32(s)
+    return convert_bip32_intpath_to_strpath(ints)

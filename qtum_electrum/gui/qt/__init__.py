@@ -22,29 +22,31 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import os
 import signal
 import sys
 import traceback
-import locale
 import threading
+from typing import Optional
 
 try:
     import PyQt5
 except Exception:
     sys.exit("Error: Could not import PyQt5 on Linux systems, you may try 'sudo apt-get install python3-pyqt5'")
 
-from PyQt5.QtGui import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
+
+from PyQt5.QtGui import QGuiApplication
+from PyQt5.QtWidgets import (QApplication, QSystemTrayIcon, QWidget, QMenu,
+                             QMessageBox)
+from PyQt5.QtCore import QObject, pyqtSignal, QTimer
 import PyQt5.QtCore as QtCore
 
 from qtum_electrum.i18n import _, set_language
 from qtum_electrum.plugin import run_hook
 from qtum_electrum.base_wizard import GoBack
-from qtum_electrum.storage import WalletStorage
-from qtum_electrum.util import (DebugMem, UserCancelled, InvalidPassword, print_error, WalletFileException, QtumException)
-from .installwizard import InstallWizard
+from qtum_electrum.wallet import Wallet, Abstract_Wallet
+from qtum_electrum.util import (UserCancelled, print_error, WalletFileException, QtumException, get_new_wallet_name)
+from .installwizard import InstallWizard, WalletAlreadyOpenInMemory
 
 
 from .util import get_default_language, read_QIcon, Timer
@@ -64,6 +66,7 @@ class OpenFileEventFilter(QObject):
                 return True
         return False
 
+
 class QElectrumApplication(QApplication):
     new_window_signal = pyqtSignal(str, object)
 
@@ -75,11 +78,7 @@ class QNetworkUpdatedSignalObject(QObject):
 class ElectrumGui:
 
     def __init__(self, config, daemon, plugins):
-        try:
-            default_language = locale.getdefaultlocale()[0]
-        except:
-            default_language = ''
-        set_language(config.get('language', default_language))
+        set_language(config.get('language', get_default_language()))
         # Uncomment this call to verify objects are being properly
         # GC-ed when windows are closed
         #network.add_jobs([DebugMem([Abstract_Wallet, SPV, Synchronizer,
@@ -171,12 +170,13 @@ class ElectrumGui:
                                 self.network_updated_signal_obj)
         self.nd.show()
 
-    def create_window_for_wallet(self, wallet):
+    def _create_window_for_wallet(self, wallet):
         w = ElectrumWindow(self, wallet)
         self.windows.append(w)
         self.build_tray_menu()
         # FIXME: Remove in favour of the load_wallet hook
         run_hook('on_new_window', w)
+        w.warn_if_watching_only()
         return w
 
     def count_wizards_in_progress(func):
@@ -194,63 +194,73 @@ class ElectrumGui:
     def start_new_window(self, path, uri, app_is_starting=False):
         '''Raises the window for the wallet if it is open.  Otherwise
         opens the wallet and creates a new window for it'''
+        wallet = None
         try:
             wallet = self.daemon.load_wallet(path, None)
         except BaseException as e:
             traceback.print_exc(file=sys.stdout)
             d = QMessageBox(QMessageBox.Warning, _('Error'),
                             _('Cannot load wallet:') + '\n' + str(e))
-            d.exec_()
-            if app_is_starting:
-                # do not return so that the wizard can appear
-                wallet = None
-            else:
+            if not app_is_starting:
                 return
+
         if not wallet:
-            wizard = InstallWizard(self.config, self.app, self.plugins, None)
-            try:
-                if wizard.select_storage(path, self.daemon.get_wallet):
-                    wallet = wizard.run_and_get_wallet()
-            except UserCancelled:
-                pass
-            except GoBack as e:
-                print_error('[start_new_window] Exception caught (GoBack)', e)
-            except (WalletFileException, QtumException) as e:
-                traceback.print_exc(file=sys.stderr)
-                d = QMessageBox(QMessageBox.Warning, _('Error'),
-                                _('Cannot load wallet') + ' (2):\n' + str(e))
-                d.exec_()
-                return
-            finally:
-                wizard.terminate()
-
-            if not wallet:
-                return
-
-            if not self.daemon.get_wallet(wallet.storage.path):
-                # wallet was not in memory
-                wallet.start_threads(self.daemon.network)
-                self.daemon.add_wallet(wallet)
+            wallet = self._start_wizard_to_select_or_create_wallet(path)
+        if not wallet:
+            return
+        # create or raise window
         try:
-            for w in self.windows:
-                if w.wallet.storage.path == wallet.storage.path:
-                    w.bring_to_top()
-                    return
-            w = self.create_window_for_wallet(wallet)
+            for window in self.windows:
+                if window.wallet.storage.path == wallet.storage.path:
+                    break
+            else:
+                window = self._create_window_for_wallet(wallet)
         except BaseException as e:
             traceback.print_exc(file=sys.stdout)
-            d = QMessageBox(QMessageBox.Warning, _('Error'),
-                            _('Cannot create window for wallet:') + '\n' + str(e))
-            d.exec_()
+            QMessageBox.warning(None, _('Error'),
+                                _('Cannot create window for wallet') + ':\n' + str(e))
+            if app_is_starting:
+                wallet_dir = os.path.dirname(path)
+                path = os.path.join(wallet_dir, get_new_wallet_name(wallet_dir))
+                self.start_new_window(path, uri)
             return
         if uri:
-            w.pay_to_URI(uri)
-        w.bring_to_top()
-        w.setWindowState(w.windowState() & ~QtCore.Qt.WindowMinimized | QtCore.Qt.WindowActive)
+            window.pay_to_URI(uri)
+        window.bring_to_top()
+        window.setWindowState(window.windowState() & ~QtCore.Qt.WindowMinimized | QtCore.Qt.WindowActive)
 
-        # this will activate the window
-        w.activateWindow()
-        return w
+        window.activateWindow()
+        return window
+
+    def _start_wizard_to_select_or_create_wallet(self, path) -> Optional[Abstract_Wallet]:
+        wizard = InstallWizard(self.config, self.app, self.plugins)
+        try:
+            path, storage = wizard.select_storage(path, self.daemon.get_wallet)
+            # storage is None if file does not exist
+            if storage is None:
+                wizard.path = path  # needed by trustedcoin plugin
+                wizard.run('new')
+                storage = wizard.create_storage(path)
+            else:
+                wizard.run_upgrades(storage)
+        except (UserCancelled, GoBack):
+            return
+        except WalletAlreadyOpenInMemory as e:
+            return e.wallet
+        except (WalletFileException, QtumException) as e:
+            traceback.print_exc(file=sys.stderr)
+            QMessageBox.warning(None, _('Error'),
+                                _('Cannot load wallet') + ' (2):\n' + str(e))
+            return
+        finally:
+            wizard.terminate()
+        # return if wallet creation is not complete
+        if storage is None or storage.get_action():
+            return
+        wallet = Wallet(storage)
+        wallet.start_network(self.daemon.network)
+        self.daemon.add_wallet(wallet)
+        return wallet
 
     def close_window(self, window):
         if window in self.windows:
@@ -260,6 +270,7 @@ class ElectrumGui:
         if not self.windows:
             self.config.save_last_wallet(window.wallet)
         run_hook('on_close_window', window)
+        self.daemon.stop_wallet(window.wallet.storage.path)
 
     def init_network(self):
         # Show network dialog if config does not exist
@@ -311,3 +322,7 @@ class ElectrumGui:
         # main loop
         self.app.exec_()
         # on some platforms the exec_ call may not return, so use clean_up()
+
+        def stop(self):
+            self.print_error('closing GUI')
+            self.app.quit()

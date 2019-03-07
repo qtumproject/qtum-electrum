@@ -26,17 +26,20 @@
 import os
 import sys
 import traceback
-from typing import List, TYPE_CHECKING, Tuple, NamedTuple, Any
+import copy
+from typing import List, TYPE_CHECKING, Tuple, NamedTuple, Any, Dict, Optional
 
-from . import bitcoin
+from . import qtum
 from . import keystore
 from . import mnemonic
-from .bip32 import is_bip32_derivation, xpub_type
+from .bip32 import is_bip32_derivation, xpub_type, normalize_bip32_derivation
 from .i18n import _
 from .keystore import bip44_derivation, purpose48_derivation
 from .wallet import Imported_Wallet, Standard_Wallet, Multisig_Wallet, Mobile_Wallet, wallet_types, Qt_Core_Wallet
-from .storage import STO_EV_USER_PW, STO_EV_XPUB_PW, get_derivation_used_for_hw_device_encryption
+from .storage import STO_EV_USER_PW, STO_EV_XPUB_PW, get_derivation_used_for_hw_device_encryption, WalletStorage
 from .util import UserCancelled, InvalidPassword
+from .simple_config import SimpleConfig
+from .plugin import Plugins
 
 if TYPE_CHECKING:
     from .plugin import DeviceInfo
@@ -54,38 +57,39 @@ class GoBack(Exception): pass
 class WizardStackItem(NamedTuple):
     action: Any
     args: Any
+    kwargs: Dict[str, Any]
     storage_data: dict
 
 
 class BaseWizard(object):
 
-    def __init__(self, config, plugins, storage):
+    def __init__(self, config: SimpleConfig, plugins: Plugins):
         super(BaseWizard, self).__init__()
         self.config = config
         self.plugins = plugins
-        self.storage = storage
-        self.wallet = None
         self.plugin = None
-        self._stack = [] # type: List[WizardStackItem]
+        self.data = {}
+        self.pw_args = None
+        self._stack = []  # type: List[WizardStackItem]
         self.keystores = []
         self.is_kivy = config.get('gui') == 'kivy'
         self.seed_type = None
 
-    def run(self, *args):
+    def run(self, *args, **kwargs):
         action = args[0]
         args = args[1:]
-        storage_data = self.storage.get_all_data()
-        self._stack.append(WizardStackItem(action, args, storage_data))
+        storage_data = copy.deepcopy(self.data)
+        self._stack.append(WizardStackItem(action, args, kwargs, storage_data))
         if not action:
             return
         if type(action) is tuple:
             self.plugin, action = action
         if self.plugin and hasattr(self.plugin, action):
             f = getattr(self.plugin, action)
-            f(self, *args)
+            f(self, *args, **kwargs)
         elif hasattr(self, action):
             f = getattr(self, action)
-            f(*args)
+            f(*args, **kwargs)
         else:
             raise Exception("unknown action", action)
 
@@ -101,16 +105,15 @@ class BaseWizard(object):
         stack_item = self._stack.pop()
         # try to undo side effects since we last entered 'previous' frame
         # FIXME only self.storage is properly restored
-        self.storage.overwrite_all_data(stack_item.storage_data)
+        self.data = copy.deepcopy(stack_item.storage_data)
         # rerun 'previous' frame
-        self.run(stack_item.action, *stack_item.args)
+        self.run(stack_item.action, *stack_item.args, **stack_item.kwargs)
 
     def reset_stack(self):
         self._stack = []
 
     def new(self):
-        name = os.path.basename(self.storage.path)
-        title = _("Create") + ' ' + name
+        title = _("Create new wallet")
         message = '\n'.join([
             _("What kind of wallet do you want to create?")
         ])
@@ -118,29 +121,35 @@ class BaseWizard(object):
             ('standard',  _("Standard wallet")),
             ('mobile', _("Qtum mobile wallet compatible")),
             ('qtcore', _("Qtum Qt Core wallet compatible")),
-            # ('2fa', _("Wallet with two-factor authentication")),
             ('multisig',  _("Multi-signature wallet")),
             ('imported', _("Import Qtum addresses or private keys")),
         ]
         choices = [pair for pair in wallet_kinds if pair[0] in wallet_types]
         self.choice_dialog(title=title, message=message, choices=choices, run_next=self.on_wallet_type)
 
-    def load_2fa(self):
-        self.storage.put('wallet_type', '2fa')
-        self.storage.put('use_trustedcoin', True)
-        self.plugin = self.plugins.load_plugin('trustedcoin')
+    def upgrade_storage(self, storage):
+        exc = None
+        def on_finished():
+            if exc is None:
+                self.terminate(storage=storage)
+            else:
+                raise exc
+        def do_upgrade():
+            nonlocal exc
+            try:
+                storage.upgrade()
+            except Exception as e:
+                exc = e
+        self.waiting_dialog(do_upgrade, _('Upgrading wallet format...'), on_finished=on_finished)
 
     def on_wallet_type(self, choice):
-        self.wallet_type = choice
+        self.data['wallet_type'] = self.wallet_type = choice
         if choice == 'qtcore':
             action = 'restore_from_key'
         elif choice in ('standard', 'mobile'):
             action = 'choose_keystore'
         elif choice == 'multisig':
             action = 'choose_multisig'
-        elif choice == '2fa':
-            self.load_2fa()
-            action = self.storage.get_action()
         elif choice == 'imported':
             action = 'import_addresses_or_keys'
         self.run(action)
@@ -148,7 +157,7 @@ class BaseWizard(object):
     def choose_multisig(self):
         def on_multisig(m, n):
             multisig_type = "%dof%d" % (m, n)
-            self.storage.put('wallet_type', multisig_type)
+            self.data['wallet_type'] = multisig_type
             self.n = n
             self.run('choose_keystore')
         self.multisig_dialog(run_next=on_multisig)
@@ -160,13 +169,11 @@ class BaseWizard(object):
         if self.wallet_type == 'mobile':
             message = _('Do you want to create a new seed, or to restore a wallet using an existing seed?')
             choices = [
-                # ('create_mobile_seed', _('Create a new seed')),
                 ('restore_from_seed', _('I already have a seed')),
             ]
         elif self.wallet_type == 'qtcore':
             message = _('Do you want to create a new wallet, or to restore a wallet using an existing key?')
             choices = [
-                # ('create_standard_seed', _('Create a new seed')),
                 ('restore_from_key', _('Use public or private keys')),
             ]
         elif self.wallet_type == 'standard' or i == 0:
@@ -194,30 +201,28 @@ class BaseWizard(object):
         title = _("Import Qtum Addresses")
         message = _(
             "Enter a list of Qtum addresses (this will create a watching-only wallet), or a list of private keys.")
-        self.add_xpub_dialog(title=title, message=message, run_next=self.on_import, is_valid=v)
+        self.add_xpub_dialog(title=title, message=message, run_next=self.on_import,
+                             is_valid=v, allow_multi=True, show_wif_help=True)
 
     def on_import(self, text):
-        # create a temporary wallet and exploit that modifications
-        # will be reflected on self.storage
+        # text is already sanitized by is_address_list and is_private_keys_list
         if keystore.is_address_list(text):
-            w = Imported_Wallet(self.storage)
-            addresses = text.split()
-            good_inputs, bad_inputs = w.import_addresses(addresses)
+            self.data['addresses'] = {}
+            for addr in text.split():
+                assert qtum.is_address(addr)
+                self.data['addresses'][addr] = {}
         elif keystore.is_private_key_list(text):
+            self.data['addresses'] = {}
             k = keystore.Imported_KeyStore({})
-            self.storage.put('keystore', k.dump())
-            w = Imported_Wallet(self.storage)
             keys = keystore.get_private_keys(text)
-            good_inputs, bad_inputs = w.import_private_keys(keys, None, write_to_disk=False)
-            self.keystores.append(w.keystore)
+            for pk in keys:
+                assert qtum.is_private_key(pk)
+                txin_type, pubkey = k.import_privkey(pk, None)
+                addr = qtum.pubkey_to_address(txin_type, pubkey)
+                self.data['addresses'][addr] = {'type':txin_type, 'pubkey':pubkey, 'redeem_script':None}
+            self.keystores.append(k)
         else:
             return self.terminate()
-        if bad_inputs:
-            msg = "\n".join(f"{key[:10]}... ({msg})" for key, msg in bad_inputs[:10])
-            if len(bad_inputs) > 10: msg += '\n...'
-            self.show_error(_("The following inputs could not be imported")
-                            + f' ({len(bad_inputs)}):\n' + msg)
-        # FIXME what if len(good_inputs) == 0 ?
         return self.run('create_wallet')
 
     def restore_from_key(self):
@@ -247,20 +252,27 @@ class BaseWizard(object):
             k = keystore.from_master_key(text)
         self.on_keystore(k)
 
-    def choose_hw_device(self, purpose=HWD_SETUP_NEW_WALLET):
+    def choose_hw_device(self, purpose=HWD_SETUP_NEW_WALLET, *, storage=None):
         title = _('Hardware Keystore')
         # check available plugins
         supported_plugins = self.plugins.get_hardware_support()
-        # scan devices
         devices = []  # type: List[Tuple[str, DeviceInfo]]
         devmgr = self.plugins.device_manager
+        debug_msg = ''
+
+        def failed_getting_device_infos(name, e):
+            nonlocal debug_msg
+            devmgr.print_error(f'error getting device infos for {name}: {e}')
+            indented_error_msg = '    '.join([''] + str(e).splitlines(keepends=True))
+            debug_msg += f'  {name}: (error getting device infos)\n{indented_error_msg}\n'
+
+        # scan devices
         try:
             scanned_devices = devmgr.scan_devices()
         except BaseException as e:
             devmgr.print_error('error scanning devices: {}'.format(e))
             debug_msg = '  {}:\n    {}'.format(_('Error scanning devices'), e)
         else:
-            debug_msg = ''
             for splugin in supported_plugins:
                 name, plugin = splugin.name, splugin.plugin
                 # plugin init errored?
@@ -274,14 +286,17 @@ class BaseWizard(object):
                 # see if plugin recognizes 'scanned_devices'
                 try:
                     # FIXME: side-effect: unpaired_device_info sets client.handler
-                    u = devmgr.unpaired_device_infos(None, plugin, devices=scanned_devices)
+                    device_infos = devmgr.unpaired_device_infos(None, plugin, devices=scanned_devices,
+                                                                include_failing_clients=True)
                 except BaseException as e:
                     traceback.print_exc()
-                    devmgr.print_error(f'error getting device infos for {name}: {e}')
-                    indented_error_msg = '    '.join([''] + str(e).splitlines(keepends=True))
-                    debug_msg += f'  {name}: (error getting device infos)\n{indented_error_msg}\n'
+                    failed_getting_device_infos(name, e)
                     continue
-                devices += list(map(lambda x: (name, x), u))
+                device_infos_failing = list(filter(lambda di: di.exception is not None, device_infos))
+                for di in device_infos_failing:
+                    failed_getting_device_infos(name, di.exception)
+                device_infos_working = list(filter(lambda di: di.exception is None, device_infos))
+                devices += list(map(lambda x: (name, x), device_infos_working))
         if not debug_msg:
             debug_msg = '  {}'.format(_('No exceptions encountered.'))
         if not devices:
@@ -293,7 +308,7 @@ class BaseWizard(object):
                 _('Debug message') + '\n',
                 debug_msg
             ])
-            self.confirm_dialog(title=title, message=msg, run_next=lambda x: self.choose_hw_device(purpose))
+            self.confirm_dialog(title=title, message=msg, run_next=lambda x: self.choose_hw_device(purpose, storage=storage))
             return
         # select device
         self.devices = devices
@@ -301,13 +316,15 @@ class BaseWizard(object):
         for name, info in devices:
             state = _("initialized") if info.initialized else _("wiped")
             label = info.label or _("An unnamed {}").format(name)
-            descr = f"{label} [{name}, {state}, {info.device.transport_ui_string}]"
+            try: transport_str = info.device.transport_ui_string[:20]
+            except: transport_str = 'unknown transport'
+            descr = f"{label} [{name}, {state}, {transport_str}]"
             choices.append(((name, info), descr))
         msg = _('Select a device') + ':'
         self.choice_dialog(title=title, message=msg, choices=choices,
-                           run_next=lambda *args: self.on_device(*args, purpose=purpose))
+                           run_next=lambda *args: self.on_device(*args, purpose=purpose, storage=storage))
 
-    def on_device(self, name, device_info, *, purpose):
+    def on_device(self, name, device_info, *, purpose, storage=None):
         self.plugin = self.plugins.get_plugin(name)
         try:
             self.plugin.setup_device(device_info, self, purpose)
@@ -318,19 +335,20 @@ class BaseWizard(object):
                             + _('Please try again.'))
             devmgr = self.plugins.device_manager
             devmgr.unpair_id(device_info.device.id_)
-            self.choose_hw_device()
+            self.choose_hw_device(purpose, storage=storage)
             return
         except (UserCancelled, GoBack):
-            self.choose_hw_device(purpose)
+            self.choose_hw_device(purpose, storage=storage)
             return
         except BaseException as e:
             import traceback, sys
             traceback.print_exc(file=sys.stderr)
             self.show_error(str(e))
-            self.choose_hw_device(purpose)
+            self.choose_hw_device(purpose, storage=storage)
             return
         if purpose == HWD_SETUP_NEW_WALLET:
             def f(derivation, script_type):
+                derivation = normalize_bip32_derivation(derivation)
                 self.run('on_hw_derivation', name, device_info, derivation, script_type)
             self.derivation_and_script_type_dialog(f)
 
@@ -339,7 +357,7 @@ class BaseWizard(object):
             xpub = self.plugin.get_xpub(device_info.device.id_, derivation, 'standard', self)
             password = keystore.Xpub.get_pubkey_from_xpub(xpub, ())
             try:
-                self.storage.decrypt(password)
+                storage.decrypt(password)
             except InvalidPassword:
                 # try to clear session so that user can type another passphrase
                 devmgr = self.plugins.device_manager
@@ -360,15 +378,11 @@ class BaseWizard(object):
             # There is no general standard for HD multisig.
             # For legacy, this is partially compatible with BIP45; assumes index=0
             # For segwit, a custom path is used, as there is no standard at all.
+            default_choice_idx = 2
             choices = [
                 ('standard',   'legacy multisig (p2sh)',            "m/45'/0"),
                 ('p2wsh-p2sh', 'p2sh-segwit multisig (p2wsh-p2sh)', purpose48_derivation(0, xtype='p2wsh-p2sh')),
                 ('p2wsh',      'native segwit multisig (p2wsh)',    purpose48_derivation(0, xtype='p2wsh')),
-            ]
-        elif self.seed_type == 'segwit':
-            choices = [
-                ('p2wpkh-p2sh', 'p2sh-segwit (p2wpkh-p2sh)', bip44_derivation(0, bip43_purpose=49)),
-                ('p2wpkh',      'native segwit (p2wpkh)',    bip44_derivation(0, bip43_purpose=84)),
             ]
         else:
             choices = [
@@ -380,7 +394,8 @@ class BaseWizard(object):
             try:
                 self.choice_and_line_dialog(
                     run_next=f, title=_('Script type and Derivation path'), message1=message1,
-                    message2=message2, choices=choices, test_text=is_bip32_derivation)
+                    message2=message2, choices=choices, test_text=is_bip32_derivation,
+                    default_choice_idx=default_choice_idx)
                 return
             except ScriptTypeNotSupported as e:
                 self.show_error(e)
@@ -390,6 +405,8 @@ class BaseWizard(object):
         from .keystore import hardware_keystore
         try:
             xpub = self.plugin.get_xpub(device_info.device.id_, derivation, xtype, self)
+        except ScriptTypeNotSupported:
+            raise  # this is handled in derivation_dialog
         except BaseException as e:
             traceback.print_exc(file=sys.stderr)
             self.show_error(e)
@@ -404,7 +421,7 @@ class BaseWizard(object):
         k = hardware_keystore(d)
         self.on_keystore(k)
 
-    def passphrase_dialog(self, run_next):
+    def passphrase_dialog(self, run_next, is_restoring=False):
         title = _('Seed extension')
         message = '\n'.join([
             _('You may extend your seed with custom words.'),
@@ -420,7 +437,6 @@ class BaseWizard(object):
         self.opt_bip39 = True
         self.opt_ext = True
         is_cosigning_seed = lambda x: mnemonic.seed_type(x) in ['standard', 'segwit']
-        test = None
         if self.wallet_type == 'mobile':
             test = lambda x: len(list(x.split())) == 12
         elif self.wallet_type == 'standard':
@@ -437,21 +453,18 @@ class BaseWizard(object):
 
         if self.seed_type == 'bip39':
             f = lambda passphrase: self.on_restore_bip39(seed, passphrase)
-            self.passphrase_dialog(run_next=f) if is_ext else f('')
+            self.passphrase_dialog(run_next=f, is_restoring=True) if is_ext else f('')
 
-        elif self.seed_type == 'standard':
+        elif self.seed_type in ['standard', 'segwit']:
             f = lambda passphrase: self.run('create_keystore', seed, passphrase)
-            self.passphrase_dialog(run_next=f) if is_ext else f('')
-
-        elif self.seed_type == 'segwit':
-            f = lambda passphrase: self.on_restore_bip39(seed, passphrase)
-            self.passphrase_dialog(run_next=f) if is_ext else f('')
+            self.passphrase_dialog(run_next=f, is_restoring=True) if is_ext else f('')
 
         else:
             raise Exception('Unknown seed type', self.seed_type)
 
     def on_restore_bip39(self, seed, passphrase):
         def f(derivation, script_type):
+            derivation = normalize_bip32_derivation(derivation)
             self.run('on_bip43', seed, passphrase, derivation, script_type)
         self.derivation_and_script_type_dialog(f)
 
@@ -459,13 +472,7 @@ class BaseWizard(object):
         if self.wallet_type == 'mobile':
             k = keystore.from_mobile_seed(seed)
         else:
-            if self.seed_type == 'segwit':
-                is_p2sh = True
-            elif self.wallet_type == 'multisig':
-                is_p2sh = True
-            else:
-                is_p2sh = False
-            k = keystore.from_seed(seed, passphrase, is_p2sh)
+            k = keystore.from_seed(seed, passphrase, self.wallet_type == 'multisig')
         self.on_keystore(k)
 
     def on_bip43(self, seed, passphrase, derivation, script_type):
@@ -554,46 +561,54 @@ class BaseWizard(object):
 
     def on_password(self, password, *, encrypt_storage,
                     storage_enc_version=STO_EV_USER_PW, encrypt_keystore):
-        assert not self.storage.file_exists(), "file was created too soon! plaintext keys might have been written to disk"
-        self.storage.set_keystore_encryption(bool(password) and encrypt_keystore)
-
-        if encrypt_storage:
-            self.storage.set_password(password, enc_version=storage_enc_version)
 
         for k in self.keystores:
             if k.may_have_password():
                 k.update_password(None, password)
         if self.wallet_type == 'qtcore':
-            self.storage.put('seed_type', self.seed_type)
+            self.data['seed_type'] = self.seed_type
             keys = self.keystores[0].dump()
-            self.storage.put('keystore', keys)
-            self.wallet = Qt_Core_Wallet(self.storage)
-            self.run('create_addresses')
+            self.data['keystore'] = keys
+
         elif self.wallet_type == 'mobile':
-            self.storage.put('seed_type', self.seed_type)
+            self.data['seed_type'] = self.seed_type
             keys = self.keystores[0].dump()
-            self.storage.put('keystore', keys)
-            self.wallet = Mobile_Wallet(self.storage)
-            self.run('create_addresses')
+            self.data['keystore'] = keys
+
         elif self.wallet_type == 'standard':
-            self.storage.put('seed_type', self.seed_type)
+            self.data['seed_type'] = self.seed_type
             keys = self.keystores[0].dump()
-            self.storage.put('keystore', keys)
-            self.wallet = Standard_Wallet(self.storage)
-            self.run('create_addresses')
+            self.data['keystore'] = keys
+
         elif self.wallet_type == 'multisig':
             for i, k in enumerate(self.keystores):
-                self.storage.put('x%d/'%(i+1), k.dump())
-            self.storage.write()
-            self.wallet = Multisig_Wallet(self.storage)
-            self.run('create_addresses')
+                self.data['x%d/'%(i+1)] = k.dump()
+
         elif self.wallet_type == 'imported':
             if len(self.keystores) > 0:
                 keys = self.keystores[0].dump()
-                self.storage.put('keystore', keys)
-            self.wallet = Imported_Wallet(self.storage)
-            self.wallet.storage.write()
-            self.terminate()
+                self.data['keystore'] = keys
+        else:
+            raise Exception('Unknown wallet type')
+        self.pw_args = password, encrypt_storage, storage_enc_version
+        self.terminate()
+
+    def create_storage(self, path):
+        if not self.pw_args:
+            return
+        password, encrypt_storage, storage_enc_version = self.pw_args
+        storage = WalletStorage(path)
+        storage.set_keystore_encryption(bool(password))  # and encrypt_keystore)
+        if encrypt_storage:
+            storage.set_password(password, enc_version=storage_enc_version)
+        for key, value in self.data.items():
+            storage.put(key, value)
+        storage.write()
+        storage.load_plugins()
+        return storage
+
+    def terminate(self, *, storage: Optional[WalletStorage] = None):
+        raise NotImplementedError()  # implemented by subclasses
 
     def show_xpub_and_add_cosigners(self, xpub):
         self.show_xpub_dialog(xpub=xpub, run_next=lambda x: self.run('choose_keystore'))
@@ -607,7 +622,7 @@ class BaseWizard(object):
             "Thus, you might want to keep using a non-segwit wallet in order to be able to receive qtum during the transition period."
         ])
         choices = [
-            ('create_standard_seed', _('Standard')),
+            ('create_standard_seed', _('Legacy')),
             ('create_segwit_seed', _('Segwit')),
         ]
         self.choice_dialog(title=title, message=message, choices=choices, run_next=self.run)
@@ -649,11 +664,3 @@ class BaseWizard(object):
         else:
             f('')
 
-    def create_addresses(self):
-        def task():
-            self.wallet.synchronize()
-            self.wallet.storage.write()
-            self.terminate()
-
-        msg = _("Qtum Electrum is generating your addresses, please wait.")
-        self.waiting_dialog(task, msg)

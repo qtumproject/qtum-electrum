@@ -88,6 +88,11 @@ class JsonDB(PrintError):
                 v = copy.deepcopy(v)
         return v
 
+    def load_plugins(self):
+        wallet_type = self.data.get('wallet_type')
+        if wallet_type in plugin_loaders:
+            plugin_loaders[wallet_type]()
+
     def put(self, key, value):
         try:
             json.dumps(key, cls=util.MyEncoder)
