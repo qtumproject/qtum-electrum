@@ -160,7 +160,7 @@ class AddressSynchronizer(PrintError):
             for txid, height, log_index in token_hist:
                 self.add_unverified_tx(txid, height)
 
-    def start_threads(self, network):
+    def start_network(self, network):
         self.network = network
         if self.network is not None:
             self.verifier = SPV(self.network, self)
