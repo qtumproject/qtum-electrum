@@ -403,12 +403,9 @@ class Synchronizer(ThreadJob):
         with self.lock:
             addresses = self.new_addresses
             self.new_addresses = set()
-        self.subscribe_to_addresses(addresses)
-
-        # subscribe to new tokens
-        with self.lock:
             tokens = self.new_tokens
             self.new_tokens = set()
+        self.subscribe_to_addresses(addresses)
         self.subscribe_tokens(tokens)
 
         # 3. Detect if situation has changed
