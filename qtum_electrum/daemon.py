@@ -181,6 +181,7 @@ class Daemon(DaemonThread):
             response = wallet is not None
         elif sub == 'close_wallet':
             path = config.get_wallet_path()
+            path = standardize_path(path)
             if path in self.wallets:
                 self.stop_wallet(path)
                 response = True
@@ -254,12 +255,15 @@ class Daemon(DaemonThread):
 
     def add_wallet(self, wallet):
         path = wallet.storage.path
+        path = standardize_path(path)
         self.wallets[path] = wallet
 
     def get_wallet(self, path):
+        path = standardize_path(path)
         return self.wallets.get(path)
 
     def stop_wallet(self, path):
+        path = standardize_path(path)
         wallet = self.wallets.pop(path)
         if not wallet: return
         wallet.stop_threads()
@@ -273,6 +277,7 @@ class Daemon(DaemonThread):
         cmd = known_commands[cmdname]
         if cmd.requires_wallet:
             path = config.get_wallet_path()
+            path = standardize_path(path)
             wallet = self.wallets.get(path)
             if wallet is None:
                 return {
