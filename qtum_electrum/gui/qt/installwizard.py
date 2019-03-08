@@ -156,7 +156,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
         self.raise_()
         self.refresh_gui()  # Need for QT on MacOSX.  Lame.
 
-    def select_storage(self, path, get_wallet_from_daemon):
+    def select_storage(self, path, get_wallet_from_daemon) -> Tuple[str, Optional[WalletStorage]]:
 
         vbox = QVBoxLayout()
         hbox = QHBoxLayout()
@@ -248,7 +248,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
                 break
             wallet_from_memory = get_wallet_from_daemon(self.temp_storage.path)
             if wallet_from_memory:
-                return wallet_from_memory
+                raise WalletAlreadyOpenInMemory(wallet_from_memory)
             if self.temp_storage.file_exists() and self.temp_storage.is_encrypted():
                 if self.temp_storage.is_encrypted_with_user_pw():
                     password = self.pw_e.text()
@@ -261,7 +261,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
                     except BaseException as e:
                         traceback.print_exc(file=sys.stdout)
                         QMessageBox.information(None, _('Error'), str(e))
-                        return
+                        raise UserCancelled()
                 elif self.temp_storage.is_encrypted_with_hw_device():
                     try:
                         self.run('choose_hw_device', HWD_SETUP_DECRYPT_WALLET, storage=self.temp_storage)
@@ -275,13 +275,14 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
                     except BaseException as e:
                         traceback.print_exc(file=sys.stdout)
                         QMessageBox.information(None, _('Error'), str(e))
-                        return
+                        raise UserCancelled()
                     if self.temp_storage.is_past_initial_decryption():
                         break
                     else:
-                        return
+                        raise UserCancelled()
                 else:
                     raise Exception('Unexpected encryption version')
+
         return self.temp_storage.path, self.temp_storage if self.temp_storage.file_exists() else None
 
     def run_upgrades(self, storage):

@@ -213,7 +213,10 @@ class WalletStorage(JsonDB):
             if encryption is disabled completely (self.is_encrypted() == False),
             or if encryption is enabled but the contents have already been decrypted.
         """
-        return bool(self.data)
+        try:
+            return bool(self.data)
+        except AttributeError:
+            return False
 
     def is_encrypted(self):
         """Return if storage encryption is currently enabled."""
