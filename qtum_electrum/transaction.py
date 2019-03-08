@@ -347,7 +347,7 @@ def parse_redeemScript_multisig(redeem_script: bytes):
     return m, n, x_pubkeys, pubkeys, redeem_script_sanitized
 
 
-def get_address_from_output_script(_bytes):
+def get_address_from_output_script(_bytes: bytes, *, net=None) -> Tuple[int, str]:
     try:
         decoded = [x for x in script_GetOp(_bytes)]
     except MalformedQtumScript:
@@ -363,19 +363,19 @@ def get_address_from_output_script(_bytes):
     # DUP HASH160 20 BYTES:... EQUALVERIFY CHECKSIG
     match = [ opcodes.OP_DUP, opcodes.OP_HASH160, opcodes.OP_PUSHDATA4, opcodes.OP_EQUALVERIFY, opcodes.OP_CHECKSIG ]
     if match_decoded(decoded, match):
-        return TYPE_ADDRESS, hash160_to_p2pkh(decoded[2][1])
+        return TYPE_ADDRESS, hash160_to_p2pkh(decoded[2][1], net=net)
 
     # p2sh
     match = [ opcodes.OP_HASH160, opcodes.OP_PUSHDATA4, opcodes.OP_EQUAL ]
     if match_decoded(decoded, match):
-        return TYPE_ADDRESS, hash160_to_p2sh(decoded[1][1])
+        return TYPE_ADDRESS, hash160_to_p2sh(decoded[1][1], net=net)
 
     # segwit address
     possible_witness_versions = [opcodes.OP_0] + list(range(opcodes.OP_1, opcodes.OP_16 + 1))
     for witver, opcode in enumerate(possible_witness_versions):
         match = [opcode, opcodes.OP_PUSHDATA4]
         if match_decoded(decoded, match):
-            return TYPE_ADDRESS, hash_to_segwit_addr(decoded[1][1], witver=witver)
+            return TYPE_ADDRESS, hash_to_segwit_addr(decoded[1][1], witver=witver, net=net)
 
     return TYPE_SCRIPT, bh2u(_bytes)
 
