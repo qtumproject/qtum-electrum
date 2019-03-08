@@ -183,6 +183,8 @@ class Abstract_Wallet(AddressSynchronizer):
     verbosity_filter = 'w'
 
     def __init__(self, storage):
+        if storage.requires_upgrade():
+            raise Exception("storage must be upgraded before constructing wallet")
         AddressSynchronizer.__init__(self, storage)
         self.electrum_version = ELECTRUM_VERSION
 

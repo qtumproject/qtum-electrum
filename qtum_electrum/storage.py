@@ -364,6 +364,8 @@ class WalletStorage(JsonDB):
         return result
 
     def requires_upgrade(self):
+        if not self.is_past_initial_decryption():
+            raise Exception("storage not yet decrypted!")
         return self.file_exists() and self.get_seed_version() < FINAL_SEED_VERSION
 
     @profiler
