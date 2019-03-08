@@ -575,9 +575,6 @@ class Hardware_KeyStore(KeyStore, Xpub):
 
     type = 'hardware'
 
-    #restore_wallet_class = BIP32_RD_Wallet
-    max_change_outputs = 1
-
     def __init__(self, d):
         Xpub.__init__(self)
         KeyStore.__init__(self)
