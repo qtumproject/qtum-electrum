@@ -3282,7 +3282,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             return
         types = list([x['type'] for x in abi.get('outputs', [])])
         try:
-            result = eth_abi.decode_abi(types, binascii.a2b_hex(result))
+            if isinstance(result, dict):
+                output = eth_abi.decode_abi(types, binascii.a2b_hex(result['executionResult']['output']))
+            else:
+                output = eth_abi.decode_abi(types, binascii.a2b_hex(result))
 
             def decode_x(x):
                 if isinstance(x, bytes):
@@ -3292,15 +3295,14 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                         return str(x)
                 return str(x)
 
-            result = ','.join([decode_x(x) for x in result])
+            output = ','.join([decode_x(x) for x in output])
+            dialog.show_message(output)
         except (BaseException,) as e:
             import traceback, sys
             traceback.print_exc(file=sys.stderr)
             print(e)
-        if not result:
-            dialog.show_message('')
-            return
-        dialog.show_message(result)
+            dialog.show_message(e, result)
+
 
     def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog, preview):
         try:
