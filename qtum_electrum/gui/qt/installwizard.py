@@ -511,23 +511,25 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
                                message2: str, test_text: Callable[[str], int],
                                run_next, default_choice_idx: int=0) -> Tuple[str, str]:
         vbox = QVBoxLayout()
-
         c_values = [x[0] for x in choices]
         c_titles = [x[1] for x in choices]
         c_default_text = [x[2] for x in choices]
+
         def on_choice_click(clayout):
             idx = clayout.selected_index()
             line.setText(c_default_text[idx])
+            line.repaint()
+
         clayout = ChoicesLayout(message1, c_titles, on_choice_click,
                                 checked_index=default_choice_idx)
         vbox.addLayout(clayout.layout())
-
-        vbox.addSpacing(50)
+        vbox.addSpacing(5)
         vbox.addWidget(WWLabel(message2))
-
         line = QLineEdit()
+
         def on_text_change(text):
             self.next_button.setEnabled(test_text(text))
+
         line.textEdited.connect(on_text_change)
         on_choice_click(clayout)  # set default text for "line"
         vbox.addWidget(line)
