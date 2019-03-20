@@ -807,8 +807,9 @@ def purpose48_derivation(account_id: int, xtype: str) -> str:
     return "m/%d'/%d'/%d'/%d'" % (bip43_purpose, coin, account_id, script_type_int)
 
 
-def bip44_derivation(account_id, bip43_purpose=44):
-    coin = constants.net.BIP44_COIN_TYPE
+def bip44_derivation(account_id, bip43_purpose=44, coin=None):
+    if coin is None:
+        coin = constants.net.BIP44_COIN_TYPE
     return "m/%d'/%d'/%d'" % (bip43_purpose, coin, int(account_id))
 
 

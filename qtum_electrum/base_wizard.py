@@ -32,6 +32,7 @@ from typing import List, TYPE_CHECKING, Tuple, NamedTuple, Any, Dict, Optional
 from . import qtum
 from . import keystore
 from . import mnemonic
+from . import constants
 from .bip32 import is_bip32_derivation, xpub_type, normalize_bip32_derivation
 from .i18n import _
 from .keystore import bip44_derivation, purpose48_derivation
@@ -374,6 +375,7 @@ class BaseWizard(object):
             _('You can override the suggested derivation path.'),
             _('If you are not sure what this is, leave this field unchanged.')
         ])
+
         if self.wallet_type == 'multisig':
             # There is no general standard for HD multisig.
             # For legacy, this is partially compatible with BIP45; assumes index=0
@@ -385,12 +387,23 @@ class BaseWizard(object):
                 ('p2wsh',      'native segwit multisig (p2wsh)',    purpose48_derivation(0, xtype='p2wsh')),
             ]
         else:
-            default_choice_idx = 1
+            default_choice_idx = 0
             choices = [
                 ('standard',    'legacy (p2pkh)',            bip44_derivation(0, bip43_purpose=44)),
                 ('p2wpkh-p2sh', 'p2sh-segwit (p2wpkh-p2sh)', bip44_derivation(0, bip43_purpose=49)),
                 ('p2wpkh',      'native segwit (p2wpkh)',    bip44_derivation(0, bip43_purpose=84)),
             ]
+
+            if self.plugin is not None and self.plugin.name == "trezor":
+                choices += [
+                    ('standard',    'legacy (p2pkh) (trezor web wallet compatiable)',
+                     bip44_derivation(0, bip43_purpose=44, coin=constants.net.SLIP_COIN_TYPE)),
+                    ('p2wpkh-p2sh', 'p2sh-segwit (p2wpkh-p2sh) (trezor web wallet compatiable)',
+                     bip44_derivation(0, bip43_purpose=49, coin=constants.net.SLIP_COIN_TYPE)),
+                    ('p2wpkh',      'native segwit (p2wpkh) (trezor web wallet compatiable)',
+                     bip44_derivation(0, bip43_purpose=84, coin=constants.net.SLIP_COIN_TYPE)),
+                ]
+
         while True:
             try:
                 self.choice_and_line_dialog(

@@ -51,7 +51,11 @@ class QtumMainnet:
     DEFAULT_PORTS = {'t': '50001', 's': '50002'}
     DEFAULT_SERVERS = read_json('servers.json', {})
     CHECKPOINTS = read_json('checkpoints.json', {})
+
+    # for the 88 and 2301 coin type issue, see https://github.com/satoshilabs/slips/pull/196
+    # Qtum official uses 88 as coin type
     BIP44_COIN_TYPE = 88
+    SLIP_COIN_TYPE = 2301
 
     XPRV_HEADERS = {
         'standard': 0x0488ade4,
@@ -84,6 +88,7 @@ class QtumTestnet:
     DEFAULT_SERVERS = read_json('servers_testnet.json', {})
     CHECKPOINTS = read_json('checkpoints_testnet.json', {})
     BIP44_COIN_TYPE = 1
+    SLIP_COIN_TYPE = 1
 
     XPRV_HEADERS = {
         'standard': 0x04358394,
