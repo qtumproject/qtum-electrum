@@ -3,7 +3,7 @@ import sys
 import threading
 import os
 import traceback
-from typing import Tuple
+from typing import Tuple, List
 
 from PyQt5.QtCore import *
 
@@ -507,8 +507,9 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
         return clayout.selected_index()
 
     @wizard_dialog
-    def choice_and_line_dialog(self, title, message1, choices, message2,
-                               test_text, run_next) -> Tuple[str, str]:
+    def choice_and_line_dialog(self, title: str, message1: str, choices: List[Tuple[str, str, str]],
+                               message2: str, test_text: Callable[[str], int],
+                               run_next, default_choice_idx: int=0) -> Tuple[str, str]:
         vbox = QVBoxLayout()
 
         c_values = [x[0] for x in choices]
@@ -517,7 +518,8 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
         def on_choice_click(clayout):
             idx = clayout.selected_index()
             line.setText(c_default_text[idx])
-        clayout = ChoicesLayout(message1, c_titles, on_choice_click)
+        clayout = ChoicesLayout(message1, c_titles, on_choice_click,
+                                checked_index=default_choice_idx)
         vbox.addLayout(clayout.layout())
 
         vbox.addSpacing(50)

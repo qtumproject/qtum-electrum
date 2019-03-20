@@ -385,6 +385,7 @@ class BaseWizard(object):
                 ('p2wsh',      'native segwit multisig (p2wsh)',    purpose48_derivation(0, xtype='p2wsh')),
             ]
         else:
+            default_choice_idx = 1
             choices = [
                 ('standard',    'legacy (p2pkh)',            bip44_derivation(0, bip43_purpose=44)),
                 ('p2wpkh-p2sh', 'p2sh-segwit (p2wpkh-p2sh)', bip44_derivation(0, bip43_purpose=49)),

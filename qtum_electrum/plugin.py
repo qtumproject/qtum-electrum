@@ -292,6 +292,7 @@ class DeviceInfo(NamedTuple):
     device: Device
     label: str
     initialized: bool
+    exception: Optional[Exception] = None
 
 
 class HardwarePluginToScan(NamedTuple):
@@ -490,11 +491,13 @@ class DeviceMgr(ThreadJob, PrintError):
               'its seed (and passphrase, if any).  Otherwise all qtums you '
               'receive will be unspendable.') % plugin.device)
 
-    def unpaired_device_infos(self, handler, plugin: 'HW_PluginBase', devices=None):
+    def unpaired_device_infos(self, handler, plugin: 'HW_PluginBase', devices=None,
+                              include_failing_clients=False):
         '''Returns a list of DeviceInfo objects: one for each connected,
         unpaired device accepted by the plugin.'''
         if not plugin.libraries_available:
-            raise Exception('Missing libraries for {}'.format(plugin.name))
+            message = plugin.get_library_not_available_message()
+            raise Exception(message)
         if devices is None:
             devices = self.scan_devices()
         devices = [dev for dev in devices if not self.xpub_by_id(dev.id_)]
@@ -504,14 +507,16 @@ class DeviceMgr(ThreadJob, PrintError):
                 continue
             try:
                 client = self.create_client(device, handler, plugin)
-            except UserFacingException:
-                raise
-            except BaseException as e:
+            except Exception as e:
                 self.print_error(f'failed to create client for {plugin.name} at {device.path}: {repr(e)}')
+                if include_failing_clients:
+                    infos.append(DeviceInfo(device=device, exception=e))
                 continue
             if not client:
                 continue
-            infos.append(DeviceInfo(device, client.label(), client.is_initialized()))
+            infos.append(DeviceInfo(device=device,
+                                    label=client.label(),
+                                    initialized=client.is_initialized()))
 
         return infos
 
