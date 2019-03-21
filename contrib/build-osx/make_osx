@@ -14,7 +14,7 @@ PACKAGE="Qtum Electrum"
 TEMP_DMG_NAME="/tmp/qtum-electrum.dmg"
 DMG_NAME="${STAGING_DIR}/Qtum-electrum-osx-${VERSION}.dmg"
 LIBSECP_VERSION=b408c6a8b287003d1ade5709e6f7bc3c7f1d5be7
-# export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;
+export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;
 
 rm -rf ${STAGING_DIR} ${TEMP_DMG_NAME}
 

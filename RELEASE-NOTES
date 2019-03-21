@@ -1,3 +1,10 @@
+# Release 0.18.12
+ * reduce GUI freeze the first time synchronizing
+ * speed up loading transaction history
+ * fix parsing contract-call result
+ * fix encoding contract-create constructor args
+ * some minor improvements
+
 # Release 0.18.11
  * allow to copy raw transaction in history list
  * add preview for sending token and raw contract transactions
