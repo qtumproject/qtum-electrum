@@ -42,7 +42,6 @@ tar xf "$CACHEDIR/Python-$PYTHON_VERSION.tar.xz" -C "$BUILDDIR"
 (
     cd "$BUILDDIR/Python-$PYTHON_VERSION"
     export SOURCE_DATE_EPOCH=1530212462
-
     TZ=UTC faketime -f '2019-01-01 01:01:01' ./configure \
       --cache-file="$CACHEDIR/python.config.cache" \
       --prefix="$APPDIR/usr" \
@@ -186,8 +185,8 @@ rm -rf "$APPDIR"/usr/lib/python3.6/site-packages/PyQt5/Qt/lib/libQt5Xml*
 # these are deleted as they were not deterministic; and are not needed anyway
 find "$APPDIR" -path '*/__pycache__*' -delete
 rm "$APPDIR"/usr/lib/libsecp256k1.a
-rm "$APPDIR"/usr/lib/python3.6/site-packages/pyblake2-*.dist-info/RECORD
-rm "$APPDIR"/usr/lib/python3.6/site-packages/hidapi-*.dist-info/RECORD
+rm "$APPDIR"/usr/lib/python3.6/site-packages/pyblake2-*.dist-info/RECORD || true
+rm "$APPDIR"/usr/lib/python3.6/site-packages/hidapi-*.dist-info/RECORD || true
 
 find -exec touch -d '2000-11-11T11:11:11+00:00' {} +
 
