@@ -418,7 +418,7 @@ class ContractCreateLayout(QVBoxLayout):
             elif 'int' in _type:
                 if not isinstance(args[index], int):
                     raise ParseArgsException('invalid input:{}'.format(args[index]))
-            elif _type == 'string' or _type == 'bytes':
+            elif _type == 'bytes':
                 args[index] = args[index].encode()
         return constructor, args, sender
 
