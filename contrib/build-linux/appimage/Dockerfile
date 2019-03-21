@@ -20,7 +20,7 @@ RUN apt-get update -q && \
         gettext=0.18.3.1-1ubuntu3.1 \
         libzbar0=0.10+doc-9build1  \
         faketime=0.9.5-2 \
-        libsqlite3-dev=3.27.2-1 \
+        libsqlite3-dev=3.8.2-1ubuntu2.2 \
         && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get autoremove -y && \
