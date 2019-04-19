@@ -276,7 +276,7 @@ class ElectrumGui:
         # Show network dialog if config does not exist
         if self.daemon.network:
             if self.config.get('auto_connect') is None:
-                wizard = InstallWizard(self.config, self.app, self.plugins, None)
+                wizard = InstallWizard(self.config, self.app, self.plugins)
                 wizard.init_network(self.daemon.network)
                 wizard.terminate()
 
