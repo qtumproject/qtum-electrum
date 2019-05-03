@@ -480,12 +480,18 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
     def terminate(self, **kwargs):
         self.accept_signal.emit()
 
-    def waiting_dialog(self, task, msg):
+    def waiting_dialog(self, task, msg, on_finished=None):
         self.please_wait.setText(msg)
-        self.refresh_gui()
-        t = threading.Thread(target = task)
+        t = threading.Thread(target=task)
         t.start()
-        t.join()
+        while True:
+            t.join(1.0 / 60)
+            if t.is_alive():
+                self.refresh_gui()
+            else:
+                break
+        if on_finished:
+            on_finished()
 
     @wizard_dialog
     def choice_dialog(self, title, message, choices, run_next):
