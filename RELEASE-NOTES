@@ -1,3 +1,6 @@
+# Release 0.18.13
+ * fix crash on startup
+
 # Release 0.18.12
  * reduce GUI freeze the first time synchronizing
  * speed up loading transaction history
