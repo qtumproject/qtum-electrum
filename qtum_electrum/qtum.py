@@ -540,6 +540,10 @@ WIF_SCRIPT_TYPES = {
 WIF_SCRIPT_TYPES_INV = inv_dict(WIF_SCRIPT_TYPES)
 
 
+def is_segwit_script_type(txin_type: str) -> bool:
+    return txin_type in ('p2wpkh', 'p2wpkh-p2sh', 'p2wsh', 'p2wsh-p2sh')
+
+
 def serialize_privkey(secret: bytes, compressed: bool, txin_type: str, internal_use: bool=False) -> str:
     # we only export secrets inside curve range
     secret = ecc.ECPrivkey.normalize_secret_bytes(secret)
@@ -583,7 +587,17 @@ def deserialize_privkey(key: str) -> Tuple[str, bytes, bool]:
 
     if len(vch) not in [33, 34]:
         raise Exception('invalid vch len for WIF key: {}'.format(len(vch)))
-    compressed = len(vch) == 34
+    compressed = False
+    if len(vch) == 34:
+        if vch[33] == 0x01:
+            compressed = True
+        else:
+            raise QtumException(f'invalid WIF key. length suggests compressed pubkey, '
+                                   f'but last byte is {vch[33]} != 0x01')
+
+    if is_segwit_script_type(txin_type) and not compressed:
+        raise QtumException('only compressed public keys can be used in segwit scripts')
+
     secret_bytes = vch[1:33]
     # we accept secrets outside curve range; cast into range here:
     secret_bytes = ecc.ECPrivkey.normalize_secret_bytes(secret_bytes)
