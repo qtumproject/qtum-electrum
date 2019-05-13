@@ -9,10 +9,7 @@ Qtum Electrum
 Getting started
 ===============
 
-For Windows and Mac OS X users, you can download latest release [here](https://github.com/qtumproject/qtum-electrum/releases).
-
-
-If you are using Linux, read the "Development Version" section.
+Download latest release [here](https://github.com/qtumproject/qtum-electrum/releases).
 
 
 Compatible with Qtum mobile wallet
