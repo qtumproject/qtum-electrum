@@ -28,7 +28,7 @@ from typing import NamedTuple, List
 
 from .bitcoin import sha256, COIN, TYPE_ADDRESS, is_address
 from .transaction import Transaction, TxOutput
-from .util import NotEnoughFunds, PrintError, profiler
+from .util import NotEnoughFunds, PrintError
 
 
 # A simple deterministic PRNG.  Used to deterministically shuffle a
@@ -79,23 +79,30 @@ class Bucket(NamedTuple):
 
 
 def strip_unneeded(bkts, sufficient_funds, exception_addr=None) -> list:
-    '''Remove buckets that are unnecessary in achieving the spend amount'''
-    bkts = sorted(bkts, key=lambda bkt: bkt.value)
+    '''
+    Remove buckets that are unnecessary in achieving the spend amount
+    exception_addr is the address that cannot be removed
+    '''
+    if sufficient_funds([], bucket_value_sum=0):
+        # none of the buckets are needed
+        return []
+    bkts = sorted(bkts, key=lambda bkt: bkt.value, reverse=True)
+    bucket_value_sum = 0
 
+    # move the exception bucket to the top
     if exception_addr:
-        # move the exception bucket to the end
         for i in range(len(bkts)):
             if bkts[i].desc == exception_addr:
                 exception_bucket = bkts[i]
                 del bkts[i]
-                bkts.append(exception_bucket)
+                bkts.insert(0, exception_bucket)
                 break
 
     for i in range(len(bkts)):
-        if not sufficient_funds(bkts[i + 1:]):
-            return bkts[i:]
-    # Shouldn't get here
-    return bkts
+        bucket_value_sum += (bkts[i]).value
+        if sufficient_funds(bkts[:i+1], bucket_value_sum=bucket_value_sum):
+            return bkts[:i+1]
+    raise Exception("keeping all buckets is still not enough")
 
 
 def strip_unneeded_utxo(bkts, sufficient_funds):
@@ -108,7 +115,7 @@ def strip_unneeded_utxo(bkts, sufficient_funds):
     for coin in bucket.coins:
         coins.append(coin)
         new_bucket = make_Bucket(desc, coins)
-        if sufficient_funds([new_bucket]):
+        if sufficient_funds([new_bucket], bucket_value_sum=new_bucket.value):
             return [new_bucket, ]
     return [bucket, ]
 
@@ -212,7 +219,7 @@ class CoinChooserBase(PrintError):
             self.print_error('not keeping dust', dust)
         return change
 
-    def make_tx(self, coins, outputs, change_addrs, fee_estimator,
+    def make_tx(self, coins, inputs, outputs, change_addrs, fee_estimator,
                 dust_threshold, sender=None):
         """Select unspent coins to spend to pay outputs.  If the change is
         greater than dust_threshold (after adding the change output to
@@ -227,7 +234,8 @@ class CoinChooserBase(PrintError):
         self.p = PRNG(''.join(sorted(utxos)))
 
         # Copy the ouputs so when adding change we don't modify "outputs"
-        tx = Transaction.from_io([], outputs[:])
+        tx = Transaction.from_io(inputs[:], outputs[:])
+        input_value = tx.input_value()
         # Weight of the transaction with no inputs and no change
         # Note: this will use legacy tx serialization as the need for "segwit"
         # would be detected from inputs. The only side effect should be that the
@@ -252,10 +260,15 @@ class CoinChooserBase(PrintError):
 
             return total_weight
 
-        def sufficient_funds(buckets):
+        def sufficient_funds(buckets, *, bucket_value_sum):
             '''Given a list of buckets, return True if it has enough
             value to pay for the transaction'''
-            total_input = sum(bucket.value for bucket in buckets)
+            # assert bucket_value_sum == sum(bucket.value for bucket in buckets)  # expensive!
+            total_input = input_value + bucket_value_sum
+            if total_input < spent_amount:  # shortcut for performance
+                return False
+            # note re performance: so far this was constant time
+            # what follows is linear in len(buckets)
             total_weight = get_tx_weight(buckets)
             return total_input >= spent_amount + fee_estimator_w(total_weight)
 
@@ -302,7 +315,7 @@ class CoinChooserRandom(CoinChooserBase):
 
         # Add all singletons
         for n, bucket in enumerate(buckets):
-            if sufficient_funds([bucket]):
+            if sufficient_funds([bucket], bucket_value_sum=bucket.value):
                 candidates.add((n, ))
 
         # And now some random ones
@@ -313,9 +326,12 @@ class CoinChooserRandom(CoinChooserBase):
             # incrementally combine buckets until sufficient
             self.p.shuffle(permutation)
             bkts = []
+            bucket_value_sum = 0
             for count, index in enumerate(permutation):
-                bkts.append(buckets[index])
-                if sufficient_funds(bkts):
+                bucket = buckets[index]
+                bkts.append(bucket)
+                bucket_value_sum += bucket.value
+                if sufficient_funds(bkts, bucket_value_sum=bucket_value_sum):
                     candidates.add(tuple(sorted(permutation[:count + 1])))
                     break
             else:
@@ -342,16 +358,20 @@ class CoinChooserRandom(CoinChooserBase):
 
         bucket_sets = [conf_buckets, unconf_buckets, other_buckets]
         already_selected_buckets = []
+        already_selected_buckets_value_sum = 0
 
         for bkts_choose_from in bucket_sets:
             try:
-                def sfunds(bkts):
-                    return sufficient_funds(already_selected_buckets + bkts)
+                def sfunds(bkts, *, bucket_value_sum):
+                    bucket_value_sum += already_selected_buckets_value_sum
+                    return sufficient_funds(already_selected_buckets + bkts,
+                                            bucket_value_sum=bucket_value_sum)
 
                 candidates = self.bucket_candidates_any(bkts_choose_from, sfunds)
                 break
             except NotEnoughFunds:
                 already_selected_buckets += bkts_choose_from
+                already_selected_buckets_value_sum += sum(bucket.value for bucket in bkts_choose_from)
         else:
             raise NotEnoughFunds()
 
@@ -420,9 +440,11 @@ class CoinChooserOldestFirst(CoinChooserBase):
         buckets.sort(key = lambda b: max(adj_height(coin['height'])
                                          for coin in b.coins))
         selected = []
+        bucket_value_sum = 0
         for bucket in buckets:
             selected.append(bucket)
-            if sufficient_funds(selected):
+            bucket_value_sum += bucket.value
+            if sufficient_funds(selected, bucket_value_sum=bucket_value_sum):
                 return strip_unneeded(selected, sufficient_funds)
         else:
             raise NotEnoughFunds()
@@ -439,6 +461,7 @@ class CoinChooserQtum(CoinChooserBase):
         buckets.sort(key=lambda b: max(adj_height(coin['height'])
                                        for coin in b.coins))
         selected = []
+        bucket_value_sum = 0
 
         if sender:
             # put sender bucket to selected first
@@ -447,8 +470,9 @@ class CoinChooserQtum(CoinChooserBase):
                 if bucket.desc == sender:
                     del buckets[i]
                     selected.append(bucket)
+                    bucket_value_sum += bucket.value
                     # check if it's already enough
-                    if sufficient_funds(selected):
+                    if sufficient_funds(selected, bucket_value_sum=bucket_value_sum):
                         return strip_unneeded_utxo(selected, sufficient_funds)
                     break
             if len(selected) == 0:
@@ -456,7 +480,8 @@ class CoinChooserQtum(CoinChooserBase):
 
         for bucket in buckets:
             selected.append(bucket)
-            if sufficient_funds(selected):
+            bucket_value_sum += bucket.value
+            if sufficient_funds(selected, bucket_value_sum=bucket_value_sum):
                 return strip_unneeded(selected, sufficient_funds, sender)
         else:
             raise NotEnoughFunds()

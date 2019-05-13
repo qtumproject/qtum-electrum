@@ -690,6 +690,17 @@ class Transaction:
         txin['witness'] = None    # force re-serialization
         self.raw = None
 
+    def add_inputs_info(self, wallet, check_p2pk=False):
+        if self.is_complete():
+            return
+        for txin in self.inputs():
+            wallet.add_input_info(txin, check_p2pk=check_p2pk)
+
+    def remove_signatures(self):
+        for txin in self.inputs():
+            txin['signatures'] = [None] * len(txin['signatures'])
+        assert not self.is_complete()
+
     def deserialize(self, force_full_parse=False):
         if self.raw is None:
             return
@@ -1143,8 +1154,6 @@ class Transaction:
         return s, r
 
     def is_complete(self):
-        if not self.is_partial_originally:
-            return True
         s, r = self.signature_count()
         return r == s
 

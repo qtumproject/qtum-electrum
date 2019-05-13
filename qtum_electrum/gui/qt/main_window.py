@@ -2634,8 +2634,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         feebox_cb.stateChanged.connect(on_feebox)
         fee_widgets.append((feebox_cb, None))
 
+        use_rbf = self.config.get('use_rbf', True)
         use_rbf_cb = QCheckBox(_('Use Replace-By-Fee'))
-        use_rbf_cb.setChecked(self.config.get('use_rbf', True))
+        use_rbf_cb.setChecked(use_rbf)
         use_rbf_cb.setToolTip(
             _('If you check this box, your transactions will be marked as non-final,') + '\n' + \
             _('and you will have the possibility, while they are unconfirmed, to replace them with transactions that pay higher fees.') + '\n' + \
@@ -2645,15 +2646,16 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         use_rbf_cb.stateChanged.connect(on_use_rbf)
         fee_widgets.append((use_rbf_cb, None))
 
-        # rbf_policy = self.config.get('rbf_policy', 1)
-        # rbf_label = HelpLabel(_('Propose Replace-By-Fee') + ':', '')
-        # rbf_combo = QComboBox()
-        # rbf_combo.addItems([_('Always'), _('If the fee is low'), _('Never')])
-        # rbf_combo.setCurrentIndex(rbf_policy)
-        # def on_rbf(x):
-        #     self.config.set_key('rbf_policy', x)
-        # rbf_combo.currentIndexChanged.connect(on_rbf)
-        # fee_widgets.append((rbf_label, rbf_combo))
+        batch_rbf_cb = QCheckBox(_('Batch RBF transactions'))
+        batch_rbf_cb.setChecked(self.config.get('batch_rbf', False))
+        batch_rbf_cb.setEnabled(use_rbf)
+        batch_rbf_cb.setToolTip(
+            _('If you check this box, your unconfirmed transactions will be consolidated into a single transaction.') + '\n' + \
+            _('This will save fees.'))
+        def on_batch_rbf(x):
+            self.config.set_key('batch_rbf', bool(x))
+        batch_rbf_cb.stateChanged.connect(on_batch_rbf)
+        fee_widgets.append((batch_rbf_cb, None))
 
         msg = _('OpenAlias record, used to receive coins and to sign payment requests.') + '\n\n'\
               + _('The following alias providers are available:') + '\n'\
