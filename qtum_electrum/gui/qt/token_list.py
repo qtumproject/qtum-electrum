@@ -10,7 +10,7 @@ from .util import *
 from qtum_electrum.qtum import hash160_to_p2pkh
 from qtum_electrum.i18n import _
 from qtum_electrum.plugin import run_hook
-from qtum_electrum.util import block_explorer_URL, open_browser, TxMinedStatus
+from qtum_electrum.util import block_explorer_URL, open_browser, TxMinedInfo
 
 
 class TokenBalanceList(MyTreeWidget):
@@ -98,8 +98,8 @@ class TokenHistoryList(MyTreeWidget):
                 balance_str = '-'
                 payout = True
             balance_str += '{}'.format(amount / 10 ** token.decimals)
-            tx_mined_status = TxMinedStatus(height, conf, timestamp, None)
-            status, status_str = wallet.get_tx_status(txid, tx_mined_status)
+            tx_mined_info = TxMinedInfo(height, conf, timestamp, None, None)
+            status, status_str = wallet.get_tx_status(txid, tx_mined_info)
             icon = read_QIcon(TX_ICONS[status])
 
             item = QTreeWidgetItem(['', status_str, token.bind_addr, token.symbol, balance_str])

@@ -884,13 +884,6 @@ def make_dir(path, allow_symlink=True):
         os.chmod(path, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
 
 
-class TxMinedStatus(NamedTuple):
-    height: int
-    conf: int
-    timestamp: int
-    header_hash: str
-
-
 class VerifiedTxInfo(NamedTuple):
     height: int
     timestamp: int
@@ -922,3 +915,10 @@ def make_aiohttp_session(proxy):
     else:
         return aiohttp.ClientSession(headers={'User-Agent' : 'Qtum Electrum'}, timeout=aiohttp.ClientTimeout(total=10))
 
+
+class TxMinedInfo(NamedTuple):
+    height: int                        # height of block that mined tx
+    conf: Optional[int] = None         # number of confirmations (None means unknown)
+    timestamp: Optional[int] = None    # timestamp of block that mined tx
+    txpos: Optional[int] = None        # position of tx in serialized block
+    header_hash: Optional[str] = None  # hash of block that mined tx

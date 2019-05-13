@@ -109,9 +109,9 @@ class ElectrumGui:
 
         b = 0
         self.history = []
-        for tx_hash, tx_mined_status, value, balance in self.wallet.get_history():
-            if tx_mined_status.conf:
-                timestamp = tx_mined_status.timestamp
+        for tx_hash, tx_mined_info, value, balance in self.wallet.get_history():
+            if tx_mined_info.conf:
+                timestamp = tx_mined_info.timestamp
                 try:
                     time_str = datetime.datetime.fromtimestamp(timestamp).isoformat(' ')[:-3]
                 except Exception:

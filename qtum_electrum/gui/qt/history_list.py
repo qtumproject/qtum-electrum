@@ -25,7 +25,7 @@
 import datetime
 from .util import *
 from qtum_electrum.i18n import _
-from qtum_electrum.util import block_explorer_URL, timestamp_to_datetime, profiler, open_browser, TxMinedStatus
+from qtum_electrum.util import block_explorer_URL, timestamp_to_datetime, profiler, open_browser, TxMinedInfo
 from qtum_electrum.address_synchronizer import TX_HEIGHT_LOCAL
 
 
@@ -160,9 +160,9 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
         red_brush = QBrush(QColor("#BC1E1E"))
         monospace_font = QFont(MONOSPACE_FONT)
         for h_item in h:
-            tx_hash, tx_mined_status, delta, balance = h_item
-            status, status_str = self.wallet.get_tx_status(tx_hash, tx_mined_status)
-            conf = tx_mined_status.conf
+            tx_hash, tx_mined_info, delta, balance = h_item
+            status, status_str = self.wallet.get_tx_status(tx_hash, tx_mined_info)
+            conf = tx_mined_info.conf
 
             has_invoice = self.wallet.invoices.paid.get(tx_hash)
             icon = read_QIcon(TX_ICONS[status])
@@ -173,7 +173,7 @@ class HistoryList(MyTreeWidget, AcceptFileDragDrop):
                 label = _('contract gas change')
             entry = ['', tx_hash, status_str, label, v_str, balance_str]
             if fx and fx.show_history():
-                date = timestamp_to_datetime(time.time() if conf <= 0 else tx_mined_status.timestamp)
+                date = timestamp_to_datetime(time.time() if conf <= 0 else tx_mined_info.timestamp)
                 for amount in [delta, balance]:
                     text = fx.historical_value_str(amount, date)
                     entry.append(text)

@@ -32,11 +32,11 @@ import time
 import copy
 import errno
 import json
-from typing import List, Tuple, Optional, TYPE_CHECKING
+from typing import List, Tuple, Optional, TYPE_CHECKING, NamedTuple
 
 from .i18n import _
 from .util import NotEnoughFunds, UserCancelled, profiler, format_satoshis, \
-    InvalidPassword, WalletFileException, TimeoutException, format_time, bh2u
+    InvalidPassword, WalletFileException, TimeoutException, format_time, bh2u, TxMinedInfo
 from .qtum import (TYPE_ADDRESS, TYPE_STAKE, is_address, is_minikey,
                    RECOMMEND_CONFIRMATIONS, COINBASE_MATURITY, TYPE_PUBKEY, b58_address_to_hash160,
                    FEERATE_MAX_DYNAMIC, FEERATE_DEFAULT_RELAY, QtumException)
@@ -170,6 +170,18 @@ def get_locktime_for_new_transaction(network: 'Network') -> int:
 
 
 class CannotBumpFee(Exception): pass
+
+
+class TxWalletDetails(NamedTuple):
+    txid: Optional[str]
+    status: str
+    label: str
+    can_broadcast: bool
+    can_bump: bool
+    amount: Optional[int]
+    fee: Optional[int]
+    tx_mined_info: TxMinedInfo
+    mempool_depth_bytes: Optional[int]
 
 
 class Abstract_Wallet(AddressSynchronizer):
@@ -332,19 +344,18 @@ class Abstract_Wallet(AddressSynchronizer):
     def is_found(self):
         return self.history.values() != [[]] * len(self.history)
 
-    def get_tx_info(self, tx):
+    def get_tx_info(self, tx) -> TxWalletDetails:
         is_relevant, is_mine, v, fee = self.get_wallet_delta(tx)
         exp_n = None
         can_broadcast = False
         can_bump = False
         label = ''
-        height = conf = timestamp = None
         tx_hash = tx.txid()
+        tx_mined_info = self.get_tx_height(tx_hash)
         if tx.is_complete():
             if tx_hash in self.transactions.keys():
                 label = self.get_label(tx_hash)
-                tx_mined_status = self.get_tx_height(tx_hash)
-                height, conf = tx_mined_status.height, tx_mined_status.conf
+                height, conf = tx_mined_info.height, tx_mined_info.conf
                 if height > 0:
                     if conf:
                         status = _("%d confirmations") % conf
@@ -380,7 +391,17 @@ class Abstract_Wallet(AddressSynchronizer):
         else:
             amount = None
 
-        return tx_hash, status, label, can_broadcast, can_bump, amount, fee, height, conf, timestamp, exp_n
+        return TxWalletDetails(
+            txid=tx_hash,
+            status=status,
+            label=label,
+            can_broadcast=can_broadcast,
+            can_bump=can_bump,
+            amount=amount,
+            fee=fee,
+            tx_mined_info=tx_mined_info,
+            mempool_depth_bytes=exp_n,
+        )
 
     def get_spendable_coins(self, domain, config):
         confirmed_only = config.get('confirmed_only', False)

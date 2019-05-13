@@ -26,19 +26,21 @@ import copy
 import datetime
 import json
 import traceback
+import sys
 
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
+from PyQt5.QtCore import QSize, Qt
+from PyQt5.QtGui import QTextCharFormat, QBrush, QFont, QColor
+from PyQt5.QtWidgets import (QDialog, QLabel, QPushButton, QHBoxLayout, QVBoxLayout,
+                             QTextEdit, QFrame)
 
-from qtum_electrum import transaction
 from qtum_electrum.bitcoin import base_encode
 from qtum_electrum.i18n import _
 from qtum_electrum.plugin import run_hook
 from qtum_electrum.transaction import SerializationError
 
 from qtum_electrum.util import bfh
-from .util import *
+from .util import (MessageBoxMixin, read_QIcon, Buttons, CopyButton,
+                   MONOSPACE_FONT, ButtonsLineEdit)
 
 SAVE_BUTTON_ENABLED_TOOLTIP = _("Save transaction offline")
 SAVE_BUTTON_DISABLED_TOOLTIP = _("Please sign this transaction in order to save it")
@@ -97,19 +99,9 @@ class TxDialog(QDialog, MessageBoxMixin):
         self.tx_hash_e.addButton("qrcode.png", qr_show, _("Show as QR code"))
         self.tx_hash_e.setReadOnly(True)
         vbox.addWidget(self.tx_hash_e)
-        self.tx_desc = QLabel()
-        vbox.addWidget(self.tx_desc)
-        self.status_label = QLabel()
-        vbox.addWidget(self.status_label)
-        self.date_label = QLabel()
-        vbox.addWidget(self.date_label)
-        self.amount_label = QLabel()
-        vbox.addWidget(self.amount_label)
-        self.size_label = QLabel()
-        vbox.addWidget(self.size_label)
-        self.fee_label = QLabel()
-        vbox.addWidget(self.fee_label)
 
+        self.add_tx_stats(vbox)
+        vbox.addSpacing(10)
         self.add_io(vbox)
 
         self.sign_button = b = QPushButton(_("Sign"))
@@ -150,7 +142,6 @@ class TxDialog(QDialog, MessageBoxMixin):
         hbox = QHBoxLayout()
         share_btn_layout = Buttons(*self.sharing_buttons)
         hbox.addLayout(share_btn_layout)
-        run_hook('send_tx_layout', self, share_btn_layout, tx)
         hbox.addStretch(1)
         hbox.addLayout(Buttons(*self.buttons))
         vbox.addLayout(hbox)
@@ -223,22 +214,26 @@ class TxDialog(QDialog, MessageBoxMixin):
         desc = self.desc
         base_unit = self.main_window.base_unit()
         format_amount = self.main_window.format_amount
-        tx_hash, status, label, can_broadcast, can_rbf, amount, fee, height, conf, timestamp, exp_n = self.wallet.get_tx_info(self.tx)
+        tx_details = self.wallet.get_tx_info(self.tx)
+        tx_mined_info = tx_details.tx_mined_info
+        exp_n = tx_details.mempool_depth_bytes
+        amount, fee = tx_details.amount, tx_details.fee
         size = self.tx.estimated_size()
-        self.broadcast_button.setEnabled(can_broadcast)
+        self.broadcast_button.setEnabled(tx_details.can_broadcast)
         can_sign = not self.tx.is_complete() and \
                    (self.wallet.can_sign(self.tx) or bool(self.main_window.tx_external_keypairs))
         self.sign_button.setEnabled(can_sign)
-        self.tx_hash_e.setText(tx_hash or _('Unknown'))
+        self.tx_hash_e.setText(tx_details.txid or _('Unknown'))
+
         if desc is None:
             self.tx_desc.hide()
         else:
             self.tx_desc.setText(_("Description") + ': ' + desc)
             self.tx_desc.show()
-        self.status_label.setText(_('Status:') + ' ' + status)
+        self.status_label.setText(_('Status:') + ' ' + tx_details.status)
 
-        if timestamp:
-            time_str = datetime.datetime.fromtimestamp(timestamp).isoformat(' ')[:-3]
+        if tx_mined_info.timestamp:
+            time_str = datetime.datetime.fromtimestamp(tx_mined_info.timestamp).isoformat(' ')[:-3]
             self.date_label.setText(_("Date: %s")%time_str)
             self.date_label.show()
         elif exp_n:
@@ -247,6 +242,17 @@ class TxDialog(QDialog, MessageBoxMixin):
             self.date_label.show()
         else:
             self.date_label.hide()
+        self.locktime_label.setText(f"LockTime: {self.tx.locktime}")
+        self.rbf_label.setText(f"RBF: {not self.tx.is_final()}")
+        if tx_mined_info.header_hash:
+            self.block_hash_label.setText(_("Included in block: {}")
+                                          .format(tx_mined_info.header_hash))
+            self.block_height_label.setText(_("At block height: {}")
+                                            .format(tx_mined_info.height))
+        else:
+            self.block_hash_label.hide()
+            self.block_height_label.hide()
+
         if amount is None:
             amount_str = _("Transaction unrelated to your wallet")
         elif amount > 0:
@@ -263,9 +269,6 @@ class TxDialog(QDialog, MessageBoxMixin):
         run_hook('transaction_dialog_update', self)
 
     def add_io(self, vbox):
-        if self.tx.locktime > 0:
-            vbox.addWidget(QLabel("LockTime: %d\n" % self.tx.locktime))
-
         vbox.addWidget(QLabel(_("Inputs") + ' (%d)'%len(self.tx.inputs())))
         ext = QTextCharFormat()
         rec = QTextCharFormat()
@@ -281,7 +284,7 @@ class TxDialog(QDialog, MessageBoxMixin):
             return ext
 
         def format_amount(amt):
-            return self.main_window.format_amount(amt, whitespaces = True)
+            return self.main_window.format_amount(amt, whitespaces=True)
 
         i_text = QTextEditWithDefaultSize()
         i_text.setFont(QFont(MONOSPACE_FONT))
@@ -316,8 +319,57 @@ class TxDialog(QDialog, MessageBoxMixin):
             cursor.insertBlock()
         vbox.addWidget(o_text)
 
+    def add_tx_stats(self, vbox):
+        hbox_stats = QHBoxLayout()
+
+        # left column
+        vbox_left = QVBoxLayout()
+        self.tx_desc = TxDetailLabel(word_wrap=True)
+        vbox_left.addWidget(self.tx_desc)
+        self.status_label = TxDetailLabel()
+        vbox_left.addWidget(self.status_label)
+        self.date_label = TxDetailLabel()
+        vbox_left.addWidget(self.date_label)
+        self.amount_label = TxDetailLabel()
+        vbox_left.addWidget(self.amount_label)
+        self.fee_label = TxDetailLabel()
+        vbox_left.addWidget(self.fee_label)
+        vbox_left.addStretch(1)
+        hbox_stats.addLayout(vbox_left, 50)
+
+        # vertical line separator
+        line_separator = QFrame()
+        line_separator.setFrameShape(QFrame.VLine)
+        line_separator.setFrameShadow(QFrame.Sunken)
+        line_separator.setLineWidth(1)
+        hbox_stats.addWidget(line_separator)
+
+        # right column
+        vbox_right = QVBoxLayout()
+        self.size_label = TxDetailLabel()
+        vbox_right.addWidget(self.size_label)
+        self.rbf_label = TxDetailLabel()
+        vbox_right.addWidget(self.rbf_label)
+        self.locktime_label = TxDetailLabel()
+        vbox_right.addWidget(self.locktime_label)
+        self.block_hash_label = TxDetailLabel(word_wrap=True)
+        vbox_right.addWidget(self.block_hash_label)
+        self.block_height_label = TxDetailLabel()
+        vbox_right.addWidget(self.block_height_label)
+        vbox_right.addStretch(1)
+        hbox_stats.addLayout(vbox_right, 50)
+
+        vbox.addLayout(hbox_stats)
+
 
 class QTextEditWithDefaultSize(QTextEdit):
     def sizeHint(self):
         return QSize(0, 100)
 
+
+class TxDetailLabel(QLabel):
+    def __init__(self, *, word_wrap=None):
+        super().__init__()
+        self.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        if word_wrap is not None:
+            self.setWordWrap(word_wrap)

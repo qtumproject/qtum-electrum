@@ -29,7 +29,7 @@ from operator import itemgetter
 
 from . import qtum
 from .qtum import COINBASE_MATURITY, TYPE_ADDRESS, TYPE_PUBKEY, b58_address_to_hash160, TOKEN_TRANSFER_TOPIC, TYPE_STAKE
-from .util import PrintError, profiler, bfh, bh2u, VerifiedTxInfo, TxMinedStatus
+from .util import PrintError, profiler, bfh, bh2u, VerifiedTxInfo, TxMinedInfo
 from .transaction import Transaction, TxOutput
 from .synchronizer import Synchronizer
 from .verifier import SPV
@@ -649,19 +649,23 @@ class AddressSynchronizer(PrintError):
             return cached_local_height
         return self.network.get_local_height() if self.network else self.storage.get('stored_height', 0)
 
-    def get_tx_height(self, tx_hash: str) -> TxMinedStatus:
-        """ Given a transaction, returns (height, conf, timestamp, header_hash) """
+    def get_tx_height(self, tx_hash: str) -> TxMinedInfo:
         with self.lock:
-            if tx_hash in self.verified_tx:
-                info = self.verified_tx[tx_hash]
-                conf = max(self.get_local_height() - info.height + 1, 0)
-                return TxMinedStatus(info.height, conf, info.timestamp, info.header_hash)
+            verified_tx_info = self.verified_tx.get(tx_hash, None)
+            if verified_tx_info:
+                conf = max(self.get_local_height() - verified_tx_info.height + 1, 0)
+                return TxMinedInfo(
+                    height=verified_tx_info.height,
+                    conf=conf,
+                    header_hash=verified_tx_info.header_hash,
+                    timestamp=verified_tx_info.timestamp,
+                )
             elif tx_hash in self.unverified_tx:
                 height = self.unverified_tx[tx_hash]
-                return TxMinedStatus(height, 0, None, None)
+                return TxMinedInfo(height=height, conf=0)
             else:
                 # local transaction
-                return TxMinedStatus(TX_HEIGHT_LOCAL, 0, None, None)
+                return TxMinedInfo(height=TX_HEIGHT_LOCAL, conf=0)
 
     def set_up_to_date(self, up_to_date):
         with self.lock:
