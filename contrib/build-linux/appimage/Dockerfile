@@ -21,6 +21,7 @@ RUN apt-get update -q && \
         libzbar0=0.10+doc-9build1  \
         faketime=0.9.5-2 \
         libsqlite3-dev=3.8.2-1ubuntu2.2 \
+        libncurses5-dev=5.9+20140118-1ubuntu1 \
         && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get autoremove -y && \
