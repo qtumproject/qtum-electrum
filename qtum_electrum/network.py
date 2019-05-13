@@ -651,9 +651,13 @@ class Network(util.DaemonThread):
                 self.print_error("relayfee", self.relay_fee)
         elif method == 'blockchain.block.headers':
             self.on_block_headers(interface, response)
-        elif method == 'blockchain.block.get_header':
-            self.on_get_header(interface, response)
-
+        elif method == 'blockchain.block.header':
+            if error is None and result is not None:
+                header = blockchain.deserialize_header(bfh(result), params[0])
+                response = {
+                    'result': header,
+                }
+                self.on_get_header(interface, response)
         for callback in callbacks:
             callback(response)
 
@@ -1204,7 +1208,7 @@ class Network(util.DaemonThread):
         invocation(callback)
 
     def request_header(self, interface, height):
-        self.queue_request('blockchain.block.get_header', [height], interface)
+        self.queue_request('blockchain.block.header', [height], interface)
         interface.request = height
         interface.req_time = time.time()
 
