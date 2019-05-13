@@ -1,20 +1,41 @@
-Source tarballs
-===============
+AppImage binary for Electrum
+============================
 
-1. Build locale files
+This assumes an Ubuntu host, but it should not be too hard to adapt to another
+similar system. The docker commands should be executed in the project's root
+folder.
 
-    ```
-    contrib/make_locale
-    ```
-
-2. Prepare python dependencies used by Electrum.
+1. Install Docker
 
     ```
-    contrib/make_packages
+    $ curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+    $ sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+    $ sudo apt-get update
+    $ sudo apt-get install -y docker-ce
     ```
 
-3. Create source tarball.
+2. Build image
 
     ```
-    contrib/make_tgz
+    $ sudo docker build --no-cache -t qtum-electrum-appimage-builder-img contrib/build-linux/appimage
     ```
+
+3. Build binary
+
+    ```
+    $ sudo docker run -it \
+        --name qtum-electrum-appimage-builder-cont \
+        -v $PWD:/opt/electrum \
+        --rm \
+        --workdir /opt/electrum/contrib/build-linux/appimage \
+        qtum-electrum-appimage-builder-img \
+        ./build.sh
+    ```
+
+4. The generated binary is in `./dist`.
+
+
+## FAQ
+
+### How can I see what is included in the AppImage?
+Execute the binary as follows: `./qtum-electrum*.AppImage --appimage-extract`

@@ -1,46 +1,41 @@
-Windows Binary Builds
-=====================
+# Build Windows binaries with Docker
 
-These scripts can be used for cross-compilation of Windows Electrum executables from Linux/Wine.
-Produced binaries are deterministic so you should be able to generate binaries that match the official releases.
+1. Install Docker
 
+   ```
+   see [https://docs.docker.com/install/](https://docs.docker.com/install/)
+   ```
 
-## Usage:
-1. Install wine
+2. Build image
 
-For example:
+    ```
+    $ sudo docker build -t qtum-electrum-wine-builder-img contrib/build-wine/docker
+    ```
 
-```
-$ sudo apt-get install wine-development
-```
+    Note: see [this](https://stackoverflow.com/a/40516974/7499128) if having dns problems
 
-or
+3. Build Windows binaries
 
-```
-$ sudo add-apt-repository ppa:ricotz/unstable
-$ sudo apt update
-$ sudo apt install wine-stable
-```
+    It's recommended to build from a fresh clone
+    (but you can skip this if reproducibility is not necessary).
 
+    ```
+    $ FRESH_CLONE=contrib/build-wine/fresh_clone && \
+        rm -rf $FRESH_CLONE && \
+        mkdir -p $FRESH_CLONE && \
+        cd $FRESH_CLONE  && \
+        git clone https://github.com/qtumproject/qtum-electrum.git && \
+        cd qtum-electrum
+    ```
 
-2. Install the following dependencies:
-
- - dirmngr
- - gpg
- - 7z
- - (and, for building libsecp256k1)
-   - mingw-w64
-   - autotools-dev
-   - autoconf
-   - libtool
-
-```
-sudo apt-get install dirmngr gnupg2 p7zip-full
-sudo apt-get install mingw-w64 autotools-dev autoconf libtool
-```
-
-
-3. Make sure `/opt` is writable by the current user.
-4. Run `sudo chmod +x ./*.sh`
-6. Run `./build.sh`.
-7. The generated binaries are in `./dist`.
+    And then build from this directory:
+    ```
+    $ git checkout $REV
+    $ sudo docker run -it \
+        --name qtum-electrum-wine-builder-cont \
+        -v $PWD:/opt/wine64/drive_c/electrum \
+        --rm \
+        --workdir /opt/wine64/drive_c/electrum/contrib/build-wine \
+        qtum-electrum-wine-builder-img \
+        ./build.sh
+    ```
