@@ -188,14 +188,14 @@ rm "$APPDIR"/usr/lib/libsecp256k1.a
 rm "$APPDIR"/usr/lib/python3.6/site-packages/pyblake2-*.dist-info/RECORD || true
 rm "$APPDIR"/usr/lib/python3.6/site-packages/hidapi-*.dist-info/RECORD || true
 
-find -exec touch -d '2000-11-11T11:11:11+00:00' {} +
+find -exec touch -h -d '2000-11-11T11:11:11+00:00' {} +
 
 info "creating the AppImage."
 (
     cd "$BUILDDIR"
     chmod +x "$CACHEDIR/appimagetool"
     "$CACHEDIR/appimagetool" --appimage-extract
-    env VERSION="$VERSION" ./squashfs-root/AppRun --no-appstream --verbose "$APPDIR" "$APPIMAGE"
+    env VERSION="$VERSION" ARCH=x86_64 ./squashfs-root/AppRun --no-appstream --verbose "$APPDIR" "$APPIMAGE"
 )
 
 
