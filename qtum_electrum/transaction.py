@@ -1170,11 +1170,9 @@ class Transaction:
                     _pubkey = x_pubkey
                 else:
                     continue
-                print_error("adding signature for", _pubkey)
                 sec, compressed = keypairs.get(_pubkey)
                 sig = self.sign_txin(i, sec)
                 self.add_signature_to_txin(i, j, sig)
-        print_error("is_complete", self.is_complete())
         self.raw = self.serialize()
 
     def sign_txin(self, txin_index, privkey_bytes) -> str:
