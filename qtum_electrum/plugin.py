@@ -510,7 +510,7 @@ class DeviceMgr(ThreadJob, PrintError):
             except Exception as e:
                 self.print_error(f'failed to create client for {plugin.name} at {device.path}: {repr(e)}')
                 if include_failing_clients:
-                    infos.append(DeviceInfo(device=device, exception=e))
+                    infos.append(DeviceInfo(device=device, label='', initialized=False, exception=e))
                 continue
             if not client:
                 continue
