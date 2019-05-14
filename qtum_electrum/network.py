@@ -1026,7 +1026,7 @@ class Network(util.DaemonThread):
         with self.interface_lock:
             interfaces = list(self.interfaces.values())
         for interface in interfaces:
-            if interface.request and time.time() - interface.request_time > 20:
+            if interface.request and time.time() - interface.request_time > 30:
                 interface.print_error("blockchain request timed out")
                 self.connection_down(interface.server)
                 continue
