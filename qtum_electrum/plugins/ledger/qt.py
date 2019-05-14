@@ -1,5 +1,5 @@
-from PyQt5.Qt import QInputDialog, QLineEdit, QVBoxLayout, QLabel
-
+from PyQt5.QtWidgets import QInputDialog, QLineEdit, QVBoxLayout, QLabel
+#from btchip.btchipPersoWizard import StartBTChipPersoDialog
 from qtum_electrum.i18n import _
 from .ledger import LedgerPlugin
 from ..hw_wallet.qt import QtHandlerBase, QtPluginBase
@@ -8,7 +8,6 @@ from qtum_electrum.plugin import hook
 from qtum_electrum.wallet import Standard_Wallet
 from qtum_electrum.gui.qt.util import *
 
-#from btchip.btchipPersoWizard import StartBTChipPersoDialog
 
 class Plugin(LedgerPlugin, QtPluginBase):
     icon_unpaired = "ledger_unpaired.png"
@@ -79,11 +78,7 @@ class Ledger_Handler(QtHandlerBase):
         return 
         
     def setup_dialog(self):
+        self.show_error(_('Initialization of Ledger HW devices is currently disabled.'))
+        return
         dialog = StartBTChipPersoDialog()
         dialog.exec_()
-
-
-        
-        
-        
-        
