@@ -682,6 +682,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         if self.need_update.is_set():
             self.need_update.clear()
             self.update_wallet()
+        elif not self.wallet.up_to_date:
+            # this updates "synchronizing" progress
+            self.update_status()
         # resolve aliases
         self.payto_e.resolve()
         # update fee
@@ -767,7 +770,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             # Server height can be 0 after switching to a new server
             # until we get a headers subscription request response.
             # Display the synchronizing message in that case.
-            if not self.wallet.up_to_date or server_height == 0:
+            if not self.wallet.up_to_date or server_height == 0 or server_lag < -10:
                 text = _("Synchronizing...")
                 icon = read_QIcon("status_waiting.png")
             elif server_lag > 1:
@@ -795,7 +798,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
         self.tray.setToolTip("%s (%s)" % (text, self.wallet.basename()))
         self.balance_label.setText(text)
-        self.status_button.setIcon( icon )
+        self.status_button.setIcon(icon)
 
     def update_wallet(self):
         self.update_status()
