@@ -852,7 +852,7 @@ class Network(util.DaemonThread):
 
     def request_chunk(self, interface, index):
         if index in self.requested_chunks:
-            interface.print_error("index {} already in requested chuns".format(index))
+            interface.print_error("index {} already in requested chunks".format(index))
             return
         interface.print_error("requesting chunk %d" % index)
         height = index * CHUNK_SIZE
@@ -868,6 +868,8 @@ class Network(util.DaemonThread):
         blockchain = interface.blockchain
         if result is None or params is None or error is not None:
             interface.print_error('on get chunk error', error, result, params)
+            if error.get('code') == -101:
+                self.requested_chunks.remove(params[0] // CHUNK_SIZE)
             return
 
         height = params[0]
