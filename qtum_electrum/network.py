@@ -905,7 +905,7 @@ class Network(util.DaemonThread):
         blockchain = interface.blockchain
         if result is None or params is None or error is not None:
             interface.print_error('on get chunk error', error, result, params)
-            self.connection_down(interface.server)
+            self.switch_to_random_interface()
             if error.get('code') == -101:
                 blockchain.catch_up = None
                 self.requested_chunks.remove(params[0] // CHUNK_SIZE)
@@ -1175,14 +1175,14 @@ class Network(util.DaemonThread):
             # todo: why set mode to catch_up here ?
             chain = self.blockchains[0]
             if chain.catch_up is None:
-                chain.catch_up = interface
+                chain.catch_up = interface.server
                 interface.mode = 'catch_up'
                 interface.blockchain = chain
                 with self.blockchains_lock:
                     self.print_error("switching to catchup mode", tip, self.blockchains)
                 self.request_header(interface, 0)
             else:
-                self.print_error("chain already catching up with", chain.catch_up.server)
+                self.print_error("chain already catching up with", chain.catch_up)
 
     @with_interface_lock
     def blockchain(self):
