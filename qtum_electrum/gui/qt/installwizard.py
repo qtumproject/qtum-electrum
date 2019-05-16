@@ -392,7 +392,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
     def add_xpub_dialog(self, title, message, is_valid, run_next, allow_multi=False, show_wif_help=False):
         header_layout = QHBoxLayout()
         label = WWLabel(message)
-        label.setMinimumWidth(400)
+        label.setMinimumWidth(360)
         header_layout.addWidget(label)
         if show_wif_help:
             header_layout.addWidget(InfoButton(WIF_HELP_TEXT), alignment=Qt.AlignRight)
