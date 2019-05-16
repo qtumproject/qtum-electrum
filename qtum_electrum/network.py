@@ -1148,6 +1148,7 @@ class Network(util.DaemonThread):
         interface.tip = height
         if interface.mode != 'default':
             return
+        self.trigger_callback('network_updated')
 
         b = blockchain.check_header(header)
         if b:
