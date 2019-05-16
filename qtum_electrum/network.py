@@ -907,6 +907,7 @@ class Network(util.DaemonThread):
             interface.print_error('on get chunk error', error, result, params)
             self.connection_down(interface.server)
             if error.get('code') == -101:
+                blockchain.catch_up = None
                 self.requested_chunks.remove(params[0] // CHUNK_SIZE)
             return
 
@@ -1171,6 +1172,7 @@ class Network(util.DaemonThread):
             interface.bad_header = header
             self.request_header(interface, min(tip, height - 1))
         else:
+            # todo: why set mode to catch_up here ?
             chain = self.blockchains[0]
             if chain.catch_up is None:
                 chain.catch_up = interface
