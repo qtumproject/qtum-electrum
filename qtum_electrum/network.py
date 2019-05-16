@@ -550,10 +550,10 @@ class Network(util.DaemonThread):
     @with_interface_lock
     def switch_lagging_interface(self):
         '''If auto_connect and lagging, switch interface'''
-        if self.server_is_lagging() and self.auto_connect:
+        if self.auto_connect and self.server_is_lagging():
             # switch to one that has the correct header (not height)
-            header = self.blockchain().read_header(self.get_local_height())
-            filtered = list(map(lambda x:x[0], filter(lambda x: x[1].tip_header==header, self.interfaces.items())))
+            best_header = self.blockchain().read_header(self.get_local_height())
+            filtered = list(map(lambda x:x[0], filter(lambda x: x[1].tip_header == best_header, self.interfaces.items())))
             if filtered:
                 choice = random.choice(filtered)
                 self.switch_to_interface(choice)
