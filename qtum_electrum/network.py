@@ -149,6 +149,47 @@ def serialize_server(host, port, protocol):
     return str(':'.join([host, port, protocol]))
 
 
+class GUICallbackProcessor(util.DaemonThread):
+    verbosity_filter = 'g'
+
+    def __init__(self):
+        util.DaemonThread.__init__(self)
+        # callbacks set by the GUI
+        self.callbacks = defaultdict(list)      # note: needs self.callback_lock
+        self.callback_lock = threading.Lock()
+
+        # new incoming events
+        self.event_lock = threading.Lock()
+        self.pending_events = defaultdict(list)
+
+    def register_callback(self, callback, events):
+        with self.callback_lock:
+            for event in events:
+                self.callbacks[event].append(callback)
+
+    def unregister_callback(self, callback):
+        with self.callback_lock:
+            for callbacks in self.callbacks.values():
+                if callback in callbacks:
+                    callbacks.remove(callback)
+
+    def trigger_callback(self, event, *args):
+        with self.event_lock:
+            if args not in self.pending_events[event]:
+                self.pending_events[event].append(args)
+
+    def run(self):
+        # process new incoming callbacks
+        while self.is_running():
+            with self.event_lock:
+                for event, arg_list in self.pending_events.items():
+                    callbacks = self.callbacks[event][:]
+                    [callback(event, *args) for callback in callbacks for args in arg_list]
+                self.pending_events = defaultdict(list)
+            time.sleep(0.5)
+        self.on_stop()
+
+
 class Network(util.DaemonThread):
     """The Network class manages a set of connections to remote qtum_electrum
     servers, each connected socket is handled by an Interface() object.
@@ -188,7 +229,6 @@ class Network(util.DaemonThread):
 
         # locks: if you need to take multiple ones, acquire them in the order they are defined here!
         self.interface_lock = threading.RLock()            # <- re-entrant
-        self.callback_lock = threading.Lock()
         self.pending_sends_lock = threading.Lock()
         self.recent_servers_lock = threading.RLock()       # <- re-entrant
         self.subscribed_addresses_lock = threading.Lock()
@@ -204,11 +244,15 @@ class Network(util.DaemonThread):
         self.banner = ''
         self.donation_address = ''
         self.relay_fee = None
+
         # callbacks passed with subscriptions
-        self.subscriptions = defaultdict(list)  # note: needs self.callback_lock
-        self.sub_cache = {}                     # note: needs self.interface_lock
+        self.subscription_lock = threading.Lock()
+        self.subscriptions = defaultdict(list)  # note: needs self.subscription_lock
+        self.sub_cache = {}  # note: needs self.interface_lock
+
         # callbacks set by the GUI
-        self.callbacks = defaultdict(list)      # note: needs self.callback_lock
+        self.gui_callback_processor = GUICallbackProcessor()
+        self.gui_callback_processor.start()
 
         self.downloading_headers = False
 
@@ -250,20 +294,13 @@ class Network(util.DaemonThread):
         return func_wrapper
 
     def register_callback(self, callback, events):
-        with self.callback_lock:
-            for event in events:
-                self.callbacks[event].append(callback)
+        self.gui_callback_processor.register_callback(callback, events)
 
     def unregister_callback(self, callback):
-        with self.callback_lock:
-            for callbacks in self.callbacks.values():
-                if callback in callbacks:
-                    callbacks.remove(callback)
+        self.gui_callback_processor.unregister_callback(callback)
 
     def trigger_callback(self, event, *args):
-        with self.callback_lock:
-            callbacks = self.callbacks[event][:]
-        [callback(event, *args) for callback in callbacks]
+        self.gui_callback_processor.trigger_callback(event, *args)
 
     def read_recent_servers(self):
         if not self.config.path:
@@ -494,7 +531,7 @@ class Network(util.DaemonThread):
         self.protocol = protocol
         self.set_proxy(proxy)
         self.start_interfaces()
-        self.trigger_callback('network_updated')
+        self.gui_callback_processor.trigger_callback('network_updated')
 
     @with_interface_lock
     def stop_network(self):
@@ -508,7 +545,7 @@ class Network(util.DaemonThread):
         self.connecting = set()
         # Get a new queue - no old pending connections thanks!
         self.socket_queue = queue.Queue()
-        self.trigger_callback('network_updated')
+        self.gui_callback_processor.trigger_callback('network_updated')
 
     def set_parameters(self, host, port, protocol, proxy, auto_connect):
         proxy_str = serialize_proxy(proxy)
@@ -752,7 +789,7 @@ class Network(util.DaemonThread):
                     l = list(self.subscriptions.get(k, []))
                     if callback not in l:
                         l.append(callback)
-                    with self.callback_lock:
+                    with self.subscription_lock:
                         self.subscriptions[k] = l
                     # check cached response for subscriptions
                     r = self.sub_cache.get(k)
@@ -768,7 +805,7 @@ class Network(util.DaemonThread):
         # Note: we can't unsubscribe from the server, so if we receive
         # subsequent notifications process_response() will emit a harmless
         # "received unexpected notification" warning
-        with self.callback_lock:
+        with self.subscription_lock:
             for v in self.subscriptions.values():
                 if callback in v:
                     v.remove(callback)
