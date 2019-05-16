@@ -2474,6 +2474,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         d.setMinimumSize(600, 300)
 
         vbox = QVBoxLayout(d)
+        vbox.addWidget(QLabel(_("Warning: Qtum Electrum has issue with sweeping P2PK utxos. \n"
+                                "You'd better use  \"restore wallet\", import your private keys \n"
+                                "and send total balance to another address instead.")))
         vbox.addWidget(QLabel(_("Enter private keys:")))
 
         keys_e = ScanQRTextEdit()
