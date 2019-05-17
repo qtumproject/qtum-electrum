@@ -87,7 +87,7 @@ See [contrib/build-osx/README.md](https://github.com/qtumproject/qtum-electrum/b
 Windows
 -------
 
-See [contrib/build-wine/docker/README.md](https://github.com/qtumproject/qtum-electrum/blob/master/contrib/build-wine/docker/README.md) file.
+See [contrib/build-wine/README.md](https://github.com/qtumproject/qtum-electrum/blob/master/contrib/build-wine/README.md) file.
 
 
 Linux
