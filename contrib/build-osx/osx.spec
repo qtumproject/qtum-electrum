@@ -27,16 +27,19 @@ hiddenimports += collect_submodules('keepkeylib')
 hiddenimports += collect_submodules('websocket')
 
 datas = [
-    (electrum+'qtum_electrum/*.json', PYPKG),
-    (electrum+'qtum_electrum/wordlist/english.txt', PYPKG + '/wordlist'),
-    (electrum+'qtum_electrum/locale', PYPKG + '/locale'),
-    (electrum+'qtum_electrum/plugins', PYPKG + '/plugins'),
-    (electrum+'qtum_electrum/gui/icons', PYPKG + '/gui/icons'),
+    (electrum + PYPKG + '/*.json', PYPKG),
+    (electrum + PYPKG + '/wordlist/english.txt', PYPKG + '/wordlist'),
+    (electrum + PYPKG + '/locale', PYPKG + '/locale'),
+    (electrum + PYPKG + '/plugins', PYPKG + '/plugins'),
+    (electrum + PYPKG + '/gui/icons', PYPKG + '/gui/icons'),
 ]
 
 datas += collect_data_files('trezorlib')
 datas += collect_data_files('btchip')
 datas += collect_data_files('keepkeylib')
+
+# Add the QR Scanner helper app
+datas += [(electrum + "contrib/build-osx/CalinsQRReader/build/Release/CalinsQRReader.app", "./contrib/build-osx/CalinsQRReader/build/Release/CalinsQRReader.app")]
 
 # Add libusb so Trezor will work
 binaries = [(electrum + "contrib/build-osx/libusb-1.0.dylib", ".")]

@@ -71,6 +71,14 @@ make
 popd
 cp /tmp/secp256k1/.libs/libsecp256k1.0.dylib contrib/build-osx
 
+info "Building CalinsQRReader..."
+d=contrib/build-osx/CalinsQRReader
+pushd $d
+rm -fr build
+# prefer building using xcode ourselves. otherwise fallback to prebuilt binary
+xcodebuild || cp -r prebuilt_qr build || fail "Could not build CalinsQRReader"
+popd
+
 info "Installing requirements..."
 python3 -m pip install -r ./requirements.txt --user && \
 python3 -m pip install -r ./requirements-binaries.txt --user && \

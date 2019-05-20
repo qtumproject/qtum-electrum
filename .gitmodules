@@ -1,0 +1,3 @@
+[submodule "contrib/build-osx/CalinsQRReader"]
+	path = contrib/build-osx/CalinsQRReader
+	url = https://github.com/spesmilo/CalinsQRReader.git
