@@ -1,3 +1,12 @@
+# Release 0.18.14
+ * fix status icon: display incorrect status.
+ * RBF batching (opt-in): If the wallet has an unconfirmed RBF
+   transaction, new payments will be added to that transaction,
+   instead of creating new transactions.
+ * reduce GUI freeze the first time synchronizing.
+ * fix block header synchronization failure in some case.
+ * fix qr scan on osx.
+
 # Release 0.18.13
  * fix crash on startup
 
