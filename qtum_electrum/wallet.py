@@ -1429,7 +1429,7 @@ class Deterministic_Wallet(Abstract_Wallet):
             if len(addresses) < limit:
                 self.create_new_address(for_change)
                 continue
-            if list(map(lambda a: self.address_is_old(a), addresses[-limit:] )) == limit*[False]:
+            if list(map(lambda a: self.address_is_old(a), addresses[-limit:])) == limit*[False]:
                 break
             else:
                 self.create_new_address(for_change)
@@ -1520,7 +1520,18 @@ class Mobile_Wallet(Simple_Deterministic_Wallet):
         Simple_Deterministic_Wallet.__init__(self, storage)
         self.use_change = False
         self.gap_limit = 10
-        self.gap_limit_for_change = 0
+        self.gap_limit_for_change = 10
+
+    def synchronize_sequence(self, for_change):
+        # only create 10+10 addresses for mobile wallet
+        limit = self.gap_limit_for_change if for_change else self.gap_limit
+        while True:
+            addresses = self.get_change_addresses() if for_change else self.get_receiving_addresses()
+            if len(addresses) < limit:
+                self.create_new_address(for_change)
+                continue
+            else:
+                return
 
 
 class Qt_Core_Wallet(Simple_Deterministic_Wallet):
@@ -1528,10 +1539,15 @@ class Qt_Core_Wallet(Simple_Deterministic_Wallet):
 
     def __init__(self, storage):
         Simple_Deterministic_Wallet.__init__(self, storage)
-        self.gap_limit = 200
+        self.gap_limit = 100
         self.gap_limit_for_change = 0
         self.use_change = False
 
+    def synchronize(self):
+        # don't create change addres
+        # since core wallet doesn't distinguish address type from derivation path
+        with self.lock:
+            self.synchronize_sequence(False)
 
 
 class Multisig_Wallet(Deterministic_Wallet):
