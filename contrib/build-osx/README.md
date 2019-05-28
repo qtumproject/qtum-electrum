@@ -29,4 +29,5 @@ On newer Mac, run:
 Move `prebuilt_qr` to El Capitan: `contrib/osx/CalinsQRReader/prebuilt_qr`.
 
 ## 3. Build Qtum Electrum
+    ./contrib/build-osx/prepare.sh
     sudo ./contrib/build-osx/make_osx
