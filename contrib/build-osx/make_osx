@@ -55,6 +55,7 @@ echo "82c368dfd4da017ceb32b12ca885576f325503428a4966cc09302cbd62702493  contrib/
 
 info "Building libsecp256k1"
 rm -rf contrib/build-osx/libsecp256k1.0.dylib
+rm -rf /tmp/secp256k1 || true
 git clone https://github.com/bitcoin-core/secp256k1 /tmp/secp256k1
 pushd /tmp/secp256k1
 git reset --hard $LIBSECP_VERSION
