@@ -102,7 +102,7 @@ class Ledger_Client():
             splitPath = splitPath[1:]
             bip32_path = bip32_path[2:]
         fingerprint = 0
-        if len(splitPath) > 1:
+        if len(splitPath) > 2:
             prevPath = "/".join(splitPath[0:len(splitPath) - 1])
             try:
                 nodeData = self.dongleObject.getWalletPublicKey(prevPath)
