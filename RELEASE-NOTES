@@ -6,6 +6,7 @@
  * reduce GUI freeze the first time synchronizing.
  * fix block header synchronization failure in some case.
  * fix qr scan on osx.
+ * fix Ledger connection issue (old wallet file cannot be used, need to create a new ledger wallet on qtum electrum).
 
 # Release 0.18.13
  * fix crash on startup
