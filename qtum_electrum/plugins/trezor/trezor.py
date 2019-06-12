@@ -3,7 +3,7 @@ import traceback
 import sys
 
 from qtum_electrum.util import bfh, bh2u, versiontuple, UserCancelled, UserFacingException
-from qtum_electrum.qtum import (TYPE_ADDRESS, TYPE_SCRIPT, qtum_addr_to_bitcoin_addr)
+from qtum_electrum.qtum import (TYPE_ADDRESS, TYPE_SCRIPT)
 from qtum_electrum.bip32 import deserialize_xpub, convert_bip32_path_to_list_of_uint32 as parse_path
 from qtum_electrum import constants
 from qtum_electrum.i18n import _
@@ -94,9 +94,9 @@ class TrezorPlugin(HW_PluginBase):
 
     firmware_URL = 'https://wallet.trezor.io'
     libraries_URL = 'https://github.com/trezor/python-trezor'
-    minimum_firmware = (1, 5, 2)
+    minimum_firmware = (1, 8, 1)
     keystore_class = TrezorKeyStore
-    minimum_library = (0, 11, 0)
+    minimum_library = (0, 11, 3)
     maximum_library = (0, 12)
     SUPPORTED_XTYPES = ('standard', 'p2wpkh-p2sh', 'p2wpkh', 'p2wsh-p2sh', 'p2wsh')
     DEVICE_IDS = (TREZOR_PRODUCT_KEY,)
@@ -159,7 +159,7 @@ class TrezorPlugin(HW_PluginBase):
         return client
 
     def get_coin_name(self):
-        return "Testnet" if constants.net.TESTNET else "Bitcoin"
+        return "Testnet" if constants.net.TESTNET else "Qtum"
 
     def initialize_device(self, device_id, wizard, handler):
         # Initialization method
@@ -418,8 +418,7 @@ class TrezorPlugin(HW_PluginBase):
                 txoutputtype.op_return_data = trezor_validate_op_return_output_and_get_data(o)
             elif _type == TYPE_ADDRESS:
                 txoutputtype.script_type = OutputScriptType.PAYTOADDRESS
-                # qtum diff
-                txoutputtype.address = qtum_addr_to_bitcoin_addr(address)
+                txoutputtype.address = address
             return txoutputtype
 
         outputs = []

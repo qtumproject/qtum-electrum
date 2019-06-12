@@ -112,6 +112,14 @@ class HW_PluginBase(BasePlugin):
 
         return True
 
+    def get_library_not_available_message(self) -> str:
+        if hasattr(self, 'libraries_available_message'):
+            message = self.libraries_available_message
+        else:
+            message = _("Missing libraries for {}.").format(self.name)
+        message += '\n' + _("Make sure you install it with python3")
+        return message
+
 
 def is_any_tx_output_on_change_branch(tx: Transaction):
     if not tx.output_info:
