@@ -74,7 +74,11 @@ def relayfee(network):
 
 def dust_threshold(network):
     # Change <= dust threshold is added to the tx fee
-    return 182 * 3 * relayfee(network) / 1000
+    # for Bitcoin DEFAULT_MIN_RELAY_TX_FEE=1000, DUST_RELAY_TX_FEE=3000
+    # for Qtum DEFAULT_MIN_RELAY_TX_FEE=400000, DUST_RELAY_TX_FEE=400000
+    # we don't need plus 3 to relayfee
+    a = 182 * relayfee(network) // 1000
+    return a
 
 
 def append_utxos_to_inputs(inputs, network, pubkey, txin_type, imax):
