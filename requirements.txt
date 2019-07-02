@@ -1,7 +1,6 @@
 aiohttp>=3.3.0
 aiohttp_socks
 btchip-python==0.1.28
-Cython==0.28.5
 cffi==1.11.5
 certifi==2018.10.15
 chardet==3.0.4

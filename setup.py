@@ -52,7 +52,7 @@ setup(
     python_requires='>={}'.format(MIN_PYTHON_VERSION),
     install_requires=requirements,
     extras_require={
-        'full': ['Cython>=0.27', 'rlp==0.6.0', 'trezor[hidapi]>=0.9.0',
+        'full': ['rlp==0.6.0', 'trezor[hidapi]>=0.9.0',
                  'keepkey', 'btchip-python', 'websocket-client', 'hidapi'],
     },
     dependency_links=[
