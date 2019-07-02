@@ -1973,7 +1973,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
             def show_mpk(index):
                 mpk_text.setText(mpk_list[index])
-
+                mpk_text.repaint()
             # only show the combobox in case multiple accounts are available
             if len(mpk_list) > 1:
                 def label(key):
