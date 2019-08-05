@@ -1,5 +1,7 @@
 # Release 0.18.15
  * add Trezor support
+ * fix dust threshold
+ * fix getting wrong multisig xpub from Ledger
 
 # Release 0.18.14
  * fix status icon: display incorrect status.
