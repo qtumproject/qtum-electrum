@@ -102,18 +102,20 @@ class Ledger_Client():
             splitPath = splitPath[1:]
             bip32_path = bip32_path[2:]
         fingerprint = 0
-        if len(splitPath) > 2:
+
+        if len(splitPath) > 1:
             prevPath = "/".join(splitPath[0:len(splitPath) - 1])
             try:
                 nodeData = self.dongleObject.getWalletPublicKey(prevPath)
             except BTChipException as e:
                 if e.sw == 0x6f04:
-                    raise Exception('error 6f04, Please update your firmware or try Bitcoin mode')
+                    raise UserFacingException('Please try using Bitcoin app instead of Qtum')
                 raise e
             publicKey = compress_public_key(nodeData['publicKey'])
             h = hashlib.new('ripemd160')
             h.update(hashlib.sha256(publicKey).digest())
             fingerprint = unpack(">I", h.digest()[0:4])[0]
+
         nodeData = self.dongleObject.getWalletPublicKey(bip32_path)
         publicKey = compress_public_key(nodeData['publicKey'])
         depth = len(splitPath)
@@ -613,7 +615,7 @@ class LedgerPlugin(HW_PluginBase):
             raise UserFacingException(_('Failed to create a client for this device.') + '\n' +
                             _('Make sure it is in the correct state.'))
         client.handler = self.create_handler(wizard)
-        client.get_xpub("m/44'/88'", 'standard')  # TODO replace by direct derivation once Nano S > 1.1
+        client.get_xpub("m/44'/88'/0'", 'standard')  # TODO replace by direct derivation once Nano S > 1.1
 
     def get_xpub(self, device_id, derivation, xtype, wizard):
 
