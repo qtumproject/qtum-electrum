@@ -39,7 +39,7 @@ from .util import NotEnoughFunds, UserCancelled, profiler, format_satoshis, \
     InvalidPassword, WalletFileException, TimeoutException, format_time, bh2u, TxMinedInfo
 from .qtum import (TYPE_ADDRESS, TYPE_STAKE, is_address, is_minikey,
                    RECOMMEND_CONFIRMATIONS, COINBASE_MATURITY, TYPE_PUBKEY, b58_address_to_hash160,
-                   FEERATE_MAX_DYNAMIC, FEERATE_DEFAULT_RELAY, QtumException)
+                   FEERATE_MAX_DYNAMIC, FEERATE_DEFAULT_RELAY, QtumException, serialize_privkey)
 from .version import *
 from .crypto import sha256d
 from .keystore import load_keystore, Hardware_KeyStore
@@ -1516,26 +1516,31 @@ class Standard_Wallet(Simple_Deterministic_Wallet):
         self.gap_limit = 20
 
 
-class Mobile_Wallet(Simple_Deterministic_Wallet):
+class Mobile_Wallet(Imported_Wallet):
 
     wallet_type = 'mobile'
 
     def __init__(self, storage):
-        Simple_Deterministic_Wallet.__init__(self, storage)
+        Imported_Wallet.__init__(self, storage)
         self.use_change = False
         self.gap_limit = 10
-        self.gap_limit_for_change = 10
+        self.load_keystore()
 
-    def synchronize_sequence(self, for_change):
-        # only create 10+10 addresses for mobile wallet
-        limit = self.gap_limit_for_change if for_change else self.gap_limit
-        while True:
-            addresses = self.get_change_addresses() if for_change else self.get_receiving_addresses()
-            if len(addresses) < limit:
-                self.create_new_address(for_change)
-                continue
-            else:
-                return
+    def load_keystore(self):
+        self.keystore = load_keystore(self.storage, 'keystore')
+        try:
+            xtype = bip32.xpub_type(self.keystore.xpub)
+        except:
+            xtype = 'standard'
+        self.txin_type = 'p2pkh' if xtype == 'standard' else xtype
+
+    def synchronize(self):
+        keys = []
+        addr_count = len(self.get_addresses())
+        for i in range(0, self.gap_limit - addr_count):
+            secret, compressed = self.keystore.derive_privkey([0, addr_count + i], None)
+            keys.append(serialize_privkey(secret, compressed, self.txin_type, True))
+        self.import_private_keys(keys, None, True)
 
 
 class Qt_Core_Wallet(Simple_Deterministic_Wallet):
