@@ -1,23 +1,12 @@
-# If you want electrum to appear in a linux app launcher ("start menu"), install this by doing:
-# sudo desktop-file-install qtum-electrum.desktop
-
 [Desktop Entry]
-Comment=Lightweight Qtum Client
-Exec=sh -c "PATH=\"\\$HOME/.local/bin:\\$PATH\"; run_qtum_electrum %u"
-GenericName[en_US]=Qtum Wallet
-GenericName=Qtum Wallet
-Icon=electrum
-Name[en_US]=Electrum Qtum Wallet
-Name=Electrum Qtum Wallet
-Categories=Finance;Network;
-StartupNotify=false
+Version=0.18.5
+Name=Qtum Electrum
+Comment=Qtum Light Client
+Exec=qtum-electrum %u
 Terminal=false
 Type=Application
+Icon=qtumelectrum
 MimeType=x-scheme-handler/qtum;
-Actions=Testnet;
-
-[Desktop Action Testnet]
-Exec=sh -c "PATH=\"\\$HOME/.local/bin:\\$PATH\"; run_qtum_electrum --testnet %u"
-Name=Testnet mode
-
-
+Categories=Network;
+StartupWMClass=qtum-electrum
+Name[en_US]=qtum-electrum
