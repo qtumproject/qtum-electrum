@@ -1,3 +1,7 @@
+# Release 0.18.16
+ * add Safe-T support
+ * logs can now also optionally be written to disk.
+
 # Release 0.18.15
  * add Trezor support
  * fix dust threshold
