@@ -58,6 +58,7 @@ class TxOutputHwInfo(NamedTuple):
     sorted_xpubs: Iterable[str]
     num_sig: Optional[int]
     script_type: str
+    is_change: bool  # whether the wallet considers the output to be change
 
 
 class SerializationError(Exception):

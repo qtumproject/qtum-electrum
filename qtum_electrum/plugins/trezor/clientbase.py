@@ -1,11 +1,13 @@
 import time
 from struct import pack
 
+from qtum_electrum import ecc
 from qtum_electrum.i18n import _
 from qtum_electrum.util import UserCancelled, UserFacingException
 from qtum_electrum.keystore import bip39_normalize_passphrase
-from qtum_electrum.bip32 import serialize_xpub, convert_bip32_path_to_list_of_uint32 as parse_path
+from qtum_electrum.bip32 import BIP32Node, convert_bip32_path_to_list_of_uint32 as parse_path
 from qtum_electrum.logging import Logger
+from qtum_electrum.plugins.hw_wallet.plugin import OutdatedHwFirmwareException
 
 from trezorlib.client import TrezorClient
 from trezorlib.exceptions import TrezorFailure, Cancelled, OutdatedFirmwareError
@@ -29,11 +31,13 @@ MESSAGES = {
 
 class TrezorClientBase(Logger):
     def __init__(self, transport, handler, plugin):
-        Logger.__init__(self)
+        if plugin.is_outdated_fw_ignored():
+            TrezorClient.is_outdated = lambda *args, **kwargs: False
         self.client = TrezorClient(transport, ui=self)
         self.plugin = plugin
         self.device = plugin.device
         self.handler = handler
+        Logger.__init__(self)
 
         self.msg = None
         self.creating_wallet = False
@@ -62,15 +66,15 @@ class TrezorClientBase(Logger):
     def __enter__(self):
         return self
 
-    def __exit__(self, exc_type, exc_value, traceback):
+    def __exit__(self, exc_type, e, traceback):
         self.end_flow()
-        if exc_value is not None:
-            if issubclass(exc_type, Cancelled):
-                raise UserCancelled from exc_value
-            elif issubclass(exc_type, TrezorFailure):
-                raise RuntimeError(str(exc_value)) from exc_value
-            elif issubclass(exc_type, OutdatedFirmwareError):
-                raise UserFacingException(exc_value) from exc_value
+        if e is not None:
+            if isinstance(e, Cancelled):
+                raise UserCancelled from e
+            elif isinstance(e, TrezorFailure):
+                raise RuntimeError(str(e)) from e
+            elif isinstance(e, OutdatedFirmwareError):
+                raise OutdatedHwFirmwareException(e) from e
             else:
                 return False
         return True
@@ -123,7 +127,12 @@ class TrezorClientBase(Logger):
         address_n = parse_path(bip32_path)
         with self.run_flow(creating_wallet=creating):
             node = trezorlib.btc.get_public_node(self.client, address_n).node
-        return serialize_xpub(xtype, node.chain_code, node.public_key, node.depth, self.i4b(node.fingerprint), self.i4b(node.child_num))
+        return BIP32Node(xtype=xtype,
+                         eckey=ecc.ECPubkey(node.public_key),
+                         chaincode=node.chain_code,
+                         depth=node.depth,
+                         fingerprint=self.i4b(node.fingerprint),
+                         child_number=self.i4b(node.child_num)).to_xpub()
 
     def toggle_passphrase(self):
         if self.features.passphrase_protection:

@@ -44,6 +44,7 @@ class HW_PluginBase(BasePlugin):
         BasePlugin.__init__(self, parent, config, name)
         self.device = self.keystore_class.device
         self.keystore_class.plugin = self
+        self._ignore_outdated_fw = False
 
     def is_enabled(self):
         return True
@@ -58,6 +59,10 @@ class HW_PluginBase(BasePlugin):
                 self.device_manager().unpair_xpub(keystore.xpub)
 
     def setup_device(self, device_info, wizard, purpose):
+        """Called when creating a new wallet or when using the device to decrypt
+        an existing wallet. Select the device to use.  If the device is
+        uninitialized, go through the initialization process.
+        """
         raise NotImplementedError()
 
     def show_address(self, wallet, address, keystore=None):
@@ -120,15 +125,20 @@ class HW_PluginBase(BasePlugin):
         message += '\n' + _("Make sure you install it with python3")
         return message
 
+    def set_ignore_outdated_fw(self):
+        self._ignore_outdated_fw = True
 
-def is_any_tx_output_on_change_branch(tx: Transaction):
+    def is_outdated_fw_ignored(self) -> bool:
+        return self._ignore_outdated_fw
+
+
+def is_any_tx_output_on_change_branch(tx: Transaction) -> bool:
     if not tx.output_info:
         return False
     for o in tx.outputs():
         info = tx.output_info.get(o.address)
         if info is not None:
-            if info.address_index[0] == 1:
-                return True
+            return info.is_change
     return False
 
 
@@ -156,3 +166,16 @@ def only_hook_if_libraries_available(func):
 class LibraryFoundButUnusable(Exception):
     def __init__(self, library_version='unknown'):
         self.library_version = library_version
+
+
+class OutdatedHwFirmwareException(UserFacingException):
+
+    def text_ignore_old_fw_and_continue(self) -> str:
+        suffix = (_("The firmware of your hardware device is too old. "
+                    "If possible, you should upgrade it. "
+                    "You can ignore this error and try to continue, however things are likely to break.") + "\n\n" +
+                  _("Ignore and continue?"))
+        if str(self):
+            return str(self) + "\n\n" + suffix
+        else:
+            return suffix

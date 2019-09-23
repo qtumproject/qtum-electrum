@@ -25,6 +25,7 @@
 
 import os
 import json
+from .util import inv_dict
 
 GIT_REPO_URL = "https://github.com/qtumproject/qtum_electrum"
 GIT_REPO_ISSUES_URL = "https://github.com/qtumproject/qtum_electrum/issues"
@@ -67,6 +68,8 @@ class QtumMainnet:
         'p2wpkh': 0x4b2430c,
         'p2wsh': 0x2aa7a99
     }
+    XPRV_HEADERS_INV = inv_dict(XPRV_HEADERS)
+
     XPUB_HEADERS = {
         'standard': 0x0488b21e,
         'p2wpkh-p2sh': 0x049d7cb2,
@@ -74,6 +77,7 @@ class QtumMainnet:
         'p2wpkh': 0x4b24746,
         'p2wsh': 0x2aa7ed3
     }
+    XPUB_HEADERS_INV = inv_dict(XPUB_HEADERS)
 
 
 class QtumTestnet:
@@ -100,6 +104,8 @@ class QtumTestnet:
         'p2wpkh': 0x045f18bc,
         'p2wsh': 0x02575048
     }
+    XPRV_HEADERS_INV = inv_dict(XPRV_HEADERS)
+
     XPUB_HEADERS = {
         'standard': 0x043587cf,
         'p2wpkh-p2sh': 0x044a5262,
@@ -107,6 +113,7 @@ class QtumTestnet:
         'p2wpkh': 0x045f1cf6,
         'p2wsh': 0x02575483
     }
+    XPUB_HEADERS_INV = inv_dict(XPUB_HEADERS)
 
 
 class QtumRegtest(QtumTestnet):
