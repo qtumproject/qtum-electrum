@@ -13,8 +13,11 @@ from .util import ButtonsLineEdit, Buttons, ButtonsTextEdit, CancelButton, Messa
 from qtum_electrum.i18n import _
 from qtum_electrum.plugin import run_hook
 from qtum_electrum.qtum import is_hash160, is_address, b58_address_to_hash160
-from qtum_electrum.util import bh2u, print_error
+from qtum_electrum.util import bh2u
+from qtum_electrum.logging import get_logger
 
+
+_logger = get_logger(__name__)
 float_validator = QRegExpValidator(QRegExp('^(-?\d+)(\.\d+)?$'))
 int_validator = QIntValidator(0, 10 ** 9 - 1)
 
@@ -280,8 +283,7 @@ class ContractFuncLayout(QGridLayout):
             self.dialog.show_message(str(e))
             return
         except (BaseException,) as e:
-            import traceback, sys
-            traceback.print_exc(file=sys.stderr)
+            _logger.exception('')
             self.dialog.show_message(str(e))
             return
         self.dialog.do_call(abi, args, sender)
@@ -296,8 +298,7 @@ class ContractFuncLayout(QGridLayout):
             self.dialog.show_message(str(e))
             return
         except (BaseException,) as e:
-            import traceback, sys
-            traceback.print_exc(file=sys.stderr)
+            _logger.exception('')
             self.dialog.show_message(str(e))
             return
         if not sender:
@@ -441,8 +442,7 @@ class ContractCreateLayout(QVBoxLayout):
             self.dialog.show_message(str(e))
             return
         except (BaseException,) as e:
-            import traceback, sys
-            traceback.print_exc(file=sys.stderr)
+            _logger.exception('')
             self.dialog.show_message(str(e))
             return
         gas_limit, gas_price = self.parse_values()
@@ -473,12 +473,11 @@ class ContractCreateLayout(QVBoxLayout):
                                                for i in constructor.get('inputs', [])]))
             self.args_e.setPlaceholderText(signature)
         except (BaseException,) as e:
-            import traceback, sys
-            traceback.print_exc(file=sys.stderr)
+            _logger.exception('')
             self.abi = []
             self.constructor = {}
             self.args_e.setPlaceholderText('')
-            print_error('[interface_changed]', str(e))
+            _logger.info(f'[interface_changed] {repr(e)}')
 
 
 class ContractCreateDialog(QDialog, MessageBoxMixin):

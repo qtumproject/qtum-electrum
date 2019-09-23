@@ -27,16 +27,17 @@ import traceback
 import sys
 # Note: The deserialization code originally comes from ABE.
 from typing import Sequence, Union, NamedTuple, Tuple, Optional, Iterable, List, Dict
-from .util import print_error, profiler, to_bytes, bh2u, bfh
+from .util import profiler, to_bytes, bh2u, bfh
 from . import ecc, bitcoin, constants, segwit_addr
 from .qtum import (TYPE_ADDRESS, TYPE_PUBKEY, TYPE_SCRIPT, TYPE_STAKE, hash_160,
                    hash160_to_p2sh, hash160_to_p2pkh, hash_to_segwit_addr,
                    hash_encode, var_int, TOTAL_COIN_SUPPLY_LIMIT_IN_BTC, COIN,
                    push_script, int_to_hex, b58_address_to_hash160, opcodes, add_number_to_script)
-
+from .logging import Logger, get_logger
 from .crypto import sha256d
 from .keystore import xpubkey_to_address, xpubkey_to_pubkey
 
+_logger = get_logger(__name__)
 NO_SIGNATURE = 'ff'
 PARTIAL_TXN_HEADER_MAGIC = b'EPTF\xff'
 
@@ -234,7 +235,7 @@ def parse_scriptSig(d, _bytes):
         decoded = [x for x in script_GetOp(_bytes)]
     except Exception as e:
         # coinbase transactions raise an exception
-        print_error("cannot find address in input script", bh2u(_bytes))
+        _logger.info(f"parse_scriptSig: cannot find address in input script (coinbase?) {bh2u(_bytes)}")
         return
     match = [opcodes.OP_PUSHDATA4]
     if match_decoded(decoded, match):
@@ -246,7 +247,7 @@ def parse_scriptSig(d, _bytes):
             elif len(item) == 34:
                 d['type'] = 'p2wsh-p2sh'
             else:
-                print_error("unrecognized txin type", bh2u(item))
+                _logger.info(f"unrecognized txin type {bh2u(item)}")
         elif opcodes.OP_1 <= item[0] <= opcodes.OP_16:
             # segwit embedded into p2sh
             # witness version 1-16
@@ -273,7 +274,7 @@ def parse_scriptSig(d, _bytes):
             signatures = parse_sig([sig])
             pubkey, address = xpubkey_to_address(x_pubkey)
         except:
-            print_error("cannot find address in input script", bh2u(_bytes))
+            _logger.info(f"parse_scriptSig: cannot find address in input script (p2pkh?) {bh2u(_bytes)}")
             return
         d['type'] = 'p2pkh'
         d['signatures'] = signatures
@@ -291,8 +292,8 @@ def parse_scriptSig(d, _bytes):
         try:
             m, n, x_pubkeys, pubkeys, redeem_script = parse_redeemScript_multisig(redeem_script_unsanitized)
         except NotRecognizedRedeemScript:
-            print_error("parse_scriptSig: cannot find address in input script (p2sh?)",
-                        bh2u(_bytes))
+            _logger.info(f"parse_scriptSig: cannot find address in input script (p2sh?) {bh2u(_bytes)}")
+
             # we could still guess:
             # d['address'] = hash160_to_p2sh(hash_160(decoded[-1][1]))
             return
@@ -319,8 +320,7 @@ def parse_scriptSig(d, _bytes):
         d['signatures'] = [None]
         return
 
-    print_error("parse_scriptSig: cannot find address in input script (unknown)",
-                bh2u(_bytes))
+    _logger.info(f"parse_scriptSig: cannot find address in input script (unknown) {bh2u(_bytes)}")
 
 
 def parse_redeemScript_multisig(redeem_script: bytes):
@@ -402,8 +402,7 @@ def parse_input(vds, full_parse: bool):
         try:
             parse_scriptSig(d, scriptSig)
         except BaseException:
-            traceback.print_exc(file=sys.stderr)
-            print_error('failed to parse scriptSig', bh2u(scriptSig))
+            _logger.exception(f'failed to parse scriptSig {bh2u(scriptSig)}')
     return d
 
 
@@ -469,8 +468,7 @@ def parse_witness(vds, txin, full_parse: bool):
         txin['type'] = 'unknown'
     except BaseException:
         txin['type'] = 'unknown'
-        traceback.print_exc(file=sys.stderr)
-        print_error('failed to parse witness', txin.get('witness'))
+        _logger.exception(f"failed to parse witness {txin.get('witness')}")
 
 
 def parse_output(vds, i):
@@ -528,6 +526,8 @@ def deserialize(raw: str, force_full_parse=False) -> dict:
         raise SerializationError('extra junk at the end')
     return d
 
+
+# pay & redeem scripts
 
 def multisig_script(public_keys: Sequence[str], m: int) -> str:
     n = len(public_keys)
@@ -606,7 +606,7 @@ class Transaction:
         else:
             raise Exception("cannot initialize transaction", raw)
         self._inputs = None
-        self._outputs = None
+        self._outputs = None  # type: List[TxOutput]
         self.locktime = 0
         self.version = 2
         # by default we assume this is a partial txn;
@@ -623,12 +623,12 @@ class Transaction:
     def inputs(self):
         if self._inputs is None:
             self.deserialize()
-        return self._inputs
+        return self._inputs or []
 
     def outputs(self) -> List[TxOutput]:
         if self._outputs is None:
             self.deserialize()
-        return self._outputs
+        return self._outputs or []
 
     @classmethod
     def get_sorted_pubkeys(self, txin):
@@ -649,7 +649,7 @@ class Transaction:
 
         `signatures` is expected to be a list of sigs with signatures[i]
         intended for self._inputs[i].
-        This is used by the Trezor and KeepKey plugins.
+        This is used by the Trezor, KeepKey an Safe-T plugins.
         """
         if self.is_complete():
             return
@@ -673,12 +673,11 @@ class Transaction:
                     try:
                         public_key.verify_message_hash(sig_string, pre_hash)
                     except Exception:
-                        traceback.print_exc(file=sys.stderr)
+                        _logger.exception('')
                         continue
                     j = pubkeys.index(pubkey_hex)
-                    print_error("adding sig", i, j, pubkey_hex, sig)
+                    _logger.info(f"adding sig {i} {j} {pubkey_hex} {sig}")
                     self.add_signature_to_txin(i, j, sig)
-                    #self._inputs[i]['x_pubkeys'][j] = pubkey
                     break
         # redo raw
         self.raw = self.serialize()
@@ -975,7 +974,7 @@ class Transaction:
         if sender_inp:
             self._inputs.insert(0, sender_inp)
         else:
-            print_error('qtum_sort', self._inputs)
+            _logger.info(f'qtum_sort {self._inputs}')
             raise Exception('qtum_sort - sender address not in inputs')
 
     @classmethod

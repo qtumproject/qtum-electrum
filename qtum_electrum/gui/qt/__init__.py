@@ -45,9 +45,9 @@ from qtum_electrum.i18n import _, set_language
 from qtum_electrum.plugin import run_hook
 from qtum_electrum.base_wizard import GoBack
 from qtum_electrum.wallet import Wallet, Abstract_Wallet
-from qtum_electrum.util import (UserCancelled, print_error, WalletFileException, QtumException, get_new_wallet_name)
+from qtum_electrum.util import (UserCancelled, WalletFileException, QtumException, get_new_wallet_name)
 from .installwizard import InstallWizard, WalletAlreadyOpenInMemory
-
+from qtum_electrum.logging import Logger
 
 from .util import get_default_language, read_QIcon, Timer
 from .main_window import ElectrumWindow
@@ -75,10 +75,11 @@ class QNetworkUpdatedSignalObject(QObject):
     network_updated_signal = pyqtSignal(str, object)
 
 
-class ElectrumGui:
+class ElectrumGui(Logger):
 
     def __init__(self, config, daemon, plugins):
         set_language(config.get('language', get_default_language()))
+        Logger.__init__(self)
         # Uncomment this call to verify objects are being properly
         # GC-ed when windows are closed
         #network.add_jobs([DebugMem([Abstract_Wallet, SPV, Synchronizer,
@@ -198,7 +199,7 @@ class ElectrumGui:
         try:
             wallet = self.daemon.load_wallet(path, None)
         except BaseException as e:
-            traceback.print_exc(file=sys.stdout)
+            self.logger.exception('')
             d = QMessageBox(QMessageBox.Warning, _('Error'),
                             _('Cannot load wallet:') + '\n' + str(e))
             if not app_is_starting:
@@ -216,7 +217,7 @@ class ElectrumGui:
             else:
                 window = self._create_window_for_wallet(wallet)
         except BaseException as e:
-            traceback.print_exc(file=sys.stdout)
+            self.logger.exception('')
             QMessageBox.warning(None, _('Error'),
                                 _('Cannot create window for wallet') + ':\n' + str(e))
             if app_is_starting:
@@ -248,7 +249,7 @@ class ElectrumGui:
         except WalletAlreadyOpenInMemory as e:
             return e.wallet
         except (WalletFileException, QtumException) as e:
-            traceback.print_exc(file=sys.stderr)
+            self.logger.exception('')
             QMessageBox.warning(None, _('Error'),
                                 _('Cannot load wallet') + ' (2):\n' + str(e))
             return
@@ -288,7 +289,7 @@ class ElectrumGui:
         except GoBack:
             return
         except BaseException:
-            traceback.print_exc(file=sys.stdout)
+            self.logger.exception('')
             return
         self.timer.start()
         self.config.open_last_wallet()
@@ -324,5 +325,5 @@ class ElectrumGui:
         # on some platforms the exec_ call may not return, so use clean_up()
 
         def stop(self):
-            self.print_error('closing GUI')
+            self.logger.info('closing GUI')
             self.app.quit()

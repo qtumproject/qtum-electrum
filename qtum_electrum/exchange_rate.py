@@ -10,7 +10,8 @@ from decimal import Decimal
 
 from .bitcoin import COIN
 from .i18n import _
-from .util import PrintError, ThreadJob
+from .util import ThreadJob
+from .logging import Logger
 from .util import format_satoshis
 
 
@@ -24,9 +25,10 @@ CCY_PRECISIONS = {'BHD': 3, 'BIF': 0, 'BYR': 0, 'CLF': 4, 'CLP': 0,
                   'BTC': 8}
 
 
-class ExchangeBase(PrintError):
+class ExchangeBase(Logger):
 
     def __init__(self, on_quotes, on_history):
+        Logger.__init__(self)
         self.history = {}
         self.quotes = {}
         self.on_quotes = on_quotes
@@ -49,11 +51,11 @@ class ExchangeBase(PrintError):
 
     def update_safe(self, ccy):
         try:
-            self.print_error("getting fx quotes for", ccy)
+            self.logger.info(f"getting fx quotes for {ccy}")
             self.quotes = self.get_rates(ccy)
-            self.print_error("received fx quotes")
+            self.logger.info("received fx quotes")
         except BaseException as e:
-            self.print_error("failed fx quotes:", e)
+            self.logger.info("failed fx quotes:", e)
         self.on_quotes()
 
     def update(self, ccy):
@@ -63,12 +65,12 @@ class ExchangeBase(PrintError):
 
     def get_historical_rates_safe(self, ccy):
         try:
-            self.print_error("requesting fx history for", ccy)
+            self.logger.info(f"requesting fx history for {ccy}")
             self.history[ccy] = self.historical_rates(ccy)
-            self.print_error("received fx history for", ccy)
+            self.logger.info(f"received fx history for {ccy}")
             self.on_history()
         except BaseException as e:
-            self.print_error("failed fx history:", e)
+            self.logger.info(f"failed fx history: {repr(e)}")
 
     def get_historical_rates(self, ccy):
         result = self.history.get(ccy)
@@ -185,6 +187,7 @@ def get_exchanges_by_ccy(history=True):
 class FxThread(ThreadJob):
 
     def __init__(self, config, network):
+        ThreadJob.__init__(self)
         self.config = config
         self.network = network
         self.ccy = self.get_currency()
@@ -255,7 +258,7 @@ class FxThread(ThreadJob):
 
     def set_exchange(self, name):
         class_ = globals().get(name, CoinMarketCap)
-        self.print_error("using exchange", name)
+        self.logger.info(f"using exchange {name}")
         if self.config_exchange() != name:
             self.config.set_key('use_exchange', name, True)
         self.exchange = class_(self.on_quotes, self.on_history)

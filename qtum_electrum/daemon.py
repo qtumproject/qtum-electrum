@@ -33,14 +33,17 @@ from .jsonrpc import VerifyingJSONRPCServer
 
 from .version import ELECTRUM_VERSION
 from .network import Network
-from .util import json_decode, DaemonThread, print_error, to_string, standardize_path
+from .util import json_decode, DaemonThread, to_string, standardize_path
 from .wallet import Wallet
 from .storage import WalletStorage
 from .commands import known_commands, Commands
 from .simple_config import SimpleConfig
 from .plugin import run_hook
 from .exchange_rate import FxThread
+from .logging import get_logger
 
+
+_logger = get_logger(__name__)
 
 def get_lockfile(config):
     return os.path.join(config.path, 'daemon')
@@ -88,7 +91,7 @@ def get_server(config):
             server.ping()
             return server
         except Exception as e:
-            print_error("[get_server]", e)
+            _logger.info(f"[get_server] {repr(e)}")
         if not create_time or create_time < time.time() - 1.0:
             return None
         # Sleep a bit and try again; it might have just been started
@@ -110,8 +113,7 @@ def get_rpc_credentials(config):
         config.set_key('rpcuser', rpc_user)
         config.set_key('rpcpassword', rpc_password, save=True)
     elif rpc_password == '':
-        from .util import print_stderr
-        print_stderr('WARNING: RPC authentication is disabled.')
+        _logger.warning('RPC authentication is disabled.')
     return rpc_user, rpc_password
 
 
@@ -146,7 +148,7 @@ class Daemon(DaemonThread):
             server = VerifyingJSONRPCServer((host, port), logRequests=False,
                                             rpc_user=rpc_user, rpc_password=rpc_password)
         except Exception as e:
-            self.print_error('Warning: cannot initialize RPC server on host', host, e)
+            self.logger.info(f'Warning: cannot initialize RPC server on host {host} {repr(e)}')
             self.server = None
             os.close(fd)
             return
@@ -244,7 +246,7 @@ class Daemon(DaemonThread):
         if storage.requires_split():
             return
         if storage.requires_upgrade():
-            self.print_error('upgrading wallet format')
+            self.logger.info('upgrading wallet format')
             storage.upgrade()
         if storage.get_action():
             return
@@ -308,13 +310,13 @@ class Daemon(DaemonThread):
         for k, wallet in self.wallets.items():
             wallet.stop_threads()
         if self.network:
-            self.print_error("shutting down network")
+            self.logger.info("shutting down network")
             self.network.stop()
             self.network.join()
         self.on_stop()
 
     def stop(self):
-        self.print_error("stopping, removing lockfile")
+        self.logger.info("stopping, removing lockfile")
         remove_lockfile(get_lockfile(self.config))
         DaemonThread.stop(self)
 
@@ -327,4 +329,4 @@ class Daemon(DaemonThread):
         try:
             self.gui.main()
         except BaseException as e:
-            traceback.print_exc(file=sys.stdout)
+            self.logger.exception('')

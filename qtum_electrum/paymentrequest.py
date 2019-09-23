@@ -40,10 +40,14 @@ from . import x509
 from . import rsakey
 from . import util
 from . import ecc
-from .util import print_error, bh2u, bfh, export_meta, import_meta
+from .util import bh2u, bfh, export_meta, import_meta
 from .bitcoin import TYPE_ADDRESS
 from .transaction import TxOutput
 from .crypto import sha256
+from .logging import get_logger, Logger
+
+
+_logger = get_logger(__name__)
 
 REQUEST_HEADERS = {'Accept': 'application/bitcoin-paymentrequest', 'User-Agent': 'Electrum'}
 ACK_HEADERS = {'Content-Type':'application/bitcoin-payment','Accept':'application/bitcoin-paymentack','User-Agent':'Electrum'}
@@ -78,7 +82,7 @@ def get_payment_request(url):
                 error = "payment URL not pointing to a payment request handling server"
             else:
                 data = response.content
-            print_error('fetched payment request', url, len(response.content))
+            _logger.info(f'fetched payment request {url} {len(response.content)}')
         except requests.exceptions.RequestException:
             data = None
             error = "payment URL not pointing to a valid server"
@@ -165,7 +169,7 @@ class PaymentRequest:
         try:
             x, ca = verify_cert_chain(cert.certificate)
         except BaseException as e:
-            traceback.print_exc(file=sys.stderr)
+            _logger.exception('')
             self.error = str(e)
             return False
         # get requestor name
@@ -268,7 +272,6 @@ class PaymentRequest:
         try:
             r = requests.post(payurl.geturl(), data=pm, headers=ACK_HEADERS, verify=ca_path)
         except requests.exceptions.SSLError:
-            print("Payment Message/PaymentACK verify Failed")
             try:
                 r = requests.post(payurl.geturl(), data=pm, headers=ACK_HEADERS, verify=False)
             except Exception as e:
@@ -367,7 +370,7 @@ def verify_cert_chain(chain):
             hashBytes = bytearray(hashlib.sha512(data).digest())
             verify = pubkey.verify(sig, x509.PREFIX_RSA_SHA512 + hashBytes)
         else:
-            util.print_error(algo.getComponentByName('algorithm'))
+            _logger.info(f"Algorithm not supported {algo.getComponentByName('algorithm')}")
             raise Exception("Algorithm not supported")
         if not verify:
             raise Exception("Certificate not Signed by Provided CA Certificate Chain")
@@ -435,9 +438,10 @@ def make_request(config, req):
     return pr
 
 
-class InvoiceStore(object):
+class InvoiceStore(Logger):
 
     def __init__(self, storage):
+        Logger.__init__(self)
         self.storage = storage
         self.invoices = {}
         self.paid = {}
@@ -493,7 +497,7 @@ class InvoiceStore(object):
     def get_status(self, key):
         pr = self.get(key)
         if pr is None:
-            print_error("[InvoiceStore] get_status() can't find pr for", key)
+            self.logger.info(f"get_status() can't find pr for {key}")
             return
         if pr.tx is not None:
             return PR_PAID

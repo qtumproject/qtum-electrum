@@ -42,6 +42,7 @@ class Synchronizer(ThreadJob):
     '''
 
     def __init__(self, wallet, network):
+        ThreadJob.__init__(self)
         self.wallet = wallet
         self.network = network
         self.new_addresses = set()
@@ -61,7 +62,7 @@ class Synchronizer(ThreadJob):
 
     def parse_response(self, response):
         if response.get('error'):
-            self.print_error("response error:", response)
+            self.logger.info(f"response error: {response}")
             return None, None
         return response['params'], response.get('result')
 
@@ -121,13 +122,13 @@ class Synchronizer(ThreadJob):
         except KeyError:
             # note: server_status can be None even if we asked for the history,
             # so it is not sufficient to test that
-            self.print_error("receiving history (unsolicited)", addr, len(result))
+            self.logger.info(f"receiving history (unsolicited) {addr, len(result)}")
             return
         if server_status is None:
-            self.print_error("receiving history (unsolicited)", addr, len(result))
+            self.logger.info(f"receiving history (unsolicited) {addr, len(result)}")
             return
 
-        self.print_error("receiving history", addr, len(result))
+        self.logger.info(f"receiving history {addr, len(result)}")
         hashes = set(map(lambda item: item['tx_hash'], result))
         hist = list(map(lambda item: (item['tx_hash'], item['height']), result))
         # tx_fees
@@ -136,10 +137,10 @@ class Synchronizer(ThreadJob):
 
         # Check that txids are unique
         if len(hashes) != len(result):
-            self.print_error("error: server history has non-unique txids: %s"% addr)
+            self.logger.info(f"error: server history has non-unique txids: {addr}")
         # Check that the status corresponds to what was announced
         elif self.get_status(hist) != server_status:
-            self.print_error("error: status mismatch: %s" % addr)
+            self.logger.info(f"error: status mismatch: {addr}")
         else:
             # Store received history
             self.wallet.receive_history_callback(addr, hist, tx_fees)
@@ -159,16 +160,14 @@ class Synchronizer(ThreadJob):
         try:
             tx.deserialize()
         except Exception:
-            self.print_msg("cannot deserialize transaction, skipping", tx_hash)
+            self.logger.info(f"cannot deserialize transaction, skipping {tx_hash}")
             return
         if tx_hash != tx.txid():
-            self.print_error("received tx does not match expected txid ({} != {})"
-                             .format(tx_hash, tx.txid()))
+            self.logger.info(f"received tx does not match expected txid ({tx_hash} != {tx.txid()})")
             return
         tx_height = self.requested_tx.pop(tx_hash)
         self.wallet.receive_tx_callback(tx_hash, tx, tx_height)
-        self.print_error("received tx %s height: %d bytes: %d" %
-                         (tx_hash, tx_height, len(tx.raw)))
+        self.logger.info(f"received tx {tx_hash} height: {tx_height} bytes: {len(tx.raw)}")
         # callbacks
         self.network.trigger_callback('new_transaction', self.wallet, tx)
 
@@ -207,7 +206,7 @@ class Synchronizer(ThreadJob):
             return  # we have been killed, this was just an orphan callback
         params, result = self.parse_response(response)
         if not params:
-            print('on_token_status err', response)
+            self.logger.info(f'on_token_status err {response}')
             return
         try:
             bind_addr = hash160_to_p2pkh(binascii.a2b_hex(params[0]))
@@ -221,18 +220,16 @@ class Synchronizer(ThreadJob):
                     self.network.request_token_history(token, self.on_token_history)
                     self.get_token_balance(token)
                 else:
-                    self.print_error('token status matched')
+                    self.logger.info('token status matched')
         except (BaseException,) as e:
-            import traceback, sys
-            traceback.print_exc(file=sys.stderr)
-            print('on_token_status err', e)
+            self.logger.exception('')
 
     def on_token_history(self, response):
         if self.wallet.synchronizer is None and self.initialized:
             return  # we have been killed, this was just an orphan callback
         params, result = self.parse_response(response)
         if not params:
-            print('on_token_history err', response)
+            self.logger.info(f'on_token_history err {response}')
             return
         try:
             bind_addr = hash160_to_p2pkh(binascii.a2b_hex(params[0]))
@@ -240,23 +237,23 @@ class Synchronizer(ThreadJob):
             key = '{}_{}'.format(contract_addr, bind_addr)
             server_status = self.requested_token_histories.get(key)
             if server_status is None:
-                self.print_error("receiving history (unsolicited)", key, len(result))
+                self.logger.info(f"receiving history (unsolicited) {key, len(result)}")
                 return
 
-            self.print_error("receiving token history", key, len(result))
+            self.logger.info(f"receiving token history {key, len(result)}")
 
             hist = list(map(lambda item: (item['tx_hash'], item['height'], item['log_index']), result))
             hashes = set(map(lambda item: (item['tx_hash'], item['log_index']), result))
             # Note if the server hasn't been patched to sort the items properly
             if hist != sorted(hist, key=lambda x: x[1]):
-                self.network.interface.print_error("serving improperly sorted address histories")
+                self.logger.info("serving improperly sorted address histories")
 
             # Check that txids are unique
             if len(hashes) != len(result):
-                print("error: server token history has non-unique txid_logindexs: %s" % key)
+                self.logger.info(f"error: server token history has non-unique txid_logindexs: {key}")
             # Check that the status corresponds to what was announced
             elif self.get_token_status(hist) != server_status:
-                print("error: status mismatch: %s" % key)
+                self.logger.info(f"error: status mismatch: {key}")
             else:
                 # Store received history
                 self.wallet.receive_token_history_callback(key, hist)
@@ -267,7 +264,7 @@ class Synchronizer(ThreadJob):
             self.requested_token_histories.pop(key)
 
         except (BaseException,) as e:
-            print('on_token_history err', e)
+            self.logger.info(f'on_token_history err {repr(e)}')
 
     def request_missing_tx_receipts(self, hist):
         # "hist" is a list of [tx_hash, tx_height, log_index] lists
@@ -287,16 +284,15 @@ class Synchronizer(ThreadJob):
             return  # we have been killed, this was just an orphan callback
         params, receipt = self.parse_response(response)
         if not params:
-            print('tx_receipt_response err', response)
+            self.logger.info(f'tx_receipt_response err {response}')
             return
         tx_hash = params[0]
         if not isinstance(receipt, list):
-            self.print_msg("transaction receipt not list, skipping", tx_hash)
+            self.logger.info(f"transaction receipt not list, skipping {tx_hash}")
             return
         height = self.requested_tx_receipt.pop(tx_hash)
         self.wallet.receive_tx_receipt_callback(tx_hash, receipt)
-        self.print_error("received tx_receipt %s height: %d" %
-                         (tx_hash, height))
+        self.logger.info(f"received tx_receipt {tx_hash} height: {height}")
         # callbacks
         self.network.trigger_callback('new_tx_receipt', receipt)
         if not self.requested_tx_receipt and not self.requested_token_txs:
@@ -325,12 +321,11 @@ class Synchronizer(ThreadJob):
         try:
             tx.deserialize()
         except Exception:
-            self.print_msg("cannot deserialize transaction, skipping", tx_hash)
+            self.logger.info(f"cannot deserialize transaction, skipping {tx_hash}")
             return
         tx_height = self.requested_token_txs.pop(tx_hash)
         self.wallet.receive_token_tx_callback(tx_hash, tx, tx_height)
-        self.print_error("received tx %s height: %d bytes: %d" %
-                         (tx_hash, tx_height, len(tx.raw)))
+        self.logger.info(f"received tx {tx_hash} height: {tx_height} bytes: {len(tx.raw)}")
         # callbacks
         self.network.trigger_callback('new_token_transaction', tx)
         if not self.requested_token_txs and not self.requested_tx_receipt:
@@ -355,7 +350,7 @@ class Synchronizer(ThreadJob):
                 token = token._replace(balance=result)
                 self.wallet.tokens[key] = token
         except (BaseException,) as e:
-            print('token_balance_response err', e)
+            self.logger.info(f'token_balance_response err {repr(e)}')
 
     def initialize(self):
         '''Check the initial state of the wallet.  Subscribe to all its
@@ -371,7 +366,7 @@ class Synchronizer(ThreadJob):
                 continue
             self.request_missing_txs(history)
         if self.requested_tx:
-            self.print_error("missing tx", self.requested_tx)
+            self.logger.info(f"missing tx {self.requested_tx}")
 
         self.subscribe_to_addresses(set(self.wallet.get_addresses()))
 
@@ -379,9 +374,9 @@ class Synchronizer(ThreadJob):
             self.request_missing_tx_receipts(history)
             self.request_missing_token_txs(history)
         if self.requested_tx_receipt:
-            self.print_error("missing tx receipt", self.requested_tx_receipt)
+            self.logger.info(f"missing tx receipt {self.requested_tx_receipt}")
         if self.requested_token_txs:
-            self.print_error("missing token txs", self.requested_token_txs)
+            self.logger.info(f"missing token txs {self.requested_token_txs}")
 
         tokens = set()
         for key in self.wallet.tokens.keys():

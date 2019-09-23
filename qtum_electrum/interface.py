@@ -37,6 +37,7 @@ ca_path = requests.certs.where()
 from . import util
 from . import x509
 from . import pem
+from .logging import Logger
 
 
 def Connection(server, queue, config_path):
@@ -55,7 +56,7 @@ def Connection(server, queue, config_path):
     return c
 
 
-class TcpConnection(threading.Thread, util.PrintError):
+class TcpConnection(threading.Thread, Logger):
     verbosity_filter = 'i'
 
     def __init__(self, server, queue, config_path):
@@ -68,9 +69,10 @@ class TcpConnection(threading.Thread, util.PrintError):
         self.port = int(self.port)
         self.use_ssl = (self.protocol == 's')
         self.daemon = True
+        Logger.__init__(self)
 
     def diagnostic_name(self):
-        return self.host
+        return f"{self.host}:{self.port}"
 
     def check_host_name(self, peercert, name):
         """Simple certificate/host name checker.  Returns True if the
@@ -100,7 +102,7 @@ class TcpConnection(threading.Thread, util.PrintError):
         try:
             l = socket.getaddrinfo(self.host, self.port, socket.AF_UNSPEC, socket.SOCK_STREAM)
         except socket.gaierror:
-            self.print_error("cannot resolve hostname")
+            self.logger.info("cannot resolve hostname")
             return
         e = None
         for res in l:
@@ -116,7 +118,6 @@ class TcpConnection(threading.Thread, util.PrintError):
                 continue
         else:
             pass
-            # self.print_error("failed to connect", str(e))
 
     @staticmethod
     def get_ssl_context(cert_reqs, ca_certs):
@@ -147,10 +148,10 @@ class TcpConnection(threading.Thread, util.PrintError):
                         context = self.get_ssl_context(cert_reqs=ssl.CERT_REQUIRED, ca_certs=ca_path)
                         s = context.wrap_socket(s, do_handshake_on_connect=True)
                     except ssl.SSLError as e:
-                        self.print_error('[get_socket] 1', e)
+                        self.logger.info(f'[get_socket] 1 {repr(e)}')
                         s = None
                     except Exception as e:
-                        self.print_error('[get_socket] 2', e)
+                        self.logger.info(f'[get_socket] 2 {repr(e)}')
                         return
                     else:
                         try:
@@ -158,22 +159,22 @@ class TcpConnection(threading.Thread, util.PrintError):
                         except OSError:
                             return
                         if self.check_host_name(peer_cert, self.host):
-                            self.print_error("SSL certificate signed by CA")
+                            self.logger.info("SSL certificate signed by CA")
                             return s
                 # get server certificate.
                 # Do not use ssl.get_server_certificate because it does not work with proxy
                 s = self.get_simple_socket()
                 if s is None:
-                    self.print_error('[get_socket] 3')
+                    self.logger.info('[get_socket] 3')
                     return
                 try:
                     context = self.get_ssl_context(cert_reqs=ssl.CERT_NONE, ca_certs=None)
                     s = context.wrap_socket(s)
                 except ssl.SSLError as e:
-                    self.print_error("SSL error retrieving SSL certificate:", e)
+                    self.logger.info(f"SSL error retrieving SSL certificate: {repr(e)}")
                     return
                 except Exception as e:
-                    self.print_error('[get_socket] 4', e)
+                    self.logger.info(f'[get_socket] 4 {repr(e)}')
                     return
 
                 try:
@@ -202,12 +203,12 @@ class TcpConnection(threading.Thread, util.PrintError):
                                                ca_certs=(temporary_path if is_new else cert_path))
                 s = context.wrap_socket(s, do_handshake_on_connect=True)
             except socket.timeout:
-                self.print_error('timeout')
+                self.logger.info('timeout')
                 return
             except ssl.SSLError as e:
-                self.print_error("SSL error:", e)
+                self.logger.info(f"SSL error: {repr(e)}")
                 if e.errno != 1:
-                    self.print_error('[get_socket] 6', e)
+                    self.logger.info(f'[get_socket] 6 {repr(e)}')
                     return
                 if is_new:
                     rej = cert_path + '.rej'
@@ -222,26 +223,26 @@ class TcpConnection(threading.Thread, util.PrintError):
                         x = x509.X509(b)
                     except:
                         traceback.print_exc(file=sys.stderr)
-                        self.print_error("wrong certificate")
+                        self.logger.info("wrong certificate")
                         return
                     try:
                         x.check_date()
                     except:
-                        self.print_error("certificate has expired:", cert_path)
+                        self.logger.info(f"certificate has expired: {cert_path}")
                         os.unlink(cert_path)
                         return
-                    self.print_error("wrong certificate")
+                    self.logger.info("wrong certificate")
                 if e.errno == 104:
-                    self.print_error('[get_socket] 7', e)
+                    self.logger.info(f'[get_socket] 7 {repr(e)}')
                     return
                 return
             except BaseException as e:
-                self.print_error('[get_socket] 8', e)
+                self.logger.info(f'[get_socket] 8 {repr(e)}')
                 traceback.print_exc(file=sys.stderr)
                 return
 
             if is_new:
-                self.print_error("saving certificate")
+                self.logger.info("saving certificate")
                 os.rename(temporary_path, cert_path)
 
         return s
@@ -249,11 +250,11 @@ class TcpConnection(threading.Thread, util.PrintError):
     def run(self):
         socket = self.get_socket()
         if socket:
-            self.print_error("connected")
+            self.logger.info("connected")
         self.queue.put((self.server, socket))
 
 
-class Interface(util.PrintError):
+class Interface(Logger):
     """The Interface class handles a socket connected to a single remote
     qtum_electrum server.  It's exposed API is:
 
@@ -278,6 +279,8 @@ class Interface(util.PrintError):
         self.last_send = time.time()
         self.closed_remotely = False
         self.server_version = []
+
+        Logger.__init__(self)
 
     def diagnostic_name(self):
         return self.host
@@ -315,12 +318,12 @@ class Interface(util.PrintError):
         try:
             self.pipe.send_all([make_dict(*r) for r in wire_requests])
         except BaseException as e:
-            self.print_error("pipe send error:", e)
+            self.logger.info(f"pipe send error: {repr(e)}")
             return False
         self.unsent_requests = self.unsent_requests[n:]
         for request in wire_requests:
             if self.debug:
-                self.print_error("-->", request)
+                self.logger.info(f"--> {request}")
             self.unanswered_requests[request[2]] = request
         return True
 
@@ -333,7 +336,7 @@ class Interface(util.PrintError):
         '''Returns True if the interface has timed out.'''
         if (self.unanswered_requests and time.time() - self.request_time > 15
             and self.pipe.idle_time() > 15):
-            self.print_error("timeout", len(self.unanswered_requests))
+            self.logger.info(f"timeout {len(self.unanswered_requests)}")
             return True
         return False
 
@@ -356,10 +359,10 @@ class Interface(util.PrintError):
                 responses.append((None, None))
                 if response is None:
                     self.closed_remotely = True
-                    self.print_error("connection closed remotely")
+                    self.logger.info("connection closed remotely")
                 break
             if self.debug:
-                self.print_error("<--", response)
+                self.logger.info(f"<-- {response}")
             wire_id = response.get('id', None)
             if wire_id is None:  # Notification
                 responses.append((None, response))
@@ -368,7 +371,7 @@ class Interface(util.PrintError):
                 if request:
                     responses.append((request, response))
                 else:
-                    self.print_error("unknown wire ID", wire_id)
+                    self.logger.info(f"unknown wire ID {wire_id}")
                     responses.append((None, None)) # Signal
                     break
 

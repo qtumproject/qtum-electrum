@@ -34,12 +34,13 @@ import base64
 import zlib
 from collections import defaultdict
 
-from .util import PrintError, profiler, InvalidPassword, \
-    export_meta, import_meta, print_error, bfh, WalletFileException, standardize_path
+from .util import profiler, InvalidPassword, \
+    export_meta, import_meta, bfh, WalletFileException, standardize_path
 from .plugin import run_hook, plugin_loaders
 from .keystore import bip44_derivation
 from . import ecc
 from . import util
+from .logging import Logger
 
 # seed_version is now used for the version of the wallet file
 
@@ -70,9 +71,10 @@ def get_derivation_used_for_hw_device_encryption():
 STO_EV_PLAINTEXT, STO_EV_USER_PW, STO_EV_XPUB_PW = range(0, 3)
 
 
-class JsonDB(PrintError):
+class JsonDB(Logger):
 
     def __init__(self, path):
+        Logger.__init__(self)
         self.db_lock = threading.RLock()
         self.data = {}
         self.path = standardize_path(path)
@@ -98,7 +100,7 @@ class JsonDB(PrintError):
             json.dumps(key, cls=util.MyEncoder)
             json.dumps(value, cls=util.MyEncoder)
         except:
-            self.print_error(f"json error: cannot save {repr(key)} ({repr(value)})")
+            self.logger.info(f"json error: cannot save {repr(key)} ({repr(value)})")
             return
         with self.db_lock:
             if value is not None:
@@ -117,7 +119,7 @@ class JsonDB(PrintError):
         try:
             json.dumps(data, cls=util.MyEncoder)
         except:
-            self.print_error(f"json error: cannot save {repr(data)}")
+            self.logger.info(f"json error: cannot save {repr(data)}")
             return
         with self.db_lock:
             self.modified = True
@@ -130,7 +132,7 @@ class JsonDB(PrintError):
 
     def _write(self):
         if threading.currentThread().isDaemon():
-            self.print_error('warning: daemon thread cannot write db')
+            self.logger.info('warning: daemon thread cannot write db')
             return
         if not self.modified:
             return
@@ -154,7 +156,7 @@ class JsonDB(PrintError):
             os.rename(temp_path, self.path)
         os.chmod(self.path, mode)
         self._file_exists = True
-        self.print_error("saved", self.path)
+        self.logger.info(f"saved {self.path}")
         self.modified = False
 
     def encrypt_before_writing(self, plaintext: str) -> str:
@@ -168,7 +170,7 @@ class WalletStorage(JsonDB):
 
     def __init__(self, path):
         JsonDB.__init__(self, path)
-        self.print_error("wallet path", self.path)
+        self.logger.info(f"wallet path {self.path}")
         self.pubkey = None
         if self.file_exists():
             with open(self.path, "r", encoding='utf-8') as f:
@@ -196,7 +198,7 @@ class WalletStorage(JsonDB):
                     json.dumps(key)
                     json.dumps(value)
                 except:
-                    self.print_error('Failed to convert label to json format', key)
+                    self.logger.info(f'Failed to convert label to json format {key}')
                     continue
                 self.data[key] = value
         if not isinstance(self.data, dict):
@@ -370,7 +372,7 @@ class WalletStorage(JsonDB):
 
     @profiler
     def upgrade(self):
-        self.print_error('upgrading wallet format')
+        self.logger.info('upgrading wallet format')
         self.convert_imported()
         self.convert_wallet_type()
         self.convert_account()
@@ -571,17 +573,18 @@ class WalletStorage(JsonDB):
         return seed_version
 
 
-class ModelStorage(dict):
+class ModelStorage(dict, Logger):
 
     def __init__(self, name, wallet_storage):
         dict.__init__(self)
+        Logger.__init__(self)
         self.storage = wallet_storage
         self.name = name
         d = self.validate(self.storage.get(name, {}))
         try:
             self.update(d)
         except BaseException as e:
-            print_error('ModelStorage init error', self.name, e)
+            self.logger.info(f'ModelStorage init error {self.name, e}')
             return
 
     def __setitem__(self, key, value):

@@ -39,11 +39,13 @@ import dns.resolver
 from . import bitcoin
 from . import blockchain
 from . import util
-from .util import print_error
 from .qtum import *
 from . import constants
 from .interface import Connection, Interface
 from .version import ELECTRUM_VERSION, PROTOCOL_VERSION
+from .logging import get_logger, Logger
+
+_logger = get_logger(__name__)
 
 NODES_RETRY_INTERVAL = 60
 SERVER_RETRY_INTERVAL = 10
@@ -211,7 +213,7 @@ class Network(util.DaemonThread):
         self.config = SimpleConfig(config) if isinstance(config, dict) else config
         self.num_server = 10 if not self.config.get('oneserver') else 0
         self.blockchains = blockchain.read_blockchains(self.config)  # note: needs self.blockchains_lock
-        self.print_error("blockchains", self.blockchains.keys())
+        self.logger.info(f"blockchains {self.blockchains.keys()}")
         self.blockchain_index = config.get('blockchain_index', 0)
         if self.blockchain_index not in self.blockchains.keys():
             self.blockchain_index = 0
@@ -222,7 +224,7 @@ class Network(util.DaemonThread):
             try:
                 deserialize_server(self.default_server)
             except:
-                self.print_error('Warning: failed to parse server-string; falling back to random.')
+                self.logger.info('Warning: failed to parse server-string; falling back to random.')
                 self.default_server = None
         if not self.default_server:
             self.default_server = pick_random_server()
@@ -332,12 +334,12 @@ class Network(util.DaemonThread):
     def server_is_lagging(self):
         sh = self.get_server_height()
         if not sh:
-            self.print_error('no height for main interface')
+            self.logger.info('no height for main interface')
             return True
         lh = self.get_local_height()
         result = (lh - sh) > 1
         if result:
-            self.print_error('%s is lagging (%d vs %d)' % (self.default_server, sh, lh))
+            self.logger.info(f'{self.default_server} is lagging ({sh} vs {lh})')
             for k in list(self.blockchains.keys()):
                 if not self.blockchains[k].is_valid():
                     for server in list(self.interfaces.keys()):
@@ -365,20 +367,19 @@ class Network(util.DaemonThread):
             if self.interface:
                 interface = self.interface
             else:
-                self.print_error('warning: dropping request', method, params)
+                self.logger.info(f'warning: dropping request {method} {params}')
                 return
         message_id = self.message_id
         self.message_id += 1
         if self.debug:
-            self.print_error(interface.host, "-->", method, params, message_id)
+            self.logger.info(f"{interface.host} --> {method} {params} {message_id}")
         interface.queue_request(method, params, message_id)
         return message_id
 
     @with_interface_lock
     def send_subscriptions(self):
         assert self.interface
-        self.print_error('sending subscriptions to', self.interface.server, len(self.unanswered_requests),
-                         len(self.subscribed_addresses), len(self.subscribed_tokens))
+        self.logger.info(f'sending subscriptions to {self.interface.server} {len(self.unanswered_requests)} {len(self.subscribed_addresses)} {len(self.subscribed_tokens)}')
         self.sub_cache.clear()
         # Resend unanswered requests
         requests = self.unanswered_requests.values()
@@ -449,7 +450,7 @@ class Network(util.DaemonThread):
     def start_interface(self, server):
         if (not server in self.interfaces and not server in self.connecting):
             if server == self.default_server:
-                self.print_error("connecting to %s as new interface" % server)
+                self.logger.info(f"connecting to {server} as new interface")
                 self._set_status('connecting')
             self.connecting.add(server)
             c = Connection(server, self.socket_queue, self.config.path)
@@ -473,7 +474,7 @@ class Network(util.DaemonThread):
             socket._socketobject = socket.socket
             socket._getaddrinfo = socket.getaddrinfo
         if proxy:
-            self.print_error('setting proxy', proxy)
+            self.logger.info(f'setting proxy {proxy}')
             proxy_mode = proxy_modes.index(proxy["mode"]) + 1
             socks.setdefaultproxy(proxy_mode,
                                   proxy["host"],
@@ -518,7 +519,7 @@ class Network(util.DaemonThread):
         except BaseException as e:
             # Possibly internal error in dnspython :( see #4483
             # Fall back to original socket.getaddrinfo to resolve dns.
-            print_error('dnspython failed to resolve dns with error:', e)
+            _logger.info(f'dnspython failed to resolve dns with error: {repr(e)}')
             addr = host
         return socket._getaddrinfo(addr, *args, **kwargs)
 
@@ -526,7 +527,7 @@ class Network(util.DaemonThread):
     def start_network(self, protocol, proxy):
         assert not self.interface and not self.interfaces
         assert not self.connecting and self.socket_queue.empty()
-        self.print_error('starting network')
+        self.logger.info('starting network')
         self.disconnected_servers = set([])  # note: needs self.interface_lock
         self.protocol = protocol
         self.set_proxy(proxy)
@@ -535,7 +536,7 @@ class Network(util.DaemonThread):
 
     @with_interface_lock
     def stop_network(self):
-        self.print_error("stopping network")
+        self.logger.info("stopping network")
         for interface in list(self.interfaces.values()):
             self.close_interface(interface)
         if self.interface:
@@ -608,7 +609,7 @@ class Network(util.DaemonThread):
             return
         i = self.interfaces[server]
         if self.interface != i:
-            self.print_error("switching to", server)
+            self.logger.info(f"switching to {server}")
             blockchain_updated = False
 
             if self.interface is not None:
@@ -648,7 +649,7 @@ class Network(util.DaemonThread):
 
     def process_response(self, interface, response, callbacks):
         if self.debug:
-            self.print_error(interface.host, "<--", response)
+            self.logger.info(f"{interface.host} <-- {response}")
         error = response.get('error')
         result = response.get('result')
         method = response.get('method')
@@ -680,12 +681,12 @@ class Network(util.DaemonThread):
                 i = params[0]
                 fee = int(result*COIN)
                 self.config.fee_estimates[i] = fee
-                self.print_error("fee_estimates[%d]" % i, fee)
+                self.logger.info(f"fee_estimates[{i}] {fee}")
                 self.notify('fee')
         elif method == 'blockchain.relayfee':
             if error is None and result is not None and result > 0:
                 self.relay_fee = int(result * COIN)
-                self.print_error("relayfee", self.relay_fee)
+                self.logger.info(f"relayfee {self.relay_fee}")
         elif method == 'blockchain.block.headers':
             self.on_block_headers(interface, response)
         elif method == 'blockchain.block.header':
@@ -794,7 +795,6 @@ class Network(util.DaemonThread):
                     # check cached response for subscriptions
                     r = self.sub_cache.get(k)
                 if r is not None and not method.endswith('contract.subscribe'):
-                    self.print_error("cache hit", k)
                     callback(r)
                 else:
                     message_id = self.queue_request(method, params)
@@ -869,7 +869,7 @@ class Network(util.DaemonThread):
             if len(self.interfaces) + len(self.connecting) < self.num_server:
                 self.start_random_interface()
                 if now - self.nodes_retry_time > NODES_RETRY_INTERVAL:
-                    self.print_error('network: retrying connections')
+                    self.logger.info('network: retrying connections')
                     self.disconnected_servers = set([])
                     self.nodes_retry_time = now
 
@@ -888,9 +888,9 @@ class Network(util.DaemonThread):
                         self.switch_to_interface(self.default_server)
 
     def request_chunk(self, interface, index):
-        interface.print_error("requesting chunk %d" % index)
+        self.logger.info(f"requesting chunk {index}")
         if index in self.requested_chunks:
-            interface.print_error("index {} already in requested chunks".format(index))
+            self.logger.info(f"index {index} already in requested chunks")
             return
         height = index * CHUNK_SIZE
         self.queue_request('blockchain.block.headers', [height, CHUNK_SIZE],
@@ -904,7 +904,7 @@ class Network(util.DaemonThread):
         params = response.get('params')
         blockchain = interface.blockchain
         if result is None or params is None or error is not None:
-            interface.print_error('on get chunk error', error, result, params)
+            self.logger.info(f"on get chunk error {error} {result} {params}")
             self.switch_to_random_interface()
             if error.get('code') == -101:
                 blockchain.catch_up = None
@@ -914,10 +914,10 @@ class Network(util.DaemonThread):
         height = params[0]
         index = height // CHUNK_SIZE
         if index * CHUNK_SIZE != height or index not in self.requested_chunks:
-            interface.print_error("received chunk %d (unsolicited)" % index)
+            self.logger.info(f"received chunk {index} (unsolicited)")
             return
         else:
-            interface.print_error("received chunk %d" % index)
+            self.logger.info(f"received chunk {index}")
         self.requested_chunks.remove(index)
         hexdata = result['hex']
         connect = blockchain.connect_chunk(index, hexdata)
@@ -929,20 +929,19 @@ class Network(util.DaemonThread):
             self.request_chunk(interface, index+1)
         else:
             interface.mode = 'default'
-            interface.print_error('catch up done', blockchain.height())
+            self.logger.info(f"catch up done {blockchain.height()}")
             blockchain.catch_up = None
 
     def on_get_header(self, interface, response):
         '''Handle receiving a single block header'''
         header = response.get('result')
         if not header:
-            interface.print_error(response)
+            self.logger.info(repr(response))
             self.connection_down(interface.server)
             return
         height = header.get('block_height')
-        # print_error('[on_get_header] {} {}'.format(height, interface.mode))
         if interface.request != height:
-            interface.print_error("unsolicited header", interface.request, height)
+            self.logger.info(f"unsolicited header {interface.request} {height}")
             self.connection_down(interface.server)
             return
 
@@ -958,7 +957,7 @@ class Network(util.DaemonThread):
                 interface.blockchain.catch_up = interface.server
                 self.trigger_callback('blockchain_updated')
             elif chain:
-                interface.print_error("binary search")
+                self.logger.info("binary search")
                 interface.mode = 'binary'
                 interface.blockchain = chain
                 interface.good = height
@@ -990,14 +989,14 @@ class Network(util.DaemonThread):
                 branch = self.blockchains.get(interface.bad)
                 if branch is not None:
                     if branch.check_header(interface.bad_header):
-                        interface.print_error('joining chain', interface.bad)
+                        self.logger.info(f"joining chain {interface.bad}")
                         next_height = None
                     elif branch.parent().check_header(header):
-                        interface.print_error('reorg', interface.bad, interface.tip)
+                        self.logger.info(f"reorg {interface.bad} {interface.tip}")
                         interface.blockchain = branch.parent()
                         next_height = interface.bad
                     else:
-                        interface.print_error('forkpoint conflicts with existing fork', branch.path())
+                        self.logger.info(f"forkpoint conflicts with existing fork {branch.path()}")
                         branch.write(b'', 0)
                         branch.save_header(interface.bad_header)
                         interface.mode = 'catch_up'
@@ -1014,7 +1013,7 @@ class Network(util.DaemonThread):
                             with self.blockchains_lock:
                                 self.blockchains[interface.bad] = b
                             interface.blockchain = b
-                            interface.print_error("new chain", b.forkpoint)
+                            self.logger.info(f"new chain {b.forkpoint}")
                             interface.mode = 'catch_up'
                             next_height = interface.bad + 1
                             interface.blockchain.catch_up = interface.server
@@ -1022,7 +1021,7 @@ class Network(util.DaemonThread):
                     else:
                         assert bh == interface.good
                         if interface.blockchain.catch_up is None and bh < interface.tip:
-                            interface.print_error("catching up from %d"% (bh + 1))
+                            self.logger.info(f"catching up from {bh + 1}")
                             interface.mode = 'catch_up'
                             next_height = bh + 1
                             interface.blockchain.catch_up = interface.server
@@ -1035,7 +1034,7 @@ class Network(util.DaemonThread):
                 self.trigger_callback('blockchain_updated')
             else:
                 # go back
-                interface.print_error("cannot connect", height)
+                self.logger.info(f"cannot connect {height}")
                 interface.mode = 'backward'
                 interface.bad = height
                 interface.bad_header = header
@@ -1043,7 +1042,7 @@ class Network(util.DaemonThread):
 
             if next_height is None:
                 # exit catch_up state
-                interface.print_error('catch up done', interface.blockchain.height())
+                self.logger.info(f"catch up done {interface.blockchain.height()}")
                 interface.blockchain.catch_up = None
                 self.switch_lagging_interface()
         else:
@@ -1068,7 +1067,7 @@ class Network(util.DaemonThread):
             interfaces = list(self.interfaces.values())
         for interface in interfaces:
             if interface.request and time.time() - interface.request_time > 30:
-                interface.print_error("blockchain request timed out")
+                self.logger.info("blockchain request timed out")
                 self.connection_down(interface.server)
                 continue
 
@@ -1085,7 +1084,7 @@ class Network(util.DaemonThread):
         try:
             rout, wout, xout = select.select(rin, win, [], 0.1)
         except (socket.error, OSError) as e:
-            print_error('[wait_on_sockets]', e)
+            self.logger.info(f"[wait_on_sockets] {repr(e)}")
             if e.errno == errno.EINTR:
                 return
             raise
@@ -1179,10 +1178,10 @@ class Network(util.DaemonThread):
                 interface.mode = 'catch_up'
                 interface.blockchain = chain
                 with self.blockchains_lock:
-                    self.print_error("switching to catchup mode", tip, self.blockchains)
+                    self.logger.info(f"switching to catchup mode {tip} {self.blockchains}")
                 self.request_header(interface, 0)
             else:
-                self.print_error("chain already catching up with", chain.catch_up)
+                self.logger.info(f"chain already catching up with {chain.catch_up}")
 
     @with_interface_lock
     def blockchain(self):

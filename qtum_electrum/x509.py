@@ -25,9 +25,13 @@
 from datetime import datetime
 import sys
 from . import util
-from .util import profiler, print_error, bh2u
+from .util import profiler, bh2u
 import ecdsa
 import hashlib
+from .logging import get_logger
+
+
+_logger = get_logger(__name__)
 
 # algo OIDs
 ALGO_RSA_SHA1 = '1.2.840.113549.1.1.5'
@@ -325,7 +329,7 @@ def load_certificates(ca_path):
         except BaseException as e:
             # with open('/tmp/tmp.txt', 'w') as f:
             #     f.write(pem.pem(b, 'CERTIFICATE').decode('ascii'))
-            util.print_error("cert error:", e)
+            _logger.info(f"cert error: {e}")
             continue
 
         fp = x.getFingerprint()

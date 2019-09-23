@@ -7,8 +7,12 @@ import platform
 
 from qtum_electrum.plugin import BasePlugin, hook
 from qtum_electrum.gui.qt.util import WaitingDialog, EnterButton, WindowModalDialog, read_QIcon
-from qtum_electrum.util import print_msg, print_error
+from qtum_electrum.util import print_msg
 from qtum_electrum.i18n import _
+from qtum_electrum.logging import get_logger
+
+
+_logger = get_logger(__name__)
 
 from PyQt5.QtGui import *
 from PyQt5.QtCore import *
@@ -18,12 +22,12 @@ try:
     import amodem.audio
     import amodem.main
     import amodem.config
-    print_error('Audio MODEM is available.')
+    _logger.info('Audio MODEM is available.')
     amodem.log.addHandler(amodem.logging.StreamHandler(sys.stderr))
     amodem.log.setLevel(amodem.logging.INFO)
 except ImportError:
     amodem = None
-    print_error('Audio MODEM is not found.')
+    _logger.info('Audio MODEM is not found.')
 
 
 class Plugin(BasePlugin):
@@ -102,7 +106,7 @@ class Plugin(BasePlugin):
                 dst = interface.player()
                 amodem.main.send(config=self.modem_config, src=src, dst=dst)
 
-        print_msg('Sending:', repr(blob))
+        _logger.info(f'Sending: {repr(blob)}')
         blob = zlib.compress(blob.encode('ascii'))
 
         kbps = self.modem_config.modem_bps / 1e3
@@ -120,7 +124,7 @@ class Plugin(BasePlugin):
         def on_finished(blob):
             if blob:
                 blob = zlib.decompress(blob).decode('ascii')
-                print_msg('Received:', repr(blob))
+                _logger.info(f'Received: {repr(blob)}')
                 parent.setText(blob)
 
         kbps = self.modem_config.modem_bps / 1e3

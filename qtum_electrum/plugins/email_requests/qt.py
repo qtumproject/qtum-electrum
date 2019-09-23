@@ -42,7 +42,7 @@ from PyQt5.QtGui import *
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import (QVBoxLayout, QLabel, QGridLayout, QLineEdit, QInputDialog, QPushButton)
 
-from qtum_electrum.util import PrintError
+from qtum_electrum.logging import Logger
 from qtum_electrum.plugin import BasePlugin, hook
 from qtum_electrum.paymentrequest import PaymentRequest
 from qtum_electrum.i18n import _
@@ -50,11 +50,12 @@ from qtum_electrum.gui.qt.util import EnterButton, Buttons, CloseButton
 from qtum_electrum.gui.qt.util import OkButton, WindowModalDialog, get_parent_main_window
 
 
-class Processor(threading.Thread, PrintError):
+class Processor(threading.Thread, Logger):
     polling_interval = 1*60
 
     def __init__(self, smtp_server, username, password, callback):
         threading.Thread.__init__(self)
+        Logger.__init__(self)
         self.daemon = True
         self.username = username
         self.password = password
@@ -87,7 +88,7 @@ class Processor(threading.Thread, PrintError):
                 self.M = smtplib.SMTP_SSL(self.smtp_server, timeout=10)
                 self.M.login(self.username, self.password)
             except BaseException as e:
-                self.print_error('imap connecting failed: {}'.format(e))
+                self.logger.info(f'connecting failed: {repr(e)}')
                 self.connect_wait *= 2
                 time.sleep(random.randint(0, self.connect_wait))
                 continue
@@ -98,7 +99,7 @@ class Processor(threading.Thread, PrintError):
                 try:
                     self.poll()
                 except BaseException as e:
-                    self.print_error('polling failed: {}'.format(e))
+                    self.logger.info(f'polling failed: {repr(e)}')
                     break
                 time.sleep(self.polling_interval)
             time.sleep(random.randint(0, self.connect_wait))
@@ -144,7 +145,7 @@ class Plugin(BasePlugin):
         self.wallets = set()
 
     def on_receive(self, pr_str):
-        self.print_error('received payment request')
+        self.logger.info('received payment request')
         self.pr = PaymentRequest(pr_str)
         self.obj.email_new_invoice_signal.emit()
 
@@ -185,11 +186,11 @@ class Plugin(BasePlugin):
         part.set_payload(payload)
         encode_base64(part)
         part.add_header('Content-Disposition', 'attachment; filename="payreq.qtum"')
-        self.print_error('sending mail to', recipient)
+        self.logger.info(f'sending mail to {recipient}')
         try:
             self.processor.send(recipient, subject, part)
         except BaseException as e:
-            traceback.print_exc(file=sys.stderr)
+            self.logger.exception('')
             window.show_message(str(e))
         else:
             window.show_message(_('Request sent.'))

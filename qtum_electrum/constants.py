@@ -26,6 +26,9 @@
 import os
 import json
 
+GIT_REPO_URL = "https://github.com/qtumproject/qtum_electrum"
+GIT_REPO_ISSUES_URL = "https://github.com/qtumproject/qtum_electrum/issues"
+
 
 def read_json(filename, default):
     path = os.path.join(os.path.dirname(__file__), filename)

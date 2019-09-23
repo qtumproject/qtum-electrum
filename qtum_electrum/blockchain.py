@@ -26,8 +26,10 @@ import sqlite3
 from typing import Optional
 from . import util
 from .qtum import *
-from .util import print_error
+from .logging import get_logger, Logger
 
+
+_logger = get_logger(__name__)
 
 blockchains = {}
 
@@ -66,9 +68,9 @@ def remove_chain(cp, chains):
     try:
         os.remove(chains[cp].path())
         del chains[cp]
-        print_error('chain removed', cp)
+        _logger.info('chain removed', cp)
     except (BaseException,) as e:
-        print_error('remove_chain error', e)
+        _logger.info('remove_chain error', e)
     for k in list(chains.keys()):
         if chains[k].parent_id == cp:
             remove_chain(chains[k].forkpoint, chains)
@@ -77,7 +79,7 @@ def remove_chain(cp, chains):
 def check_header(header):
     if type(header) is not dict:
         util.print_frames()
-        print_error('[check_header] header not dic')
+        _logger.info('[check_header] header not dic')
         return False
     for b in blockchains.values():
         if b.check_header(header):
@@ -92,7 +94,7 @@ def can_connect(header):
     return False
 
 
-class Blockchain(util.PrintError):
+class Blockchain(Logger):
     """
     Manages blockchain headers and their verification
     """
@@ -100,6 +102,7 @@ class Blockchain(util.PrintError):
     verbosity_filter = 'b'
 
     def __init__(self, config, forkpoint, parent_id):
+        Logger.__init__(self)
         self.config = config
         self.catch_up = None # interface catching up
         self.forkpoint = forkpoint
@@ -127,7 +130,7 @@ class Blockchain(util.PrintError):
                            '(height INT PRIMARY KEY NOT NULL, data BLOB NOT NULL)')
             self.conn.commit()
         except (sqlite3.DatabaseError, ) as e:
-            self.print_error('error when init_db', e, 'will delete the db file and recreate')
+            self.logger.info(f"error when init_db', {e}, 'will delete the db file and recreate")
             os.remove(self.path())
             self.conn = None
             self.init_db()
@@ -178,7 +181,7 @@ class Blockchain(util.PrintError):
     def fork(parent, header):
         forkpoint = header.get('block_height')
         self = Blockchain(parent.config, forkpoint, parent.forkpoint)
-        self.print_error('[fork]', forkpoint, parent.forkpoint)
+        self.logger.info(f'[fork] {forkpoint}, {parent.forkpoint}')
         self.save_header(header)
         return self
 
@@ -219,7 +222,7 @@ class Blockchain(util.PrintError):
 
         global blockchains
         try:
-            self.print_error('swap', forkpoint, parent_id)
+            self.logger.info(f'swap, {forkpoint}, {parent_id}')
             for i in range(forkpoint, forkpoint + self._size):
                 # print_error('swaping', i)
                 header = self.read_header(i, deserialize=False)
@@ -232,13 +235,13 @@ class Blockchain(util.PrintError):
         except (BaseException,) as e:
             import traceback, sys
             traceback.print_exc(file=sys.stderr)
-            self.print_error('swap error', e)
+            self.logger.error(f'swap error, {e}')
         # update size
         self.update_size()
         parent.update_size()
         self.swaping.clear()
         parent.swaping.clear()
-        self.print_error('swap finished')
+        self.logger.info('swap finished')
         parent.swap_with_parent()
 
     def write(self, raw_header, height):
@@ -251,7 +254,7 @@ class Blockchain(util.PrintError):
                 self.delete_all()
             return
         with self.lock:
-            self.print_error('{} try to write {}'.format(self.forkpoint, height))
+            self.logger.info(f'{self.forkpoint} try to write {height}')
             if height > self._size + self.forkpoint:
                 return
             try:
@@ -266,11 +269,11 @@ class Blockchain(util.PrintError):
             self.update_size()
 
     def delete(self, height):
-        self.print_error('{} try to delete {}'.format(self.forkpoint, height))
+        self.logger.info(f'{self.forkpoint} try to delete {height}')
         if self.forkpoint > 0 and height < self.forkpoint:
             return
         with self.lock:
-            self.print_error('{} try to delete {}'.format(self.forkpoint, height))
+            self.logger.info(f'{self.forkpoint} try to delete {height}')
             try:
                 conn = self.conn
                 cursor = conn.cursor()
@@ -319,7 +322,7 @@ class Blockchain(util.PrintError):
         cursor.close()
         conn.close()
         if not result or len(result) < 1:
-            self.print_error('read_header 4', height, self.forkpoint, self.parent_id, result, self.height())
+            self.logger.error(f'read_header 4 {height}, {self.forkpoint}, {self.parent_id}, {result}, {self.height()}')
             self.update_size()
             return
         header = result[0]
@@ -356,7 +359,7 @@ class Blockchain(util.PrintError):
 
     @with_lock
     def save_chunk(self, index, raw_headers):
-        self.print_error('{} try to save chunk {}'.format(self.forkpoint, index * CHUNK_SIZE))
+        self.logger.info(f'{self.forkpoint} try to save chunk {(index * CHUNK_SIZE)}')
         if self.swaping.is_set():
             return
         try:
@@ -456,26 +459,26 @@ class Blockchain(util.PrintError):
             return False
         height = header['block_height']
         if check_height and self.height() != height - 1:
-            self.print_error('[can_connect] check_height failed', height, self.height())
+            self.logger.info(f'[can_connect] check_height failed {height}, {self.height()}')
             return False
         if height == 0:
             valid = hash_header(header) == constants.net.GENESIS
             if not valid:
-                print_error('[can_connect] GENESIS hash check', hash_header(header), constants.net.GENESIS)
+                self.logger.info(f'[can_connect] GENESIS hash check {hash_header(header)}, {constants.net.GENESIS}')
             return valid
         prev_header = self.read_header(height - 1)
         if not prev_header:
-            self.print_error('[can_connect] no prev_header', height)
+            self.logger.info(f'[can_connect] no prev_header {height}')
             return False
         prev_hash = hash_header(prev_header)
         if prev_hash != header.get('prev_block_hash'):
-            self.print_error('[can_connect] hash check failed', height)
+            self.logger.info(f'[can_connect] hash check failed {height}')
             return False
         bits, target = self.get_target(height)
         try:
             self.verify_header(header, prev_header, bits, target)
         except BaseException as e:
-            self.print_error('[can_connect] verify_header failed', e, height)
+            self.logger.info(f'[can_connect] verify_header failed {e} {height}')
             return False
         return True
 
@@ -484,9 +487,8 @@ class Blockchain(util.PrintError):
             data = bfh(hexdata)
             raw_heades = self.read_chunk(data)
             self.verify_chunk(idx, raw_heades)
-            #self.print_error("validated chunk %d" % idx)
             self.save_chunk(idx, raw_heades)
             return True
         except BaseException as e:
-            self.print_error('connect_chunk failed', str(e))
+            self.logger.info(f'connect_chunk failed {e}')
             return False

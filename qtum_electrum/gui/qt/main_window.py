@@ -44,7 +44,7 @@ from qtum_electrum import keystore, constants, ecc
 from qtum_electrum.qtum import COIN, is_address, TYPE_ADDRESS, TYPE_SCRIPT, is_hash160, eth_abi_encode
 from qtum_electrum.plugin import run_hook
 from qtum_electrum.i18n import _
-from qtum_electrum.util import (bh2u, bfh, format_time, format_satoshis, format_fee_satoshis,PrintError, format_satoshis_plain,
+from qtum_electrum.util import (bh2u, bfh, format_time, format_satoshis, format_fee_satoshis, format_satoshis_plain,
                                 NotEnoughFunds, UserCancelled, UserFacingException, profiler, export_meta, import_meta, open_browser,
                                 InvalidPassword)
 from qtum_electrum import util, bitcoin, commands, coinchooser
@@ -55,6 +55,7 @@ from qtum_electrum.wallet import Multisig_Wallet
 from qtum_electrum.tokens import Token
 from qtum_electrum.crypto import hash_160
 from qtum_electrum.i18n import _
+from qtum_electrum.logging import Logger
 
 try:
     from qtum_electrum.plot import plot_history
@@ -90,7 +91,7 @@ class StatusBarButton(QPushButton):
             self.func()
 
 
-class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
+class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
 
     payment_request_ok_signal = pyqtSignal()
     payment_request_error_signal = pyqtSignal()
@@ -127,6 +128,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.require_fee_update = False
         self.tl_windows = []
         self.tx_external_keypairs = {}
+
+        Logger.__init__(self)
         
         self.tx_notification_queue = queue.Queue()
         self.tx_notification_last_time = 0
@@ -288,8 +291,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         return self.top_level_window_recurse(override, test_func)
 
     def diagnostic_name(self):
-        return "%s/%s" % (PrintError.diagnostic_name(self),
-                          self.wallet.basename() if self.wallet else "None")
+        return '{}:{}'.format(self.__class__.__name__, self.wallet.diagnostic_name())
 
     def is_hidden(self):
         return self.isMinimized() or self.isHidden()
@@ -312,7 +314,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.show_error(str(e))
         else:
             try:
-                traceback.print_exception(*exc_info)
+                self.logger.error("on_error", exc_info=exc_info)
             except OSError:
                 pass  # see #4418
             self.show_error(str(e))
@@ -337,7 +339,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             # Handle in GUI thread
             self.network_signal.emit(event, args)
         else:
-            self.print_error("unexpected network message:", event, args)
+            self.logger.info(f"unexpected network message: {event} {args}")
 
     def on_network_qt(self, event, args=None):
         # Handle a network message in the GUI thread
@@ -354,7 +356,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                 self.fee_slider.update()
                 self.do_update_fee()
         else:
-            self.print_error("unexpected network_qt signal:", event, args)
+            self.logger.info(f"unexpected network_qt signal: {event} {args}")
 
     def fetch_alias(self):
         self.alias_info = None
@@ -370,7 +372,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
 
     def close_wallet(self):
         if self.wallet:
-            self.print_error('close_wallet', self.wallet.storage.path)
+            self.logger.info(f'close_wallet {self.wallet.storage.path}')
         run_hook('close_wallet', self.wallet)
 
     @profiler
@@ -406,7 +408,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             assert screen.contains(QRect(*winpos))
             self.setGeometry(*winpos)
         except:
-            self.print_error("using default geometry")
+            self.logger.info("using default geometry")
             self.setGeometry(100, 100, 780, 400)
 
     def watching_only_changed(self):
@@ -632,7 +634,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         if self.tx_notification_last_time + rate_limit > now:
             return
         self.tx_notification_last_time = now
-        self.print_error("Notifying GUI")
+        self.logger.info("Notifying GUI about new transactions")
         txns = []
         while True:
             try:
@@ -983,7 +985,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         try:
             self.wallet.add_payment_request(req, self.config)
         except Exception as e:
-            traceback.print_exc(file=sys.stderr)
+            self.logger.exception('Error adding payment request')
             self.show_error(_('Error adding payment request') + ':\n' + str(e))
         else:
             self.sign_payment_request(addr)
@@ -1423,7 +1425,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.show_message(_("Insufficient funds"))
             return
         except BaseException as e:
-            traceback.print_exc(file=sys.stdout)
+            self.logger.exception('')
             self.show_message(str(e))
             return
 
@@ -1882,7 +1884,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             except UserCancelled:
                 return
             except BaseException as e:
-                traceback.print_exc(file=sys.stderr)
+                self.logger.exception('')
                 self.show_error(str(e))
                 return
             old_password = hw_dev_pw if self.wallet.has_password() else None
@@ -1900,7 +1902,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self.show_error(str(e))
             return
         except (BaseException,) as e:
-            traceback.print_exc(file=sys.stdout)
+            self.logger.exception('')
             self.show_error('{}:{}'.format(_('Failed to update password'), e))
             return
         msg = _('Password was updated successfully') if self.wallet.has_password() else _(
@@ -2023,7 +2025,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         try:
             pk, redeem_script = self.wallet.export_private_key(address, password)
         except Exception as e:
-            traceback.print_exc(file=sys.stdout)
+            self.logger.exception('')
             self.show_message(str(e))
             return
         xtype = bitcoin.deserialize_privkey(pk)[0]
@@ -2144,7 +2146,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         try:
             public_key = ecc.ECPubkey(bfh(pubkey_e.text()))
         except BaseException as e:
-            traceback.print_exc(file=sys.stdout)
+            self.logger.exception('')
             self.show_warning(_('Invalid Public key'))
             return
         encrypted = public_key.encrypt_message(message)
@@ -2571,390 +2573,19 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         self.update_status()
 
     def settings_dialog(self):
-        self.need_restart = False
-        d = WindowModalDialog(self, _('Preferences'))
-        vbox = QVBoxLayout()
-        tabs = QTabWidget()
-        gui_widgets = []
-        fee_widgets = []
-        tx_widgets = []
-        id_widgets = []
-
-        # language
-        lang_help = _('Select which language is used in the GUI (after restart).')
-        lang_label = HelpLabel(_('Language') + ':', lang_help)
-        lang_combo = QComboBox()
-        from qtum_electrum.i18n import languages
-        lang_combo.addItems(list(languages.values()))
-        lang_keys = list(languages.keys())
-        lang_cur_setting = self.config.get("language", '')
-        try:
-            index = lang_keys.index(lang_cur_setting)
-        except ValueError:  # not in list
-            index = 0
-        lang_combo.setCurrentIndex(index)
-        if not self.config.is_modifiable('language'):
-            for w in [lang_combo, lang_label]: w.setEnabled(False)
-        def on_lang(x):
-            lang_request = list(languages.keys())[lang_combo.currentIndex()]
-            if lang_request != self.config.get('language'):
-                self.config.set_key("language", lang_request, True)
-                self.need_restart = True
-        lang_combo.currentIndexChanged.connect(on_lang)
-        gui_widgets.append((lang_label, lang_combo))
-
-        nz_help = _('Number of zeros displayed after the decimal point. For example, if this is set to 2, "1." will be displayed as "1.00"')
-        nz_label = HelpLabel(_('Zeros after decimal point') + ':', nz_help)
-        nz = QSpinBox()
-        nz.setMinimum(0)
-        nz.setMaximum(self.decimal_point)
-        nz.setValue(self.num_zeros)
-        if not self.config.is_modifiable('num_zeros'):
-            for w in [nz, nz_label]: w.setEnabled(False)
-        def on_nz():
-            value = nz.value()
-            if self.num_zeros != value:
-                self.num_zeros = value
-                self.config.set_key('num_zeros', value, True)
-                self.history_list.update()
-                self.address_list.update()
-        nz.valueChanged.connect(on_nz)
-        gui_widgets.append((nz_label, nz))
-
-        def on_dynfee(x):
-            self.config.set_key('dynamic_fees', x == Qt.Checked)
-            self.fee_slider.update()
-
-        dynfee_cb = QCheckBox(_('Use dynamic fees'))
-        dynfee_cb.setChecked(self.config.is_dynfee())
-        dynfee_cb.setToolTip(_("Use fees recommended by the server."))
-        fee_widgets.append((dynfee_cb, None))
-        dynfee_cb.stateChanged.connect(on_dynfee)
-
-        feebox_cb = QCheckBox(_('Edit fees manually'))
-        feebox_cb.setChecked(self.config.get('show_fee', False))
-        feebox_cb.setToolTip(_("Show fee edit box in send tab."))
-        def on_feebox(x):
-            self.config.set_key('show_fee', x == Qt.Checked)
-            self.fee_e.setVisible(bool(x))
-        feebox_cb.stateChanged.connect(on_feebox)
-        fee_widgets.append((feebox_cb, None))
-
-        use_rbf = self.config.get('use_rbf', True)
-        use_rbf_cb = QCheckBox(_('Use Replace-By-Fee'))
-        use_rbf_cb.setChecked(use_rbf)
-        use_rbf_cb.setToolTip(
-            _('If you check this box, your transactions will be marked as non-final,') + '\n' + \
-            _('and you will have the possibility, while they are unconfirmed, to replace them with transactions that pay higher fees.') + '\n' + \
-            _('Note that some merchants do not accept non-final transactions until they are confirmed.'))
-        def on_use_rbf(x):
-            self.config.set_key('use_rbf', x == Qt.Checked)
-        use_rbf_cb.stateChanged.connect(on_use_rbf)
-        fee_widgets.append((use_rbf_cb, None))
-
-        batch_rbf_cb = QCheckBox(_('Batch RBF transactions'))
-        batch_rbf_cb.setChecked(self.config.get('batch_rbf', False))
-        batch_rbf_cb.setEnabled(use_rbf)
-        batch_rbf_cb.setToolTip(
-            _('If you check this box, your unconfirmed transactions will be consolidated into a single transaction.') + '\n' + \
-            _('This will save fees.'))
-        def on_batch_rbf(x):
-            self.config.set_key('batch_rbf', bool(x))
-        batch_rbf_cb.stateChanged.connect(on_batch_rbf)
-        fee_widgets.append((batch_rbf_cb, None))
-
-        msg = _('OpenAlias record, used to receive coins and to sign payment requests.') + '\n\n'\
-              + _('The following alias providers are available:') + '\n'\
-              + '\n'.join(['https://cryptoname.co/', 'http://xmr.link']) + '\n\n'\
-              + 'For more information, see http://openalias.org'
-        alias_label = HelpLabel(_('OpenAlias') + ':', msg)
-        alias = self.config.get('alias','')
-        alias_e = QLineEdit(alias)
-        def set_alias_color():
-            if not self.config.get('alias'):
-                alias_e.setStyleSheet("")
-                return
-            if self.alias_info:
-                alias_addr, alias_name, validated = self.alias_info
-                alias_e.setStyleSheet(GREEN_BG if validated else RED_BG)
-            else:
-                alias_e.setStyleSheet(RED_BG)
-        def on_alias_edit():
-            alias_e.setStyleSheet("")
-            alias = str(alias_e.text())
-            self.config.set_key('alias', alias, True)
-            if alias:
-                self.fetch_alias()
-        set_alias_color()
-        self.alias_received_signal.connect(set_alias_color)
-        alias_e.editingFinished.connect(on_alias_edit)
-        id_widgets.append((alias_label, alias_e))
-
-        # SSL certificate
-        msg = ' '.join([
-            _('SSL certificate used to sign payment requests.'),
-            _('Use setconfig to set ssl_chain and ssl_privkey.'),
-        ])
-        if self.config.get('ssl_privkey') or self.config.get('ssl_chain'):
-            try:
-                SSL_identity = paymentrequest.check_ssl_config(self.config)
-                SSL_error = None
-            except BaseException as e:
-                SSL_identity = "error"
-                SSL_error = str(e)
-        else:
-            SSL_identity = ""
-            SSL_error = None
-        SSL_id_label = HelpLabel(_('SSL certificate') + ':', msg)
-        SSL_id_e = QLineEdit(SSL_identity)
-        SSL_id_e.setStyleSheet(RED_BG if SSL_error else GREEN_BG if SSL_identity else '')
-        if SSL_error:
-            SSL_id_e.setToolTip(SSL_error)
-        SSL_id_e.setReadOnly(True)
-        id_widgets.append((SSL_id_label, SSL_id_e))
-
-        units = ['QTUM', 'mQTUM', 'bits']
-        msg = _('Base unit of your wallet.')\
-              + '\n1QTUM=1000mQTUM.\n' \
-              + _(' These settings affects the fields in the Send tab')+' '
-        unit_label = HelpLabel(_('Base unit') + ':', msg)
-        unit_combo = QComboBox()
-        unit_combo.addItems(units)
-        unit_combo.setCurrentIndex(units.index(self.base_unit()))
-
-        def on_unit(x, nz):
-            unit_result = units[unit_combo.currentIndex()]
-            if self.base_unit() == unit_result:
-                return
-            edits = self.amount_e, self.fee_e, self.receive_amount_e
-            amounts = [edit.get_amount() for edit in edits]
-            if unit_result == 'QTUM':
-                self.decimal_point = 8
-            elif unit_result == 'mQTUM':
-                self.decimal_point = 5
-            elif unit_result == 'bits':
-                self.decimal_point = 2
-            else:
-                raise Exception('Unknown base unit')
-            self.config.set_key('decimal_point', self.decimal_point, True)
-            nz.setMaximum(self.decimal_point)
-            self.history_list.update()
-            self.request_list.update()
-            self.address_list.update()
-            for edit, amount in zip(edits, amounts):
-                edit.setAmount(amount)
-            self.update_status()
-
-        unit_combo.currentIndexChanged.connect(lambda x: on_unit(x, nz))
-        gui_widgets.append((unit_label, unit_combo))
-
-        block_explorers = sorted(util.block_explorer_info().keys())
-        msg = _('Choose which online block explorer to use for functions that open a web browser')
-        block_ex_label = HelpLabel(_('Online Block Explorer') + ':', msg)
-        block_ex_combo = QComboBox()
-        block_ex_combo.addItems(block_explorers)
-        block_ex_combo.setCurrentIndex(block_ex_combo.findText(util.block_explorer(self.config)))
-        def on_be(x):
-            be_result = block_explorers[block_ex_combo.currentIndex()]
-            self.config.set_key('block_explorer', be_result, True)
-        block_ex_combo.currentIndexChanged.connect(on_be)
-        gui_widgets.append((block_ex_label, block_ex_combo))
-
-        from qtum_electrum import qrscanner
-        system_cameras = qrscanner._find_system_cameras()
-        qr_combo = QComboBox()
-        qr_combo.addItem("Default","default")
-        for camera, device in system_cameras.items():
-            qr_combo.addItem(camera, device)
-        #combo.addItem("Manually specify a device", config.get("video_device"))
-        index = qr_combo.findData(self.config.get("video_device"))
-        qr_combo.setCurrentIndex(index)
-        msg = _("Install the zbar package to enable this.")
-        qr_label = HelpLabel(_('Video Device') + ':', msg)
-        qr_combo.setEnabled(qrscanner.libzbar is not None)
-        on_video_device = lambda x: self.config.set_key("video_device", qr_combo.itemData(x), True)
-        qr_combo.currentIndexChanged.connect(on_video_device)
-        gui_widgets.append((qr_label, qr_combo))
-
-        usechange_cb = QCheckBox(_('Use change addresses'))
-        usechange_cb.setChecked(self.wallet.use_change)
-        if not self.config.is_modifiable('use_change'): usechange_cb.setEnabled(False)
-        def on_usechange(x):
-            usechange_result = x == Qt.Checked
-            if self.wallet.use_change != usechange_result:
-                self.wallet.use_change = usechange_result
-                self.wallet.storage.put('use_change', self.wallet.use_change)
-                multiple_cb.setEnabled(self.wallet.use_change)
-        usechange_cb.stateChanged.connect(on_usechange)
-        usechange_cb.setToolTip(_('Using change addresses makes it more difficult for other people to track your transactions.'))
-        tx_widgets.append((usechange_cb, None))
-
-        def on_multiple(x):
-            multiple = x == Qt.Checked
-            if self.wallet.multiple_change != multiple:
-                self.wallet.multiple_change = multiple
-                self.wallet.storage.put('multiple_change', multiple)
-        multiple_change = self.wallet.multiple_change
-        multiple_cb = QCheckBox(_('Use multiple change addresses'))
-        multiple_cb.setEnabled(self.wallet.use_change)
-        multiple_cb.setToolTip('\n'.join([
-            _('In some cases, use up to 3 change addresses in order to break '
-              'up large coin amounts and obfuscate the recipient address.'),
-            _('This may result in higher transactions fees.')
-        ]))
-        multiple_cb.setChecked(multiple_change)
-        multiple_cb.stateChanged.connect(on_multiple)
-        tx_widgets.append((multiple_cb, None))
-
-        def fmt_docs(key, klass):
-            lines = [ln.lstrip(" ") for ln in klass.__doc__.split("\n")]
-            return '\n'.join([key, "", " ".join(lines)])
-
-        choosers = sorted(coinchooser.COIN_CHOOSERS.keys())
-        if len(choosers) > 1:
-            chooser_name = coinchooser.get_name(self.config)
-            msg = _('Choose coin (UTXO) selection method.  The following are available:\n\n')
-            msg += '\n\n'.join(fmt_docs(*item) for item in coinchooser.COIN_CHOOSERS.items())
-            chooser_label = HelpLabel(_('Coin selection') + ':', msg)
-            chooser_combo = QComboBox()
-            chooser_combo.addItems(choosers)
-            i = choosers.index(chooser_name) if chooser_name in choosers else 0
-            chooser_combo.setCurrentIndex(i)
-            def on_chooser(x):
-                chooser_name = choosers[chooser_combo.currentIndex()]
-                self.config.set_key('coin_chooser', chooser_name)
-            chooser_combo.currentIndexChanged.connect(on_chooser)
-            tx_widgets.append((chooser_label, chooser_combo))
-
-        def on_unconf(x):
-            self.config.set_key('confirmed_only', bool(x))
-        conf_only = self.config.get('confirmed_only', False)
-        unconf_cb = QCheckBox(_('Spend only confirmed coins'))
-        unconf_cb.setToolTip(_('Spend only confirmed inputs.'))
-        unconf_cb.setChecked(conf_only)
-        unconf_cb.stateChanged.connect(on_unconf)
-        tx_widgets.append((unconf_cb, None))
-
-        # Fiat Currency
-        hist_checkbox = QCheckBox()
-        fiat_address_checkbox = QCheckBox()
-        ccy_combo = QComboBox()
-        ex_combo = QComboBox()
-
-        def update_currencies():
-            if not self.fx: return
-            currencies = sorted(self.fx.get_currencies(self.fx.get_history_config()))
-            ccy_combo.clear()
-            ccy_combo.addItems([_('None')] + currencies)
-            if self.fx.is_enabled():
-                ccy_combo.setCurrentIndex(ccy_combo.findText(self.fx.get_currency()))
-
-        def update_history_cb():
-            if not self.fx: return
-            hist_checkbox.setChecked(self.fx.get_history_config())
-            hist_checkbox.setEnabled(self.fx.is_enabled())
-
-        def update_fiat_address_cb():
-            if not self.fx: return
-            fiat_address_checkbox.setChecked(self.fx.get_fiat_address_config())
-
-        def update_exchanges():
-            if not self.fx: return
-            b = self.fx.is_enabled()
-            ex_combo.setEnabled(b)
-            if b:
-                h = self.fx.get_history_config()
-                c = self.fx.get_currency()
-                exchanges = self.fx.get_exchanges_by_ccy(c, h)
-            else:
-                exchanges = self.fx.get_exchanges_by_ccy('USD', False)
-            ex_combo.clear()
-            ex_combo.addItems(sorted(exchanges))
-            ex_combo.setCurrentIndex(ex_combo.findText(self.fx.config_exchange()))
-
-        def on_currency(hh):
-            if not self.fx: return
-            b = bool(ccy_combo.currentIndex())
-            ccy = str(ccy_combo.currentText()) if b else None
-            self.fx.set_enabled(b)
-            if b and ccy != self.fx.ccy:
-                self.fx.set_currency(ccy)
-            update_history_cb()
-            update_exchanges()
-            self.update_fiat()
-
-        def on_exchange(idx):
-            exchange = str(ex_combo.currentText())
-            if self.fx and self.fx.is_enabled() and exchange and exchange != self.fx.exchange.name():
-                self.fx.set_exchange(exchange)
-
-        def on_history(checked):
-            if not self.fx: return
-            self.fx.set_history_config(checked)
-            update_exchanges()
-            self.history_list.refresh_headers()
-            if self.fx.is_enabled() and checked:
-                # reset timeout to get historical rates
-                self.fx.timeout = 0
-
-        def on_fiat_address(checked):
-            if not self.fx: return
-            self.fx.set_fiat_address_config(checked)
-            self.address_list.refresh_headers()
-            self.address_list.update()
-
-        update_currencies()
-        update_history_cb()
-        update_fiat_address_cb()
-        update_exchanges()
-        ccy_combo.currentIndexChanged.connect(on_currency)
-        hist_checkbox.stateChanged.connect(on_history)
-        fiat_address_checkbox.stateChanged.connect(on_fiat_address)
-        ex_combo.currentIndexChanged.connect(on_exchange)
-
-        fiat_widgets = []
-        fiat_widgets.append((QLabel(_('Fiat currency')), ccy_combo))
-        fiat_widgets.append((QLabel(_('Show history rates')), hist_checkbox))
-        fiat_widgets.append((QLabel(_('Show Fiat balance for addresses')), fiat_address_checkbox))
-        fiat_widgets.append((QLabel(_('Source')), ex_combo))
-
-        tabs_info = [
-            (fee_widgets, _('Fees')),
-            (tx_widgets, _('Transactions')),
-            (gui_widgets, _('Appearance')),
-            (fiat_widgets, _('Fiat')),
-            (id_widgets, _('Identity')),
-        ]
-        for widgets, name in tabs_info:
-            tab = QWidget()
-            grid = QGridLayout(tab)
-            grid.setColumnStretch(0, 1)
-            for a,b in widgets:
-                i = grid.rowCount()
-                if b:
-                    if a:
-                        grid.addWidget(a, i, 0)
-                    grid.addWidget(b, i, 1)
-                else:
-                    grid.addWidget(a, i, 0, 1, 2)
-            tabs.addTab(tab, name)
-
-        vbox.addWidget(tabs)
-        vbox.addStretch(1)
-        vbox.addLayout(Buttons(CloseButton(d)))
-        d.setLayout(vbox)
-
-        # run the dialog
+        from .settings_dialog import SettingsDialog
+        d = SettingsDialog(self, self.config)
+        self.alias_received_signal.connect(d.set_alias_color)
         d.exec_()
-
+        self.alias_received_signal.disconnect(d.set_alias_color)
         if self.fx:
-            self.fx.timeout = 0
-
-        self.alias_received_signal.disconnect(set_alias_color)
-
+            # todo
+            pass
+            # self.fx.trigger_update()
         run_hook('close_settings_dialog')
-        if self.need_restart:
+        if d.need_restart:
             self.show_warning(_('Please restart Electrum to activate the new GUI settings'), title=_('Success'))
+
 
     def closeEvent(self, event):
         # It seems in some rare cases this closeEvent() is called twice
@@ -3038,8 +2669,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
                     msg += '\n\n' + _('Requires') + ':\n' + '\n'.join(map(lambda x: x[1], descr.get('requires')))
                 grid.addWidget(HelpButton(msg), i, 2)
             except Exception:
-                self.print_msg("error: cannot display plugin", name)
-                traceback.print_exc(file=sys.stdout)
+                self.logger.exception(f"cannot display plugin {name}")
         grid.setRowStretch(len(plugins.descriptions.values()), 1)
         vbox.addLayout(Buttons(CloseButton(d)))
         d.exec_()
@@ -3131,7 +2761,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
         try:
             new_tx = self.wallet.bump_fee(tx, delta)
         except BaseException as e:
-            traceback.print_exc(file=sys.stderr)
+            self.logger.exception('')
             self.show_error(_('Error bumping fee') + ':\n' + str(e))
             return
         if is_final:
@@ -3202,7 +2832,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price,
                                            token.bind_addr, dialog, None, preview)
         except (BaseException,) as e:
-            traceback.print_exc(file=sys.stderr)
+            self.logger.exception('')
             dialog.show_message(str(e))
 
     def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog, broadcast_done=None, preview=False):
@@ -3216,7 +2846,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             dialog.show_message(_("Insufficient funds"))
             return
         except BaseException as e:
-            traceback.print_exc(file=sys.stdout)
+            self.logger.exception('')
             dialog.show_message(str(e))
             return
         if preview:
@@ -3289,7 +2919,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             result = self.network.call_contract(address, data, sender)
         except BaseException as e:
             import traceback, sys
-            traceback.print_exc(file=sys.stderr)
+            self.logger.exception('')
             dialog.show_message(str(e))
             return
         types = list([x['type'] for x in abi.get('outputs', [])])
@@ -3311,8 +2941,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             dialog.show_message(output)
         except (BaseException,) as e:
             import traceback, sys
-            traceback.print_exc(file=sys.stderr)
-            print(e)
+            self.logger.exception('')
             dialog.show_message(e, result)
 
 
@@ -3324,8 +2953,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             tx_desc = 'contract sendto {}'.format(self.smart_contracts[address][0])
             self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog, None, preview)
         except (BaseException,) as e:
-            import traceback, sys
-            traceback.print_exc(file=sys.stderr)
+            self.logger.exception('')
             dialog.show_message(str(e))
 
     def create_smart_contract(self, name, bytecode, abi, constructor, args, gas_limit, gas_price, sender, dialog, preview):
@@ -3345,8 +2973,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, PrintError):
             self._smart_contract_broadcast(outputs, 'create contract {}'.format(name), gas_limit * gas_price,
                                            sender, dialog, broadcast_done, preview)
         except (BaseException,) as e:
-            import traceback, sys
-            traceback.print_exc(file=sys.stderr)
+            self.logger.exception('')
             dialog.show_message(str(e))
 
     def contract_create_dialog(self):

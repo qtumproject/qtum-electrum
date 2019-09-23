@@ -29,13 +29,14 @@ from operator import itemgetter
 
 from . import qtum
 from .qtum import COINBASE_MATURITY, TYPE_ADDRESS, TYPE_PUBKEY, b58_address_to_hash160, TOKEN_TRANSFER_TOPIC, TYPE_STAKE
-from .util import PrintError, profiler, bfh, bh2u, VerifiedTxInfo, TxMinedInfo
+from .util import profiler, bfh, bh2u, VerifiedTxInfo, TxMinedInfo
 from .transaction import Transaction, TxOutput
 from .synchronizer import Synchronizer
 from .verifier import SPV
 from .blockchain import hash_header
 from .i18n import _
 from .tokens import Tokens
+from .logging import Logger
 
 TX_HEIGHT_LOCAL = -2
 TX_HEIGHT_UNCONF_PARENT = -1
@@ -51,7 +52,7 @@ class UnrelatedTransactionException(AddTransactionException):
         return _("Transaction is unrelated to this wallet.")
 
 
-class AddressSynchronizer(PrintError):
+class AddressSynchronizer(Logger):
     """
     inherited by wallet
     """
@@ -59,6 +60,7 @@ class AddressSynchronizer(PrintError):
     def __init__(self, storage):
         self.storage = storage
         self.network = None
+        Logger.__init__(self)
         # verifier (SPV) and synchronizer are started in start_threads
         self.synchronizer = None
         self.verifier = None
@@ -348,7 +350,7 @@ class AddressSynchronizer(PrintError):
                 self.spent_outpoints.pop(tx_hash)
 
         with self.transaction_lock:
-            self.print_error("removing tx from history", tx_hash)
+            self.logger.info("removing tx from history", tx_hash)
             tx = self.transactions.pop(tx_hash, None)
             remove_from_spent_outpoints()
             self._remove_tx_from_local_history(tx_hash)
@@ -401,7 +403,7 @@ class AddressSynchronizer(PrintError):
             tx = Transaction(raw)
             self.transactions[tx_hash] = tx
             if self.txi.get(tx_hash) is None and self.txo.get(tx_hash) is None:
-                self.print_error("removing unreferenced tx", tx_hash)
+                self.logger.info("removing unreferenced tx", tx_hash)
                 self.transactions.pop(tx_hash)
         # load spent_outpoints
         _spent_outpoints = self.storage.get('spent_outpoints', {})
@@ -569,7 +571,7 @@ class AddressSynchronizer(PrintError):
         if not from_timestamp and not to_timestamp:
             # fixme: this may happen if history is incomplete
             if balance not in [None, 0]:
-                self.print_error("Error: history not synchronized")
+                self.logger.info("Error: history not synchronized")
                 return []
         return h2
 

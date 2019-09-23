@@ -38,6 +38,7 @@ class SPV(ThreadJob):
     """ Simple Payment Verification """
 
     def __init__(self, network, wallet):
+        ThreadJob.__init__(self)
         self.wallet = wallet
         self.network = network
         self.blockchain = network.blockchain()
@@ -68,7 +69,7 @@ class SPV(ThreadJob):
                     continue
                 # request now
                 self.network.get_merkle_for_transaction(tx_hash, tx_height, self.verify_merkle)
-                self.print_error('requested merkle', tx_hash)
+                self.logger.info(f'requested merkle {tx_hash}')
                 self.requested_merkle.add(tx_hash)
 
         if self.network.blockchain() != self.blockchain:
@@ -77,7 +78,7 @@ class SPV(ThreadJob):
 
     def verify_merkle(self, r):
         if r.get('error'):
-            self.print_error('received an error:', r)
+            self.logger.info(f'received an error: {r}')
             return
         params = r['params']
         merkle = r['result']
@@ -91,7 +92,7 @@ class SPV(ThreadJob):
         try:
             verify_tx_is_in_block(tx_hash, merkle_branch, pos, header, tx_height)
         except MerkleVerificationFailure as e:
-            self.print_error(str(e))
+            self.logger.info(str(e))
             # FIXME: we should make a fresh connection to a server
             # to recover from this, as this TX will now never verify
             return
@@ -103,7 +104,7 @@ class SPV(ThreadJob):
             self.requested_merkle.remove(tx_hash)
         except KeyError:
             pass
-        self.print_error("verified %s" % tx_hash)
+        self.logger.info(f"verified {tx_hash}")
         header_hash = hash_header(header)
         vtx_info = VerifiedTxInfo(tx_height, header.get('timestamp'), pos, header_hash)
         self.wallet.add_verified_tx(tx_hash, vtx_info)
@@ -143,7 +144,7 @@ class SPV(ThreadJob):
         height = self.blockchain.get_forkpoint()
         tx_hashes = self.wallet.undo_verifications(self.blockchain, height)
         for tx_hash in tx_hashes:
-            self.print_error("redoing", tx_hash)
+            self.logger.info(f"redoing {tx_hash}")
             self.remove_spv_proof_for_tx(tx_hash)
 
     def remove_spv_proof_for_tx(self, tx_hash):

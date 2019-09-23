@@ -26,6 +26,7 @@
 import queue
 import threading, os, json, time
 from collections import defaultdict
+from .logging import Logger
 try:
     from SimpleWebSocketServer import WebSocket, SimpleSSLWebSocketServer
 except ImportError:
@@ -37,20 +38,23 @@ from . import qtum
 
 request_queue = queue.Queue()
 
-class ElectrumWebSocket(WebSocket):
+class ElectrumWebSocket(WebSocket, Logger):
+
+    def __init__(self):
+        WebSocket.__init__(self)
+        Logger.__init__(self)
 
     def handleMessage(self):
         assert self.data[0:3] == 'id:'
-        util.print_error("message received", self.data)
+        self.logger.info(f"message received {self.data}")
         request_id = self.data[3:]
         request_queue.put((self, request_id))
 
     def handleConnected(self):
-        util.print_error("connected", self.address)
+        self.logger.info(f"connected {self.address}")
 
     def handleClose(self):
-        util.print_error("closed", self.address)
-
+        self.logger.info(f"closed {self.address}")
 
 
 class WsClientThread(util.DaemonThread):
@@ -95,7 +99,7 @@ class WsClientThread(util.DaemonThread):
                 r = self.response_queue.get(timeout=0.1)
             except Queue.Empty:
                 continue
-            util.print_error('response', r)
+            self.logger.info(f'response, {r}')
             method = r.get('method')
             result = r.get('result')
             if result is None:
@@ -109,13 +113,12 @@ class WsClientThread(util.DaemonThread):
                 scripthash = r.get('params')[0]
                 addr = self.network.h2addr.get(scripthash, None)
                 if addr is None:
-                    util.print_error("can't find address for scripthash: %s" % h)
+                    self.logger.info(f"can't find address for scripthash:{scripthash}")
                 l = self.subscriptions.get(addr, [])
                 for ws, amount in l:
                     if not ws.closed:
                         if sum(result.values()) >=amount:
                             ws.sendMessage('paid')
-
 
 
 class WebSocketServer(threading.Thread):

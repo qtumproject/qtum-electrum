@@ -28,8 +28,8 @@ from typing import NamedTuple, List
 
 from .bitcoin import sha256, COIN, TYPE_ADDRESS, is_address
 from .transaction import Transaction, TxOutput
-from .util import NotEnoughFunds, PrintError
-
+from .util import NotEnoughFunds
+from .logging import Logger
 
 # A simple deterministic PRNG.  Used to deterministically shuffle a
 # set of coins - the same set of coins should produce the same output.
@@ -131,9 +131,12 @@ def make_Bucket(desc, coins):
     return Bucket(desc, weight, value, coins, min_height, witness)
 
 
-class CoinChooserBase(PrintError):
+class CoinChooserBase(Logger):
 
     enable_output_value_rounding = False
+
+    def __init__(self):
+        Logger.__init__(self)
 
     def keys(self, coins):
         raise NotImplementedError
@@ -214,9 +217,9 @@ class CoinChooserBase(PrintError):
         amounts = [amount for amount in amounts if amount >= dust_threshold]
         change = [TxOutput(TYPE_ADDRESS, addr, amount)
                   for addr, amount in zip(change_addrs, amounts)]
-        self.print_error('change:', change)
+        self.logger.info(f'change: {change}')
         if dust:
-            self.print_error('not keeping dust', dust)
+            self.logger.info(f'not keeping dust {dust}')
         return change
 
     def make_tx(self, coins, inputs, outputs, change_addrs, fee_estimator,
@@ -293,8 +296,8 @@ class CoinChooserBase(PrintError):
         change = self.change_outputs(tx, change_addrs, fee, dust_threshold)
         tx.add_outputs(change)
 
-        self.print_error("using %d inputs" % len(tx.inputs()))
-        self.print_error("using buckets:", [bucket.desc for bucket in buckets])
+        self.logger.info(f"using {len(tx.inputs())} inputs")
+        self.logger.info(f"using buckets: {[bucket.desc for bucket in buckets]}")
 
         return tx
 
@@ -382,8 +385,8 @@ class CoinChooserRandom(CoinChooserBase):
         candidates = self.bucket_candidates_prefer_confirmed(buckets, sufficient_funds)
         penalties = [penalty_func(cand) for cand in candidates]
         winner = candidates[penalties.index(min(penalties))]
-        self.print_error("Bucket sets:", len(buckets))
-        self.print_error("Winning penalty:", min(penalties))
+        self.logger.info(f"Bucket sets: {len(buckets)}")
+        self.logger.info(f"Winning penalty: {min(penalties)}")
         return winner
 
 

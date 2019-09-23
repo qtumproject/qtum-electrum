@@ -437,7 +437,7 @@ class Abstract_Wallet(AddressSynchronizer):
         for addr, l in dd.items():
             for n, v, is_cb in l:
                 if n == prevout_n:
-                    self.print_error("found pay-to-pubkey address:", addr)
+                    self.logger.info(f"found pay-to-pubkey address: {addr}")
                     return addr
 
     def get_label(self, tx_hash):
@@ -465,7 +465,7 @@ class Abstract_Wallet(AddressSynchronizer):
             elif tx.inputs()[0]['type'] == 'coinbase':
                 return 'coinbase'
         except (BaseException,) as e:
-            self.print_error('get_default_label', e, TYPE_STAKE)
+            self.logger.info(f'get_default_label {e, TYPE_STAKE}')
         return ''
 
     def get_tx_status(self, tx_hash, tx_mined_status):
@@ -481,7 +481,7 @@ class Abstract_Wallet(AddressSynchronizer):
                 tx = self.token_txs.get(tx_hash)
             is_mined = tx.outputs()[0].type == TYPE_STAKE
         except (BaseException,) as e:
-            self.print_error('get_tx_status', e)
+            self.logger.info(f'get_tx_status {repr(e)}')
         if conf == 0:
             if not tx:
                 return 3, 'unknown'
@@ -689,9 +689,9 @@ class Abstract_Wallet(AddressSynchronizer):
         # wait until we are connected, because the user
         # might have selected another server
         if self.network:
-            self.print_error("waiting for network...")
+            self.logger.info("waiting for network...")
             wait_for_network()
-            self.print_error("waiting while wallet is syncing...")
+            self.logger.info("waiting while wallet is syncing...")
             wait_for_wallet()
         else:
             self.synchronize()
@@ -813,7 +813,7 @@ class Abstract_Wallet(AddressSynchronizer):
             try:
                 tx = Transaction(self.network.get_transaction(tx_hash))
             except TimeoutException as e:
-                self.print_error('getting input txn from network timed out for {}'.format(tx_hash))
+                self.logger.info('getting input txn from network timed out for {}'.format(tx_hash))
         return tx
 
     def add_hw_info(self, tx):

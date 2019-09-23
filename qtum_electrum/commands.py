@@ -35,7 +35,7 @@ from functools import wraps
 from decimal import Decimal
 
 from .import util, ecc
-from .util import bfh, bh2u, format_satoshis, json_decode, print_error
+from .util import bfh, bh2u, format_satoshis, json_decode
 from .import bitcoin
 from .bitcoin import is_address,  hash_160, COIN, TYPE_ADDRESS
 from .transaction import Transaction, multisig_script, TxOutput
@@ -191,7 +191,6 @@ class Commands:
 
         if self.network:
             wallet.start_network(self.network)
-            print_error("Recovering wallet...")
             wallet.wait_until_synchronized()
             wallet.stop_threads()
             # note: we don't wait for SPV
@@ -741,9 +740,8 @@ class Commands:
             try:
                 req = urllib.request.Request(URL, serialized_data, headers)
                 response_stream = urllib.request.urlopen(req, timeout=5)
-                util.print_error('Got Response for %s' % address)
             except BaseException as e:
-                util.print_error(str(e))
+                print(e)
 
         self.network.subscribe_to_addresses([address], callback)
         return True

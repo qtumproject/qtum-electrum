@@ -104,8 +104,8 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
     accept_signal = pyqtSignal()
 
     def __init__(self, config, app, plugins):
-        BaseWizard.__init__(self, config, plugins)
         QDialog.__init__(self, None)
+        BaseWizard.__init__(self, config, plugins)
         self.setWindowTitle('Qtum Electrum  -  ' + _('Install Wizard'))
         self.app = app
         self.config = config
@@ -198,7 +198,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
                     self.temp_storage = WalletStorage(path)
                 self.next_button.setEnabled(True)
             except BaseException:
-                traceback.print_exc(file=sys.stderr)
+                self.logger.exception('')
                 self.temp_storage = None
                 self.next_button.setEnabled(False)
             if self.temp_storage:
@@ -259,7 +259,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
                         QMessageBox.information(None, _('Error'), str(e))
                         continue
                     except BaseException as e:
-                        traceback.print_exc(file=sys.stdout)
+                        self.logger.exception('')
                         QMessageBox.information(None, _('Error'), str(e))
                         raise UserCancelled()
                 elif self.temp_storage.is_encrypted_with_hw_device():
@@ -273,7 +273,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
                         self.reset_stack()
                         return self.select_storage(path, get_wallet_from_daemon)
                     except BaseException as e:
-                        traceback.print_exc(file=sys.stdout)
+                        self.logger.exception('')
                         QMessageBox.information(None, _('Error'), str(e))
                         raise UserCancelled()
                     if self.temp_storage.is_past_initial_decryption():
@@ -330,7 +330,7 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
 
     def on_error(self, exc_info):
         if not isinstance(exc_info[1], UserCancelled):
-            traceback.print_exception(*exc_info)
+            self.logger.error("on_error", exc_info=exc_info)
             self.show_error(str(exc_info[1]))
 
     def set_icon(self, filename):

@@ -30,13 +30,16 @@ from PyQt5.QtWidgets import *
 
 from qtum_electrum.i18n import _
 from qtum_electrum import constants
-from qtum_electrum.util import print_error
+from qtum_electrum.logging import get_logger
 from qtum_electrum.network import serialize_server, deserialize_server
 
 from .util import *
 
 protocol_names = ['TCP', 'SSL']
 protocol_letters = 'ts'
+
+_logger = get_logger(__name__)
+
 
 class NetworkDialog(QDialog):
     def __init__(self, network, config, network_updated_signal_obj):
@@ -489,7 +492,7 @@ class NetworkChoiceLayout(object):
         else:
             socks5_mode_index = self.proxy_mode.findText('SOCKS5')
             if socks5_mode_index == -1:
-                print_error("[network_dialog] can't find proxy_mode 'SOCKS5'")
+                _logger.info("[network_dialog] can't find proxy_mode 'SOCKS5'")
                 return
             self.proxy_mode.setCurrentIndex(socks5_mode_index)
             self.proxy_host.setText("127.0.0.1")

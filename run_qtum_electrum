@@ -68,6 +68,7 @@ def check_imports():
 if not is_android:
     check_imports()
 
+from qtum_electrum.logging import get_logger, configure_logging
 from qtum_electrum import qtum, constants, util
 from qtum_electrum import SimpleConfig, Network
 from qtum_electrum.wallet import Wallet, Imported_Wallet
@@ -78,6 +79,8 @@ from qtum_electrum.commands import get_parser, known_commands, Commands, config_
 from qtum_electrum import daemon
 from qtum_electrum import keystore
 from qtum_electrum.mnemonic import Mnemonic
+
+_logger = get_logger(__name__)
 
 
 # get password routine
@@ -140,9 +143,9 @@ def init_cmdline(config_options, server):
 
     # important warning
     if cmd.name in ['getprivatekeys']:
-        print_stderr("WARNING: ALL your private keys are secret.")
-        print_stderr("Exposing a single private key can compromise your entire wallet!")
-        print_stderr("In particular, DO NOT use 'redeem private key' services proposed by third parties.")
+        _logger.error("WARNING: ALL your private keys are secret.")
+        _logger.error("Exposing a single private key can compromise your entire wallet!")
+        _logger.error("In particular, DO NOT use 'redeem private key' services proposed by third parties.")
 
     # commands needing password
     if (cmd.requires_wallet and storage.is_encrypted() and server is None)\
@@ -178,12 +181,12 @@ def get_connected_hw_devices(plugins):
         name, plugin = splugin.name, splugin.plugin
         if not plugin:
             e = splugin.exception
-            print_stderr(f"{name}: error during plugin init: {repr(e)}")
+            _logger.error(f"{name}: error during plugin init: {repr(e)}")
             continue
         try:
             u = devmgr.unpaired_device_infos(None, plugin)
         except:
-            devmgr.print_error(f'error getting device infos for {name}: {e}')
+            _logger.error(f'error getting device infos for {name}: {repr(e)}')
             continue
         devices += list(map(lambda x: (name, x), u))
     return devices
@@ -341,6 +344,7 @@ def run():
         constants.set_testnet()
 
     if cmdname == 'gui':
+        configure_logging(config)
         fd, server = daemon.get_fd_or_server(config)
         if fd is not None:
             plugins = init_plugins(config, config.get('gui', 'qt'))
@@ -351,6 +355,7 @@ def run():
             result = server.gui(config_options)
 
     elif cmdname == 'daemon':
+        configure_logging(config)
         subcommand = config.get('subcommand')
         if subcommand in ['load_wallet']:
             init_daemon(config_options)

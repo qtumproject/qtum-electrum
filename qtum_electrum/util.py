@@ -42,6 +42,10 @@ from locale import localeconv
 from .i18n import _
 import aiohttp
 from aiohttp_socks import SocksConnector, SocksVer
+from .logging import Logger, get_logger
+
+
+_logger = get_logger(__name__)
 
 
 def inv_dict(d):
@@ -135,48 +139,30 @@ class MyEncoder(json.JSONEncoder):
         return super(MyEncoder, self).default(obj)
 
 
-class PrintError(object):
-    '''A handy base class'''
-    verbosity_filter = ''
-
-    def diagnostic_name(self):
-        return ''
-
-    def log_name(self):
-        msg = self.verbosity_filter or self.__class__.__name__
-        d = self.diagnostic_name()
-        if d: msg += "][" + d
-        return "[%s]" % msg
-
-    def print_error(self, *msg):
-        if self.verbosity_filter in verbosity or verbosity == '*':
-            print_error(self.log_name(), *msg)
-
-    def print_stderr(self, *msg):
-        print_stderr(self.log_name(), *msg)
-
-    def print_msg(self, *msg):
-        print_msg(self.log_name(), *msg)
-
-class ThreadJob(PrintError):
+class ThreadJob(Logger):
     """A job that is run periodically from a thread's main loop.  run() is
     called from that thread's context.
     """
+
+    def __init__(self):
+        Logger.__init__(self)
 
     def run(self):
         """Called periodically from the thread"""
         pass
 
+
 class DebugMem(ThreadJob):
     '''A handy class for debugging GC memory leaks'''
     def __init__(self, classes, interval=30):
+        ThreadJob.__init__(self)
         self.next_time = 0
         self.classes = classes
         self.interval = interval
 
     def mem_stats(self):
         import gc
-        self.print_error("Start memscan")
+        self.logger.info("Start memscan")
         gc.collect()
         objmap = defaultdict(list)
         for obj in gc.get_objects():
@@ -184,8 +170,8 @@ class DebugMem(ThreadJob):
                 if isinstance(obj, class_):
                     objmap[class_].append(obj)
         for class_, objs in objmap.items():
-            self.print_error("%s: %d" % (class_.__name__, len(objs)))
-        self.print_error("Finish memscan")
+            self.logger.info(f"{class_.__name__}: {len(objs)}")
+        self.logger.info("Finish memscan")
 
     def run(self):
         if time.time() > self.next_time:
@@ -193,12 +179,13 @@ class DebugMem(ThreadJob):
             self.next_time = time.time() + self.interval
 
 
-class DaemonThread(threading.Thread, PrintError):
+class DaemonThread(threading.Thread, Logger):
     """ daemon thread that terminates cleanly """
     verbosity_filter = 'd'
 
     def __init__(self):
         threading.Thread.__init__(self)
+        Logger.__init__(self)
         self.parent_thread = threading.currentThread()
         self.running = False
         self.running_lock = threading.Lock()
@@ -218,7 +205,7 @@ class DaemonThread(threading.Thread, PrintError):
                 try:
                     job.run()
                 except Exception as e:
-                    traceback.print_exc(file=sys.stderr)
+                    self.logger.exception('')
 
     def remove_jobs(self, jobs):
         with self.job_lock:
@@ -242,8 +229,8 @@ class DaemonThread(threading.Thread, PrintError):
         if 'ANDROID_DATA' in os.environ:
             import jnius
             jnius.detach()
-            self.print_error("jnius detach")
-        self.print_error("stopped")
+            self.logger.info("jnius detach")
+        self.logger.info("stopped")
 
 
 verbosity = '*'
@@ -251,9 +238,6 @@ def set_verbosity(b):
     global verbosity
     verbosity = b
 
-def print_error(*args):
-    if not verbosity: return
-    print_stderr(*args)
 
 def print_stderr(*args):
     args = [str(item) for item in args]
@@ -302,7 +286,7 @@ def profiler(func):
         t0 = time.time()
         o = func(*args, **kw_args)
         t = time.time() - t0
-        print_error("[profiler]", name, "%.4f"%t)
+        _logger.info(f"[profiler] {name} {t:,.4f}")
         return o
     return lambda *args, **kw_args: do_profile(args, kw_args)
 
@@ -333,9 +317,9 @@ def android_check_data_dir():
         new_headers_path = android_headers_dir() + '/blockchain_headers'
         old_headers_path = old_electrum_dir + '/blockchain_headers'
         if not os.path.exists(new_headers_path) and os.path.exists(old_headers_path):
-            print_error("Moving headers file to", new_headers_path)
+            _logger.info(f"Moving headers file to {new_headers_path}")
             shutil.move(old_headers_path, new_headers_path)
-        print_error("Moving data to", data_dir)
+        _logger.info(f"Moving data to {data_dir}")
         shutil.move(old_electrum_dir, data_dir)
     return data_dir
 
@@ -747,8 +731,9 @@ import ssl
 import time
 
 
-class SocketPipe:
+class SocketPipe(Logger):
     def __init__(self, socket):
+        Logger.__init__(self)
         self.socket = socket
         self.message = b''
         self.set_timeout(0.1)
@@ -779,10 +764,10 @@ class SocketPipe:
                     time.sleep(0.2)
                     raise timeout
                 else:
-                    print_error("pipe: socket error", err)
+                    self.logger.info(f"pipe: socket error {repr(err)}")
                     data = b''
             except:
-                traceback.print_exc(file=sys.stderr)
+                self.logger.exception('')
                 data = b''
 
             if not data:  # Connection closed remotely
@@ -805,7 +790,7 @@ class SocketPipe:
                 sent = self.socket.send(out)
                 out = out[sent:]
             except ssl.SSLError as e:
-                print_error("SSLError:", e)
+                self.logger.info(f"SSLError: {repr(e)}")
                 time.sleep(0.1)
                 continue
 
@@ -855,10 +840,10 @@ def import_meta(path, validater, load_meta):
         load_meta(d)
     # backwards compatibility for JSONDecodeError
     except ValueError:
-        traceback.print_exc(file=sys.stderr)
+        _logger.exception('')
         raise FileImportFailed(_("Invalid JSON code."))
     except BaseException as e:
-        traceback.print_exc(file=sys.stdout)
+        _logger.exception('')
         raise FileImportFailed(e)
 
 
@@ -867,7 +852,7 @@ def export_meta(meta, file_name):
         with open(file_name, 'w+', encoding='utf-8') as f:
             json.dump(meta, f, indent=4, sort_keys=True)
     except (IOError, os.error) as e:
-        traceback.print_exc(file=sys.stderr)
+        _logger.exception('')
         raise FileExportFailed(e)
 
 
