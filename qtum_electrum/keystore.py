@@ -384,20 +384,13 @@ class Mobile_KeyStore(BIP32_KeyStore):
 
     def derive_pubkey(self, for_change, n):
         master_xprv = self.get_master_private_key(None)
-        sub_xprv, sub_xpub = bip32_private_derivation(master_xprv, "", "/{}'".format(n))
-        return self.get_pubkey_from_xpub(sub_xpub, ())
-
-    @classmethod
-    def get_privatekey_from_xprv(cls, xprv, sequence):
-        _, _, _, _, c, cK = deserialize_xprv(xprv)
-        for i in sequence:
-            cK, c = CKD_priv(cK, c, i)
-        return cK
+        node = BIP32Node.from_xkey(master_xprv).subkey_at_private_derivation([n+BIP32_PRIME])
+        return self.get_pubkey_from_xpub(node.to_xpub(), ())
 
     def derive_privkey(self, sequence, password):
         master_xprv = self.get_master_private_key(password)
-        sub_xprv, sub_xpub = bip32_private_derivation(master_xprv, "", "/{}'".format(sequence[1]))
-        pk = self.get_privatekey_from_xprv(sub_xprv, ())
+        node = BIP32Node.from_xkey(master_xprv).subkey_at_private_derivation([sequence[1] + BIP32_PRIME])
+        pk = node.eckey.get_secret_bytes()
         return pk, True
 
     def get_private_key(self, pubkey, password):
@@ -446,20 +439,13 @@ class Qt_Core_Keystore(BIP32_KeyStore):
 
     def derive_pubkey(self, for_change, n):
         master_xprv = self.get_master_private_key(None)
-        sub_xprv, sub_xpub = bip32_private_derivation(master_xprv, "", "/{}'".format(n))
-        return self.get_pubkey_from_xpub(sub_xpub, ())
-
-    @classmethod
-    def get_privatekey_from_xprv(cls, xprv, sequence):
-        _, _, _, _, c, cK = deserialize_xprv(xprv)
-        for i in sequence:
-            cK, c = CKD_priv(cK, c, i)
-        return cK
+        node = BIP32Node.from_xkey(master_xprv).subkey_at_private_derivation([n + BIP32_PRIME])
+        return self.get_pubkey_from_xpub(node.to_xpub(), ())
 
     def get_private_key(self, sequence, password):
         master_xprv = self.get_master_private_key(password)
-        sub_xprv, sub_xpub = bip32_private_derivation(master_xprv, "", "/{}'".format(sequence[1]))
-        pk = self.get_privatekey_from_xprv(sub_xprv, ())
+        node = BIP32Node.from_xkey(master_xprv).subkey_at_private_derivation([sequence[1]+BIP32_PRIME])
+        pk = node.eckey.get_secret_bytes()
         return pk, True
 
 
@@ -957,8 +943,8 @@ def from_master_key(text):
 def from_qt_core_xprv(ext_master_xprv):
     k = Qt_Core_Keystore({})
     k.ext_master_xprv = ext_master_xprv
-    xprv, xpub = bip32_private_derivation(ext_master_xprv, "m/", qt_core_derivation())
-    k.add_xprv(xprv)
+    node = BIP32Node.from_xkey(ext_master_xprv).subkey_at_private_derivation(qt_core_derivation())
+    k.add_xprv(node.to_xprv())
     return k
 
 
