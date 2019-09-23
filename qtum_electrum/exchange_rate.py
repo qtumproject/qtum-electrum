@@ -55,7 +55,7 @@ class ExchangeBase(Logger):
             self.quotes = self.get_rates(ccy)
             self.logger.info("received fx quotes")
         except BaseException as e:
-            self.logger.info("failed fx quotes:", e)
+            self.logger.info(f"failed fx quotes: {repr(e)}")
         self.on_quotes()
 
     def update(self, ccy):
