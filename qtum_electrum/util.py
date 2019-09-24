@@ -25,7 +25,7 @@ import binascii
 import os, sys, re, json
 from collections import defaultdict
 from datetime import datetime
-from decimal import Decimal
+from decimal import Decimal, ROUND_HALF_DOWN
 import traceback
 import urllib
 import urllib.request, urllib.parse, urllib.error
@@ -450,6 +450,13 @@ def format_fee_satoshis(fee, *, num_zeros=0, precision=None):
         precision = FEERATE_PRECISION
     num_zeros = min(num_zeros, FEERATE_PRECISION)  # no more zeroes than available prec
     return format_satoshis(fee, num_zeros=num_zeros, decimal_point=0, precision=precision)
+
+
+def quantize_feerate(fee):
+    """Strip sat/byte fee rate of excess precision."""
+    if fee is None:
+        return None
+    return Decimal(fee).quantize(_feerate_quanta, rounding=ROUND_HALF_DOWN)
 
 
 def timestamp_to_datetime(timestamp):

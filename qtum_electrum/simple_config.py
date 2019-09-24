@@ -6,10 +6,12 @@ import stat
 
 from copy import deepcopy
 from . import util
-from .util import user_dir, make_dir, print_stderr
+from .util import user_dir, make_dir, quantize_feerate
 from .i18n import _
 from .qtum import FEE_TARGETS, FEERATE_STATIC_VALUES, FEERATE_MAX_DYNAMIC, FEERATE_DEFAULT_RELAY, FEERATE_FALLBACK_STATIC_FEE
 from .logging import get_logger, Logger
+from decimal import Decimal
+from typing import Union, Optional
 
 config = None
 _logger = get_logger(__name__)
@@ -318,8 +320,19 @@ class SimpleConfig(Logger):
             fee_rate = self.get('fee_per_kb', FEERATE_FALLBACK_STATIC_FEE)
         return fee_rate
 
-    def estimate_fee(self, size):
-        return int(self.fee_per_kb() * size / 1000.)
+    def estimate_fee(self, size: Union[int, float, Decimal]) -> int:
+        return self.estimate_fee_for_feerate(self.fee_per_kb(), size)
+
+    @classmethod
+    def estimate_fee_for_feerate(cls, fee_per_kb: Union[int, float, Decimal],
+                                 size: Union[int, float, Decimal]) -> int:
+        size = Decimal(size)
+        fee_per_kb = Decimal(fee_per_kb)
+        fee_per_byte = fee_per_kb / 1000
+        # to be consistent with what is displayed in the GUI,
+        # the calculation needs to use the same precision:
+        fee_per_byte = quantize_feerate(fee_per_byte)
+        return round(fee_per_byte * size)
 
     def get_video_device(self):
         device = self.get("video_device", "default")
