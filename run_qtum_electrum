@@ -30,12 +30,8 @@ import traceback
 script_dir = os.path.dirname(os.path.realpath(__file__))
 is_bundle = getattr(sys, 'frozen', False)
 is_local = not is_bundle and os.path.exists(os.path.join(script_dir, "qtum-electrum.desktop"))
-is_android = 'ANDROID_DATA' in os.environ
 
-# move this back to gui/kivy/__init.py once plugins are moved
-os.environ['KIVY_DATA_DIR'] = os.path.abspath(os.path.dirname(__file__)) + 'qtum_electrum/gui/kivy/data/'
-
-if is_local or is_android:
+if is_local:
     sys.path.insert(0, os.path.join(script_dir, 'packages'))
 
 
@@ -65,8 +61,7 @@ def check_imports():
     from google.protobuf import descriptor_pb2
     from jsonrpclib import SimpleJSONRPCServer
 
-if not is_android:
-    check_imports()
+check_imports()
 
 from qtum_electrum.logging import get_logger, configure_logging
 from qtum_electrum import qtum, constants, util
@@ -293,18 +288,11 @@ def run():
     args = parser.parse_args()
 
     # config is an object passed to the various constructors (wallet, interface, gui)
-    if is_android:
-        config_options = {
-            'verbosity': '',
-            'cmd': 'gui',
-            'gui': 'kivy',
-        }
-    else:
-        config_options = args.__dict__
-        f = lambda key: config_options[key] is not None and key not in config_variables.get(args.cmd, {}).keys()
-        config_options = {key: config_options[key] for key in filter(f, config_options.keys())}
-        if config_options.get('server'):
-            config_options['auto_connect'] = False
+    config_options = args.__dict__
+    f = lambda key: config_options[key] is not None and key not in config_variables.get(args.cmd, {}).keys()
+    config_options = {key: config_options[key] for key in filter(f, config_options.keys())}
+    if config_options.get('server'):
+        config_options['auto_connect'] = False
 
     config_options['cwd'] = os.getcwd()
 
@@ -325,8 +313,7 @@ def run():
     except AttributeError:
         pass
 
-    # kivy sometimes freezes when we write to sys.stderr
-    set_verbosity(config_options.get('verbosity') if config_options.get('gui') != 'kivy' else '')
+    set_verbosity(config_options.get('verbosity'))
 
     # check uri
     uri = config_options.get('uri')

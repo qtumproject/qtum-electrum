@@ -226,10 +226,6 @@ class DaemonThread(threading.Thread, Logger):
             self.running = False
 
     def on_stop(self):
-        if 'ANDROID_DATA' in os.environ:
-            import jnius
-            jnius.detach()
-            self.logger.info("jnius detach")
         self.logger.info("stopped")
 
 
@@ -291,40 +287,8 @@ def profiler(func):
     return lambda *args, **kw_args: do_profile(args, kw_args)
 
 
-def android_ext_dir():
-    import jnius
-    env = jnius.autoclass('android.os.Environment')
-    return env.getExternalStorageDirectory().getPath()
-
-def android_data_dir():
-    import jnius
-    PythonActivity = jnius.autoclass('org.kivy.android.PythonActivity')
-    return PythonActivity.mActivity.getFilesDir().getPath() + '/data'
-
-def android_headers_dir():
-    d = android_ext_dir() + '/org.qtum.qtum_electrum'
-    if not os.path.exists(d):
-        os.mkdir(d)
-    return d
-
-def android_check_data_dir():
-    """ if needed, move old directory to sandbox """
-    ext_dir = android_ext_dir()
-    data_dir = android_data_dir()
-    old_electrum_dir = ext_dir + '/qtum_electrum'
-    if not os.path.exists(data_dir) and os.path.exists(old_electrum_dir):
-        import shutil
-        new_headers_path = android_headers_dir() + '/blockchain_headers'
-        old_headers_path = old_electrum_dir + '/blockchain_headers'
-        if not os.path.exists(new_headers_path) and os.path.exists(old_headers_path):
-            _logger.info(f"Moving headers file to {new_headers_path}")
-            shutil.move(old_headers_path, new_headers_path)
-        _logger.info(f"Moving data to {data_dir}")
-        shutil.move(old_electrum_dir, data_dir)
-    return data_dir
-
 def get_headers_dir(config):
-    return android_headers_dir() if 'ANDROID_DATA' in os.environ else config.path
+    return config.path
 
 
 def assert_datadir_available(config_path):
@@ -420,9 +384,7 @@ def bh2u(x: bytes) -> str:
 
 
 def user_dir():
-    if 'ANDROID_DATA' in os.environ:
-        return android_check_data_dir()
-    elif os.name == 'posix':
+    if os.name == 'posix':
         return os.path.join(os.environ["HOME"], ".qtum-electrum")
     elif "APPDATA" in os.environ:
         return os.path.join(os.environ["APPDATA"], "Qtum-Electrum")
@@ -620,7 +582,6 @@ def parse_URI(uri, on_pr=None):
         raise Exception("Not a qtum URI")
     address = u.path
 
-    # python for android fails to parse query
     if address.find('?') > 0:
         address, query = u.path.split('?')
         pq = urllib.parse.parse_qs(query)

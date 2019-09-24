@@ -68,9 +68,9 @@ def remove_chain(cp, chains):
     try:
         os.remove(chains[cp].path())
         del chains[cp]
-        _logger.info('chain removed', cp)
+        _logger.info(f'chain removed {cp}')
     except (BaseException,) as e:
-        _logger.info('remove_chain error', e)
+        _logger.info(f'remove_chain error {repr(e)}')
     for k in list(chains.keys()):
         if chains[k].parent_id == cp:
             remove_chain(chains[k].forkpoint, chains)
