@@ -48,7 +48,7 @@ from . import x509
 from . import pem
 from . import version
 from . import blockchain
-from .blockchain import Blockchain
+from .blockchain import Blockchain, CHUNK_SIZE
 from . import constants
 from .i18n import _
 from .logging import Logger
@@ -418,17 +418,17 @@ class Interface(Logger):
         return blockchain.deserialize_header(bytes.fromhex(res), height)
 
     async def request_chunk(self, height, tip=None, *, can_return_early=False):
-        index = height // 2016
+        index = height // CHUNK_SIZE
         if can_return_early and index in self._requested_chunks:
             return
         self.logger.info(f"requesting chunk from height {height}")
-        size = 2016
+        size = CHUNK_SIZE
         if tip is not None:
-            size = min(size, tip - index * 2016 + 1)
+            size = min(size, tip - index * CHUNK_SIZE + 1)
             size = max(size, 0)
         try:
             self._requested_chunks.add(index)
-            res = await self.session.send_request('blockchain.block.headers', [index * 2016, size])
+            res = await self.session.send_request('blockchain.block.headers', [index * CHUNK_SIZE, size])
         finally:
             try: self._requested_chunks.remove(index)
             except KeyError: pass
@@ -531,7 +531,7 @@ class Interface(Logger):
                     last, height = await self.step(height)
                     continue
                 self.network.trigger_callback('network_updated')
-                height = (height // 2016 * 2016) + num_headers
+                height = (height // CHUNK_SIZE * CHUNK_SIZE) + num_headers
                 assert height <= next_height+1, (height, self.tip)
                 last = 'catchup'
             else:
