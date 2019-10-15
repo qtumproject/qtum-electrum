@@ -137,7 +137,7 @@ class PayToEdit(CompletionTextEdit, ScanQRTextEdit, Logger):
         self.lightning_invoice = None
         if len(lines) == 1:
             data = lines[0]
-            if data.startswith("bitcoin:"):
+            if data.startswith("qtum:"):
                 self.win.pay_to_URI(data)
                 return
             lower = data.lower()
@@ -224,7 +224,7 @@ class PayToEdit(CompletionTextEdit, ScanQRTextEdit, Logger):
 
     def qr_input(self):
         data = super(PayToEdit,self).qr_input()
-        if data.startswith("bitcoin:"):
+        if data.startswith("qtum:"):
             self.win.pay_to_URI(data)
             # TODO: update fee
 
