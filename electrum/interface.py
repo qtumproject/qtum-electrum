@@ -627,16 +627,12 @@ class Interface(Logger):
     async def _search_headers_backwards(self, height, header):
         async def iterate():
             nonlocal height, header
-            checkp = False
-            if height <= constants.net.max_checkpoint():
-                height = constants.net.max_checkpoint()
-                checkp = True
             header = await self.get_block_header(height, 'backward')
             chain = blockchain.check_header(header) if 'mock' not in header else header['mock']['check'](header)
             can_connect = blockchain.can_connect(header) if 'mock' not in header else header['mock']['connect'](height)
             if chain or can_connect:
                 return False
-            if checkp:
+            if str(height) in constants.net.CHECKPOINTS:
                 raise GracefulDisconnect("server chain conflicts with checkpoints")
             return True
 
