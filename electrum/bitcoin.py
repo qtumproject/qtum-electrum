@@ -40,14 +40,17 @@ if TYPE_CHECKING:
 
 ################################## transactions
 
-COINBASE_MATURITY = 100
+COINBASE_MATURITY = 500
 COIN = 100000000
-TOTAL_COIN_SUPPLY_LIMIT_IN_BTC = 21000000
+TOTAL_COIN_SUPPLY_LIMIT_IN_BTC = 100664516
 
 # supported types of transaction outputs
 TYPE_ADDRESS = 0
 TYPE_PUBKEY  = 1
 TYPE_SCRIPT  = 2
+TYPE_STAKE   = 3
+
+RECOMMEND_CONFIRMATIONS = 6
 
 
 class opcodes(IntEnum):

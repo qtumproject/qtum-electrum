@@ -50,8 +50,8 @@ from .util import (NotEnoughFunds, UserCancelled, profiler,
                    Fiat, bfh, bh2u, TxMinedInfo, quantize_feerate, create_bip21_uri, OrderedDictWithIndex)
 from .util import PR_TYPE_ONCHAIN, PR_TYPE_LN
 from .simple_config import SimpleConfig
-from .bitcoin import (COIN, TYPE_ADDRESS, is_address, address_to_script,
-                      is_minikey, relayfee, dust_threshold)
+from .bitcoin import (COIN, TYPE_ADDRESS, TYPE_STAKE, is_address, address_to_script,
+                      is_minikey, relayfee, dust_threshold, COINBASE_MATURITY, RECOMMEND_CONFIRMATIONS)
 from .crypto import sha256d
 from . import keystore
 from .keystore import load_keystore, Hardware_KeyStore, KeyStore
@@ -763,6 +763,14 @@ class Abstract_Wallet(AddressSynchronizer):
                 if label:
                     labels.append(label)
             return ', '.join(labels)
+        try:
+            tx = self.db.get_transaction(tx_hash)
+            if tx.outputs()[0].type == TYPE_STAKE:
+                return _('stake mined')
+            elif tx.inputs()[0]['type'] == 'coinbase':
+                return 'coinbase'
+        except (BaseException,) as e:
+            self.logger.info(f'get_default_label {e, TYPE_STAKE}')
         return ''
 
     def get_tx_status(self, tx_hash, tx_mined_info: TxMinedInfo):
@@ -770,10 +778,16 @@ class Abstract_Wallet(AddressSynchronizer):
         height = tx_mined_info.height
         conf = tx_mined_info.conf
         timestamp = tx_mined_info.timestamp
+        is_mined = False
+        tx = None
+        try:
+            tx = self.db.get_transaction(tx_hash)
+            is_mined = tx.outputs()[0].type == TYPE_STAKE
+        except (BaseException,) as e:
+            self.logger.info(f'get_tx_status {repr(e)}')
         if height == TX_HEIGHT_FUTURE:
             return 2, 'in %d blocks'%conf
         if conf == 0:
-            tx = self.db.get_transaction(tx_hash)
             if not tx:
                 return 2, 'unknown'
             is_final = tx and tx.is_final()
@@ -797,8 +811,10 @@ class Abstract_Wallet(AddressSynchronizer):
                 status = 0
             else:
                 status = 2  # not SPV verified
+        elif is_mined:
+            status = 3 + max(min(conf // (COINBASE_MATURITY // RECOMMEND_CONFIRMATIONS), RECOMMEND_CONFIRMATIONS), 1)
         else:
-            status = 3 + min(conf, 6)
+            status = 3 + min(conf, RECOMMEND_CONFIRMATIONS)
         time_str = format_time(timestamp) if timestamp else _("unknown")
         status_str = TX_STATUS[status] if status < 4 else time_str
         if extra:

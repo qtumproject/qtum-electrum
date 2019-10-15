@@ -29,7 +29,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Dict, Optional, Set, Tuple, NamedTuple, Sequence
 
 from . import bitcoin
-from .bitcoin import COINBASE_MATURITY, TYPE_ADDRESS, TYPE_PUBKEY
+from .bitcoin import COINBASE_MATURITY, TYPE_ADDRESS, TYPE_PUBKEY, TYPE_STAKE
 from .util import profiler, bfh, TxMinedInfo
 from .transaction import Transaction, TxOutput
 from .synchronizer import Synchronizer
@@ -226,7 +226,7 @@ class AddressSynchronizer(Logger):
             # BUT we track is_mine inputs in a txn, and during subsequent calls
             # of add_transaction tx, we might learn of more-and-more inputs of
             # being is_mine, as we roll the gap_limit forward
-            is_coinbase = tx.inputs()[0]['type'] == 'coinbase'
+            is_coinbase = tx.inputs()[0]['type'] == 'coinbase' or tx.outputs()[0].type == TYPE_STAKE
             tx_height = self.get_tx_height(tx_hash).height
             if not allow_unrelated:
                 # note that during sync, if the transactions are not properly sorted,

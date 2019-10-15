@@ -36,7 +36,7 @@ from collections import defaultdict
 
 from . import ecc, bitcoin, constants, segwit_addr
 from .util import profiler, to_bytes, bh2u, bfh
-from .bitcoin import (TYPE_ADDRESS, TYPE_PUBKEY, TYPE_SCRIPT, hash_160,
+from .bitcoin import (TYPE_ADDRESS, TYPE_PUBKEY, TYPE_SCRIPT, TYPE_STAKE, hash_160,
                       hash160_to_p2sh, hash160_to_p2pkh, hash_to_segwit_addr,
                       hash_encode, var_int, TOTAL_COIN_SUPPLY_LIMIT_IN_BTC, COIN,
                       push_script, int_to_hex, push_script, b58_address_to_hash160,
@@ -537,6 +537,12 @@ def parse_output(vds, i):
     d['type'], d['address'] = get_address_from_output_script(scriptPubKey)
     d['scriptPubKey'] = bh2u(scriptPubKey)
     d['prevout_n'] = i
+
+    # Qtum
+    if not d['value'] and not d['address'] and not i and not d['scriptPubKey']:
+        # make then first output in stake tx as TYPE_STAKE
+        d['type'] = TYPE_STAKE
+
     return d
 
 
@@ -737,7 +743,7 @@ class Transaction:
             return addr
         elif output_type == TYPE_ADDRESS:
             return bitcoin.address_to_script(addr)
-        elif output_type == TYPE_PUBKEY:
+        elif output_type == TYPE_PUBKEY or output_type == TYPE_STAKE:
             return bitcoin.public_key_to_p2pk_script(addr)
         else:
             raise TypeError('Unknown output type')
@@ -965,8 +971,11 @@ class Transaction:
 
     @classmethod
     def serialize_output(cls, output: TxOutput) -> str:
+        output_type = output.type
+        if output_type == TYPE_STAKE:
+            output_type = TYPE_SCRIPT
         s = int_to_hex(output.value, 8)
-        script = cls.pay_script(output.type, output.address)
+        script = cls.pay_script(output_type, output.address)
         s += var_int(len(script)//2)
         s += script
         return s
