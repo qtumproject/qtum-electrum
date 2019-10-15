@@ -829,24 +829,20 @@ def purpose48_derivation(account_id: int, xtype: str) -> str:
 
 def from_seed(seed, passphrase, is_p2sh=False):
     t = seed_type(seed)
-    if t == 'old':
-        keystore = Old_KeyStore({})
-        keystore.add_seed(seed)
-    elif t in ['standard', 'segwit']:
-        keystore = BIP32_KeyStore({})
+    if t in ['standard', 'segwit']:
+        if t == 'segwit':
+            if is_p2sh:
+                derivarion = bip44_derivation(0, bip43_purpose=49)
+            else:
+                derivarion = bip44_derivation(0, bip43_purpose=84)
+        else:
+            derivarion = bip44_derivation(0, bip43_purpose=44)
+        keystore = from_bip39_seed(seed, passphrase, derivarion)
         keystore.add_seed(seed)
         keystore.passphrase = passphrase
-        bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
-        if t == 'standard':
-            der = "m/"
-            xtype = 'standard'
-        else:
-            der = "m/1'/" if is_p2sh else "m/0'/"
-            xtype = 'p2wsh' if is_p2sh else 'p2wpkh'
-        keystore.add_xprv_from_seed(bip32_seed, xtype, der)
+        return keystore
     else:
         raise BitcoinException('Unexpected seed type {}'.format(t))
-    return keystore
 
 def from_private_key_list(text):
     keystore = Imported_KeyStore({})
