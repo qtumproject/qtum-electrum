@@ -25,17 +25,17 @@ import threading
 from typing import Optional, Dict, Mapping, Sequence
 
 from . import util
-from .bitcoin import hash_encode, int_to_hex, rev_hex
+from .bitcoin import hash_encode, int_to_hex, rev_hex, var_int
 from .crypto import sha256d
 from . import constants
-from .util import bfh, bh2u
+from .util import bfh, bh2u, unpack_uint16_from, unpack_int32_from, unpack_uint32_from, unpack_int64_from, unpack_uint64_from
 from .simple_config import SimpleConfig
 from .logging import get_logger, Logger
 
 
 _logger = get_logger(__name__)
 
-HEADER_SIZE = 80  # bytes
+BASIC_HEADER_SIZE = 180  # not include sig
 MAX_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
 
 
@@ -46,29 +46,113 @@ class InvalidHeader(Exception):
     pass
 
 def serialize_header(header_dict: dict) -> str:
+    sig_length = len(header_dict.get('sig')) // 2
     s = int_to_hex(header_dict['version'], 4) \
         + rev_hex(header_dict['prev_block_hash']) \
         + rev_hex(header_dict['merkle_root']) \
         + int_to_hex(int(header_dict['timestamp']), 4) \
         + int_to_hex(int(header_dict['bits']), 4) \
-        + int_to_hex(int(header_dict['nonce']), 4)
+        + int_to_hex(int(header_dict['nonce']), 4) \
+        + rev_hex(header_dict.get('hash_state_root')) \
+        + rev_hex(header_dict.get('hash_utxo_root')) \
+        + rev_hex(header_dict.get('hash_prevout_stake')) \
+        + int_to_hex(int(header_dict.get('hash_prevout_n')), 4) \
+        + var_int(sig_length) \
+        + (header_dict.get('sig'))
     return s
+
+
+class Deserializer(object):
+    '''Deserializes blocks into transactions.
+
+    External entry points are read_tx() and read_block().
+
+    This code is performance sensitive as it is executed 100s of
+    millions of times during sync.
+    '''
+
+    def __init__(self, binary, start=0):
+        assert isinstance(binary, bytes)
+        self.binary = binary
+        self.binary_length = len(binary)
+        self.cursor = start
+
+    def read_byte(self):
+        cursor = self.cursor
+        self.cursor += 1
+        return self.binary[cursor]
+
+    def read_varbytes(self):
+        return self._read_nbytes(self.read_varint())
+
+    def read_varint(self):
+        n = self.binary[self.cursor]
+        self.cursor += 1
+        if n < 253:
+            return n
+        if n == 253:
+            return self._read_le_uint16()
+        if n == 254:
+            return self._read_le_uint32()
+        return self._read_le_uint64()
+
+    def _read_nbytes(self, n):
+        cursor = self.cursor
+        self.cursor = end = cursor + n
+        assert self.binary_length >= end
+        return self.binary[cursor:end]
+
+    def _read_le_int32(self):
+        result, = unpack_int32_from(self.binary, self.cursor)
+        self.cursor += 4
+        return result
+
+    def _read_le_int64(self):
+        result, = unpack_int64_from(self.binary, self.cursor)
+        self.cursor += 8
+        return result
+
+    def _read_le_uint16(self):
+        result, = unpack_uint16_from(self.binary, self.cursor)
+        self.cursor += 2
+        return result
+
+    def _read_le_uint32(self):
+        result, = unpack_uint32_from(self.binary, self.cursor)
+        self.cursor += 4
+        return result
+
+    def _read_le_uint64(self):
+        result, = unpack_uint64_from(self.binary, self.cursor)
+        self.cursor += 8
+        return result
+
 
 def deserialize_header(s: bytes, height: int) -> dict:
     if not s:
         raise InvalidHeader('Invalid header: {}'.format(s))
-    if len(s) != HEADER_SIZE:
+    if len(s) < BASIC_HEADER_SIZE:
         raise InvalidHeader('Invalid header length: {}'.format(len(s)))
     hex_to_int = lambda s: int.from_bytes(s, byteorder='little')
-    h = {}
-    h['version'] = hex_to_int(s[0:4])
-    h['prev_block_hash'] = hash_encode(s[4:36])
-    h['merkle_root'] = hash_encode(s[36:68])
-    h['timestamp'] = hex_to_int(s[68:72])
-    h['bits'] = hex_to_int(s[72:76])
-    h['nonce'] = hex_to_int(s[76:80])
-    h['block_height'] = height
+    deserializer = Deserializer(s, start=BASIC_HEADER_SIZE)
+    sig_length = deserializer.read_varint()
+
+    h = {
+        'block_height': height,
+        'version': hex_to_int(s[0:4]),
+        'prev_block_hash': hash_encode(s[4:36]),
+        'merkle_root': hash_encode(s[36:68]),
+        'timestamp': hex_to_int(s[68:72]),
+        'bits': hex_to_int(s[72:76]),
+        'nonce': hex_to_int(s[76:80]),
+        'hash_state_root': hash_encode(s[80:112]),
+        'hash_utxo_root': hash_encode(s[112:144]),
+        'hash_prevout_stake': hash_encode(s[144:176]),
+        'hash_prevout_n': hex_to_int(s[176:180]),
+        'sig': hash_encode(s[:-sig_length - 1:-1]),
+    }
     return h
+
 
 def hash_header(header: dict) -> str:
     if header is None:
