@@ -51,7 +51,7 @@ from .bitcoin import COIN
 from . import constants
 from . import blockchain
 from . import bitcoin
-from .blockchain import Blockchain, HEADER_SIZE
+from .blockchain import Blockchain
 from .interface import (Interface, serialize_server, deserialize_server,
                         RequestTimedOut, NetworkTimeout, BUCKET_NAME_OF_ONION_SERVERS,
                         NetworkException)
@@ -420,6 +420,7 @@ class Network(Logger):
                     self.logger.info(f"invalid donation address from server: {repr(addr)}")
                 addr = ''
             self.donation_address = addr
+
         async def get_server_peers():
             server_peers = await session.send_request('server.peers.subscribe')
             random.shuffle(server_peers)
@@ -427,6 +428,7 @@ class Network(Logger):
             server_peers = server_peers[:max_accepted_peers]
             self.server_peers = parse_servers(server_peers)
             self.notify('servers')
+
         async def get_relay_fee():
             relayfee = await session.send_request('blockchain.relayfee')
             if relayfee is None:
@@ -437,8 +439,8 @@ class Network(Logger):
 
         async with TaskGroup() as group:
             await group.spawn(get_banner)
-            await group.spawn(get_donation_address)
-            await group.spawn(get_server_peers)
+            # await group.spawn(get_donation_address)
+            # await group.spawn(get_server_peers)
             await group.spawn(get_relay_fee)
             await group.spawn(self._request_fee_estimates(interface))
 
@@ -826,17 +828,18 @@ class Network(Logger):
         return True
 
     async def _init_headers_file(self):
-        b = blockchain.get_best_chain()
-        filename = b.path()
-        length = HEADER_SIZE * len(constants.net.CHECKPOINTS) * 2016
-        if not os.path.exists(filename) or os.path.getsize(filename) < length:
-            with open(filename, 'wb') as f:
-                if length > 0:
-                    f.seek(length-1)
-                    f.write(b'\x00')
-            util.ensure_sparse_file(filename)
-        with b.lock:
-            b.update_size()
+        return
+        # b = blockchain.get_best_chain()
+        # filename = b.path()
+        # length = HEADER_SIZE * len(constants.net.CHECKPOINTS) * 2016
+        # if not os.path.exists(filename) or os.path.getsize(filename) < length:
+        #     with open(filename, 'wb') as f:
+        #         if length > 0:
+        #             f.seek(length-1)
+        #             f.write(b'\x00')
+        #     util.ensure_sparse_file(filename)
+        # with b.lock:
+        #     b.update_size()
 
     def best_effort_reliable(func):
         async def make_reliable_wrapper(self, *args, **kwargs):
