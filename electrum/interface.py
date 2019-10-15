@@ -643,7 +643,7 @@ class Interface(Logger):
         bad, bad_header = height, header
         _assert_header_does_not_check_against_any_chain(bad_header)
         with blockchain.blockchains_lock: chains = list(blockchain.blockchains.values())
-        local_max = max([0] + [x.height() for x in chains]) if 'mock' not in header else float('inf')
+        local_max = max([-1] + [x.height() for x in chains]) if 'mock' not in header else float('inf')
         height = min(local_max + 1, height - 1)
         while await iterate():
             bad, bad_header = height, header
