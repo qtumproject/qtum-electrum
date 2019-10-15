@@ -5,7 +5,7 @@ cffi==1.11.5
 certifi==2018.10.15
 chardet==3.0.4
 dnspython==1.15.0
-ecdsa==0.13
+ecdsa==0.13.3
 keepkey==4.0.2
 hidapi==0.7.99.post21
 idna==2.7
