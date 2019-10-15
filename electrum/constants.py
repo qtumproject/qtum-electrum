@@ -47,10 +47,12 @@ GIT_REPO_ISSUES_URL = "https://github.com/qtumproject/qtum-electrum/issues"
 class AbstractNet:
 
     BLOCK_HEIGHT_FIRST_LIGHTNING_CHANNELS = 0
+    CHECKPOINTS = {}
+    GENESIS = ""
 
     @classmethod
     def max_checkpoint(cls) -> int:
-        return max(0, len(cls.CHECKPOINTS) * 2016 - 1)
+        return max(0, max(int(k) for k, v in cls.CHECKPOINTS.items() if v != 0))
 
     @classmethod
     def rev_genesis_bytes(cls) -> bytes:
