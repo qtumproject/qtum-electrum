@@ -493,7 +493,7 @@ class SimpleConfig(Logger):
 
         fee_level: float between 0.0 and 1.0, representing fee slider position
         """
-        if constants.net is constants.BitcoinRegtest:
+        if constants.net is constants.QtumRegtest:
             return FEERATE_REGTEST_HARDCODED
         if dyn is None:
             dyn = self.is_dynfee()

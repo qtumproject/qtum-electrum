@@ -207,9 +207,9 @@ class LNWorker(Logger):
 
         # TODO remove this. For some reason the dns seeds seem to ignore the realm byte
         # and only return mainnet nodes. so for the time being dns seeding is disabled:
-        if constants.net in (constants.BitcoinTestnet, ):
+        if constants.net in (constants.QtumTestnet, ):
             return [random.choice(FALLBACK_NODE_LIST_TESTNET)]
-        elif constants.net in (constants.BitcoinMainnet, ):
+        elif constants.net in (constants.QtumMainnet, ):
             return [random.choice(FALLBACK_NODE_LIST_MAINNET)]
         else:
             return []
@@ -1237,7 +1237,7 @@ class LNWallet(LNWorker):
             for chan in channels:
                 if chan.is_closed():
                     continue
-                if constants.net is not constants.BitcoinRegtest:
+                if constants.net is not constants.QtumRegtest:
                     chan_feerate = chan.get_latest_feerate(LOCAL)
                     ratio = chan_feerate / self.current_feerate_per_kw()
                     if ratio < 0.5:
@@ -1254,7 +1254,7 @@ class LNWallet(LNWorker):
 
     def current_feerate_per_kw(self):
         from .simple_config import FEE_LN_ETA_TARGET, FEERATE_FALLBACK_STATIC_FEE, FEERATE_REGTEST_HARDCODED
-        if constants.net is constants.BitcoinRegtest:
+        if constants.net is constants.QtumRegtest:
             return FEERATE_REGTEST_HARDCODED // 4
         feerate_per_kvbyte = self.network.config.eta_target_to_fee(FEE_LN_ETA_TARGET)
         if feerate_per_kvbyte is None:

@@ -57,116 +57,112 @@ class AbstractNet:
         return bytes.fromhex(bitcoin.rev_hex(cls.GENESIS))
 
 
-class BitcoinMainnet(AbstractNet):
+class QtumMainnet(AbstractNet):
 
     TESTNET = False
     WIF_PREFIX = 0x80
-    ADDRTYPE_P2PKH = 0
-    ADDRTYPE_P2SH = 5
-    SEGWIT_HRP = "bc"
-    GENESIS = "000000000019d6689c085ae165831e934ff763ae46a2a6c172b3f1b60a8ce26f"
+    BITCOIN_ADDRTYPE_P2PKH = 0
+    BITCOIN_ADDRTYPE_P2SH = 5
+    ADDRTYPE_P2PKH = 0x3a
+    ADDRTYPE_P2SH = 0x32
+    SEGWIT_HRP = "qc"
+    GENESIS = "000075aef83cf2853580f8ae8ce6f8c3096cfa21d98334d6e3f95e5582ed986c"
+    GENESIS_BITS = 0x1f00ffff
     DEFAULT_PORTS = {'t': '50001', 's': '50002'}
     DEFAULT_SERVERS = read_json('servers.json', {})
-    CHECKPOINTS = read_json('checkpoints.json', [])
-    BLOCK_HEIGHT_FIRST_LIGHTNING_CHANNELS = 497000
+    CHECKPOINTS = read_json('checkpoints.json', {})
+    BLOCK_HEIGHT_FIRST_LIGHTNING_CHANNELS = 0
+    QIP5_FORK_HEIGHT = 466600
+
+    LN_REALM_BYTE = 0
+    LN_DNS_SEEDS = []
+
+    # for the 88 and 2301 coin type issue, see https://github.com/satoshilabs/slips/pull/196
+    # Qtum official uses 88 as coin type
+    BIP44_COIN_TYPE = 88
+    SLIP_COIN_TYPE = 2301
 
     XPRV_HEADERS = {
-        'standard':    0x0488ade4,  # xprv
-        'p2wpkh-p2sh': 0x049d7878,  # yprv
-        'p2wsh-p2sh':  0x0295b005,  # Yprv
-        'p2wpkh':      0x04b2430c,  # zprv
-        'p2wsh':       0x02aa7a99,  # Zprv
+        'standard': 0x0488ade4,
+        'p2wpkh-p2sh': 0x049d7878,
+        'p2wsh-p2sh': 0x295b005,
+        'p2wpkh': 0x4b2430c,
+        'p2wsh': 0x2aa7a99
     }
     XPRV_HEADERS_INV = inv_dict(XPRV_HEADERS)
+
     XPUB_HEADERS = {
-        'standard':    0x0488b21e,  # xpub
-        'p2wpkh-p2sh': 0x049d7cb2,  # ypub
-        'p2wsh-p2sh':  0x0295b43f,  # Ypub
-        'p2wpkh':      0x04b24746,  # zpub
-        'p2wsh':       0x02aa7ed3,  # Zpub
+        'standard': 0x0488b21e,
+        'p2wpkh-p2sh': 0x049d7cb2,
+        'p2wsh-p2sh': 0x295b43f,
+        'p2wpkh': 0x4b24746,
+        'p2wsh': 0x2aa7ed3
     }
     XPUB_HEADERS_INV = inv_dict(XPUB_HEADERS)
-    BIP44_COIN_TYPE = 0
-    LN_REALM_BYTE = 0
-    LN_DNS_SEEDS = [
-        'nodes.lightning.directory.',
-        'lseed.bitcoinstats.com.',
-    ]
 
 
-class BitcoinTestnet(AbstractNet):
+class QtumTestnet(AbstractNet):
 
     TESTNET = True
     WIF_PREFIX = 0xef
-    ADDRTYPE_P2PKH = 111
-    ADDRTYPE_P2SH = 196
-    SEGWIT_HRP = "tb"
-    GENESIS = "000000000933ea01ad0ee984209779baaec3ced90fa3f408719526f8d77f4943"
+    BITCOIN_ADDRTYPE_P2PKH = 111
+    BITCOIN_ADDRTYPE_P2SH = 196
+    ADDRTYPE_P2PKH = 120
+    ADDRTYPE_P2SH = 110
+    SEGWIT_HRP = "tq"
+    GENESIS = "0000e803ee215c0684ca0d2f9220594d3f828617972aad66feb2ba51f5e14222"
+    GENESIS_BITS = 0x1f00ffff
     DEFAULT_PORTS = {'t': '51001', 's': '51002'}
     DEFAULT_SERVERS = read_json('servers_testnet.json', {})
-    CHECKPOINTS = read_json('checkpoints_testnet.json', [])
+    CHECKPOINTS = read_json('checkpoints_testnet.json', {})
+    BIP44_COIN_TYPE = 1
+    SLIP_COIN_TYPE = 1
+    QIP5_FORK_HEIGHT = 446320
+
+    LN_REALM_BYTE = 0
+    LN_DNS_SEEDS = []
 
     XPRV_HEADERS = {
-        'standard':    0x04358394,  # tprv
-        'p2wpkh-p2sh': 0x044a4e28,  # uprv
-        'p2wsh-p2sh':  0x024285b5,  # Uprv
-        'p2wpkh':      0x045f18bc,  # vprv
-        'p2wsh':       0x02575048,  # Vprv
+        'standard': 0x04358394,
+        'p2wpkh-p2sh': 0x044a4e28,
+        'p2wsh-p2sh': 0x024285b5,
+        'p2wpkh': 0x045f18bc,
+        'p2wsh': 0x02575048
     }
     XPRV_HEADERS_INV = inv_dict(XPRV_HEADERS)
+
     XPUB_HEADERS = {
-        'standard':    0x043587cf,  # tpub
-        'p2wpkh-p2sh': 0x044a5262,  # upub
-        'p2wsh-p2sh':  0x024289ef,  # Upub
-        'p2wpkh':      0x045f1cf6,  # vpub
-        'p2wsh':       0x02575483,  # Vpub
+        'standard': 0x043587cf,
+        'p2wpkh-p2sh': 0x044a5262,
+        'p2wsh-p2sh': 0x024289ef,
+        'p2wpkh': 0x045f1cf6,
+        'p2wsh': 0x02575483
     }
     XPUB_HEADERS_INV = inv_dict(XPUB_HEADERS)
-    BIP44_COIN_TYPE = 1
-    LN_REALM_BYTE = 1
-    LN_DNS_SEEDS = [
-        'test.nodes.lightning.directory.',
-        'lseed.bitcoinstats.com.',
-    ]
 
 
-class BitcoinRegtest(BitcoinTestnet):
+class QtumRegtest(QtumTestnet):
 
-    SEGWIT_HRP = "bcrt"
-    GENESIS = "0f9188f13cb7b2c71f2a335e3a4fc328bf5beb436012afca590b1a11466e2206"
+    SEGWIT_HRP = "qcrt"
+    GENESIS = "0x665ed5b402ac0b44efc37d8926332994363e8a7278b7ee9a58fb972efadae943"
     DEFAULT_SERVERS = read_json('servers_regtest.json', {})
-    CHECKPOINTS = []
-    LN_DNS_SEEDS = []
-
-
-class BitcoinSimnet(BitcoinTestnet):
-
-    WIF_PREFIX = 0x64
-    ADDRTYPE_P2PKH = 0x3f
-    ADDRTYPE_P2SH = 0x7b
-    SEGWIT_HRP = "sb"
-    GENESIS = "683e86bd5c6d110d91b94b97137ba6bfe02dbbdb8e3dff722a669b5d69d77af6"
-    DEFAULT_SERVERS = read_json('servers_regtest.json', {})
-    CHECKPOINTS = []
-    LN_DNS_SEEDS = []
+    CHECKPOINTS = {}
 
 
 # don't import net directly, import the module instead (so that net is singleton)
-net = BitcoinMainnet
+net = QtumMainnet
 
-def set_simnet():
-    global net
-    net = BitcoinSimnet
 
 def set_mainnet():
     global net
-    net = BitcoinMainnet
+    net = QtumMainnet
+
 
 def set_testnet():
     global net
-    net = BitcoinTestnet
+    net = QtumTestnet
 
 
 def set_regtest():
     global net
-    net = BitcoinRegtest
+    net = QtumRegtest

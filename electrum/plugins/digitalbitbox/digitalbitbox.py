@@ -123,7 +123,7 @@ class DigitalBitbox_Client():
             # only ever returns the mainnet standard type, but it is agnostic
             # to the type when signing.
             if xtype != 'standard' or constants.net.TESTNET:
-                node = BIP32Node.from_xkey(xpub, net=constants.BitcoinMainnet)
+                node = BIP32Node.from_xkey(xpub, net=constants.QtumMainnet)
                 xpub = node._replace(xtype=xtype).to_xpub()
             return xpub
         else:
