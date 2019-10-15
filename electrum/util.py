@@ -72,7 +72,7 @@ base_units = {'QTUM':8, 'mQTUM':5, 'bits':2, 'sat':0}
 base_units_inverse = inv_dict(base_units)
 base_units_list = ['QTUM', 'mQTUM', 'bits', 'sat']  # list(dict) does not guarantee order
 
-DECIMAL_POINT_DEFAULT = 5  # mBTC
+DECIMAL_POINT_DEFAULT = 8  # QTUM
 
 # types of payment requests
 PR_TYPE_ONCHAIN = 0
