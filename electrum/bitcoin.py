@@ -306,7 +306,10 @@ def relayfee(network: 'Network' = None) -> int:
 
 def dust_threshold(network: 'Network'=None) -> int:
     # Change <= dust threshold is added to the tx fee
-    return 182 * 3 * relayfee(network) // 1000
+    # for Bitcoin DEFAULT_MIN_RELAY_TX_FEE=1000, DUST_RELAY_TX_FEE=3000
+    # for Qtum DEFAULT_MIN_RELAY_TX_FEE=400000, DUST_RELAY_TX_FEE=400000
+    # we don't need plus 3 to relayfee
+    return 182 * relayfee(network) // 1000
 
 
 def hash_encode(x: bytes) -> str:
