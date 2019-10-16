@@ -762,10 +762,14 @@ class Abstract_Wallet(AddressSynchronizer):
                 label = self.labels.get(addr)
                 if label:
                     labels.append(label)
-            return ', '.join(labels)
+            if labels:
+                return ', '.join(labels)
         try:
             tx = self.db.get_transaction(tx_hash)
             if tx.outputs()[0].type == TYPE_STAKE:
+                is_relevant, is_mine, delta, fee = self.get_wallet_delta(tx)
+                if delta and 0 < delta < 4 * 10 ** 7:
+                    return _('contract gas refund')
                 return _('stake mined')
             elif tx.inputs()[0]['type'] == 'coinbase':
                 return 'coinbase'
