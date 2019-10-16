@@ -696,11 +696,11 @@ class Transaction:
         txin['witness'] = None    # force re-serialization
         self.raw = None
 
-    def add_inputs_info(self, wallet: 'Abstract_Wallet') -> None:
+    def add_inputs_info(self, wallet: 'Abstract_Wallet', check_p2pk=False) -> None:
         if self.is_complete():
             return
         for txin in self.inputs():
-            wallet.add_input_info(txin)
+            wallet.add_input_info(txin, check_p2pk)
 
     def remove_signatures(self):
         for txin in self.inputs():

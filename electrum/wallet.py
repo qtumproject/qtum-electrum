@@ -50,7 +50,7 @@ from .util import (NotEnoughFunds, UserCancelled, profiler,
                    Fiat, bfh, bh2u, TxMinedInfo, quantize_feerate, create_bip21_uri, OrderedDictWithIndex)
 from .util import PR_TYPE_ONCHAIN, PR_TYPE_LN
 from .simple_config import SimpleConfig
-from .bitcoin import (COIN, TYPE_ADDRESS, TYPE_STAKE, is_address, address_to_script, serialize_privkey,
+from .bitcoin import (COIN, TYPE_ADDRESS, TYPE_PUBKEY, TYPE_STAKE, is_address, address_to_script, serialize_privkey,
                       is_minikey, relayfee, dust_threshold, COINBASE_MATURITY, RECOMMEND_CONFIRMATIONS)
 from .crypto import sha256d
 from . import keystore
@@ -1210,11 +1210,22 @@ class Abstract_Wallet(AddressSynchronizer):
     def add_input_sig_info(self, txin, address):
         raise NotImplementedError()  # implemented by subclasses
 
-    def add_input_info(self, txin):
+    def add_input_info(self, txin, check_p2pk=False):
         address = self.get_txin_address(txin)
         if self.is_mine(address):
             txin['address'] = address
-            txin['type'] = self.get_txin_type(address)
+
+            txin_type = self.get_txin_type(address)
+            if check_p2pk and txin_type == 'p2pkh':
+                prevout_tx = self.db.get_transaction(txin['prevout_hash'])
+                if not prevout_tx:
+                    return
+                prevout_n = txin['prevout_n']
+                t = prevout_tx.outputs()[prevout_n].type
+                if t == TYPE_PUBKEY:
+                    txin_type = 'p2pk'
+            txin['type'] = txin_type
+
             # segwit needs value to sign
             if txin.get('value') is None:
                 received, spent = self.get_addr_io(address)
@@ -1279,7 +1290,7 @@ class Abstract_Wallet(AddressSynchronizer):
     def sign_transaction(self, tx, password):
         if self.is_watching_only():
             return
-        tx.add_inputs_info(self)
+        tx.add_inputs_info(self, check_p2pk=True)
         # hardware wallets require extra info
         if any([(isinstance(k, Hardware_KeyStore) and k.can_sign(tx)) for k in self.get_keystores()]):
             self.add_hw_info(tx)
@@ -1849,6 +1860,7 @@ class Imported_Wallet(Simple_Wallet):
         return redeem_script
 
     def get_txin_type(self, address):
+        # this cannot tell p2pkh between p2pk
         return self.db.get_imported_address(address).get('type', 'address')
 
     def add_input_sig_info(self, txin, address):
@@ -1857,7 +1869,7 @@ class Imported_Wallet(Simple_Wallet):
             txin['x_pubkeys'] = [x_pubkey]
             txin['signatures'] = [None]
             return
-        if txin['type'] in ['p2pkh', 'p2wpkh', 'p2wpkh-p2sh']:
+        if txin['type'] in ['p2pkh', 'p2wpkh', 'p2wpkh-p2sh', 'p2pk']:
             pubkey = self.db.get_imported_address(address)['pubkey']
             txin['num_sig'] = 1
             txin['x_pubkeys'] = [pubkey]
