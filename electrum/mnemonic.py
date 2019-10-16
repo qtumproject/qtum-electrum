@@ -134,7 +134,7 @@ class Mnemonic(Logger):
         mnemonic = normalize_text(mnemonic)
         passphrase = passphrase or ''
         passphrase = normalize_text(passphrase)
-        return hashlib.pbkdf2_hmac('sha512', mnemonic.encode('utf-8'), b'electrum' + passphrase.encode('utf-8'), iterations = PBKDF2_ROUNDS)
+        return hashlib.pbkdf2_hmac('sha512', mnemonic.encode('utf-8'), b'mnemonic' + passphrase.encode('utf-8'), iterations = PBKDF2_ROUNDS)
 
     def mnemonic_encode(self, i):
         n = len(self.wordlist)
