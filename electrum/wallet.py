@@ -50,11 +50,11 @@ from .util import (NotEnoughFunds, UserCancelled, profiler,
                    Fiat, bfh, bh2u, TxMinedInfo, quantize_feerate, create_bip21_uri, OrderedDictWithIndex)
 from .util import PR_TYPE_ONCHAIN, PR_TYPE_LN
 from .simple_config import SimpleConfig
-from .bitcoin import (COIN, TYPE_ADDRESS, TYPE_STAKE, is_address, address_to_script,
+from .bitcoin import (COIN, TYPE_ADDRESS, TYPE_STAKE, is_address, address_to_script, serialize_privkey,
                       is_minikey, relayfee, dust_threshold, COINBASE_MATURITY, RECOMMEND_CONFIRMATIONS)
 from .crypto import sha256d
 from . import keystore
-from .keystore import load_keystore, Hardware_KeyStore, KeyStore
+from .keystore import load_keystore, Hardware_KeyStore, KeyStore, Mobile_KeyStore, Qt_Core_Keystore
 from .util import multisig_type
 from .storage import StorageEncryptionVersion, WalletStorage
 from . import transaction, bitcoin, coinchooser, paymentrequest, ecc, bip32
@@ -404,7 +404,7 @@ class Abstract_Wallet(AddressSynchronizer):
         if self.is_watching_only():
             raise Exception(_("This is a watching-only wallet"))
         if not is_address(address):
-            raise Exception(f"Invalid bitcoin address: {address}")
+            raise Exception(f"Invalid qtum address: {address}")
         if not self.is_mine(address):
             raise Exception(_('Address not in wallet.') + f' {address}')
         index = self.get_address_index(address)
@@ -895,7 +895,7 @@ class Abstract_Wallet(AddressSynchronizer):
         for i, o in enumerate(outputs):
             if o.type == TYPE_ADDRESS:
                 if not is_address(o.address):
-                    raise Exception("Invalid bitcoin address: {}".format(o.address))
+                    raise Exception("Invalid qtum address: {}".format(o.address))
             if o.value == '!':
                 if i_max is not None:
                     raise Exception("More than one output set to spend max")
@@ -1462,7 +1462,7 @@ class Abstract_Wallet(AddressSynchronizer):
         if req['type'] == PR_TYPE_ONCHAIN:
             addr = req['address']
             if not bitcoin.is_address(addr):
-                raise Exception(_('Invalid Bitcoin address.'))
+                raise Exception(_('Invalid qtum address.'))
             if not self.is_mine(addr):
                 raise Exception(_('Address not in wallet.'))
             key = addr
@@ -2056,15 +2056,51 @@ class Simple_Deterministic_Wallet(Simple_Wallet, Deterministic_Wallet):
         return self.keystore.derive_pubkey(c, i)
 
 
-
-
-
-
 class Standard_Wallet(Simple_Deterministic_Wallet):
     wallet_type = 'standard'
 
     def pubkeys_to_address(self, pubkey):
         return bitcoin.pubkey_to_address(self.txin_type, pubkey)
+
+
+class Mobile_Wallet(Imported_Wallet):
+
+    wallet_type = 'mobile'
+
+    def __init__(self, storage: WalletStorage, *, config: SimpleConfig):
+        Imported_Wallet.__init__(self, storage, config=config)
+        self.use_change = False
+        self.gap_limit = 10
+
+    def can_import_address(self):
+        return False
+
+    def can_delete_address(self):
+        return False
+
+    def synchronize(self):
+        keys = []
+        addr_count = len(self.get_addresses())
+        for i in range(0, self.gap_limit - addr_count):
+            secret, compressed = self.keystore.derive_privkey([0, addr_count + i], None)
+            keys.append(serialize_privkey(secret, compressed, 'p2pkh', True))
+        self.import_private_keys(keys, None, write_to_disk=True)
+
+
+class Qt_Core_Wallet(Simple_Deterministic_Wallet):
+    wallet_type = 'qtcore'
+
+    def __init__(self, storage: WalletStorage, *, config: SimpleConfig):
+        Simple_Deterministic_Wallet.__init__(self, storage, config=config)
+        self.gap_limit = 100
+        self.gap_limit_for_change = 0
+        self.use_change = False
+
+    def synchronize(self):
+        # don't create change addres
+        # since core wallet doesn't distinguish address type from derivation path
+        with self.lock:
+            self.synchronize_sequence(False)
 
 
 class Multisig_Wallet(Deterministic_Wallet):
@@ -2169,7 +2205,7 @@ class Multisig_Wallet(Deterministic_Wallet):
         txin['num_sig'] = self.m
 
 
-wallet_types = ['standard', 'multisig', 'imported']
+wallet_types = ['standard', 'multisig', 'imported', 'mobile', 'qtcore']
 
 def register_wallet_type(category):
     wallet_types.append(category)
@@ -2178,7 +2214,9 @@ wallet_constructors = {
     'standard': Standard_Wallet,
     'old': Standard_Wallet,
     'xpub': Standard_Wallet,
-    'imported': Imported_Wallet
+    'imported': Imported_Wallet,
+    'mobile': Mobile_Wallet,
+    'qtcore': Qt_Core_Wallet,
 }
 
 def register_constructor(wallet_type, constructor):

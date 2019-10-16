@@ -408,6 +408,94 @@ class BIP32_KeyStore(Deterministic_KeyStore, Xpub):
         cK = ecc.ECPrivkey(k).get_public_key_bytes()
         return cK, k
 
+
+class Mobile_KeyStore(BIP32_KeyStore):
+
+    type = 'mobile'
+
+    def __init__(self, d):
+        BIP32_KeyStore.__init__(self, d)
+        self.keypairs = d.get('keypairs', {})
+
+    def dump(self):
+        d = Deterministic_KeyStore.dump(self)
+        d['type'] = self.type
+        d['xpub'] = self.xpub
+        d['xprv'] = self.xprv
+        d['derivation'] = mobile_derivation()
+        d['keypairs'] = self.keypairs
+        return d
+
+    def can_import(self):
+        return False
+
+    def derive_pubkey(self, for_change, n):
+        master_xprv = self.get_master_private_key(None)
+        node = BIP32Node.from_xkey(master_xprv).subkey_at_private_derivation([n+BIP32_PRIME])
+        return self.get_pubkey_from_xpub(node.to_xpub(), ())
+
+    def derive_privkey(self, sequence, password):
+        master_xprv = self.get_master_private_key(password)
+        node = BIP32Node.from_xkey(master_xprv).subkey_at_private_derivation([sequence[1] + BIP32_PRIME])
+        pk = node.eckey.get_secret_bytes()
+        return pk, True
+
+    def get_private_key(self, pubkey, password):
+        sec = pw_decode(self.keypairs[pubkey], password, version=self.pw_hash_version)
+        txin_type, privkey, compressed = deserialize_privkey(sec)
+        # this checks the password
+        if pubkey != ecc.ECPrivkey(privkey).get_public_key_hex(compressed=compressed):
+            raise InvalidPassword()
+        return privkey, compressed
+
+    def import_privkey(self, sec, password):
+        txin_type, privkey, compressed = deserialize_privkey(sec)
+        pubkey = ecc.ECPrivkey(privkey).get_public_key_hex(compressed=compressed)
+        # re-serialize the key so the internal storage format is consistent
+        serialized_privkey = serialize_privkey(
+            privkey, compressed, txin_type, internal_use=True)
+        self.keypairs[pubkey] = pw_encode(serialized_privkey, password, version=self.pw_hash_version)
+        return txin_type, pubkey
+
+    def get_pubkey_derivation(self, x_pubkey):
+        if x_pubkey[0:2] in ['02', '03', '04']:
+            if x_pubkey in self.keypairs.keys():
+                return x_pubkey
+        elif x_pubkey[0:2] == 'fd':
+            addr = bitcoin.script_to_address(x_pubkey[2:])
+            if addr in self.addresses:
+                return self.addresses[addr].get('pubkey')
+
+
+class Qt_Core_Keystore(BIP32_KeyStore):
+
+    type = 'qtcore'
+
+    def __init__(self, d):
+        BIP32_KeyStore.__init__(self, d)
+        self.ext_master_xprv = d.get('ext_master_xprv', '')
+
+    def dump(self):
+        d = Deterministic_KeyStore.dump(self)
+        d['type'] = self.type
+        d['xpub'] = self.xpub
+        d['xprv'] = self.xprv
+        d['derivation'] = qt_core_derivation()
+        d['ext_master_xprv'] = self.ext_master_xprv
+        return d
+
+    def derive_pubkey(self, for_change, n):
+        master_xprv = self.get_master_private_key(None)
+        node = BIP32Node.from_xkey(master_xprv).subkey_at_private_derivation([n + BIP32_PRIME])
+        return self.get_pubkey_from_xpub(node.to_xpub(), ())
+
+    def get_private_key(self, sequence, password):
+        master_xprv = self.get_master_private_key(password)
+        node = BIP32Node.from_xkey(master_xprv).subkey_at_private_derivation([sequence[1]+BIP32_PRIME])
+        pk = node.eckey.get_secret_bytes()
+        return pk, True
+
+
 class Old_KeyStore(Deterministic_KeyStore):
 
     type = 'old'
@@ -758,7 +846,7 @@ def load_keystore(storage, name) -> KeyStore:
         raise WalletFileException(
             'Wallet format requires update.\n'
             'Cannot find keystore for name {}'.format(name))
-    keystore_constructors = {ks.type: ks for ks in [Old_KeyStore, Imported_KeyStore, BIP32_KeyStore]}
+    keystore_constructors = {ks.type: ks for ks in [Old_KeyStore, Imported_KeyStore, BIP32_KeyStore, Mobile_KeyStore, Qt_Core_Keystore]}
     keystore_constructors['hardware'] = hardware_keystore
     try:
         ks_constructor = keystore_constructors[t]
@@ -816,6 +904,13 @@ def bip44_derivation(account_id, bip43_purpose=44):
     return "m/%d'/%d'/%d'" % (bip43_purpose, coin, int(account_id))
 
 
+def qt_core_derivation():
+    return "m/0'/0'"
+
+
+def mobile_derivation():
+    return "m/88'/0'"
+
 def purpose48_derivation(account_id: int, xtype: str) -> str:
     # m / purpose' / coin_type' / account' / script_type' / change / address_index
     bip43_purpose = 48
@@ -850,6 +945,15 @@ def from_private_key_list(text):
         keystore.import_privkey(x, None)
     return keystore
 
+def from_mobile_seed(seed):
+    passphrase = ''
+    bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
+    k = Mobile_KeyStore({})
+    k.add_seed(seed)
+    k.passphrase = passphrase
+    k.add_xprv_from_seed(bip32_seed, 'standard', mobile_derivation())
+    return k
+
 def from_old_mpk(mpk):
     keystore = Old_KeyStore({})
     keystore.add_master_public_key(mpk)
@@ -876,4 +980,29 @@ def from_master_key(text):
         k = from_xpub(text)
     else:
         raise BitcoinException('Invalid master key')
+    return k
+
+
+def from_qt_core_xprv(ext_master_xprv):
+    k = Qt_Core_Keystore({})
+    k.ext_master_xprv = ext_master_xprv
+    node = BIP32Node.from_xkey(ext_master_xprv).subkey_at_private_derivation(qt_core_derivation())
+    k.add_xprv(node.to_xprv())
+    return k
+
+
+def from_qt_core_xpub(xpub):
+    k = Qt_Core_Keystore({})
+    k.xpub = xpub
+    return k
+
+
+def from_qt_core_master_key(text):
+    if is_xprv(text):
+        k = from_qt_core_xprv(text)
+    # not support yet
+    # elif is_xpub(text):
+    #     k = from_desktop_xpub(text)
+    else:
+        raise Exception('Invalid key')
     return k

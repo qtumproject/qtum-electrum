@@ -424,12 +424,18 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
     @wizard_dialog
     def restore_seed_dialog(self, run_next, test):
         options = []
-        if self.opt_ext:
-            options.append('ext')
-        if self.opt_bip39:
-            options.append('bip39')
+        if 'mobile' == self.wallet_type:
+            message = ''.join([
+                _('Please enter your seed phrase in order to restore your wallet. \n'),
+                _('This is compatible with qtum mobile wallet. \n')])
+        else:
+            if self.opt_ext:
+                options.append('ext')
+            message = _('Please enter your seed phrase in order to restore your wallet.')
+            # if self.opt_bip39:
+            #     options.append('bip39')
         title = _('Enter Seed')
-        message = _('Please enter your seed phrase in order to restore your wallet.')
+
         return self.seed_input(title, message, test, options)
 
     @wizard_dialog

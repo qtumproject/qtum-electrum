@@ -792,7 +792,7 @@ class JsonDB(Logger):
 
     def load_addresses(self, wallet_type):
         """ called from Abstract_Wallet.__init__ """
-        if wallet_type == 'imported':
+        if wallet_type in ['imported', 'mobile']:
             self.imported_addresses = self.get_data_ref('addresses')
         else:
             self.get_data_ref('addresses')
