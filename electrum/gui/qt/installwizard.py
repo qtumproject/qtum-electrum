@@ -608,25 +608,25 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
         return None
 
     def init_network(self, network):
-        message = _("Electrum communicates with remote servers to get "
-                  "information about your transactions and addresses. The "
-                  "servers all fulfill the same purpose only differing in "
-                  "hardware. In most cases you simply want to let Electrum "
-                  "pick one at random.  However if you prefer feel free to "
-                  "select a server manually.")
-        choices = [_("Auto connect"), _("Select server manually")]
-        title = _("How do you want to connect to a server? ")
-        clayout = ChoicesLayout(message, choices)
-        self.back_button.setText(_('Cancel'))
-        self.exec_layout(clayout.layout(), title)
-        r = clayout.selected_index()
-        if r == 1:
-            nlayout = NetworkChoiceLayout(network, self.config, wizard=True)
-            if self.exec_layout(nlayout.layout()):
-                nlayout.accept()
-        else:
-            network.auto_connect = True
-            self.config.set_key('auto_connect', True, True)
+        # message = _("Electrum communicates with remote servers to get "
+        #           "information about your transactions and addresses. The "
+        #           "servers all fulfill the same purpose only differing in "
+        #           "hardware. In most cases you simply want to let Electrum "
+        #           "pick one at random.  However if you prefer feel free to "
+        #           "select a server manually.")
+        # choices = [_("Auto connect"), _("Select server manually")]
+        # title = _("How do you want to connect to a server? ")
+        # clayout = ChoicesLayout(message, choices)
+        # self.back_button.setText(_('Cancel'))
+        # self.exec_layout(clayout.layout(), title)
+        # r = clayout.selected_index()
+        # if r == 1:
+        #     nlayout = NetworkChoiceLayout(network, self.config, wizard=True)
+        #     if self.exec_layout(nlayout.layout()):
+        #         nlayout.accept()
+        # else:
+        network.auto_connect = True
+        self.config.set_key('auto_connect', True, True)
 
     @wizard_dialog
     def multisig_dialog(self, run_next):
