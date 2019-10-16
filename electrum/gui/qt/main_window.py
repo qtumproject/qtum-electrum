@@ -2922,6 +2922,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         vbox = QVBoxLayout(d)
 
         hbox_top = QHBoxLayout()
+        hbox_top.addWidget(QLabel(_("Warning: Qtum Electrum has issue with sweeping P2PK utxos. \n"
+                                "You'd better use  \"restore wallet\", import your private keys \n"
+                                "and send total balance to another address instead.")))
         hbox_top.addWidget(QLabel(_("Enter private keys:")))
         hbox_top.addWidget(InfoButton(WIF_HELP_TEXT), alignment=Qt.AlignRight)
         vbox.addLayout(hbox_top)
