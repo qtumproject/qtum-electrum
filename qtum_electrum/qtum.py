@@ -25,6 +25,7 @@ CHUNK_SIZE = 1024
 POW_LIMIT = 0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 POS_LIMIT = 0x00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 POW_TARGET_TIMESPAN = 16 * 60  # bitcoin is 14 * 24 * 60 * 60
+POW_TARGET_TIMESPAN_V2 = 4000
 POW_TARGET_TIMESPACE = 2 * 64  # bitcoin is 10 * 60
 RECOMMEND_CONFIRMATIONS = 10
 

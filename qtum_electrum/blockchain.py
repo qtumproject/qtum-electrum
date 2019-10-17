@@ -21,13 +21,14 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import os
+import math
 import threading
 import sqlite3
 from typing import Optional
 from . import util
 from .qtum import *
 from .logging import get_logger, Logger
-
+from . import constants
 
 _logger = get_logger(__name__)
 
@@ -436,22 +437,33 @@ class Blockchain(Logger):
         if not pprev_header:
             raise Exception('get header failed {}'.format(height - 2))
 
-        #  Limit adjustment step
         nActualSpace = prev_header.get('timestamp') - pprev_header.get('timestamp')
         nActualSpace = max(0, nActualSpace)
-        nActualSpace = min(nActualSpace, POW_TARGET_TIMESPACE * 10)
-        #  Retarget
-        nInterval = POW_TARGET_TIMESPAN // POW_TARGET_TIMESPACE
         new_target = uint256_from_compact(prev_header.get('bits'))
-        new_target *= ((nInterval - 1) * POW_TARGET_TIMESPACE + nActualSpace + nActualSpace)
-        new_target //= ((nInterval + 1) * POW_TARGET_TIMESPACE)
 
-        if new_target <= 0 or new_target > POS_LIMIT:
-            new_target = POS_LIMIT
+        if height < constants.net.QIP9_FORK_HEIGHT:
+            nInterval = POW_TARGET_TIMESPAN // POW_TARGET_TIMESPACE
+            #  Limit adjustment step
+            nActualSpace = min(nActualSpace, POW_TARGET_TIMESPACE * 10)
+            #  Retarget
+            new_target *= ((nInterval - 1) * POW_TARGET_TIMESPACE + nActualSpace + nActualSpace)
+            new_target //= ((nInterval + 1) * POW_TARGET_TIMESPACE)
+
+            if new_target <= 0 or new_target > POS_LIMIT:
+                new_target = POS_LIMIT
+        else:
+            nInterval = POW_TARGET_TIMESPAN_V2 // POW_TARGET_TIMESPACE
+            nActualSpace = min(nActualSpace, POW_TARGET_TIMESPACE * 20)
+            t1 = 2 * (nActualSpace - POW_TARGET_TIMESPACE) // 16
+            t2 = (nInterval + 1) * POW_TARGET_TIMESPACE // 16
+            new_target *= math.exp(t1 / t2)
+            new_target = int(new_target)
+
+            if new_target <= 0 or new_target > constants.net.QIP9PosLimit:
+                new_target = constants.net.QIP9PosLimit
 
         nbits = compact_from_uint256(new_target)
         new_target = uint256_from_compact(nbits)
-
         return nbits, new_target
 
     def can_connect(self, header, check_height=True):

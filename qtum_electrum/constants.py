@@ -79,6 +79,9 @@ class QtumMainnet:
     }
     XPUB_HEADERS_INV = inv_dict(XPUB_HEADERS)
 
+    QIP9_FORK_HEIGHT = 466600
+    QIP9PosLimit = 0x0000000000001fffffffffffffffffffffffffffffffffffffffffffffffffff
+
 
 class QtumTestnet:
 
@@ -115,6 +118,9 @@ class QtumTestnet:
     }
     XPUB_HEADERS_INV = inv_dict(XPUB_HEADERS)
 
+    QIP9_FORK_HEIGHT = 446320
+    QIP9PosLimit = 0x0000000000001fffffffffffffffffffffffffffffffffffffffffffffffffff
+
 
 class QtumRegtest(QtumTestnet):
 
@@ -122,6 +128,8 @@ class QtumRegtest(QtumTestnet):
     GENESIS = "0x665ed5b402ac0b44efc37d8926332994363e8a7278b7ee9a58fb972efadae943"
     DEFAULT_SERVERS = read_json('servers_regtest.json', {})
     CHECKPOINTS = {}
+    QIP9_FORK_HEIGHT = 0
+    QIP9PosLimit = 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 
 
 # don't import net directly, import the module instead (so that net is singleton)
