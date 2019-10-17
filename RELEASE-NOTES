@@ -1,6 +1,7 @@
 # Release 0.18.16
- * add Safe-T support
  * logs can now also optionally be written to disk.
+ * fix mobile and qt core support
+ * QIP9 difficulty adjustment algorithm change
 
 # Release 0.18.15
  * add Trezor support

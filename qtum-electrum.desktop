@@ -1,5 +1,5 @@
 [Desktop Entry]
-Version=0.18.5
+Version=0.18.16
 Name=Qtum Electrum
 Comment=Qtum Light Client
 Exec=qtum-electrum %u
