@@ -94,7 +94,7 @@ class ContactList(MyTreeView):
                     menu.addAction(_("Edit {}").format(column_title), lambda p=persistent: self.edit(QModelIndex(p)))
             menu.addAction(_("Pay to"), lambda: self.parent.payto_contacts(selected_keys))
             menu.addAction(_("Delete"), lambda: self.parent.delete_contacts(selected_keys))
-            URLs = [block_explorer_URL(self.config, 'addr', key) for key in filter(is_address, selected_keys)]
+            URLs = [block_explorer_URL(self.config, addr=key) for key in filter(is_address, selected_keys)]
             if URLs:
                 menu.addAction(_("View on block explorer"), lambda: [webopen(u) for u in URLs])
 

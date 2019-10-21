@@ -726,16 +726,28 @@ def block_explorer(config: 'SimpleConfig') -> str:
 def block_explorer_tuple(config: 'SimpleConfig') -> Optional[Tuple[str, dict]]:
     return block_explorer_info().get(block_explorer(config))
 
-def block_explorer_URL(config: 'SimpleConfig', kind: str, item: str) -> Optional[str]:
+def block_explorer_URL(config: 'SimpleConfig', **params) -> Optional[str]:
     be_tuple = block_explorer_tuple(config)
     if not be_tuple:
         return
-    explorer_url, explorer_dict = be_tuple
-    kind_str = explorer_dict.get(kind)
-    if kind_str is None:
-        return
-    url_parts = [explorer_url, kind_str, item]
-    return ''.join(url_parts)
+
+    token = params.get('token')
+    addr = params.get('addr')
+
+    if token:
+        if 'qtum.org' in be_tuple[0]:
+            return "{}/token/{}?a={}".format(be_tuple[0], token, addr)
+        if 'qtum.info' in be_tuple[0]:
+            return "{}address/{}/token-balance?token={}".format(be_tuple[0], addr, token)
+
+    url_parts = [be_tuple[0], ]
+    for k, v in params.items():
+        kind_str = be_tuple[1].get(k)
+        if not kind_str:
+            continue
+        url_parts.append(kind_str)
+        url_parts.append(v)
+    return "".join(url_parts)
 
 # URL decode
 #_ud = re.compile('%([0-9a-hA-H]{2})', re.MULTILINE)

@@ -605,7 +605,7 @@ class HistoryList(MyTreeView, AcceptFileDragDrop):
         tx = self.wallet.db.get_transaction(tx_hash)
         if not tx:
             return
-        tx_URL = block_explorer_URL(self.config, 'tx', tx_hash)
+        tx_URL = block_explorer_URL(self.config, tx=tx_hash)
         height = self.wallet.get_tx_height(tx_hash).height
         is_relevant, is_mine, v, fee = self.wallet.get_wallet_delta(tx)
         is_unconfirmed = height <= 0
