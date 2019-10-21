@@ -113,17 +113,20 @@ python='appdir_python'
 info "installing pip."
 "$python" -m ensurepip
 
-
-info "preparing electrum-locale."
+info "update submodule."
 (
     cd "$PROJECT_ROOT"
     git submodule update --init
+)
 
-    pushd "$CONTRIB"/deterministic-build/electrum-locale
+
+info "preparing locale."
+(
+    pushd "$PROJECT_ROOT"/electrum/locale
     if ! which msgfmt > /dev/null 2>&1; then
         fail "Please install gettext"
     fi
-    for i in ./locale/*; do
+    for i in ./*; do
         dir="$PROJECT_ROOT/electrum/$i/LC_MESSAGES"
         mkdir -p $dir
         msgfmt --output-file="$dir/electrum.mo" "$i/electrum.po" || true

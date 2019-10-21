@@ -4,7 +4,6 @@
 PYTHON_VERSION=3.6.4
 BUILDDIR=/tmp/electrum-build
 PACKAGE=Electrum
-GIT_REPO=https://github.com/spesmilo/electrum
 LIBSECP_VERSION="b408c6a8b287003d1ade5709e6f7bc3c7f1d5be7"
 
 . $(dirname "$0")/base.sh
@@ -80,8 +79,8 @@ info "generating locale"
         brew install gettext
         brew link --force gettext
     fi
-    cd "$CONTRIB"/deterministic-build/electrum-locale
-    for i in ./locale/*; do
+    cd "$ROOT_FOLDER"/electrum/locale
+    for i in ./*; do
         dir="$ROOT_FOLDER"/electrum/$i/LC_MESSAGES
         mkdir -p $dir
         msgfmt --output-file=$dir/electrum.mo $i/electrum.po || true

@@ -19,10 +19,10 @@ function get_git_mtime {
 fail=0
 
 
-if [ $(date +%s -d "2 weeks ago") -gt $(get_git_mtime "contrib/deterministic-build/electrum-locale/") ]; then
-    echo "Last update from electrum-locale is older than 2 weeks."\
-         "Please update it to incorporate the latest translations from crowdin."
-    fail=1
-fi
+#if [ $(date +%s -d "2 weeks ago") -gt $(get_git_mtime "contrib/deterministic-build/electrum-locale/") ]; then
+#    echo "Last update from electrum-locale is older than 2 weeks."\
+#         "Please update it to incorporate the latest translations from crowdin."
+#    fail=1
+#fi
 
 exit ${fail}

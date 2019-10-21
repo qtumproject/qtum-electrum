@@ -24,14 +24,14 @@ pushd $WINEPREFIX/drive_c/electrum
 VERSION=`git describe --tags --dirty --always`
 info "Last commit: $VERSION"
 
-# Load electrum-locale for this release
+# Load submodules for this release
 git submodule update --init
 
-pushd ./contrib/deterministic-build/electrum-locale
+pushd ./electrum/locale
 if ! which msgfmt > /dev/null 2>&1; then
     fail "Please install gettext"
 fi
-for i in ./locale/*; do
+for i in ./*; do
     dir=$WINEPREFIX/drive_c/electrum/electrum/$i/LC_MESSAGES
     mkdir -p $dir
     msgfmt --output-file=$dir/electrum.mo $i/electrum.po || true
