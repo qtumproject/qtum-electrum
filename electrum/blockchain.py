@@ -21,6 +21,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import os
+import math
 import threading
 import sqlite3
 from typing import Optional, Dict, Mapping, Sequence, Union
@@ -39,10 +40,9 @@ _logger = get_logger(__name__)
 POW_BLOCK_COUNT = 5000
 CHUNK_SIZE = 1024
 BASIC_HEADER_SIZE = 180  # not include sig
-POW_LIMIT = 0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
-POS_LIMIT = 0x00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff
 MAX_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
 POW_TARGET_TIMESPAN = 16 * 60  # bitcoin is 14 * 24 * 60 * 60
+POW_TARGET_TIMESPAN_V2 = 4000
 POW_TARGET_TIMESPACE = 2 * 64  # bitcoin is 10 * 60
 
 
@@ -420,19 +420,21 @@ class Blockchain(Logger):
             raise Exception("hash mismatches with expected: {} vs {}".format(expected_header_hash, _hash))
         if prev_hash != header.get('prev_block_hash'):
             raise Exception("prev hash mismatch: %s vs %s" % (prev_hash, header.get('prev_block_hash')))
+
         if constants.net.TESTNET:
             return
-        bits = cls.target_to_bits(target)
-        if bits != header.get('bits'):
-            raise Exception("bits mismatch: %s vs %s" % (bits, header.get('bits')))
 
         if cls.is_pos(header):
             # verifying pos header requires too much data to be implemented in light client
-            return
+            pass
         else:
             block_hash_as_num = int.from_bytes(bfh(_hash), byteorder='big')
             if block_hash_as_num > target:
                 raise Exception(f"insufficient proof of work: {block_hash_as_num} vs target {target}")
+
+        bits = cls.target_to_bits(target)
+        if bits != header.get('bits'):
+            raise Exception(f"{header.get('block_height')} bits mismatch: {bits} vs {header.get('bits')}")
 
     def verify_chunk(self, index: int, raw_headers: list) -> None:
         prev_header = None
@@ -443,7 +445,7 @@ class Blockchain(Logger):
         for i, raw_header in enumerate(raw_headers):
             height = index * CHUNK_SIZE + i
             header = deserialize_header(raw_header, height)
-            target = self.get_target(height, prev_header=prev_header, pprev_header=pprev_header)
+            target = self.get_target(height, is_pos=self.is_pos(header), prev_header=prev_header, pprev_header=pprev_header)
             self.verify_header(header, hash_header(prev_header), target)
             pprev_header = prev_header
             prev_header = header
@@ -647,11 +649,22 @@ class Blockchain(Logger):
                 raise MissingHeader(height)
             return hash_header(header)
 
-    def get_target(self, height: int, prev_header=None, pprev_header=None) -> int:
+    @classmethod
+    def get_limit(cls, height: int, net, is_pos: bool):
+        if is_pos:
+            if height < net.QIP9_FORK_HEIGHT:
+                return net.POS_LIMIT
+            return net.QIP9_POS_LIMIT
+        return net.POW_LIMIT
+
+    def get_target(self, height: int, is_pos: bool, prev_header=None, pprev_header=None) -> int:
+        net = constants.net
+
+        # only for mainnet
         if height <= POW_BLOCK_COUNT:
-            return POW_LIMIT
+            return net.POW_LIMIT
         if height <= POW_BLOCK_COUNT + 2:
-            return POS_LIMIT
+            return net.POS_LIMIT
 
         if not prev_header:
             prev_header = self.read_header(height - 1)
@@ -663,29 +676,48 @@ class Blockchain(Logger):
         if not pprev_header:
             raise Exception('get header failed {}'.format(height - 2))
 
+        new_target = self.bits_to_target(prev_header.get('bits'))
+
+        if is_pos:
+            if net.POS_NO_RETARGET:
+                return new_target
+        else:
+            # no retarget for pow
+            return new_target
+
         #  Limit adjustment step
         nActualSpace = prev_header.get('timestamp') - pprev_header.get('timestamp')
         nActualSpace = max(0, nActualSpace)
-        nActualSpace = min(nActualSpace, POW_TARGET_TIMESPACE * 10)
-        #  Retarget
-        nInterval = POW_TARGET_TIMESPAN // POW_TARGET_TIMESPACE
-        new_target = self.bits_to_target(prev_header.get('bits'))
-        new_target *= ((nInterval - 1) * POW_TARGET_TIMESPACE + nActualSpace + nActualSpace)
-        new_target //= ((nInterval + 1) * POW_TARGET_TIMESPACE)
 
-        if new_target <= 0 or new_target > POS_LIMIT:
-            new_target = POS_LIMIT
+        #  Retarget
+        if height < net.QIP9_FORK_HEIGHT:
+            nActualSpace = min(nActualSpace, POW_TARGET_TIMESPACE * 10)
+            nInterval = POW_TARGET_TIMESPAN // POW_TARGET_TIMESPACE
+            new_target *= ((nInterval - 1) * POW_TARGET_TIMESPACE + nActualSpace + nActualSpace)
+            new_target //= ((nInterval + 1) * POW_TARGET_TIMESPACE)
+        else:
+            nActualSpace = min(nActualSpace, POW_TARGET_TIMESPACE * 20)
+            nInterval = POW_TARGET_TIMESPAN_V2 // POW_TARGET_TIMESPACE
+            t1 = 2 * (nActualSpace - POW_TARGET_TIMESPACE) // 16
+            t2 = (nInterval + 1) * POW_TARGET_TIMESPACE // 16
+            new_target *= math.exp(t1 / t2)
+            new_target = int(new_target)
+
+        target_limit = self.get_limit(height, net, is_pos)
+        if new_target <= 0 or new_target > target_limit:
+            new_target = target_limit
 
         new_target = self.bits_to_target(self.target_to_bits(new_target))
         return new_target
 
     @classmethod
     def bits_to_target(cls, bits: int) -> int:
+        mainnet = not constants.net.TESTNET
         bitsN = (bits >> 24) & 0xff
-        if not (0x03 <= bitsN <= 0x1d):
+        if mainnet and not (0x03 <= bitsN <= 0x1d):
             raise Exception("First part of bits should be in [0x03, 0x1d]")
         bitsBase = bits & 0xffffff
-        if not (0x8000 <= bitsBase <= 0x7fffff):
+        if mainnet and not (0x8000 <= bitsBase <= 0x7fffff):
             raise Exception("Second part of bits should be in [0x8000, 0x7fffff]")
         return bitsBase << (8 * (bitsN-3))
 
@@ -720,7 +752,7 @@ class Blockchain(Logger):
         if prev_hash != header.get('prev_block_hash'):
             self.logger.info(f'[can_connect] prev hash check failed {height}')
             return False
-        target = self.get_target(height)
+        target = self.get_target(height, is_pos=self.is_pos(header))
         try:
             self.verify_header(header, prev_hash, target)
         except BaseException as e:

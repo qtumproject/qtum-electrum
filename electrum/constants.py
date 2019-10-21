@@ -74,7 +74,15 @@ class QtumMainnet(AbstractNet):
     DEFAULT_SERVERS = read_json('servers.json', {})
     CHECKPOINTS = read_json('checkpoints.json', {})
     BLOCK_HEIGHT_FIRST_LIGHTNING_CHANNELS = 0
+
+    POS_NO_RETARGET = False
+
+    POW_LIMIT = 0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+    POS_LIMIT = 0x00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+    QIP9_POS_LIMIT = 0x0000000000001fffffffffffffffffffffffffffffffffffffffffffffffffff
+
     QIP5_FORK_HEIGHT = 466600
+    QIP9_FORK_HEIGHT = 466600
 
     LN_REALM_BYTE = 0
     LN_DNS_SEEDS = []
@@ -119,7 +127,15 @@ class QtumTestnet(AbstractNet):
     CHECKPOINTS = read_json('checkpoints_testnet.json', {})
     BIP44_COIN_TYPE = 1
     SLIP_COIN_TYPE = 1
+
+    POS_NO_RETARGET = False
+
+    POW_LIMIT = 0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+    POS_LIMIT = 0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+    QIP9_POS_LIMIT = 0x0000000000001fffffffffffffffffffffffffffffffffffffffffffffffffff
+
     QIP5_FORK_HEIGHT = 446320
+    QIP9_FORK_HEIGHT = 446320
 
     LN_REALM_BYTE = 0
     LN_DNS_SEEDS = []
@@ -149,6 +165,15 @@ class QtumRegtest(QtumTestnet):
     GENESIS = "0x665ed5b402ac0b44efc37d8926332994363e8a7278b7ee9a58fb972efadae943"
     DEFAULT_SERVERS = read_json('servers_regtest.json', {})
     CHECKPOINTS = {}
+
+    POS_NO_RETARGET = True
+
+    POW_LIMIT = 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+    POS_LIMIT = 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+    QIP9_POS_LIMIT = 0x7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+
+    QIP5_FORK_HEIGHT = 0
+    QIP9_FORK_HEIGHT = 0
 
 
 # don't import net directly, import the module instead (so that net is singleton)
