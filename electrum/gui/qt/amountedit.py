@@ -20,14 +20,17 @@ class MyLineEdit(QLineEdit):
         self.setFrame(not b)
         self.frozen.emit()
 
+
 class AmountEdit(MyLineEdit):
     shortcut = pyqtSignal()
 
-    def __init__(self, base_unit, is_int=False, parent=None):
+    def __init__(self, base_unit, is_int=False, parent=None, decimal_p=8, width=140):
         QLineEdit.__init__(self, parent)
         # This seems sufficient for hundred-BTC amounts with 8 decimals
-        self.setFixedWidth(16 * char_width_in_lineedit())
+        if width:
+            self.setFixedWidth(140)
         self.base_unit = base_unit
+        self.decimal_p = decimal_p
         self.textChanged.connect(self.numbify)
         self.is_int = is_int
         self.is_shortcut = False
@@ -35,7 +38,7 @@ class AmountEdit(MyLineEdit):
         self.extra_precision = 0
 
     def decimal_point(self):
-        return 8
+        return self.decimal_p
 
     def max_precision(self):
         return self.decimal_point() + self.extra_precision
