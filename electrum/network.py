@@ -45,9 +45,9 @@ from aiohttp import ClientResponse
 from . import util
 from .util import (log_exceptions, ignore_exceptions,
                    bfh, SilentTaskGroup, make_aiohttp_session, send_exception_to_crash_reporter,
-                   is_hash256_str, is_non_negative_integer)
+                   is_hash256_str, is_non_negative_integer, bh2u)
 
-from .bitcoin import COIN
+from .bitcoin import COIN, b58_address_to_hash160, TOKEN_TRANSFER_TOPIC
 from . import constants
 from . import blockchain
 from . import bitcoin
@@ -1330,3 +1330,23 @@ class Network(Logger):
             for server in servers:
                 await group.spawn(get_response(server))
         return responses
+
+    async def get_transactions_receipt(self, tx_hash):
+        return await self.interface.session.send_request('blochchain.transaction.get_receipt', [tx_hash])
+
+    async def get_token_info(self, contract_addr):
+        return await self.interface.session.send_request('blockchain.token.get_info', [contract_addr, ])
+
+    async def call_contract(self, address, data, sender):
+        return await self.interface.session.send_request('blockchain.contract.call', [address, data, sender])
+
+    async def request_token_balance(self, bind_addr, contract_addr):
+        __, hash160 = b58_address_to_hash160(bind_addr)
+        hash160 = bh2u(hash160)
+        datahex = '70a08231{}'.format(hash160.zfill(64))
+        return await self.interface.session.send_request('blockchain.contract.call', [contract_addr, datahex, '', 'int'])
+
+    async def request_token_history(self, bind_addr, contract_addr):
+        __, hash160 = b58_address_to_hash160(bind_addr)
+        hash160 = bh2u(hash160)
+        return await self.interface.session.send_request('blockchain.contract.event.get_history', [hash160, contract_addr, TOKEN_TRANSFER_TOPIC])
