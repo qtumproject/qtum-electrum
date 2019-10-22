@@ -30,11 +30,10 @@ import os
 import sys
 import random
 import time
-import json
 import copy
-import errno
 import traceback
 import operator
+import binascii
 from functools import partial
 from numbers import Number
 from decimal import Decimal
@@ -51,7 +50,8 @@ from .util import (NotEnoughFunds, UserCancelled, profiler,
 from .util import PR_TYPE_ONCHAIN, PR_TYPE_LN
 from .simple_config import SimpleConfig
 from .bitcoin import (COIN, TYPE_ADDRESS, TYPE_PUBKEY, TYPE_STAKE, is_address, address_to_script, serialize_privkey,
-                      is_minikey, relayfee, dust_threshold, COINBASE_MATURITY, RECOMMEND_CONFIRMATIONS)
+                      is_minikey, relayfee, dust_threshold, COINBASE_MATURITY, RECOMMEND_CONFIRMATIONS,
+                      TOKEN_TRANSFER_TOPIC, b58_address_to_hash160, hash160_to_p2pkh)
 from .crypto import sha256d
 from . import keystore
 from .keystore import load_keystore, Hardware_KeyStore, KeyStore, Mobile_KeyStore, Qt_Core_Keystore
@@ -230,6 +230,7 @@ class Abstract_Wallet(AddressSynchronizer):
         self.fiat_value            = storage.get('fiat_value', {})
         self.receive_requests      = storage.get('payment_requests', {})
         self.invoices              = storage.get('invoices', {})
+
         # convert invoices
         for invoice_key, invoice in self.invoices.items():
             if invoice.get('type') == PR_TYPE_ONCHAIN:
@@ -499,6 +500,21 @@ class Abstract_Wallet(AddressSynchronizer):
     def dummy_address(self):
         # first receiving address
         return self.get_receiving_addresses(slice_start=0, slice_stop=1)[0]
+
+    def get_addresses_sort_by_balance(self):
+        addrs = []
+        for addr in self.get_addresses():
+            c, u, x = self.get_addr_balance(addr)
+            addrs.append((addr, c + u))
+        return list([addr[0] for addr in sorted(addrs, key=lambda y: (-int(y[1]), y[0]))])
+
+    def get_spendable_addresses(self, min_amount=0.000000001):
+        result = []
+        for addr in self.get_addresses():
+            c, u, x = self.get_addr_balance(addr)
+            if c >= min_amount:
+                result.append(addr)
+        return result
 
     def get_frozen_balance(self):
         if not self.frozen_coins:  # shortcut
@@ -1677,6 +1693,69 @@ class Abstract_Wallet(AddressSynchronizer):
     def get_keystores(self) -> Sequence[KeyStore]:
         return [self.keystore] if self.keystore else []
 
+    @profiler
+    def get_full_token_history(self, contract_addr=None, bind_addr=None, from_timestamp=None, to_timestamp=None):
+        h = []
+        keys = []
+        for token_key in self.db.list_tokens():
+            if contract_addr and contract_addr in token_key \
+                    or bind_addr and bind_addr in token_key \
+                    or not bind_addr and not contract_addr:
+                keys.append(token_key)
+        for key in keys:
+            contract_addr, bind_addr = key.split('_')
+            for txid, height, log_index in self.db.get_token_history(key):
+                status = self.get_tx_height(txid)
+                height, conf, timestamp = status.height, status.conf, status.timestamp
+                for call_index, contract_call in enumerate(self.db.get_tx_receipt(txid)):
+                    logs = contract_call.get('log', [])
+                    if len(logs) > log_index:
+                        log = logs[log_index]
+
+                        # check contarct address
+                        if contract_addr != log.get('address', ''):
+                            self.logger.info("contract address mismatch")
+                            continue
+
+                        # check topic name
+                        topics = log.get('topics', [])
+                        if len(topics) < 3:
+                            self.logger.info("not enough topics")
+                            continue
+                        if topics[0] != TOKEN_TRANSFER_TOPIC:
+                            self.logger.info("topic mismatch")
+                            continue
+
+                        # check user bind address
+                        _, hash160b = b58_address_to_hash160(bind_addr)
+                        hash160 = bh2u(hash160b).zfill(64)
+                        if hash160 not in topics:
+                            self.logger.info("address mismatch")
+                            continue
+                        amount = int(log.get('data'), 16)
+                        from_addr = hash160_to_p2pkh(binascii.a2b_hex(topics[1][-40:]))
+                        to_addr = hash160_to_p2pkh(binascii.a2b_hex(topics[2][-40:]))
+                        item = {
+                            'from_addr': from_addr,
+                            'to_addr': to_addr,
+                            'bind_addr': self.db.get_token(key).bind_addr,
+                            'amount': amount,
+                            'token_key': key,
+                            'txid': txid,
+                            'height': height,
+                            'txpos_in_block': 0,
+                            'confirmations': conf,
+                            'timestamp': timestamp,
+                            'date': timestamp_to_datetime(timestamp),
+                            'call_index': call_index,
+                            'log_index': log_index,
+                        }
+                        h.append(item)
+                    else:
+                        continue
+        return {
+            'transactions': h
+        }
 
 class Simple_Wallet(Abstract_Wallet):
     # wallet with a single keystore
@@ -2219,7 +2298,6 @@ class Multisig_Wallet(Deterministic_Wallet):
         # we need n place holders
         txin['signatures'] = [None] * self.n
         txin['num_sig'] = self.m
-
 
 wallet_types = ['standard', 'multisig', 'imported', 'mobile', 'qtcore']
 

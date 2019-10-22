@@ -41,6 +41,7 @@ from .logging import Logger
 if TYPE_CHECKING:
     from .network import Network
     from .json_db import JsonDB
+    from .bitcoin import Token
 
 
 TX_HEIGHT_FUTURE = -3
@@ -80,6 +81,7 @@ class AddressSynchronizer(Logger):
         # locks: if you need to take multiple ones, acquire them in the order they are defined here!
         self.lock = threading.RLock()
         self.transaction_lock = threading.RLock()
+        self.token_lock = threading.RLock()
         self.future_tx = {} # txid -> blocks remaining
         # Transactions pending verification.  txid -> tx_height. Access with self.lock.
         self.unverified_tx = defaultdict(int)
@@ -846,3 +848,56 @@ class AddressSynchronizer(Logger):
 
     def synchronize(self):
         pass
+
+    def get_tokens(self):
+        return sorted(self.db.list_tokens())
+
+    @profiler
+    def check_token_history(self):
+        # remove not mine and not subscribe token history
+        hist_keys_not_mine = list(filter(lambda k: not self.is_mine(k.split('_')[1]), self.db.get_token_history()))
+        hist_keys_not_subscribe = list(filter(lambda k: k not in self.tokens, self.db.get_token_history()))
+        for key in set(hist_keys_not_mine).union(hist_keys_not_subscribe):
+            hist = self.db.get_token_history(key)
+            for txid, height, log_index in hist:
+                self.db.delete_token_tx(txid)
+
+    def receive_token_history_callback(self, key, hist):
+        with self.token_lock:
+            self.db.set_token_history(key, hist)
+
+    def receive_tx_receipt_callback(self, tx_hash, tx_receipt):
+        self.add_tx_receipt(tx_hash, tx_receipt)
+
+    def receive_token_tx_callback(self, tx_hash, tx, tx_height):
+        self.add_unverified_tx(tx_hash, tx_height)
+        self.add_token_transaction(tx_hash, tx)
+
+    def add_tx_receipt(self, tx_hash, tx_receipt):
+        assert tx_hash, 'none tx_hash'
+        assert tx_receipt, 'empty tx_receipt'
+        for contract_call in tx_receipt:
+            if not contract_call.get('transactionHash') == tx_hash:
+                return
+            if not contract_call.get('log'):
+                return
+        with self.token_lock:
+            self.db.set_tx_receipt(tx_hash, tx_receipt)
+
+    def add_token_transaction(self, tx_hash, tx):
+        with self.token_lock:
+            assert tx.is_complete(), 'incomplete tx'
+            self.db.set_token_tx(tx_hash, tx)
+            return True
+
+    def add_token(self, token: 'Token'):
+        self.db.set_token(token)
+        if self.synchronizer:
+            self.synchronizer.add_token(token)
+
+    def delete_token(self, key):
+        with self.token_lock:
+            if key in self.db.list_tokens():
+                self.db.delete_token(key)
+            if key in self.db.list_token_histories():
+                self.db.delete_token_history(key)
