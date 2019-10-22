@@ -1694,8 +1694,8 @@ class Abstract_Wallet(AddressSynchronizer):
         return [self.keystore] if self.keystore else []
 
     @profiler
-    def get_full_token_history(self, contract_addr=None, bind_addr=None, from_timestamp=None, to_timestamp=None):
-        h = []
+    def get_full_token_history(self, contract_addr=None, bind_addr=None) -> list:
+        hist = []
         keys = []
         for token_key in self.db.list_tokens():
             if contract_addr and contract_addr in token_key \
@@ -1750,12 +1750,10 @@ class Abstract_Wallet(AddressSynchronizer):
                             'call_index': call_index,
                             'log_index': log_index,
                         }
-                        h.append(item)
+                        hist.append(item)
                     else:
                         continue
-        return {
-            'transactions': h
-        }
+        return hist
 
 class Simple_Wallet(Abstract_Wallet):
     # wallet with a single keystore

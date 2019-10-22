@@ -45,12 +45,12 @@ from PyQt5.QtWidgets import (QMessageBox, QComboBox, QSystemTrayIcon, QTabWidget
                              QVBoxLayout, QGridLayout, QLineEdit, QTreeWidgetItem,
                              QHBoxLayout, QPushButton, QScrollArea, QTextEdit,
                              QShortcut, QMainWindow, QCompleter, QInputDialog,
-                             QWidget, QMenu, QSizePolicy, QStatusBar)
+                             QWidget, QMenu, QSizePolicy, QStatusBar, QSplitter)
 
 import electrum
 from electrum import (keystore, simple_config, ecc, constants, util, bitcoin, commands,
                       coinchooser, paymentrequest)
-from electrum.bitcoin import COIN, is_address, TYPE_ADDRESS
+from electrum.bitcoin import COIN, is_address, TYPE_ADDRESS, b58_address_to_hash160, Token
 from electrum.plugin import run_hook
 from electrum.i18n import _
 from electrum.util import (format_time, format_satoshis, format_fee_satoshis,
@@ -75,6 +75,7 @@ from electrum.simple_config import SimpleConfig
 from electrum.logging import Logger
 from electrum.util import PR_PAID, PR_UNPAID, PR_INFLIGHT, PR_FAILED
 from electrum.util import pr_expiration_values
+from electrum.plugins.trezor.trezor import TrezorKeyStore
 
 from .exception_window import Exception_Hook
 from .amountedit import AmountEdit, BTCAmountEdit, MyLineEdit, FeerateEdit
@@ -94,6 +95,7 @@ from .installwizard import WIF_HELP_TEXT
 from .history_list import HistoryList, HistoryModel
 from .update_checker import UpdateCheck, UpdateCheckThread
 from .channels_list import ChannelsList
+from .token_dialog import TokenAddDialog, TokenInfoDialog, TokenSendDialog
 
 if TYPE_CHECKING:
     from . import ElectrumGui
@@ -183,9 +185,13 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.console_tab = self.create_console_tab()
         self.contacts_tab = self.create_contacts_tab()
         self.channels_tab = self.create_channels_tab(wallet)
+        self.tokens_tab = self.create_tokens_tab()
+        self.smart_contract_tab = self.create_smart_contract_tab()
+
         tabs.addTab(self.create_history_tab(), read_QIcon("tab_history.png"), _('History'))
         tabs.addTab(self.send_tab, read_QIcon("tab_send.png"), _('Send'))
         tabs.addTab(self.receive_tab, read_QIcon("tab_receive.png"), _('Receive'))
+        tabs.addTab(self.tokens_tab, read_QIcon("tab_contacts.png"), _('Tokens'))
 
         def add_optional_tab(tabs, tab, icon, description, name):
             tab.tab_icon = icon
@@ -201,6 +207,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         add_optional_tab(tabs, self.utxo_tab, read_QIcon("tab_coins.png"), _("Co&ins"), "utxo")
         add_optional_tab(tabs, self.contacts_tab, read_QIcon("tab_contacts.png"), _("Con&tacts"), "contacts")
         add_optional_tab(tabs, self.console_tab, read_QIcon("tab_console.png"), _("Con&sole"), "console")
+        add_optional_tab(tabs, self.smart_contract_tab, read_QIcon("tab_console.png"), _('Smart Contract'), 'contract')
 
         tabs.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.setCentralWidget(tabs)
@@ -233,7 +240,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
                          'new_transaction', 'status',
                          'banner', 'verified', 'fee', 'fee_histogram', 'on_quotes',
                          'on_history', 'channel', 'channels_updated',
-                         'invoice_status', 'request_status']
+                         'invoice_status', 'request_status', 'on_token']
             # To avoid leaking references to "self" that prevent the
             # window from being GC-ed when closed, callbacks should be
             # methods of this class only, and specifically not be
@@ -273,6 +280,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
     def on_fx_history(self):
         self.history_model.refresh('fx_history')
         self.address_list.update()
+
+    def on_fx_token(self):
+        self.token_hist_model.refresh('fx_token')
+        self.token_hist_list.update()
+        self.token_balance_list.update()
 
     def on_fx_quotes(self):
         self.update_status()
@@ -377,6 +389,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             self.on_fx_quotes()
         elif event == 'on_history':
             self.on_fx_history()
+        elif event == 'on_token':
+            self.on_fx_token()
         elif event == 'channels_updated':
             self.channels_list.update_rows.emit(*args)
         elif event == 'channel':
@@ -612,6 +626,18 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         invoices_menu.addAction(_("Import"), lambda: self.invoice_list.import_invoices())
         invoices_menu.addAction(_("Export"), lambda: self.invoice_list.export_invoices())
 
+        try:
+            addr_type, __ = b58_address_to_hash160(self.addresses[0])
+        except:
+            addr_type = constants.net.SEGWIT_HRP
+        if not isinstance(self.wallet.keystore, TrezorKeyStore) and addr_type == constants.net.ADDRTYPE_P2PKH and not self.wallet.is_watching_only():
+            token_menu = wallet_menu.addMenu(_("&Token"))
+            token_menu.addAction(_("Add Token"), lambda: self.token_add_dialog())
+
+            smart_cotract_menu = wallet_menu.addMenu(_("&Smart Contract"))
+            smart_cotract_menu.addAction(_("Add Contract"), lambda: self.contract_add_dialog())
+            smart_cotract_menu.addAction(_("Create Contract"), lambda: self.contract_create_dialog())
+
         wallet_menu.addSeparator()
         wallet_menu.addAction(_("Find"), self.toggle_search).setShortcut(QKeySequence("Ctrl+F"))
 
@@ -773,8 +799,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             self.require_fee_update = False
         self.notify_transactions()
 
-    def format_amount(self, x, is_diff=False, whitespaces=False):
-        return format_satoshis(x, self.num_zeros, self.decimal_point, is_diff=is_diff, whitespaces=whitespaces)
+    def format_amount(self, x, is_diff=False, whitespaces=False, num_zeros=None, decimal_point=None):
+        if num_zeros is None:
+            num_zeros = self.num_zeros
+        if decimal_point is None:
+            decimal_point = self.decimal_point
+        return format_satoshis(x, num_zeros, decimal_point, is_diff=is_diff, whitespaces=whitespaces)
 
     def format_amount_and_units(self, amount):
         text = self.format_amount(amount) + ' '+ self.base_unit()
@@ -899,6 +929,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.utxo_list.update()
         self.contact_list.update()
         self.invoice_list.update()
+
+        self.token_balance_list.update()
+        self.token_hist_model.refresh('update_tabs')
+        self.token_hist_list.update()
+        self.smart_contract_list.update()
+
         self.update_completions()
 
     def create_channels_tab(self, wallet):
@@ -3283,3 +3319,67 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
                      "to see it, you need to broadcast it."))
             win.msg_box(QPixmap(icon_path("offline_tx.png")), None, _('Success'), msg)
             return True
+
+    def set_token(self, token: 'Token'):
+        self.wallet.add_token(token)
+        self.token_balance_list.update()
+        self.token_hist_list.update()
+        self.token_hist_model.refresh('set_token')
+
+    def delete_token(self, key: str):
+        token_name = self.wallet.db.get_token(key).name
+        if not self.question(_("Remove {} from your token list ?")
+                             .format(token_name)):
+            return
+        self.wallet.delete_token(key)
+        self.token_balance_list.update()
+        self.token_hist_model.refresh('delete_token')
+
+    def create_tokens_tab(self):
+        from .token_list import TokenBalanceList, TokenHistoryModel, TokenHistoryList
+        self.token_balance_list = tbl = TokenBalanceList(self)
+        self.token_hist_model = TokenHistoryModel(self)
+        self.token_hist_list = thl = TokenHistoryList(self, self.token_hist_model)
+        self.token_hist_model.set_view(self.token_hist_list)
+        splitter = QSplitter(self)
+        splitter.addWidget(tbl)
+        splitter.addWidget(thl)
+        splitter.setOrientation(Qt.Vertical)
+        return splitter
+
+    def token_add_dialog(self):
+        d = TokenAddDialog(self)
+        d.show()
+
+    def token_info_dialog(self, token: 'Token'):
+        d = TokenInfoDialog(self, token)
+        d.show()
+
+    def token_send_dialog(self, token: 'Token'):
+        d = TokenSendDialog(self, token)
+        d.show()
+
+    def do_token_pay(self, token: 'Token', pay_to, amount, gas_limit, gas_price, dialog, preview=False):
+        pass
+
+    def create_smart_contract_tab(self):
+        from .smart_contract_list import SmartContractList
+        self.smart_contract_list = l = SmartContractList(self)
+        return self.create_list_tab(l)
+
+    def contract_create_dialog(self):
+        pass
+        # d = ContractCreateDialog(self)
+        # d.show()
+
+    def contract_add_dialog(self):
+        pass
+        # d = ContractEditDialog(self)
+        # d.show()
+
+    def contract_edit_dialog(self, address):
+        pass
+
+    def contract_func_dialog(self, address):
+        pass
+
