@@ -28,6 +28,7 @@ import json
 import copy
 import threading
 from collections import defaultdict
+from functools import reduce
 from typing import Dict, Optional, List, Tuple, Set, Iterable, NamedTuple
 
 from . import util, bitcoin
@@ -35,6 +36,7 @@ from .util import profiler, WalletFileException, multisig_type, TxMinedInfo
 from .keystore import bip44_derivation
 from .transaction import Transaction
 from .logging import Logger
+from .bitcoin import Token
 
 # seed_version is now used for the version of the wallet file
 
@@ -844,6 +846,89 @@ class JsonDB(Logger):
         for tx_hash, tuple_ in self.tx_fees.items():
             self.tx_fees[tx_hash] = TxFeesValue(*tuple_)
 
+        self.tokens = self.get_data_ref('tokens')
+        # contract_addr + '_' + b58addr -> list(txid, height, log_index)
+        self.token_history = self.get_data_ref('addr_token_history')
+        # txid -> tx receipt
+        self.tx_receipt = self.get_data_ref('tx_receipt')
+        # txid -> raw tx
+        self.token_txs = self.get_data_ref('token_txs')
+        self.smart_contracts = self.get_data_ref('smart_contracts')
+
+        if self.token_history:
+            token_hist_txids = [x2[0] for x2 in reduce(lambda x1, y1: x1+y1, self.token_history.values())]
+        else:
+            token_hist_txids = []
+        for tx_hash, raw in self.token_txs.items():
+            if tx_hash in token_hist_txids:
+                tx = Transaction(raw)
+                self.token_txs[tx_hash] = tx
+
+    @modifier
+    def set_token(self, token: Token):
+        self.tokens[token.get_key()] = token
+
+    @modifier
+    def delete_token(self, key: str):
+        self.tokens.pop(key, None)
+        self.token_history.pop(key, None)
+
+    @locked
+    def get_token(self, key: str) -> Optional[Token]:
+        return Token(*self.tokens.get(key))
+
+    @locked
+    def list_tokens(self) -> list:
+        return list(self.tokens.keys())
+
+    @modifier
+    def set_token_history(self, key: str, hist: list):
+        self.token_history[key] = hist
+
+    @modifier
+    def delete_token_history(self, key: str):
+        self.token_history.pop(key, None)
+
+    @locked
+    def get_token_history(self, key: str) -> list:
+        return self.token_history.get(key, [])
+
+    @locked
+    def list_token_histories(self) -> list:
+        return list(self.token_history.keys())
+
+    @modifier
+    def set_token_tx(self, txid: str, raw: str):
+        self.token_txs[txid] = raw
+
+    @modifier
+    def delete_token_tx(self, txid: str):
+        self.token_txs.pop(txid, None)
+
+    @locked
+    def get_token_tx(self, txid: str):
+        return self.token_txs.get(txid)
+
+    @locked
+    def list_token_txs(self) -> list:
+        return list(self.token_txs.keys())
+
+    @modifier
+    def set_tx_receipt(self, txid: str, receipt: list):
+        self.tx_receipt[txid] = receipt
+
+    @modifier
+    def delete_tx_receipt(self, txid: str):
+        return self.tx_receipt.pop(txid, None)
+
+    @locked
+    def get_tx_receipt(self, txid: str) -> list:
+        return self.tx_receipt.get(txid, [])
+
+    @locked
+    def list_tx_receipts(self) -> list:
+        return list(self.tx_receipt.keys())
+
     @modifier
     def clear_history(self):
         self.txi.clear()
@@ -853,3 +938,6 @@ class JsonDB(Logger):
         self.history.clear()
         self.verified_tx.clear()
         self.tx_fees.clear()
+        self.token_txs.clear()
+        self.token_history.clear()
+        self.tx_receipt.clear()

@@ -24,7 +24,7 @@
 # SOFTWARE.
 
 import hashlib
-from typing import List, Tuple, TYPE_CHECKING, Optional, Union
+from typing import List, Tuple, TYPE_CHECKING, Optional, Union, NamedTuple
 from enum import IntEnum
 
 from .util import bfh, bh2u, BitcoinException, assert_bytes, to_bytes, inv_dict
@@ -667,3 +667,31 @@ def is_minikey(text: str) -> bool:
 
 def minikey_to_private_key(text: str) -> bytes:
     return sha256(text)
+
+
+def is_hash160(addr):
+    if not addr:
+        return False
+    if not isinstance(addr, str):
+        return False
+    if not len(addr) == 40:
+        return False
+    for char in addr:
+        if (char < '0' or char > '9') and (char < 'A' or char > 'F') and (char < 'a' or char > 'f'):
+            return False
+    return True
+
+
+TOKEN_TRANSFER_TOPIC = 'ddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+
+
+class Token(NamedTuple):
+    contract_addr: str
+    bind_addr: str
+    name: str
+    symbol: str
+    decimals: int
+    balance: int
+
+    def get_key(self) -> str:
+        return f'{self.contract_addr}_{self.bind_addr}'
