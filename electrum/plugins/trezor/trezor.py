@@ -109,9 +109,9 @@ class TrezorPlugin(HW_PluginBase):
 
     firmware_URL = 'https://wallet.trezor.io'
     libraries_URL = 'https://github.com/trezor/python-trezor'
-    minimum_firmware = (1, 5, 2)
+    minimum_firmware = (1, 8, 1)
     keystore_class = TrezorKeyStore
-    minimum_library = (0, 11, 0)
+    minimum_library = (0, 11, 3)
     maximum_library = (0, 12)
     SUPPORTED_XTYPES = ('standard', 'p2wpkh-p2sh', 'p2wpkh', 'p2wsh-p2sh', 'p2wsh')
     DEVICE_IDS = (TREZOR_PRODUCT_KEY,)
@@ -183,7 +183,7 @@ class TrezorPlugin(HW_PluginBase):
         return client
 
     def get_coin_name(self):
-        return "Testnet" if constants.net.TESTNET else "Bitcoin"
+        return "Testnet" if constants.net.TESTNET else "Qtum"
 
     def initialize_device(self, device_id, wizard, handler):
         # Initialization method
