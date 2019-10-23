@@ -21,7 +21,7 @@ git submodule update --init
         exit 1
     fi
     for i in ./*; do
-        dir="$ROOT_FOLDER"/electrum/$i/LC_MESSAGES
+        dir="$ROOT_FOLDER"/electrum/locale/$i/LC_MESSAGES
         mkdir -p $dir
         msgfmt --output-file=$dir/electrum.mo $i/electrum.po || true
     done

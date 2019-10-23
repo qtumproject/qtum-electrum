@@ -127,7 +127,7 @@ info "preparing locale."
         fail "Please install gettext"
     fi
     for i in ./*; do
-        dir="$PROJECT_ROOT/electrum/$i/LC_MESSAGES"
+        dir="$PROJECT_ROOT/electrum/locale/$i/LC_MESSAGES"
         mkdir -p $dir
         msgfmt --output-file="$dir/electrum.mo" "$i/electrum.po" || true
     done
