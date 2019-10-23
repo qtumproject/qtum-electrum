@@ -19,19 +19,15 @@ from electrum.logging import Logger
 
 
 class UpdateCheck(QWidget, Logger):
-    url = "https://electrum.org/version"
-    download_url = "https://electrum.org/#download"
-
-    VERSION_ANNOUNCEMENT_SIGNING_KEYS = (
-        "13xjmVAB1EATPP8RshTE8S8sNwwSUM9p1P",
-    )
+    url = "https://api.github.com/repos/qtumproject/qtum-electrum/releases/latest"
+    download_url = "https://github.com/qtumproject/qtum-electrum/releases/latest"
 
     def __init__(self, main_window, latest_version=None):
         self.main_window = main_window
         QWidget.__init__(self)
-        self.setWindowTitle('Electrum - ' + _('Update Check'))
+        self.setWindowTitle('Qtum Electrum - ' + _('Update Check'))
         self.content = QVBoxLayout()
-        self.content.setContentsMargins(*[10]*4)
+        self.content.setContentsMargins(*[10] * 4)
 
         self.heading_label = QLabel()
         self.content.addWidget(self.heading_label)
@@ -68,9 +64,10 @@ class UpdateCheck(QWidget, Logger):
     def on_version_retrieved(self, version):
         self.update_view(version)
 
-    def on_retrieval_failed(self):
+    def on_retrieval_failed(self, error):
         self.heading_label.setText('<h2>' + _("Update check failed") + '</h2>')
-        self.detail_label.setText(_("Sorry, but we were unable to check for updates. Please try again later."))
+        self.detail_label.setText(_("Sorry, but we were unable to check for updates. Please try again later.") +
+                                  f"\n{error}")
         self.pb.hide()
 
     @staticmethod
@@ -95,37 +92,20 @@ class UpdateCheck(QWidget, Logger):
 
 class UpdateCheckThread(QThread, Logger):
     checked = pyqtSignal(object)
-    failed = pyqtSignal()
+    failed = pyqtSignal(object)
 
     def __init__(self, main_window):
         QThread.__init__(self)
         Logger.__init__(self)
         self.main_window = main_window
 
+    @property
     async def get_update_info(self):
         async with make_aiohttp_session(proxy=self.main_window.network.proxy) as session:
             async with session.get(UpdateCheck.url) as result:
-                signed_version_dict = await result.json(content_type=None)
-                # example signed_version_dict:
-                # {
-                #     "version": "3.9.9",
-                #     "signatures": {
-                #         "1Lqm1HphuhxKZQEawzPse8gJtgjm9kUKT4": "IA+2QG3xPRn4HAIFdpu9eeaCYC7S5wS/sDxn54LJx6BdUTBpse3ibtfq8C43M7M1VfpGkD5tsdwl5C6IfpZD/gQ="
-                #     }
-                # }
-                version_num = signed_version_dict['version']
-                sigs = signed_version_dict['signatures']
-                for address, sig in sigs.items():
-                    if address not in UpdateCheck.VERSION_ANNOUNCEMENT_SIGNING_KEYS:
-                        continue
-                    sig = base64.b64decode(sig)
-                    msg = version_num.encode('utf-8')
-                    if ecc.verify_message_with_address(address=address, sig65=sig, message=msg,
-                                                       net=constants.QtumMainnet):
-                        self.logger.info(f"valid sig for version announcement '{version_num}' from address '{address}'")
-                        break
-                else:
-                    raise Exception('no valid signature for version announcement')
+                version_dict = await result.json(content_type=None)
+                version_num = version_dict.get("tag_name", '')
+                if version_num.startswith('v') : version_num = version_num[1:]
                 return StrictVersion(version_num.strip())
 
     def run(self):
@@ -134,9 +114,9 @@ class UpdateCheckThread(QThread, Logger):
             self.failed.emit()
             return
         try:
-            update_info = asyncio.run_coroutine_threadsafe(self.get_update_info(), network.asyncio_loop).result()
+            update_info = asyncio.run_coroutine_threadsafe(self.get_update_info, network.asyncio_loop).result()
         except Exception as e:
             self.logger.info(f"got exception: '{repr(e)}'")
-            self.failed.emit()
+            self.failed.emit(repr(e))
         else:
             self.checked.emit(update_info)
