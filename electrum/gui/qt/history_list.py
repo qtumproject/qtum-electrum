@@ -626,6 +626,9 @@ class HistoryList(MyTreeView, AcceptFileDragDrop):
         #    menu.addAction(read_QIcon("seal"), _("View invoice"), lambda: self.parent.show_invoice(pr_key))
         if tx_URL:
             menu.addAction(_("View on block explorer"), lambda: webopen(tx_URL))
+
+        menu.addAction(_("Copy raw transaction"), lambda: self.parent.app.clipboard().setText(str(tx)))
+
         menu.exec_(self.viewport().mapToGlobal(position))
 
     def remove_local_tx(self, delete_tx):
