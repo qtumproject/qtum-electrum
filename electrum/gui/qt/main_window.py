@@ -50,7 +50,7 @@ from PyQt5.QtWidgets import (QMessageBox, QComboBox, QSystemTrayIcon, QTabWidget
 import electrum
 from electrum import (keystore, simple_config, ecc, constants, util, bitcoin, commands,
                       coinchooser, paymentrequest)
-from electrum.bitcoin import COIN, is_address, TYPE_ADDRESS, b58_address_to_hash160, Token
+from electrum.bitcoin import COIN, is_address, TYPE_ADDRESS, b58_address_to_hash160, Token, opcodes, TYPE_SCRIPT
 from electrum.plugin import run_hook
 from electrum.i18n import _
 from electrum.util import (format_time, format_satoshis, format_fee_satoshis,
@@ -64,7 +64,7 @@ from electrum.util import (format_time, format_satoshis, format_fee_satoshis,
                            InvalidBitcoinURI, InvoiceError)
 from electrum.util import PR_TYPE_ONCHAIN, PR_TYPE_LN
 from electrum.lnutil import PaymentFailure, SENT, RECEIVED
-from electrum.transaction import Transaction, TxOutput
+from electrum.transaction import Transaction, TxOutput, contract_script
 from electrum.address_synchronizer import AddTransactionException
 from electrum.wallet import (Multisig_Wallet, CannotBumpFee, Abstract_Wallet,
                              sweep_preparations, InternalAddressCorruption)
@@ -3360,7 +3360,75 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         d.show()
 
     def do_token_pay(self, token: 'Token', pay_to, amount, gas_limit, gas_price, dialog, preview=False):
-        pass
+        try:
+            datahex = 'a9059cbb{}{:064x}'.format(pay_to.zfill(64), amount)
+            script = contract_script(gas_limit, gas_price, datahex, token.contract_addr, opcodes.OP_CALL)
+            outputs = [TxOutput(TYPE_SCRIPT, script, 0), ]
+            tx_desc = _('Pay out {} {}').format(amount / (10 ** token.decimals), token.symbol)
+            self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price,
+                                           token.bind_addr, dialog, None, preview)
+        except (BaseException,) as e:
+            traceback.print_exc(file=sys.stderr)
+            dialog.show_message(str(e))
+
+    def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog, broadcast_done=None, preview=False):
+        coins = self.get_coins()
+        try:
+            tx = self.wallet.make_unsigned_transaction(coins, outputs, None, change_addr=sender,
+                                                       gas_fee=gas_fee,
+                                                       sender=sender)
+        except NotEnoughFunds:
+            dialog.show_message(_("Insufficient funds"))
+            return
+        except BaseException as e:
+            traceback.print_exc(file=sys.stdout)
+            dialog.show_message(str(e))
+            return
+        if preview:
+            self.show_transaction(tx, desc)
+            return
+
+        fee = tx.get_fee()
+
+        if fee < self.wallet.relayfee() * tx.estimated_size() / 1000:
+            dialog.show_message(
+                _("This transaction requires a higher fee, or it will not be propagated by the network"))
+            return
+
+        # confirmation dialog
+        msg = [
+            _(desc),
+            _("Mining fee") + ": " + self.format_amount_and_units(fee - gas_fee),
+            _("Gas fee") + ": " + self.format_amount_and_units(gas_fee),
+        ]
+
+        confirm_rate = simple_config.FEERATE_WARNING_HIGH_FEE
+        if fee - gas_fee > confirm_rate * tx.estimated_size() / 1000:
+            msg.append(_('Warning') + ': ' + _("The fee for this transaction seems unusually high."))
+
+        if self.wallet.has_keystore_encryption():
+            msg.append("")
+            msg.append(_("Enter your password to proceed"))
+            password = self.password_dialog('\n'.join(msg))
+            if not password:
+                return
+        else:
+            msg.append(_('Proceed?'))
+            password = None
+            if not self.question('\n'.join(msg)):
+                return
+
+        def sign_done(success):
+            if success:
+                if not tx.is_complete():
+                    self.show_transaction(tx)
+                    self.do_clear()
+                else:
+                    self.broadcast_transaction(tx, desc)
+                    if broadcast_done:
+                        broadcast_done(tx)
+
+        self.sign_tx_with_password(tx, sign_done, password)
 
     def create_smart_contract_tab(self):
         from .smart_contract_list import SmartContractList
