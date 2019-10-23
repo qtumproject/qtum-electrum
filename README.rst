@@ -65,6 +65,7 @@ Check out the code from GitHub::
 
 Run install (this should install dependencies)::
 
+    python3 -m pip install -r ./contrib/requirements/requirements-eth.txt
     python3 -m pip install .[fast]
 
 
