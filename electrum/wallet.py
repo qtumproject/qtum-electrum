@@ -802,7 +802,8 @@ class Abstract_Wallet(AddressSynchronizer):
         tx = None
         try:
             tx = self.db.get_transaction(tx_hash)
-            is_mined = tx.outputs()[0].type == TYPE_STAKE
+            if tx is not None:
+                is_mined = tx.outputs()[0].type == TYPE_STAKE
         except (BaseException,) as e:
             self.logger.info(f'get_tx_status {repr(e)}')
         if height == TX_HEIGHT_FUTURE:
