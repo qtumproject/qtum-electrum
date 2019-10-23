@@ -546,6 +546,8 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
         def on_choice_click(clayout):
             idx = clayout.selected_index()
             line.setText(c_default_text[idx])
+            line.repaint()
+
         clayout = ChoicesLayout(message1, c_titles, on_choice_click,
                                 checked_index=default_choice_idx)
         vbox.addLayout(clayout.layout())
