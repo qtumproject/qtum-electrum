@@ -1244,6 +1244,22 @@ class Transaction:
         tx.deserialize(True)
         return tx
 
+    def sender_sort(self, sender):
+        if not sender:
+            return
+        sender_inp = None
+        for i in range(len(self._inputs)):
+            inp = self._inputs[i]
+            if inp['address'] == sender:
+                sender_inp = inp
+                del self._inputs[i]
+                break
+        if sender_inp:
+            self._inputs.insert(0, sender_inp)
+        else:
+            _logger.info(f'sender {self._inputs}')
+            raise Exception('sender - sender address not in inputs')
+
 
 def tx_from_str(txt: str) -> str:
     """Sanitizes tx-describing input (json or raw hex or base43) into

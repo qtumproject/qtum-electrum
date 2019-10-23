@@ -993,6 +993,8 @@ class Abstract_Wallet(AddressSynchronizer):
             outputs[i_max] = outputs[i_max]._replace(value=amount)
             tx = Transaction.from_io(coins, outputs[:])
 
+        # sender sort to make sure sender txi the first place
+        tx.sender_sort(sender)
         # Timelock tx to current height.
         tx.locktime = get_locktime_for_new_transaction(self.network)
         run_hook('make_unsigned_transaction', self, tx)

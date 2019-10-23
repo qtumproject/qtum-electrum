@@ -23,6 +23,7 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import sys
+import binascii
 import time
 import threading
 import os
@@ -38,6 +39,8 @@ import queue
 import asyncio
 from typing import Optional, TYPE_CHECKING
 
+import eth_abi
+
 from PyQt5.QtGui import QPixmap, QKeySequence, QIcon, QCursor, QFont
 from PyQt5.QtCore import Qt, QRect, QStringListModel, QSize, pyqtSignal
 from PyQt5.QtWidgets import (QMessageBox, QComboBox, QSystemTrayIcon, QTabWidget,
@@ -50,7 +53,8 @@ from PyQt5.QtWidgets import (QMessageBox, QComboBox, QSystemTrayIcon, QTabWidget
 import electrum
 from electrum import (keystore, simple_config, ecc, constants, util, bitcoin, commands,
                       coinchooser, paymentrequest)
-from electrum.bitcoin import COIN, is_address, TYPE_ADDRESS, b58_address_to_hash160, Token, opcodes, TYPE_SCRIPT
+from electrum.bitcoin import COIN, is_address, TYPE_ADDRESS, b58_address_to_hash160, Token, opcodes, \
+    TYPE_SCRIPT, is_hash160, hash_160, eth_abi_encode
 from electrum.plugin import run_hook
 from electrum.i18n import _
 from electrum.util import (format_time, format_satoshis, format_fee_satoshis,
@@ -64,7 +68,7 @@ from electrum.util import (format_time, format_satoshis, format_fee_satoshis,
                            InvalidBitcoinURI, InvoiceError)
 from electrum.util import PR_TYPE_ONCHAIN, PR_TYPE_LN
 from electrum.lnutil import PaymentFailure, SENT, RECEIVED
-from electrum.transaction import Transaction, TxOutput, contract_script
+from electrum.transaction import Transaction, TxOutput, contract_script, is_opcall_script, is_opcreate_script
 from electrum.address_synchronizer import AddTransactionException
 from electrum.wallet import (Multisig_Wallet, CannotBumpFee, Abstract_Wallet,
                              sweep_preparations, InternalAddressCorruption)
@@ -96,6 +100,7 @@ from .history_list import HistoryList, HistoryModel
 from .update_checker import UpdateCheck, UpdateCheckThread
 from .channels_list import ChannelsList
 from .token_dialog import TokenAddDialog, TokenInfoDialog, TokenSendDialog
+from .smart_contract_dialog import ContractCreateDialog, ContractEditDialog, ContractFuncDialog
 
 if TYPE_CHECKING:
     from . import ElectrumGui
@@ -653,6 +658,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             add_toggle_action(view_menu, self.channels_tab)
         add_toggle_action(view_menu, self.contacts_tab)
         add_toggle_action(view_menu, self.console_tab)
+        add_toggle_action(view_menu, self.smart_contract_tab)
 
         tools_menu = menubar.addMenu(_("&Tools"))
 
@@ -3435,19 +3441,108 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.smart_contract_list = l = SmartContractList(self)
         return self.create_list_tab(l)
 
+    def set_smart_contract(self, name: str, address: str, interface: list) -> bool:
+        if not is_hash160(address):
+            self.show_error(_('Invalid Address'))
+            self.smart_contract_list.update()
+            return False
+        self.wallet.db.smart_contracts[address] = (name, interface)
+        self.smart_contract_list.update()
+        return True
+
+    def delete_samart_contact(self, address: str) -> bool:
+        if not self.question(_("Remove {} from your list of smart contracts?".format(
+                self.wallet.db.smart_contracts[address][0]))):
+            return False
+        self.wallet.db.smart_contracts.pop(address)
+        self.smart_contract_list.update()
+        return True
+
+    def call_smart_contract(self, address, abi, args, sender, dialog):
+        data = eth_abi_encode(abi, args)
+        try:
+            result = self.network.run_from_another_thread(self.network.call_contract(address, data, sender))
+        except BaseException as e:
+            self.logger.exception('')
+            dialog.show_message(str(e))
+            return
+        types = list([x['type'] for x in abi.get('outputs', [])])
+        try:
+            if isinstance(result, dict):
+                output = eth_abi.decode_abi(types, binascii.a2b_hex(result['executionResult']['output']))
+            else:
+                output = eth_abi.decode_abi(types, binascii.a2b_hex(result))
+
+            def decode_x(x):
+                if isinstance(x, bytes):
+                    try:
+                        return x.decode()
+                    except UnicodeDecodeError:
+                        return str(x)
+                return str(x)
+
+            output = ','.join([decode_x(x) for x in output])
+            dialog.show_message(output)
+        except (BaseException,) as e:
+            self.logger.exception('')
+            dialog.show_message(f'{e} {result}')
+
+    def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog, preview):
+        try:
+            abi_encoded = eth_abi_encode(abi, args)
+            script = contract_script(gas_limit, gas_price, abi_encoded, address, opcodes.OP_CALL)
+            outputs = [TxOutput(TYPE_SCRIPT, script, amount), ]
+            tx_desc = 'contract sendto {}'.format(self.wallet.db.smart_contracts[address][0])
+            self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog, None, preview)
+        except (BaseException,) as e:
+            self.logger.exception('')
+            dialog.show_message(str(e))
+
+    def create_smart_contract(self, name, bytecode, abi, constructor, args, gas_limit, gas_price, sender, dialog, preview):
+
+        def broadcast_done(tx):
+            if is_opcreate_script(bfh(tx.outputs()[0].address)):
+                reversed_txid = binascii.a2b_hex(tx.txid())[::-1]
+                output_index = b'\x00\x00\x00\x00'
+                contract_addr = bh2u(hash_160(reversed_txid + output_index))
+                self.set_smart_contract(name, contract_addr, abi)
+        try:
+            abi_encoded = ''
+            if constructor:
+                abi_encoded = eth_abi_encode(constructor, args)
+            script = contract_script(gas_limit, gas_price, bytecode + abi_encoded, None, opcodes.OP_CREATE)
+            outputs = [TxOutput(TYPE_SCRIPT, script, 0), ]
+            self._smart_contract_broadcast(outputs, 'create contract {}'.format(name), gas_limit * gas_price,
+                                           sender, dialog, broadcast_done, preview)
+        except (BaseException,) as e:
+            self.logger.exception('')
+            dialog.show_message(str(e))
+
     def contract_create_dialog(self):
-        pass
-        # d = ContractCreateDialog(self)
-        # d.show()
+        d = ContractCreateDialog(self)
+        d.show()
 
     def contract_add_dialog(self):
-        pass
-        # d = ContractEditDialog(self)
-        # d.show()
+        d = ContractEditDialog(self)
+        d.show()
 
     def contract_edit_dialog(self, address):
-        pass
+        name, interface = self.wallet.db.smart_contracts[address]
+        contract = {
+            'name': name,
+            'interface': interface,
+            'address': address
+        }
+        d = ContractEditDialog(self, contract)
+        d.show()
 
     def contract_func_dialog(self, address):
-        pass
+        name, interface = self.wallet.db.smart_contracts[address]
+        contract = {
+            'name': name,
+            'interface': interface,
+            'address': address
+        }
+        d = ContractFuncDialog(self, contract)
+        d.show()
 
