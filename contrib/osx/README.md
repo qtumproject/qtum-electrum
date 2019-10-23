@@ -6,6 +6,8 @@ Building Mac OS binaries
 
 This guide explains how to build Electrum binaries for macOS systems.
 
+## 0. install dependencies
+* `brew install zlib sqlite autoconf automake libtool`
 
 ## 1. Building the binary
 

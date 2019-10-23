@@ -1,22 +1,27 @@
 #!/usr/bin/env bash
 
+export PYTHONHASHSEED=22
+
+src_dir=$(dirname "$0")
+cd $src_dir/../..
+
 # Parameterize
 PYTHON_VERSION=3.6.4
-BUILDDIR=/tmp/electrum-build
-PACKAGE=Electrum
+DIST_DIR="dist"
+BUILDDIR=/tmp/qtum-electrum-build
+PACKAGE="Qtum Electrum"
+VERSION=`git describe --tags --dirty --always`
+DMG_NAME="${DIST_DIR}/Qtum-electrum-osx-${VERSION}.dmg"
+TEMP_DMG_NAME="$BUILDDIR/qtum-electrum.dmg"
 LIBSECP_VERSION="b408c6a8b287003d1ade5709e6f7bc3c7f1d5be7"
+
+export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;
 
 . $(dirname "$0")/base.sh
 
 CONTRIB_OSX="$(dirname "$(realpath "$0")")"
 CONTRIB="$CONTRIB_OSX/.."
 ROOT_FOLDER="$CONTRIB/.."
-
-src_dir=$(dirname "$0")
-cd $src_dir/../..
-
-export PYTHONHASHSEED=22
-VERSION=`git describe --tags --dirty --always`
 
 which brew > /dev/null 2>&1 || fail "Please install brew from https://brew.sh/ to continue"
 which xcodebuild > /dev/null 2>&1 || fail "Please install Xcode and xcode command line tools to continue"
@@ -38,6 +43,9 @@ if [ -n "$1" ]; then
 else
     warn "Code signing DISABLED. Specify a valid macOS Developer identity installed on the system as the first argument to this script to enable signing."
 fi
+
+export LDFLAGS="-L/usr/local/opt/zlib/lib -L/usr/local/opt/sqlite/lib"
+export CPPFLAGS="-I/usr/local/opt/zlib/include -I/usr/local/opt/sqlite/include"
 
 info "Installing Python $PYTHON_VERSION"
 export PATH="~/.pyenv/bin:~/.pyenv/shims:~/Library/Python/3.6/bin:$PATH"
@@ -66,7 +74,7 @@ python3 --version
 echo -n "Pyinstaller "
 pyinstaller --version
 
-rm -rf ./dist
+rm -rf ${DIST_DIR}
 
 git submodule update --init
 
@@ -81,7 +89,7 @@ info "generating locale"
     fi
     cd "$ROOT_FOLDER"/electrum/locale
     for i in ./*; do
-        dir="$ROOT_FOLDER"/electrum/$i/LC_MESSAGES
+        dir="$ROOT_FOLDER"/electrum/locale/$i/LC_MESSAGES
         mkdir -p $dir
         msgfmt --output-file=$dir/electrum.mo $i/electrum.po || true
     done
@@ -119,11 +127,13 @@ DoCodeSignMaybe "CalinsQRReader.app" "${d}/build/Release/CalinsQRReader.app" "$A
 
 info "Installing requirements..."
 python3 -m pip install -Ir ./contrib/deterministic-build/requirements.txt --user || \
+python3 -m pip install -Ir ./contrib/deterministic-build/requirements-eth.txt --user || \
 fail "Could not install requirements"
 
 info "Installing hardware wallet requirements..."
-python3 -m pip install -Ir ./contrib/deterministic-build/requirements-hw.txt --user || \
+python3 -m pip install -r ./contrib/deterministic-build/requirements-hw.txt --user || \
 fail "Could not install hardware wallet requirements"
+
 
 info "Building $PACKAGE..."
 python3 -m pip install --user . > /dev/null || fail "Could not build $PACKAGE"
@@ -141,17 +151,31 @@ APP_SIGN="$APP_SIGN" pyinstaller --noconfirm --ascii --clean --name $VERSION con
 info "Adding qtum URI types to Info.plist"
 plutil -insert 'CFBundleURLTypes' \
 	-xml '<array><dict> <key>CFBundleURLName</key> <string>qtum</string> <key>CFBundleURLSchemes</key> <array><string>qtum</string></array> </dict></array>' \
-	-- dist/$PACKAGE.app/Contents/Info.plist \
+	-- "${DIST_DIR}/${PACKAGE}.app/Contents/Info.plist" \
 	|| fail "Could not add keys to Info.plist. Make sure the program 'plutil' exists and is installed."
 
-DoCodeSignMaybe "app bundle" "dist/${PACKAGE}.app" "$APP_SIGN" # If APP_SIGN is empty will be a noop
+#DoCodeSignMaybe "app bundle" "${DIST_DIR}/${PACKAGE}.app" "$APP_SIGN" # If APP_SIGN is empty will be a noop
 
 info "Creating .DMG"
-hdiutil create -fs HFS+ -volname $PACKAGE -srcfolder dist/$PACKAGE.app dist/electrum-$VERSION.dmg || fail "Could not create .DMG"
+hdiutil create -size 300m -fs HFS+ -volname "${PACKAGE}" -ov ${TEMP_DMG_NAME}
+hdiutil mount ${TEMP_DMG_NAME}
+cp -R "${DIST_DIR}/${PACKAGE}.app" "/Volumes/${PACKAGE}/${PACKAGE}.app"
+ln -s /Applications "/Volumes/${PACKAGE}/Applications"
 
-DoCodeSignMaybe ".DMG" "dist/electrum-${VERSION}.dmg" "$APP_SIGN" # If APP_SIGN is empty will be a noop
+hdiutil detach "/Volumes/${PACKAGE}"
+sleep 2
 
-if [ -z "$APP_SIGN" ]; then
-    warn "App was built successfully but was not code signed. Users may get security warnings from macOS."
-    warn "Specify a valid code signing identity as the first argument to this script to enable code signing."
-fi
+hdiutil convert ${TEMP_DMG_NAME} -format UDZO -o ${DMG_NAME}
+hdiutil internet-enable -yes ${DMG_NAME}
+rm -rf ${TEMP_DMG_NAME}
+
+openssl dgst -sha256 ${DMG_NAME}
+
+#hdiutil create -fs HFS+ -volname "${PACKAGE}" -srcfolder dist/"${PACKAGE}".app dist/Qtum-electrum-$VERSION.dmg || fail "Could not create .DMG"
+#
+#DoCodeSignMaybe ".DMG" "dist/electrum-${VERSION}.dmg" "$APP_SIGN" # If APP_SIGN is empty will be a noop
+#
+#if [ -z "$APP_SIGN" ]; then
+#    warn "App was built successfully but was not code signed. Users may get security warnings from macOS."
+#    warn "Specify a valid code signing identity as the first argument to this script to enable code signing."
+#fi
