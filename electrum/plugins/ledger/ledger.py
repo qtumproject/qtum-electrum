@@ -108,11 +108,17 @@ class Ledger_Client():
         fingerprint = 0
         if len(splitPath) > 1:
             prevPath = "/".join(splitPath[0:len(splitPath) - 1])
-            nodeData = self.dongleObject.getWalletPublicKey(prevPath)
+            try:
+                nodeData = self.dongleObject.getWalletPublicKey(prevPath)
+            except BTChipException as e:
+                if e.sw == 0x6f04:
+                    raise UserFacingException('Please try using Bitcoin app instead of Qtum')
+                raise e
             publicKey = compress_public_key(nodeData['publicKey'])
             h = hashlib.new('ripemd160')
             h.update(hashlib.sha256(publicKey).digest())
             fingerprint = unpack(">I", h.digest()[0:4])[0]
+
         nodeData = self.dongleObject.getWalletPublicKey(bip32_path)
         publicKey = compress_public_key(nodeData['publicKey'])
         depth = len(splitPath)
@@ -202,7 +208,7 @@ class Ledger_Client():
                 self.perform_hw1_preflight()
             except BTChipException as e:
                 if (e.sw == 0x6d00 or e.sw == 0x6700):
-                    raise UserFacingException(_("Device not in Bitcoin mode")) from e
+                    raise UserFacingException(_("Device not in Qtum mode")) from e
                 raise e
             self.preflightDone = True
 
@@ -404,7 +410,7 @@ class Ledger_KeyStore(Hardware_KeyStore):
             has_change = False
             any_output_on_change_branch = is_any_tx_output_on_change_branch(tx)
             for o in tx.outputs():
-                assert o.type == TYPE_ADDRESS
+                # assert o.type == TYPE_ADDRESS # qtum diff
                 info = tx.output_info.get(o.address)
                 if (info is not None) and len(tx.outputs()) > 1 \
                         and not has_change:
@@ -602,7 +608,7 @@ class LedgerPlugin(HW_PluginBase):
             raise UserFacingException(_('Failed to create a client for this device.') + '\n' +
                                       _('Make sure it is in the correct state.'))
         client.handler = self.create_handler(wizard)
-        client.get_xpub("m/44'/0'", 'standard') # TODO replace by direct derivation once Nano S > 1.1
+        client.get_xpub("m/44'/88'/0'", 'standard') # TODO replace by direct derivation once Nano S > 1.1
 
     def get_xpub(self, device_id, derivation, xtype, wizard):
         if xtype not in self.SUPPORTED_XTYPES:
