@@ -909,7 +909,7 @@ class Abstract_Wallet(AddressSynchronizer):
         return change_addrs[:max_change]
 
     def make_unsigned_transaction(self, coins, outputs, fixed_fee=None,
-                                  change_addr=None, is_sweep=False):
+                                  change_addr=None, gas_fee=0, sender=None, is_sweep=False):
         # check outputs
         i_max = None
         for i, o in enumerate(outputs):
@@ -929,7 +929,7 @@ class Abstract_Wallet(AddressSynchronizer):
 
         # Fee estimator
         if fixed_fee is None:
-            fee_estimator = self.config.estimate_fee
+            fee_estimator = lambda size: self.config.estimate_fee(size) + gas_fee
         elif isinstance(fixed_fee, Number):
             fee_estimator = lambda size: fixed_fee
         elif callable(fixed_fee):
@@ -939,7 +939,12 @@ class Abstract_Wallet(AddressSynchronizer):
 
         if i_max is None:
             # Let the coin chooser select the coins to spend
-            coin_chooser = coinchooser.get_coin_chooser(self.config)
+
+            if sender:
+                coin_chooser = coinchooser.CoinChooserQtum()
+            else:
+                coin_chooser = coinchooser.get_coin_chooser(self.config)
+
             # If there is an unconfirmed RBF tx, merge with it
             base_tx = self.get_unconfirmed_base_tx_for_batching()
             if self.config.get('batch_rbf', False) and base_tx:
@@ -968,7 +973,7 @@ class Abstract_Wallet(AddressSynchronizer):
             # change address. if empty, coin_chooser will set it
             change_addrs = self.get_change_addresses_for_new_transaction(change_addr or old_change_addrs)
             tx = coin_chooser.make_tx(coins, txi, outputs[:] + txo, change_addrs,
-                                      fee_estimator, self.dust_threshold())
+                                      fee_estimator, self.dust_threshold(), sender)
         else:
             # "spend max" branch
             # note: This *will* spend inputs with negative effective value (if there are any).
@@ -981,6 +986,7 @@ class Abstract_Wallet(AddressSynchronizer):
             outputs[i_max] = outputs[i_max]._replace(value=0)
             tx = Transaction.from_io(coins, outputs[:])
             fee = fee_estimator(tx.estimated_size())
+            fee = fee + gas_fee
             amount = sendable - tx.output_value() - fee
             if amount < 0:
                 raise NotEnoughFunds()
