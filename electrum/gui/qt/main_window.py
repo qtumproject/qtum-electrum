@@ -1057,14 +1057,14 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         vbox_g.addLayout(grid)
         vbox_g.addStretch()
 
-        hbox_r = QHBoxLayout()
-        hbox_r.addWidget(self.receive_qr)
-        hbox_r.addWidget(self.receive_address_e)
+        self.receive_widgets = QTabWidget()
+        self.receive_widgets.addTab(self.receive_qr, 'QR Code')
+        self.receive_widgets.addTab(self.receive_address_e, 'Text')
 
         hbox = QHBoxLayout()
         hbox.addLayout(vbox_g)
         hbox.addStretch()
-        hbox.addLayout(hbox_r)
+        hbox.addWidget(self.receive_widgets)
 
         w = QWidget()
         w.searchable_list = self.request_list
@@ -1151,8 +1151,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
 
     def do_copy(self, title, content):
         self.app.clipboard().setText(content)
-        self.show_message(_("{} copied to clipboard").format(title))
-        #QToolTip.showText(QCursor.pos(), _("{} copied to clipboard").format(title), self.parent)
+        self.show_message(_(f"{title} copied to clipboard:\n\n{content}"))
 
     def export_payment_request(self, addr):
         r = self.wallet.receive_requests.get(addr)
@@ -1252,6 +1251,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         description_label = HelpLabel(_('Description'), msg)
         grid.addWidget(description_label, 2, 0)
         self.message_e = MyLineEdit()
+        self.message_e.setMinimumWidth(700)
         grid.addWidget(self.message_e, 2, 1, 1, -1)
 
         msg = _('Amount to be sent.') + '\n\n' \
@@ -1270,12 +1270,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             lambda: self.fiat_send_e.setFrozen(self.amount_e.isReadOnly()))
 
         self.max_button = EnterButton(_("Max"), self.spend_max)
-        self.max_button.setFixedWidth(self.amount_e.width())
+        self.max_button.setFixedWidth(100)
         self.max_button.setCheckable(True)
         grid.addWidget(self.max_button, 3, 3)
-        hbox = QHBoxLayout()
-        hbox.addStretch(1)
-        grid.addLayout(hbox, 3, 4)
 
         self.from_label = QLabel(_('From'))
         grid.addWidget(self.from_label, 4, 0)
@@ -1390,13 +1387,14 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.preview_button.setToolTip(_('Display the details of your transaction before signing it.'))
         self.send_button = EnterButton(_("Send"), self.do_pay)
         self.clear_button = EnterButton(_("Clear"), self.do_clear)
+
         buttons = QHBoxLayout()
         buttons.addStretch(1)
-        buttons.addWidget(self.save_button)
         buttons.addWidget(self.clear_button)
+        buttons.addWidget(self.save_button)
         buttons.addWidget(self.preview_button)
         buttons.addWidget(self.send_button)
-        grid.addLayout(buttons, 6, 1, 1, 3)
+        grid.addLayout(buttons, 6, 1, 1, 4)
 
         self.amount_e.shortcut.connect(self.spend_max)
         self.payto_e.textChanged.connect(self.update_fee)
@@ -1458,6 +1456,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         vbox0.addLayout(grid)
         hbox = QHBoxLayout()
         hbox.addLayout(vbox0)
+        hbox.addStretch(1)
         w = QWidget()
         vbox = QVBoxLayout(w)
         vbox.addLayout(hbox)
@@ -1733,15 +1732,15 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.invoice_list.update()
 
     def on_request_status(self, key, status):
-        if key not in self.wallet.requests:
+        if key not in self.wallet.receive_requests:
             return
         if status == PR_PAID:
             self.notify(_('Payment received') + '\n' + key)
 
-    def on_invoice_status(self, key, status, log):
+    def on_invoice_status(self, key, status):
         if key not in self.wallet.invoices:
             return
-        self.invoice_list.update_item(key, status, log)
+        self.invoice_list.update_item(key, status)
         if status == PR_PAID:
             self.show_message(_('Payment succeeded'))
             self.need_update.set()
@@ -1785,7 +1784,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             return
         if not preview:
             self.wallet.save_invoice(invoice)
-            self.do_clear()
             self.invoice_list.update()
         self.do_pay_invoice(invoice, preview)
 
@@ -1872,9 +1870,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
 
         def sign_done(success):
             if success:
+                self.do_clear()
                 if not tx.is_complete():
                     self.show_transaction(tx)
-                    self.do_clear()
                 else:
                     self.broadcast_transaction(tx, message)
         self.sign_tx_with_password(tx, sign_done, password)
@@ -1901,33 +1899,32 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         msg = _('Signing transaction...')
         WaitingDialog(self, msg, task, on_success, on_failure)
 
-    def broadcast_transaction(self, tx, tx_desc):
+    def broadcast_transaction(self, tx, invoice=None):
 
         def broadcast_thread():
             # non-GUI thread
             pr = self.payment_request
             if pr and pr.has_expired():
                 self.payment_request = None
-                return False, _("Payment request has expired")
-            status = False
+                return False, _("Invoice has expired")
             try:
                 self.network.run_from_another_thread(self.network.broadcast_transaction(tx))
             except TxBroadcastError as e:
-                msg = e.get_message_for_gui()
+                return False, e.get_message_for_gui()
             except BestEffortRequestFailed as e:
-                msg = repr(e)
-            else:
-                status, msg = True, tx.txid()
-            if pr and status is True:
-                key = pr.get_id()
-                #self.wallet.set_invoice_paid(key, tx.txid())
+                return False, repr(e)
+            # success
+            key = invoice['id']
+            txid = tx.txid()
+            self.wallet.set_paid(key, txid)
+            if pr:
                 self.payment_request = None
                 refund_address = self.wallet.get_receiving_address()
                 coro = pr.send_payment_and_receive_paymentack(str(tx), refund_address)
                 fut = asyncio.run_coroutine_threadsafe(coro, self.network.asyncio_loop)
                 ack_status, ack_msg = fut.result(timeout=20)
                 self.logger.info(f"Payment ACK: {ack_status}. Ack message: {ack_msg}")
-            return status, msg
+            return True, txid
 
         # Capture current TL window; override might be removed on return
         parent = self.top_level_window(lambda win: isinstance(win, MessageBoxMixin))
@@ -2060,8 +2057,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.show_send_tab_onchain_fees(b)
 
     def show_send_tab_onchain_fees(self, b: bool):
-        self.feecontrol_fields.setVisible(b)
-        self.fee_e_label.setVisible(b)
+        self.feecontrol_fields.setEnabled(b)
+        #self.fee_e_label.setVisible(b)
 
     def pay_to_URI(self, URI):
         if not URI:
