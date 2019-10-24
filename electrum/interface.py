@@ -213,6 +213,7 @@ class Interface(Logger):
         self.ready = asyncio.Future()
         self.got_disconnected = asyncio.Future()
         self.server = server
+        self.server_version = []
         self.host, self.port, self.protocol = deserialize_server(self.server)
         self.port = int(self.port)
         Logger.__init__(self)
@@ -456,6 +457,7 @@ class Interface(Logger):
             if not self.network.check_interface_against_healthy_spread_of_connected_servers(self):
                 raise GracefulDisconnect(f'too many connected servers already '
                                          f'in bucket {self.bucket_based_on_ipaddress()}')
+            self.server_version = ver
             self.logger.info(f"connection established. version: {ver}")
 
             try:
