@@ -1,3 +1,3 @@
-git+https://github.com/icodeface/eth-hash
-git+https://github.com/icodeface/eth-utils
-git+https://github.com/icodeface/eth-abi
+https://github.com/icodeface/eth-hash/archive/master.zip
+https://github.com/icodeface/eth-utils/archive/master.zip
+https://github.com/icodeface/eth-abi/archive/master.zip
