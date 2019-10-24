@@ -251,10 +251,14 @@ class ContractFuncLayout(QGridLayout):
             self.amount_e)
 
     def parse_args(self):
+        if len(self.senders) > 0:
+            sender = self.senders[self.sender_combo.currentIndex()]
+        else:
+            sender = ''
         args = json.loads('[{}]'.format(self.args_e.text()))
         abi_index = self.abi_signatures[self.abi_combo.currentIndex()][0]
         if abi_index == -1:
-            return None, [], None
+            return None, [], sender
         abi = self.contract['interface'][abi_index]
         inputs = abi.get('inputs', [])
         if not len(args) == len(inputs):
@@ -272,10 +276,7 @@ class ContractFuncLayout(QGridLayout):
             elif 'int' in _type:
                 if not isinstance(args[index], int):
                     raise ParseArgsException('inavlid input:{}'.format(args[index]))
-        if len(self.senders) > 0:
-            sender = self.senders[self.sender_combo.currentIndex()]
-        else:
-            sender = ''
+
         return abi, args, sender
 
     def do_call(self):
