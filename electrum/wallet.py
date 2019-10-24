@@ -805,7 +805,7 @@ class Abstract_Wallet(AddressSynchronizer):
         is_mined = False
         tx = None
         try:
-            tx = self.db.get_transaction(tx_hash)
+            tx = self.db.get_transaction(tx_hash) or self.db.get_token_tx(tx_hash)
             if tx is not None:
                 is_mined = tx.outputs()[0].type == TYPE_STAKE
         except (BaseException,) as e:
