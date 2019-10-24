@@ -1,12 +1,12 @@
-Electrum - Lightweight Bitcoin client
-=====================================
+Qtum Electrum - Lightweight Qtum client
+=======================================
+
+Qtum Electrum is a lightweight Qtum wallet forked from `Electrum <https://github.com/spesmilo/electrum>`_.
 
 ::
 
   Licence: MIT Licence
-  Author: Thomas Voegtlin
   Language: Python (>= 3.6)
-  Homepage: https://electrum.org/
 
 
 .. image:: https://travis-ci.org/spesmilo/electrum.svg?branch=master
@@ -38,7 +38,7 @@ directory. To run Electrum from its root directory, just do::
 
     ./run_electrum
 
-You can also install Electrum on your system, by running this command::
+You can also install Electrum on your system, by running this command(qtum-electrum may hava a conflict with bitcoin electrum)::
 
     sudo apt-get install python3-setuptools
     python3 -m pip install .[fast]
