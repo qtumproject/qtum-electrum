@@ -9,16 +9,6 @@ Qtum Electrum is a lightweight Qtum wallet forked from `Electrum <https://github
   Language: Python (>= 3.6)
 
 
-.. image:: https://travis-ci.org/spesmilo/electrum.svg?branch=master
-    :target: https://travis-ci.org/spesmilo/electrum
-    :alt: Build Status
-.. image:: https://coveralls.io/repos/github/spesmilo/electrum/badge.svg?branch=master
-    :target: https://coveralls.io/github/spesmilo/electrum?branch=master
-    :alt: Test coverage statistics
-.. image:: https://d322cqt584bo4o.cloudfront.net/electrum/localized.svg
-    :target: https://crowdin.com/project/electrum
-    :alt: Help translate Electrum online
-
 .. image:: /screenshot/history.png
 .. image:: /screenshot/tokens.png
 
@@ -59,8 +49,8 @@ Development version
 
 Check out the code from GitHub::
 
-    git clone git://github.com/spesmilo/electrum.git
-    cd electrum
+    git clone https://github.com/qtumproject/qtum-electrum.git
+    cd qtum-electrum
     git submodule update --init
 
 Run install (this should install dependencies)::
