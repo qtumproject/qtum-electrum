@@ -19,8 +19,8 @@ Qtum Electrum is a lightweight Qtum wallet forked from `Electrum <https://github
     :target: https://crowdin.com/project/electrum
     :alt: Help translate Electrum online
 
-
-
+.. image:: /screenshot/history.png
+.. image:: /screenshot/tokens.png
 
 
 Getting started
