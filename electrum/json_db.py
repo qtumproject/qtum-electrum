@@ -434,6 +434,14 @@ class JsonDB(Logger):
                 spent_outpoints[prevout_hash][str(prevout_n)] = txid
         self.put('spent_outpoints', spent_outpoints)
 
+        tokens = self.get('tokens', {})  # contractAddr_bindAddr -> [name, symbol, decimals, balance]
+        new_tokens = {}
+        for key, value in tokens.items():
+            contract_addr, bind_addr = key.split('_')
+            new_token = Token(contract_addr, bind_addr, value[0], value[1], value[2], value[3])
+            new_tokens[new_token.get_key()] = new_token
+        self.put('tokens', new_tokens)
+
         self.put('seed_version', 17)
 
     def _convert_version_18(self):
