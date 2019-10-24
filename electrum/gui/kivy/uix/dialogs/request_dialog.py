@@ -85,7 +85,7 @@ class RequestDialog(Factory.Popup):
         Clock.schedule_once(lambda dt: self.app.show_info(msg))
 
     def do_share(self):
-        self.app.do_share(self.data, _("Share Bitcoin Request"))
+        self.app.do_share(self.data, _("Share Qtum Request"))
         self.dismiss()
 
     def delete_dialog(self):
