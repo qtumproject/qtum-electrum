@@ -1,6 +1,6 @@
 #!/bin/bash
 
-NAME_ROOT=electrum
+NAME_ROOT=Qtum-electrum
 
 # These settings probably don't need any change
 export WINEPREFIX=/opt/wine64
@@ -46,6 +46,8 @@ popd
 $PYTHON -m pip install --no-warn-script-location -r "$CONTRIB"/deterministic-build/requirements.txt
 
 $PYTHON -m pip install --no-warn-script-location -r "$CONTRIB"/deterministic-build/requirements-hw.txt
+
+$PYTHON -m pip install --no-warn-script-location -r "$CONTRIB"/deterministic-build/requirements-eth.txt
 
 pushd $WINEPREFIX/drive_c/electrum
 # see https://github.com/pypa/pip/issues/2195 -- pip makes a copy of the entire directory
@@ -115,4 +117,4 @@ EOF
     done
 )
 
-sha256sum dist/electrum*.exe
+sha256sum dist/Qtum-electrum*.exe

@@ -20,7 +20,7 @@ folder.
 2. Build image
 
     ```
-    $ sudo docker build -t electrum-wine-builder-img contrib/build-wine
+    $ sudo docker build -t qtum-electrum-wine-builder-img contrib/build-wine
     ```
 
     Note: see [this](https://stackoverflow.com/a/40516974/7499128) if having dns problems
@@ -35,19 +35,19 @@ folder.
         sudo rm -rf $FRESH_CLONE && \
         mkdir -p $FRESH_CLONE && \
         cd $FRESH_CLONE  && \
-        git clone https://github.com/spesmilo/electrum.git && \
-        cd electrum
+        git clone https://github.com/qtumproject/qtum-electrum.git && \
+        cd qtum-electrum
     ```
 
     And then build from this directory:
     ```
     $ git checkout $REV
     $ sudo docker run -it \
-        --name electrum-wine-builder-cont \
+        --name qtum-electrum-wine-builder-cont \
         -v $PWD:/opt/wine64/drive_c/electrum \
         --rm \
         --workdir /opt/wine64/drive_c/electrum/contrib/build-wine \
-        electrum-wine-builder-img \
+        qtum-electrum-wine-builder-img \
         ./build.sh
     ```
 4. The generated binaries are in `./contrib/build-wine/dist`.
