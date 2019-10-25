@@ -909,15 +909,18 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
                 else:
                     icon = read_QIcon("status_connected_proxy%s.png"%fork_str)
         else:
+            icon = read_QIcon("status_disconnected.png")
             if self.network.proxy:
                 text = "{} ({})".format(_("Not connected"), _("proxy enabled"))
+            elif self.network.downloading_headers:
+                text = _("Downloading headers...")
+                icon = read_QIcon("status_waiting.png")
             else:
                 text = _("Not connected")
-            icon = read_QIcon("status_disconnected.png")
 
         self.tray.setToolTip("%s (%s)" % (text, self.wallet.basename()))
         self.balance_label.setText(text)
-        self.status_button.setIcon( icon )
+        self.status_button.setIcon(icon)
 
     def update_wallet(self):
         self.update_status()

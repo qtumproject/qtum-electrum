@@ -295,6 +295,7 @@ class Network(Logger):
         self.connecting = set()
         self.server_queue = None
         self.proxy = None
+        self.downloading_headers = False
 
         # Dump network messages (all interfaces).  Set at runtime from the console.
         self.debug = False
@@ -828,18 +829,40 @@ class Network(Logger):
         return True
 
     async def _init_headers_file(self):
-        return
-        # b = blockchain.get_best_chain()
-        # filename = b.path()
-        # length = HEADER_SIZE * len(constants.net.CHECKPOINTS) * 2016
-        # if not os.path.exists(filename) or os.path.getsize(filename) < length:
-        #     with open(filename, 'wb') as f:
-        #         if length > 0:
-        #             f.seek(length-1)
-        #             f.write(b'\x00')
-        #     util.ensure_sparse_file(filename)
-        # with b.lock:
-        #     b.update_size()
+        b = blockchain.get_best_chain()
+        filename = b.path()
+        url = constants.net.HEADERS_URL
+        if (os.path.exists(filename) and os.path.getsize(filename) > 1024*1024) or not url:
+            return
+        self.downloading_headers = True
+
+        tmp_filename = f'{filename}.tmp'
+        if os.path.exists(tmp_filename): os.remove(tmp_filename)
+        tmp_file = open(tmp_filename, 'a+b')
+        success = False
+        try:
+            async with make_aiohttp_session(self.proxy) as session:
+                async with session.get(url, timeout=5*60) as resp:
+                    while True:
+                        if resp.status != 200:
+                            break
+                        chunk = await resp.content.read(1024*1024)
+                        if not chunk:
+                            success = True
+                            break
+                        tmp_file.write(chunk)
+        except BaseException as e:
+            self.logger.error(f'_init_headers_file, {e}')
+
+        tmp_file.close()
+        if success:
+            os.remove(filename)
+            os.rename(tmp_filename, filename)
+            util.ensure_sparse_file(filename)
+            with b.lock:
+                b.init_db()
+                b.update_size()
+        self.downloading_headers = False
 
     def best_effort_reliable(func):
         async def make_reliable_wrapper(self, *args, **kwargs):

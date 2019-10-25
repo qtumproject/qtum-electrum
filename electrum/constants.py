@@ -74,6 +74,7 @@ class QtumMainnet(AbstractNet):
     DEFAULT_SERVERS = read_json('servers.json', {})
     CHECKPOINTS = read_json('checkpoints.json', {})
     BLOCK_HEIGHT_FIRST_LIGHTNING_CHANNELS = 0
+    HEADERS_URL = 'https://s.qtum.site/electrum_headers'
 
     POS_NO_RETARGET = False
 
@@ -127,6 +128,7 @@ class QtumTestnet(AbstractNet):
     CHECKPOINTS = read_json('checkpoints_testnet.json', {})
     BIP44_COIN_TYPE = 1
     SLIP_COIN_TYPE = 1
+    HEADERS_URL = None
 
     POS_NO_RETARGET = False
 
@@ -165,6 +167,7 @@ class QtumRegtest(QtumTestnet):
     GENESIS = "0x665ed5b402ac0b44efc37d8926332994363e8a7278b7ee9a58fb972efadae943"
     DEFAULT_SERVERS = read_json('servers_regtest.json', {})
     CHECKPOINTS = {}
+    HEADERS_URL = None
 
     POS_NO_RETARGET = True
 
