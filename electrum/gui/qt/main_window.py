@@ -3430,7 +3430,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
                     self.show_transaction(tx)
                     self.do_clear()
                 else:
-                    self.broadcast_transaction(tx, desc)
+                    self.broadcast_transaction(tx, tx_desc=desc)
                     if broadcast_done:
                         broadcast_done(tx)
 
