@@ -2191,7 +2191,7 @@ class Mobile_Wallet(Imported_Wallet):
         for i in range(0, self.gap_limit - addr_count):
             secret, compressed = self.keystore.derive_privkey([0, addr_count + i], None)
             keys.append(serialize_privkey(secret, compressed, 'p2pkh', True))
-        self.import_private_keys(keys, None, write_to_disk=True)
+        self.import_private_keys(keys, None, write_to_disk=False)
 
 
 class Qt_Core_Wallet(Simple_Deterministic_Wallet):
