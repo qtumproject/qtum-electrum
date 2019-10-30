@@ -227,6 +227,7 @@ class LNPathFinder(Logger):
                 edge_startnode = channel_info.node2_id if channel_info.node1_id == edge_endnode else channel_info.node1_id
                 inspect_edge()
         else:
+            self.logger.error("nodes_to_explore.qsize() == 0")
             return None  # no path found
 
         # backtrack from search_end (nodeA) to search_start (nodeB)

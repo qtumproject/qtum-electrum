@@ -115,32 +115,32 @@ class NotFoundChanAnnouncementForUpdate(Exception): pass
 
 
 # TODO make some of these values configurable?
-DEFAULT_TO_SELF_DELAY = 144
+DEFAULT_TO_SELF_DELAY = 144*5
 
 
 ##### CLTV-expiry-delta-related values
 # see https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#cltv_expiry_delta-selection
 
 # the minimum cltv_expiry accepted for terminal payments
-MIN_FINAL_CLTV_EXPIRY_ACCEPTED = 144
+MIN_FINAL_CLTV_EXPIRY_ACCEPTED = 144*5
 # set it a tiny bit higher for invoices as blocks could get mined
 # during forward path of payment
-MIN_FINAL_CLTV_EXPIRY_FOR_INVOICE = MIN_FINAL_CLTV_EXPIRY_ACCEPTED + 3
+MIN_FINAL_CLTV_EXPIRY_FOR_INVOICE = MIN_FINAL_CLTV_EXPIRY_ACCEPTED + 3*5
 
 # the deadline for offered HTLCs:
 # the deadline after which the channel has to be failed and timed out on-chain
-NBLOCK_DEADLINE_AFTER_EXPIRY_FOR_OFFERED_HTLCS = 1
+NBLOCK_DEADLINE_AFTER_EXPIRY_FOR_OFFERED_HTLCS = 1*5
 
 # the deadline for received HTLCs this node has fulfilled:
 # the deadline after which the channel has to be failed and the HTLC fulfilled on-chain before its cltv_expiry
-NBLOCK_DEADLINE_BEFORE_EXPIRY_FOR_RECEIVED_HTLCS = 72
+NBLOCK_DEADLINE_BEFORE_EXPIRY_FOR_RECEIVED_HTLCS = 72 * 5
 
 # the cltv_expiry_delta for channels when we are forwarding payments
-NBLOCK_OUR_CLTV_EXPIRY_DELTA = 144
+NBLOCK_OUR_CLTV_EXPIRY_DELTA = 144 * 5
 OUR_FEE_BASE_MSAT = 1000
 OUR_FEE_PROPORTIONAL_MILLIONTHS = 1
 
-NBLOCK_CLTV_EXPIRY_TOO_FAR_INTO_FUTURE = 4032
+NBLOCK_CLTV_EXPIRY_TOO_FAR_INTO_FUTURE = 4032 * 5
 
 
 # When we open a channel, the remote peer has to support at least this
@@ -148,9 +148,9 @@ NBLOCK_CLTV_EXPIRY_TOO_FAR_INTO_FUTURE = 4032
 # Number is based on observed testnet limit https://github.com/spesmilo/electrum/issues/5032
 MINIMUM_MAX_HTLC_VALUE_IN_FLIGHT_ACCEPTED = 19_800 * 1000
 
-MAXIMUM_HTLC_MINIMUM_MSAT_ACCEPTED = 1000
+MAXIMUM_HTLC_MINIMUM_MSAT_ACCEPTED = 1000 * 400
 
-MAXIMUM_REMOTE_TO_SELF_DELAY_ACCEPTED = 2016
+MAXIMUM_REMOTE_TO_SELF_DELAY_ACCEPTED = 2016 * 5
 
 class RevocationStore:
     """ Taken from LND, see license in lnchannel.py. """

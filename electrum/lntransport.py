@@ -115,9 +115,11 @@ class LNTransportBase:
                         break
                 try:
                     s = await self.reader.read(2**10)
-                except:
+                except BaseException as e:
+                    print('read_messages error', e)
                     s = None
                 if not s:
+                    print('read_messages s is None')
                     raise LightningPeerConnectionClosed()
                 read_buffer += s
 
