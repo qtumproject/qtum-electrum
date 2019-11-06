@@ -201,9 +201,9 @@ class LNWorker(Logger):
         # TODO remove this. For some reason the dns seeds seem to ignore the realm byte
         # and only return mainnet nodes. so for the time being dns seeding is disabled:
         if constants.net in (constants.QtumTestnet, ):
-            return [random.choice(FALLBACK_NODE_LIST_TESTNET)]
+            return [random.choice(FALLBACK_NODE_LIST_TESTNET)] if FALLBACK_NODE_LIST_TESTNET else []
         elif constants.net in (constants.QtumMainnet, ):
-            return [random.choice(FALLBACK_NODE_LIST_MAINNET)]
+            return [random.choice(FALLBACK_NODE_LIST_MAINNET)] if FALLBACK_NODE_LIST_MAINNET else []
         else:
             return []
 
