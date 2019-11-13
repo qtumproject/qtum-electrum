@@ -52,7 +52,8 @@ class AbstractNet:
 
     @classmethod
     def max_checkpoint(cls) -> int:
-        return max(0, max(int(k) for k, v in cls.CHECKPOINTS.items() if v != 0))
+        checkpoints = [int(k) for k, v in cls.CHECKPOINTS.items() if v != 0] or [0, ]
+        return max(0, max(checkpoints))
 
     @classmethod
     def rev_genesis_bytes(cls) -> bytes:
