@@ -962,9 +962,6 @@ class Abstract_Wallet(AddressSynchronizer):
         # check outputs
         i_max = None
         for i, o in enumerate(outputs):
-            if o.type == TYPE_ADDRESS:
-                if not is_address(o.address):
-                    raise Exception("Invalid qtum address: {}".format(o.address))
             if o.value == '!':
                 if i_max is not None:
                     raise Exception("More than one output set to spend max")
