@@ -481,13 +481,20 @@ class CoinChooserQtum(CoinChooserPrivacy):
         if sender is not None:
             found = False
             for coin in coins:
-                if coin.get('address', '') == sender:
+                if coin.address == sender:
                     inputs.insert(0, coin)
                     found = True
                     break
             if not found:
                 raise BaseException("sender has no utxo")
-        return super().make_tx(coins, inputs, outputs, change_addrs, fee_estimator_vb, dust_threshold, sender)
+        return super().make_tx(
+            coins=coins,
+            inputs=inputs,
+            outputs=outputs,
+            change_addrs=change_addrs,
+            fee_estimator_vb=fee_estimator_vb,
+            dust_threshold=dust_threshold,
+            sender=sender)
 
 
 COIN_CHOOSERS = {
