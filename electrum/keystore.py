@@ -512,6 +512,9 @@ class Mobile_KeyStore(BIP32_KeyStore):
         d['keypairs'] = self.keypairs
         return d
 
+    def get_master_public_key(self):
+        return None
+
     def can_import(self):
         return False
 
@@ -543,14 +546,24 @@ class Mobile_KeyStore(BIP32_KeyStore):
         self.keypairs[pubkey] = pw_encode(serialized_privkey, password, version=self.pw_hash_version)
         return txin_type, pubkey
 
-    def get_pubkey_derivation(self, x_pubkey):
-        if x_pubkey[0:2] in ['02', '03', '04']:
-            if x_pubkey in self.keypairs.keys():
-                return x_pubkey
-        elif x_pubkey[0:2] == 'fd':
-            addr = bitcoin.script_to_address(x_pubkey[2:])
-            if addr in self.addresses:
-                return self.addresses[addr].get('pubkey')
+    def get_pubkey_derivation(self, pubkey, txin, *, only_der_suffix=True):
+        if pubkey.hex() in self.keypairs:
+            return pubkey.hex()
+        return None
+
+    def check_password(self, password):
+        pubkey = list(self.keypairs.keys())[0]
+        self.get_private_key(pubkey, password)
+
+    def update_password(self, old_password, new_password):
+        self.check_password(old_password)
+        if new_password == '':
+            new_password = None
+        for k, v in self.keypairs.items():
+            b = pw_decode(v, old_password, version=self.pw_hash_version)
+            c = pw_encode(b, new_password, version=PW_HASH_VERSION_LATEST)
+            self.keypairs[k] = c
+        self.pw_hash_version = PW_HASH_VERSION_LATEST
 
 
 class Qt_Core_Keystore(BIP32_KeyStore):

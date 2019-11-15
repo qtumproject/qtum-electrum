@@ -51,7 +51,7 @@ from .util import (NotEnoughFunds, UserCancelled, profiler,
                    Fiat, bfh, bh2u, TxMinedInfo, quantize_feerate, create_bip21_uri, OrderedDictWithIndex)
 from .util import PR_TYPE_ONCHAIN, PR_TYPE_LN
 from .simple_config import SimpleConfig
-from .bitcoin import (COIN, TYPE_ADDRESS, TYPE_PUBKEY, is_address, address_to_script,
+from .bitcoin import (COIN, TYPE_ADDRESS, TYPE_PUBKEY, is_address, address_to_script, serialize_privkey,
                       is_minikey, relayfee, dust_threshold, COINBASE_MATURITY, RECOMMEND_CONFIRMATIONS,
                       TOKEN_TRANSFER_TOPIC, b58_address_to_hash160, hash160_to_p2pkh)
 from .crypto import sha256d
