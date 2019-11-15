@@ -585,6 +585,13 @@ class HistoryList(MyTreeView, AcceptFileDragDrop):
             column_data = (self.hm.data(idx2, Qt.DisplayRole).value() or '').strip()
             cc.addAction(column_title, lambda t=column_data: self.parent.app.clipboard().setText(t))
 
+        tx_item = self.hm.transactions.value_from_pos(idx.row())
+        if tx_item.get('lightning'):
+            return
+        tx_hash = tx_item['txid']
+        tx = self.wallet.db.get_transaction(tx_hash)
+        cc.addAction(_("raw transaction"), lambda t=str(tx): self.parent.app.clipboard().setText(t))
+
     def create_menu(self, position: QPoint):
         org_idx: QModelIndex = self.indexAt(position)
         idx = self.proxy.mapToSource(org_idx)
@@ -628,8 +635,6 @@ class HistoryList(MyTreeView, AcceptFileDragDrop):
         #    menu.addAction(read_QIcon("seal"), _("View invoice"), lambda: self.parent.show_invoice(pr_key))
         if tx_URL:
             menu.addAction(_("View on block explorer"), lambda: webopen(tx_URL))
-
-        menu.addAction(_("Copy raw transaction"), lambda: self.parent.app.clipboard().setText(str(tx)))
 
         menu.exec_(self.viewport().mapToGlobal(position))
 
