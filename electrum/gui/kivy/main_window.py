@@ -9,7 +9,6 @@ import threading
 import asyncio
 from typing import TYPE_CHECKING, Optional
 
-from electrum.bitcoin import TYPE_ADDRESS
 from electrum.storage import WalletStorage, StorageReadWriteError
 from electrum.wallet import Wallet, InternalAddressCorruption
 from electrum.util import profiler, InvalidPassword, send_exception_to_crash_reporter
@@ -103,6 +102,11 @@ class ElectrumWindow(App):
     fiat_balance = StringProperty('')
     is_fiat = BooleanProperty(False)
     blockchain_forkpoint = NumericProperty(0)
+
+    lightning_gossip_num_peers = NumericProperty(0)
+    lightning_gossip_num_nodes = NumericProperty(0)
+    lightning_gossip_num_channels = NumericProperty(0)
+    lightning_gossip_num_queries = NumericProperty(0)
 
     auto_connect = BooleanProperty(False)
     def on_auto_connect(self, instance, x):
@@ -393,12 +397,9 @@ class ElectrumWindow(App):
             self.set_ln_invoice(data)
             return
         # try to decode transaction
-        from electrum.transaction import Transaction
-        from electrum.util import bh2u
+        from electrum.transaction import tx_from_any
         try:
-            text = bh2u(base_decode(data, None, base=43))
-            tx = Transaction(text)
-            tx.deserialize()
+            tx = tx_from_any(data)
         except:
             tx = None
         if tx:
@@ -561,6 +562,9 @@ class ElectrumWindow(App):
             self.network.register_callback(self.on_channel, ['channel'])
             self.network.register_callback(self.on_invoice_status, ['invoice_status'])
             self.network.register_callback(self.on_request_status, ['request_status'])
+            self.network.register_callback(self.on_channel_db, ['channel_db'])
+            self.network.register_callback(self.set_num_peers, ['gossip_peers'])
+            self.network.register_callback(self.set_unknown_channels, ['unknown_channels'])
         # load wallet
         self.load_wallet_by_name(self.electrum_config.get_wallet_path(use_gui_last_wallet=True))
         # URI passed in config
@@ -568,6 +572,15 @@ class ElectrumWindow(App):
         if uri:
             self.set_URI(uri)
 
+    def on_channel_db(self, event, num_nodes, num_channels, num_policies):
+        self.lightning_gossip_num_nodes = num_nodes
+        self.lightning_gossip_num_channels = num_channels
+
+    def set_num_peers(self, event, num_peers):
+        self.lightning_gossip_num_peers = num_peers
+
+    def set_unknown_channels(self, event, unknown):
+        self.lightning_gossip_num_queries = unknown
 
     def get_wallet_path(self):
         if self.wallet:
@@ -838,7 +851,7 @@ class ElectrumWindow(App):
             self._trigger_update_status()
 
     def get_max_amount(self):
-        from electrum.transaction import TxOutput
+        from electrum.transaction import PartialTxOutput
         if run_hook('abort_send', self):
             return ''
         inputs = self.wallet.get_spendable_coins(None)
@@ -849,9 +862,9 @@ class ElectrumWindow(App):
             addr = str(self.send_screen.screen.address)
         if not addr:
             addr = self.wallet.dummy_address()
-        outputs = [TxOutput(TYPE_ADDRESS, addr, '!')]
+        outputs = [PartialTxOutput.from_address_and_value(addr, '!')]
         try:
-            tx = self.wallet.make_unsigned_transaction(inputs, outputs)
+            tx = self.wallet.make_unsigned_transaction(coins=inputs, outputs=outputs)
         except NoDynamicFeeEstimates as e:
             Clock.schedule_once(lambda dt, bound_e=e: self.show_error(str(bound_e)))
             return ''
@@ -1182,7 +1195,7 @@ class ElectrumWindow(App):
             if not self.wallet.can_export():
                 return
             try:
-                key = str(self.wallet.export_private_key(addr, password)[0])
+                key = str(self.wallet.export_private_key(addr, password))
                 pk_label.data = key
             except InvalidPassword:
                 self.show_error("Invalid PIN")
