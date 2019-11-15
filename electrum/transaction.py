@@ -898,9 +898,10 @@ class Transaction:
             return
         sender_inp = None
         for i in range(len(self._inputs)):
-            inp = self._inputs[i]
-            if inp['address'] == sender:
-                sender_inp = inp
+            txin = self._inputs[i]
+            assert(isinstance(txin, PartialTxInput))
+            if txin.address == sender:
+                sender_inp = txin
                 del self._inputs[i]
                 break
         if sender_inp:
