@@ -44,7 +44,7 @@ from .util import profiler, to_bytes, bh2u, bfh
 from . import ecc, bitcoin, constants, segwit_addr, bip32
 from .bip32 import BIP32Node
 from .util import profiler, to_bytes, bh2u, bfh, chunks, is_hex_str
-from .bitcoin import (TYPE_ADDRESS, TYPE_SCRIPT, TYPE_PUBKEY, TYPE_STAKE, hash_160,
+from .bitcoin import (TYPE_ADDRESS, TYPE_SCRIPT, TYPE_PUBKEY, hash_160,
                       hash160_to_p2sh, hash160_to_p2pkh, hash_to_segwit_addr,
                       var_int, TOTAL_COIN_SUPPLY_LIMIT_IN_BTC, COIN,
                       int_to_hex, push_script, b58_address_to_hash160,
@@ -159,8 +159,12 @@ class TxOutput:
             'scriptpubkey': self.scriptpubkey.hex(),
             'address': self.address,
             'value_sats': self.value,
+            'constake': self.is_coinstake(),
         }
         return d
+
+    def is_coinstake(self):
+        return not self.value and not self.scriptpubkey
 
 
 class BIP143SharedTxDigestFields(NamedTuple):

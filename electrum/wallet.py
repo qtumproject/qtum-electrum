@@ -51,7 +51,7 @@ from .util import (NotEnoughFunds, UserCancelled, profiler,
                    Fiat, bfh, bh2u, TxMinedInfo, quantize_feerate, create_bip21_uri, OrderedDictWithIndex)
 from .util import PR_TYPE_ONCHAIN, PR_TYPE_LN
 from .simple_config import SimpleConfig
-from .bitcoin import (COIN, TYPE_ADDRESS, TYPE_PUBKEY, TYPE_STAKE, is_address, address_to_script,
+from .bitcoin import (COIN, TYPE_ADDRESS, TYPE_PUBKEY, is_address, address_to_script,
                       is_minikey, relayfee, dust_threshold, COINBASE_MATURITY, RECOMMEND_CONFIRMATIONS,
                       TOKEN_TRANSFER_TOPIC, b58_address_to_hash160, hash160_to_p2pkh)
 from .crypto import sha256d
@@ -825,15 +825,15 @@ class Abstract_Wallet(AddressSynchronizer):
                 return ', '.join(labels)
         try:
             tx = self.db.get_transaction(tx_hash)
-            if tx.outputs()[0].type == TYPE_STAKE:
+            if tx.outputs()[0].is_coinstake():
                 is_relevant, is_mine, delta, fee = self.get_wallet_delta(tx)
                 if delta and 0 < delta < 4 * 10 ** 7:
                     return _('contract gas refund')
                 return _('stake mined')
-            elif tx.inputs()[0]['type'] == 'coinbase':
+            elif tx.inputs()[0].is_coinbase():
                 return 'coinbase'
         except (BaseException,) as e:
-            self.logger.info(f'get_default_label {e, TYPE_STAKE}')
+            self.logger.info(f'get_default_label {e}')
         return ''
 
     def get_tx_status(self, tx_hash, tx_mined_info: TxMinedInfo):
@@ -841,12 +841,12 @@ class Abstract_Wallet(AddressSynchronizer):
         height = tx_mined_info.height
         conf = tx_mined_info.conf
         timestamp = tx_mined_info.timestamp
-        is_mined = False
+        is_staked = False
         tx = None
         try:
             tx = self.db.get_transaction(tx_hash) or self.db.get_token_tx(tx_hash)
             if tx is not None:
-                is_mined = tx.outputs()[0].type == TYPE_STAKE
+                is_staked = tx.outputs()[0].is_coinstake()
         except (BaseException,) as e:
             self.logger.info(f'get_tx_status {repr(e)}')
         if height == TX_HEIGHT_FUTURE:
@@ -875,7 +875,7 @@ class Abstract_Wallet(AddressSynchronizer):
                 status = 0
             else:
                 status = 2  # not SPV verified
-        elif is_mined:
+        elif is_staked:
             status = 3 + max(min(conf // (COINBASE_MATURITY // RECOMMEND_CONFIRMATIONS), RECOMMEND_CONFIRMATIONS), 1)
         else:
             status = 3 + min(conf, RECOMMEND_CONFIRMATIONS)
