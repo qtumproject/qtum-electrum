@@ -2400,7 +2400,7 @@ class Multisig_Wallet(Deterministic_Wallet):
         return ''.join(sorted(self.get_master_public_keys()))
 
 
-wallet_types = ['standard', 'multisig', 'imported']
+wallet_types = ['standard', 'multisig', 'imported', 'mobile', 'qtcore']
 
 def register_wallet_type(category):
     wallet_types.append(category)
