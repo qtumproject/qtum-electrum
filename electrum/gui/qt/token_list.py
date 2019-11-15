@@ -343,13 +343,13 @@ class TokenHistoryList(MyTreeView):
         if not idx.isValid():
             return
         tx_item = self.tx_item_from_proxy_row(idx.row())
-        self.show_transaction(tx_item)
+        self.show_transaction(tx_item['txid'])
 
-    def show_transaction(self, tx_item):
-        tx = self.wallet.db.get_token_tx(tx_item['txid'])
+    def show_transaction(self, txid):
+        tx = self.wallet.db.get_token_tx(txid)
         if not tx:
             return
-        self.parent.show_transaction(tx, None)
+        self.parent.show_transaction(tx, tx_desc=None)
 
     def create_menu(self, position: QPoint):
         org_idx: QModelIndex = self.indexAt(position)
@@ -371,7 +371,7 @@ class TokenHistoryList(MyTreeView):
         if column is TokenHistoryColumns.AMOUNT:
             column_data = column_data.strip()
         menu.addAction(_("Copy {}").format(column_title), lambda: self.parent.app.clipboard().setText(column_data))
-        menu.addAction(_("Details"), lambda: self.show_transaction(tx_item))
+        menu.addAction(_("Details"), lambda: self.show_transaction(tx_hash))
 
         if tx_URL:
             menu.addAction(_("View on block explorer"), lambda: webopen(tx_URL))
