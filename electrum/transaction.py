@@ -1948,7 +1948,7 @@ def contract_encode_number(n):
     return bytes(bchr(len(r)) + r)
 
 
-def contract_script(gas_limit, gas_price, datahex, contract_addr, opcode):
+def contract_script(gas_limit, gas_price, datahex, contract_addr, opcode) -> bytes:
     script = '0104'
     script += bh2u(contract_encode_number(gas_limit))
     script += bh2u(contract_encode_number(gas_price))
@@ -1958,7 +1958,7 @@ def contract_script(gas_limit, gas_price, datahex, contract_addr, opcode):
         script += push_script(contract_addr)
 
     script += bh2u(bytes([opcode]))
-    return script
+    return bfh(script)
 
 
 def is_opcall_script(_bytes):
