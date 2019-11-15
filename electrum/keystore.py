@@ -984,30 +984,29 @@ def purpose48_derivation(account_id: int, xtype: str) -> str:
 
 def from_seed(seed, passphrase, is_p2sh=False):
     t = seed_type(seed)
-    if t == 'old':
-        keystore = Old_KeyStore({})
-        keystore.add_seed(seed)
-    elif t in ['standard', 'segwit']:
+    if t in ['standard', 'segwit']:
         keystore = BIP32_KeyStore({})
         keystore.add_seed(seed)
         keystore.passphrase = passphrase
         bip32_seed = Mnemonic.mnemonic_to_seed(seed, passphrase)
         if t == 'standard':
-            der = "m/"
+            der = bip44_derivation(0, bip43_purpose=44)
             xtype = 'standard'
         else:
-            der = "m/1'/" if is_p2sh else "m/0'/"
+            der = bip44_derivation(0, bip43_purpose=49) if is_p2sh else bip44_derivation(0, bip43_purpose=84)
             xtype = 'p2wsh' if is_p2sh else 'p2wpkh'
         keystore.add_xprv_from_seed(bip32_seed, xtype, der)
     else:
         raise BitcoinException('Unexpected seed type {}'.format(t))
     return keystore
 
+
 def from_private_key_list(text):
     keystore = Imported_KeyStore({})
     for x in get_private_keys(text):
         keystore.import_privkey(x, None)
     return keystore
+
 
 def from_mobile_seed(seed):
     passphrase = ''
@@ -1018,20 +1017,24 @@ def from_mobile_seed(seed):
     k.add_xprv_from_seed(bip32_seed, 'standard', mobile_derivation())
     return k
 
+
 def from_old_mpk(mpk):
     keystore = Old_KeyStore({})
     keystore.add_master_public_key(mpk)
     return keystore
+
 
 def from_xpub(xpub):
     k = BIP32_KeyStore({})
     k.add_xpub(xpub)
     return k
 
+
 def from_xprv(xprv):
     k = BIP32_KeyStore({})
     k.add_xprv(xprv)
     return k
+
 
 def from_master_key(text):
     if is_xprv(text):
