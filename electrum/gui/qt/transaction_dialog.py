@@ -107,6 +107,7 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
         self.saved = False
         self.desc = desc
         self.invoice = invoice
+        self.external_keypairs = None
         self.setMinimumWidth(950)
         self.set_title()
 
