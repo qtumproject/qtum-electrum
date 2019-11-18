@@ -227,10 +227,10 @@ def seed_type(x: str) -> str:
         return 'standard'
     elif is_new_seed(x, version.SEED_PREFIX_SW):
         return 'segwit'
-    elif is_new_seed(x, version.SEED_PREFIX_2FA):
-        return '2fa'
-    elif is_new_seed(x, version.SEED_PREFIX_2FA_SW):
-        return '2fa_segwit'
+    # elif is_new_seed(x, version.SEED_PREFIX_2FA):
+    #     return '2fa'
+    # elif is_new_seed(x, version.SEED_PREFIX_2FA_SW):
+    #     return '2fa_segwit'
     return ''
 
 
@@ -239,4 +239,5 @@ def is_seed(x: str) -> bool:
 
 
 def is_any_2fa_seed_type(seed_type: str) -> bool:
-    return seed_type in ['2fa', '2fa_segwit']
+    return False
+    # return seed_type in ['2fa', '2fa_segwit']
