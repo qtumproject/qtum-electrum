@@ -447,7 +447,7 @@ class BaseWizard(Logger):
         from .keystore import hardware_keystore
         try:
             xpub = self.plugin.get_xpub(device_info.device.id_, derivation, xtype, self)
-            root_xpub = self.plugin.get_xpub(device_info.device.id_, 'm', 'standard', self)
+            root_xpub = self.plugin.get_xpub(device_info.device.id_, "m/44'/88'/0'", 'standard', self)
         except ScriptTypeNotSupported:
             raise  # this is handled in derivation_dialog
         except BaseException as e:
