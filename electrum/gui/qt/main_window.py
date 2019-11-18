@@ -3185,7 +3185,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         try:
             abi_encoded = eth_abi_encode(abi, args)
             script = contract_script(gas_limit, gas_price, abi_encoded, address, opcodes.OP_CALL)
-            outputs = [TxOutput(TYPE_SCRIPT, script, amount), ]
+            outputs = [PartialTxOutput(scriptpubkey=script, value=amount)]
             tx_desc = 'contract sendto {}'.format(self.wallet.db.smart_contracts[address][0])
             self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog, None, preview)
         except (BaseException,) as e:
@@ -3205,7 +3205,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             if constructor:
                 abi_encoded = eth_abi_encode(constructor, args)
             script = contract_script(gas_limit, gas_price, bytecode + abi_encoded, None, opcodes.OP_CREATE)
-            outputs = [TxOutput(TYPE_SCRIPT, script, 0), ]
+            outputs = [PartialTxOutput(scriptpubkey=script, value=0)]
             self._smart_contract_broadcast(outputs, 'create contract {}'.format(name), gas_limit * gas_price,
                                            sender, dialog, broadcast_done, preview)
         except (BaseException,) as e:
