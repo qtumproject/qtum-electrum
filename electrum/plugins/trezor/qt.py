@@ -29,7 +29,7 @@ PASSPHRASE_HELP = PASSPHRASE_HELP_SHORT + "  " + _(
     "accessible behind its own passphrase.")
 RECOMMEND_PIN = _(
     "You should enable PIN protection.  Your PIN is the only protection "
-    "for your bitcoins if your device is lost or stolen.")
+    "for your QTUMs if your device is lost or stolen.")
 PASSPHRASE_NOT_PIN = _(
     "If you forget a passphrase you will be unable to access any "
     "QTUMs in the wallet behind it.  A passphrase is not a PIN. "
@@ -443,7 +443,7 @@ class SettingsDialog(WindowModalDialog):
             if wallet and sum(wallet.get_balance()):
                 title = _("Confirm Device Wipe")
                 msg = _("Are you SURE you want to wipe the device?\n"
-                        "Your wallet still has bitcoins in it!")
+                        "Your wallet still has QTUMs in it!")
                 if not self.question(msg, title=title,
                                      icon=QMessageBox.Critical):
                     return
@@ -515,7 +515,7 @@ class SettingsDialog(WindowModalDialog):
         settings_glayout.addWidget(pin_button, 2, 1)
         pin_msg = QLabel(_("PIN protection is strongly recommended.  "
                            "A PIN is your only protection against someone "
-                           "stealing your bitcoins if they obtain physical "
+                           "stealing your QTUMs if they obtain physical "
                            "access to your {}.").format(plugin.device))
         pin_msg.setWordWrap(True)
         pin_msg.setStyleSheet("color: red")
