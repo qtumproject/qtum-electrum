@@ -5,12 +5,6 @@
     "s": "50002",
     "version": "1.4"
   },
-  "s2.qtum.info": {
-    "pruning": "-",
-    "t": "50001",
-    "s": "50002",
-    "version": "1.4"
-  },
   "s3.qtum.info": {
     "pruning": "-",
     "t": "50001",
