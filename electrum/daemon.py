@@ -189,7 +189,7 @@ class PayServer(Logger):
     @log_exceptions
     async def run(self):
         host = self.config.get('payserver_host', 'localhost')
-        port = self.config.get('payserver_port')
+        port = self.config.get('payserver_port', 8002)
         root = self.config.get('payserver_root', '/r')
         app = web.Application()
         app.add_routes([web.post('/api/create_invoice', self.create_request)])
