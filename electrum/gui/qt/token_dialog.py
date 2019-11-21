@@ -36,7 +36,7 @@ class TokenAddLayout(QGridLayout):
 
         addr_type, __ = b58_address_to_hash160(self.addresses[0])
         if not addr_type == constants.net.ADDRTYPE_P2PKH:
-            self.dialog.show_message('only P2PKH address supports QRC20 Token')
+            self.dialog.show_message(_('only P2PKH address supports QRC20 Token'))
             self.dialog.reject()
             return
 

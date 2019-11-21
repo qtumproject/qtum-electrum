@@ -5546,3 +5546,65 @@ msgstr "收到了{} 笔新的交易，从新交易中一共收到资金 {}"
 msgid "{} words"
 msgstr "{} 个单词"
 
+msgid "Services"
+msgstr "服务"
+
+msgid "Tokens"
+msgstr "代币"
+
+msgid "On-chain"
+msgstr "链上收款"
+
+msgid "Lightning"
+msgstr "闪电网络"
+
+msgid "QR Code"
+msgstr "二维码"
+
+msgid "Text"
+msgstr "文本"
+
+msgid "only P2PKH address supports QRC20 Token"
+msgstr "只有 P2PKH 类型的地址支持 QRC20 代币"
+
+msgid "Contract Address:"
+msgstr "合约地址："
+
+msgid "My Address:"
+msgstr "我的地址："
+
+msgid "Bind Address"
+msgstr "绑定地址"
+
+msgid "Symbol"
+msgstr "符号"
+
+msgid "Pay to:"
+msgstr "发给："
+
+msgid "Amount:"
+msgstr "金额："
+
+msgid "Optional:"
+msgstr "附加选项："
+
+msgid "In progress"
+msgstr "进行中"
+
+msgid "Failed"
+msgstr "失败"
+
+msgid "contract gas refund"
+msgstr "合约 Gas 返还"
+
+msgid "Pay out {} {}"
+msgstr "支出 {} {}"
+
+msgid "pay out {} {}"
+msgstr "支出 {} {}"
+
+msgid "Copy Transaction ID"
+msgstr "复制交易ID"
+
+msgid "raw transaction"
+msgstr "交易字节码"
