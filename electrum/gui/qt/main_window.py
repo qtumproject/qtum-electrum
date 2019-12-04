@@ -3156,6 +3156,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
                     self.broadcast_transaction(tx)
                     if broadcast_done:
                         broadcast_done(tx)
+                    if desc is not None:
+                        self.wallet.set_label(tx.txid(), desc)
 
         self.sign_tx_with_password(tx, callback=sign_done, password=password)
 
