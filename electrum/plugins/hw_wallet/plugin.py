@@ -28,7 +28,7 @@ from typing import TYPE_CHECKING, Dict, List, Union, Tuple, Sequence, Optional, 
 
 from electrum.plugin import BasePlugin, hook, Device, DeviceMgr
 from electrum.i18n import _
-from electrum.bitcoin import is_address, TYPE_SCRIPT, opcodes
+from electrum.bitcoin import is_address, opcodes
 from electrum.util import bfh, versiontuple, UserFacingException
 from electrum.transaction import TxOutput, Transaction, PartialTransaction, PartialTxInput, PartialTxOutput
 from electrum.bip32 import BIP32Node
@@ -40,6 +40,7 @@ if TYPE_CHECKING:
 
 class HW_PluginBase(BasePlugin):
     keystore_class: Type['Hardware_KeyStore']
+    libraries_available: bool
 
     minimum_library = (0, )
 
@@ -159,7 +160,7 @@ class HardwareClientBase:
         """True if initialized, False if wiped."""
         raise NotImplementedError()
 
-    def label(self) -> str:
+    def label(self) -> Optional[str]:
         """The name given by the user to the device.
 
         Note: labels are shown to the user to help distinguish their devices,
@@ -173,6 +174,13 @@ class HardwareClientBase:
 
     def get_xpub(self, bip32_path: str, xtype) -> str:
         raise NotImplementedError()
+
+    def request_root_fingerprint_from_device(self) -> str:
+        # digitalbitbox (at least) does not reveal xpubs corresponding to unhardened paths
+        # so ask for a direct child, and read out fingerprint from that:
+        child_of_root_xpub = self.get_xpub("m/0'", xtype='standard')
+        root_fingerprint = BIP32Node.from_xkey(child_of_root_xpub).fingerprint.hex().lower()
+        return root_fingerprint
 
 
 def is_any_tx_output_on_change_branch(tx: PartialTransaction) -> bool:
@@ -211,7 +219,7 @@ def get_xpubs_and_der_suffixes_from_txinout(tx: PartialTransaction,
 def only_hook_if_libraries_available(func):
     # note: this decorator must wrap @hook, not the other way around,
     # as 'hook' uses the name of the function it wraps
-    def wrapper(self, *args, **kwargs):
+    def wrapper(self: 'HW_PluginBase', *args, **kwargs):
         if not self.libraries_available: return None
         return func(self, *args, **kwargs)
     return wrapper

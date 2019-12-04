@@ -44,23 +44,25 @@ from .plugin import run_hook
 from .logging import Logger
 
 if TYPE_CHECKING:
+    from .gui.qt.util import TaskThread
     from .transaction import Transaction, PartialTransaction, PartialTxInput, PartialTxOutput
     from .plugins.hw_wallet import HW_PluginBase, HardwareClientBase
 
 
 class KeyStore(Logger):
+    type: str
 
     def __init__(self):
         Logger.__init__(self)
         self.is_requesting_to_be_rewritten_to_wallet_file = False  # type: bool
 
-    def has_seed(self):
+    def has_seed(self) -> bool:
         return False
 
-    def is_watching_only(self):
+    def is_watching_only(self) -> bool:
         return False
 
-    def can_import(self):
+    def can_import(self) -> bool:
         return False
 
     def get_type_text(self) -> str:
@@ -85,12 +87,12 @@ class KeyStore(Logger):
                 keypairs[pubkey.hex()] = derivation
         return keypairs
 
-    def can_sign(self, tx):
+    def can_sign(self, tx) -> bool:
         if self.is_watching_only():
             return False
         return bool(self.get_tx_derivations(tx))
 
-    def ready_to_sign(self):
+    def ready_to_sign(self) -> bool:
         return not self.is_watching_only()
 
     def dump(self) -> dict:
@@ -730,6 +732,7 @@ class Hardware_KeyStore(KeyStore, Xpub):
     hw_type: str
     device: str
     plugin: 'HW_PluginBase'
+    thread: Optional['TaskThread'] = None
 
     type = 'hardware'
 
@@ -785,7 +788,7 @@ class Hardware_KeyStore(KeyStore, Xpub):
         assert not self.has_seed()
         return False
 
-    def get_password_for_storage_encryption(self):
+    def get_password_for_storage_encryption(self) -> str:
         from .storage import get_derivation_used_for_hw_device_encryption
         client = self.plugin.get_client(self)
         derivation = get_derivation_used_for_hw_device_encryption()
@@ -793,7 +796,7 @@ class Hardware_KeyStore(KeyStore, Xpub):
         password = self.get_pubkey_from_xpub(xpub, ())
         return password
 
-    def has_usable_connection_with_device(self):
+    def has_usable_connection_with_device(self) -> bool:
         if not hasattr(self, 'plugin'):
             return False
         client = self.plugin.get_client(self, force_pair=False)
@@ -807,11 +810,7 @@ class Hardware_KeyStore(KeyStore, Xpub):
     def opportunistically_fill_in_missing_info_from_device(self, client: 'HardwareClientBase'):
         assert client is not None
         if self._root_fingerprint is None:
-            # digitalbitbox (at least) does not reveal xpubs corresponding to unhardened paths
-            # so ask for a direct child, and read out fingerprint from that:
-            child_of_root_xpub = client.get_xpub("m/44'/88'/0'", xtype='standard')
-            root_fingerprint = BIP32Node.from_xkey(child_of_root_xpub).fingerprint.hex().lower()
-            self._root_fingerprint = root_fingerprint
+            self._root_fingerprint = client.request_root_fingerprint_from_device()
             self.is_requesting_to_be_rewritten_to_wallet_file = True
         if self.label != client.label():
             self.label = client.label()

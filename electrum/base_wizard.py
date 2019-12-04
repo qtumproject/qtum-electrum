@@ -35,7 +35,7 @@ from . import keystore
 from . import mnemonic
 from . import constants
 from .bip32 import is_bip32_derivation, xpub_type, normalize_bip32_derivation, BIP32Node
-from .keystore import bip44_derivation, purpose48_derivation
+from .keystore import bip44_derivation, purpose48_derivation, Hardware_KeyStore
 from .wallet import (Imported_Wallet, Standard_Wallet, Multisig_Wallet,
                      wallet_types, Wallet, Abstract_Wallet)
 from .storage import (WalletStorage, StorageEncryptionVersion,
@@ -48,7 +48,7 @@ from .logging import Logger
 from .plugins.hw_wallet.plugin import OutdatedHwFirmwareException, HW_PluginBase
 
 if TYPE_CHECKING:
-    from .plugin import DeviceInfo
+    from .plugin import DeviceInfo, BasePlugin
 
 
 # hardware device setup purpose
@@ -85,7 +85,7 @@ class BaseWizard(Logger):
         self.data = {}
         self.pw_args = None  # type: Optional[WizardWalletPasswordSetting]
         self._stack = []  # type: List[WizardStackItem]
-        self.plugin = None
+        self.plugin = None  # type: Optional[BasePlugin]
         self.keystores = []
         self.is_kivy = config.get('gui') == 'kivy'
         self.seed_type = None
@@ -445,21 +445,23 @@ class BaseWizard(Logger):
 
     def on_hw_derivation(self, name, device_info, derivation, xtype):
         from .keystore import hardware_keystore
+        devmgr = self.plugins.device_manager
         try:
             xpub = self.plugin.get_xpub(device_info.device.id_, derivation, xtype, self)
-            root_xpub = self.plugin.get_xpub(device_info.device.id_, "m/44'/88'/0'", 'standard', self)
+            client = devmgr.client_by_id(device_info.device.id_)
+            if not client: raise Exception("failed to find client for device id")
+            root_fingerprint = client.request_root_fingerprint_from_device()
         except ScriptTypeNotSupported:
             raise  # this is handled in derivation_dialog
         except BaseException as e:
             self.logger.exception('')
             self.show_error(e)
             return
-        xfp = BIP32Node.from_xkey(root_xpub).calc_fingerprint_of_this_node().hex().lower()
         d = {
             'type': 'hardware',
             'hw_type': name,
             'derivation': derivation,
-            'root_fingerprint': xfp,
+            'root_fingerprint': root_fingerprint,
             'xpub': xpub,
             'label': device_info.label,
         }
@@ -578,9 +580,9 @@ class BaseWizard(Logger):
         if self.wallet_type in ['mobile', 'qtcore']:
             self.on_password(None, encrypt_storage=False, encrypt_keystore=False)
 
-        elif self.wallet_type == 'standard' and isinstance(self.keystores[0], keystore.Hardware_KeyStore):
+        elif self.wallet_type == 'standard' and isinstance(self.keystores[0], Hardware_KeyStore):
             # offer encrypting with a pw derived from the hw device
-            k = self.keystores[0]
+            k = self.keystores[0]  # type: Hardware_KeyStore
             try:
                 k.handler = self.plugin.create_handler(self)
                 password = k.get_password_for_storage_encryption()
