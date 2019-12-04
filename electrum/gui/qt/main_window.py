@@ -48,7 +48,7 @@ from PyQt5.QtWidgets import (QMessageBox, QComboBox, QSystemTrayIcon, QTabWidget
                              QVBoxLayout, QGridLayout, QLineEdit,
                              QHBoxLayout, QPushButton, QScrollArea, QTextEdit,
                              QShortcut, QMainWindow, QCompleter, QInputDialog,
-                             QWidget, QSizePolicy, QStatusBar, QToolTip)
+                             QWidget, QSizePolicy, QStatusBar, QToolTip, QSplitter)
 
 import electrum
 from electrum import (keystore, simple_config, ecc, constants, util, bitcoin, commands,
@@ -64,7 +64,7 @@ from electrum.util import (format_time, format_satoshis, format_fee_satoshis,
                            decimal_point_to_base_unit_name,
                            UnknownBaseUnit, DECIMAL_POINT_DEFAULT, UserFacingException,
                            get_new_wallet_name, send_exception_to_crash_reporter,
-                           InvalidBitcoinURI)
+                           InvalidBitcoinURI, NotEnoughFunds)
 from electrum.util import PR_TYPE_ONCHAIN, PR_TYPE_LN
 from electrum.transaction import (Transaction, PartialTxInput,
                                   PartialTransaction, PartialTxOutput)
@@ -3153,11 +3153,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
                     self.show_transaction(tx)
                     self.do_clear()
                 else:
-                    self.broadcast_transaction(tx, tx_desc=desc)
+                    self.broadcast_transaction(tx)
                     if broadcast_done:
                         broadcast_done(tx)
 
-        self.sign_tx_with_password(tx, sign_done, password)
+        self.sign_tx_with_password(tx, callback=sign_done, password=password)
 
     def create_smart_contract_tab(self):
         from .smart_contract_list import SmartContractList

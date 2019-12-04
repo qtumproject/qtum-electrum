@@ -178,7 +178,7 @@ class HardwareClientBase:
     def request_root_fingerprint_from_device(self) -> str:
         # digitalbitbox (at least) does not reveal xpubs corresponding to unhardened paths
         # so ask for a direct child, and read out fingerprint from that:
-        child_of_root_xpub = self.get_xpub("m/0'", xtype='standard')
+        child_of_root_xpub = self.get_xpub("m/44'/88'/0'", xtype='standard')
         root_fingerprint = BIP32Node.from_xkey(child_of_root_xpub).fingerprint.hex().lower()
         return root_fingerprint
 
