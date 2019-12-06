@@ -478,11 +478,13 @@ class CoinChooserQtum(CoinChooserPrivacy):
     def make_tx(self, *, coins: Sequence[PartialTxInput], inputs: List[PartialTxInput],
                 outputs: List[PartialTxOutput], change_addrs: Sequence[str],
                 fee_estimator_vb: Callable, dust_threshold: int, sender=None):
+        coins = list(coins)
         if sender is not None:
             found = False
-            for coin in coins:
+            for index, coin in enumerate(coins):
                 if coin.address == sender:
                     inputs.insert(0, coin)
+                    del coins[index]
                     found = True
                     break
             if not found:
