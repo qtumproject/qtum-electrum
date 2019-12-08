@@ -762,6 +762,7 @@ class AddressSynchronizer(Logger):
             utxo = PartialTxInput(prevout=prevout)
             utxo._trusted_address = address
             utxo._trusted_value_sats = value
+            utxo._is_coinstake = is_cb
             utxo.block_height = tx_height
             out[prevout] = utxo
         return out
@@ -826,7 +827,7 @@ class AddressSynchronizer(Logger):
                     continue
                 if nonlocal_only and utxo.block_height == TX_HEIGHT_LOCAL:
                     continue
-                if (mature_only and utxo.prevout.is_coinbase()
+                if (mature_only and (utxo.prevout.is_coinbase() or utxo.is_coinstake())
                         and utxo.block_height + COINBASE_MATURITY > mempool_height):
                     continue
                 coins.append(utxo)

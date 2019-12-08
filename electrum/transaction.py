@@ -1084,6 +1084,10 @@ class PartialTxInput(TxInput, PSBTSection):
         self.block_height = None  # type: Optional[int]  # height at which the TXO is mined; None means unknown
         self._is_p2sh_segwit = None  # type: Optional[bool]  # None means unknown
         self._is_native_segwit = None  # type: Optional[bool]  # None means unknown
+        self._is_coinstake = None   # type: Optional[bool]  # None means unknown
+
+    def is_coinstake(self) -> Optional[bool]:
+        return self._is_coinstake
 
     def to_json(self):
         d = super().to_json()
@@ -1100,6 +1104,7 @@ class PartialTxInput(TxInput, PSBTSection):
             'bip32_paths': {pubkey.hex(): (xfp.hex(), bip32.convert_bip32_intpath_to_strpath(path))
                             for pubkey, (xfp, path) in self.bip32_paths.items()},
             'unknown_psbt_fields': {key.hex(): val.hex() for key, val in self._unknown.items()},
+            'coinstake': self.is_coinstake(),
         })
         return d
 
