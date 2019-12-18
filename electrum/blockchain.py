@@ -616,12 +616,17 @@ class Blockchain(Logger):
         if height > self.height():
             return
 
-        conn = sqlite3.connect(self.path(), check_same_thread=False)
-        cursor = conn.cursor()
-        cursor.execute('SELECT data FROM header WHERE height=?', (height,))
-        result = cursor.fetchone()
-        cursor.close()
-        conn.close()
+        try:
+            conn = sqlite3.connect(self.path(), check_same_thread=False)
+            cursor = conn.cursor()
+            cursor.execute('SELECT data FROM header WHERE height=?', (height,))
+            result = cursor.fetchone()
+            cursor.close()
+            conn.close()
+        except BaseException as e:
+            self.logger.error(f'read_header error:{e}')
+            return
+
         if not result or len(result) < 1:
             self.logger.error(f'read_header {height}, {self.forkpoint}, {self.parent.get_id()}, {result}, {self.height()}')
             self.update_size()
