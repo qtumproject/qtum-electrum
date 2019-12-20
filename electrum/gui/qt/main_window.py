@@ -1755,7 +1755,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         pr = self.payment_request
         if not pr:
             return
-        self.show_message(pr.error)
+        self.show_message(str(pr.error))
         self.payment_request = None
         self.do_clear()
 

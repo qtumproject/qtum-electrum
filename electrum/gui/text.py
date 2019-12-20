@@ -374,11 +374,9 @@ class ElectrumGui:
         try:
             self.network.run_from_another_thread(self.network.broadcast_transaction(tx))
         except TxBroadcastError as e:
-            msg = e.get_message_for_gui()
-            self.show_message(msg)
+            self.show_message(repr(e.get_message_for_gui()))
         except BestEffortRequestFailed as e:
-            msg = repr(e)
-            self.show_message(msg)
+            self.show_message(repr(e))
         else:
             self.show_message(_('Payment sent.'))
             self.do_clear()
