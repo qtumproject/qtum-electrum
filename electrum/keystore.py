@@ -582,7 +582,7 @@ class Mobile_KeyStore(BIP32_KeyStore):
         pk = node.eckey.get_secret_bytes()
         return pk, True
 
-    def get_private_key(self, pubkey, password):
+    def get_private_key(self, pubkey: str, password):
         sec = pw_decode(self.keypairs[pubkey], password, version=self.pw_hash_version)
         txin_type, privkey, compressed = deserialize_privkey(sec)
         # this checks the password
@@ -605,8 +605,9 @@ class Mobile_KeyStore(BIP32_KeyStore):
         return None
 
     def check_password(self, password):
-        pubkey = list(self.keypairs.keys())[0]
-        self.get_private_key(pubkey, password)
+        xprv = pw_decode(self.xprv, password, version=self.pw_hash_version)
+        if BIP32Node.from_xkey(xprv).chaincode != self.get_bip32_node_for_xpub().chaincode:
+            raise InvalidPassword()
 
     def update_password(self, old_password, new_password):
         self.check_password(old_password)
@@ -648,7 +649,7 @@ class Qt_Core_Keystore(BIP32_KeyStore):
         return pk, True
 
 
-class Old_KeyStore(Deterministic_KeyStore, Deterministic_KeyStore):
+class Old_KeyStore(MasterPublicKeyMixin, Deterministic_KeyStore):
 
     type = 'old'
 
