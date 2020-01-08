@@ -34,7 +34,7 @@ from typing import Dict, Optional, List, Tuple, Set, Iterable, NamedTuple, Seque
 from . import util, bitcoin
 from .util import profiler, WalletFileException, multisig_type, TxMinedInfo, bfh
 from .keystore import bip44_derivation
-from .transaction import Transaction, TxOutpoint
+from .transaction import Transaction, TxOutpoint, tx_from_any, PartialTransaction
 from .logging import Logger
 from .bitcoin import Token
 
@@ -57,12 +57,12 @@ class TxFeesValue(NamedTuple):
 
 class JsonDB(Logger):
 
-    def __init__(self, raw, *, manual_upgrades):
+    def __init__(self, raw, *, manual_upgrades: bool):
         Logger.__init__(self)
         self.lock = threading.RLock()
         self.data = {}
         self._modified = False
-        self.manual_upgrades = manual_upgrades
+        self._manual_upgrades = manual_upgrades
         self._called_after_upgrade_tasks = False
         if raw:  # loading existing db
             self.load_data(raw)
@@ -144,12 +144,12 @@ class JsonDB(Logger):
         if not isinstance(self.data, dict):
             raise WalletFileException("Malformed wallet file (not dict)")
 
-        if not self.manual_upgrades and self.requires_split():
+        if not self._manual_upgrades and self.requires_split():
             raise WalletFileException("This wallet has multiple accounts and must be split")
 
         if not self.requires_upgrade():
             self._after_upgrade_tasks()
-        elif not self.manual_upgrades:
+        elif not self._manual_upgrades:
             self.upgrade()
 
     def requires_split(self):
@@ -426,7 +426,7 @@ class JsonDB(Logger):
         for txid, raw_tx in transactions.items():
             tx = Transaction(raw_tx)
             for txin in tx.inputs():
-                if txin.is_coinbase():
+                if txin.is_coinbase_input():
                     continue
                 prevout_hash = txin.prevout.txid.hex()
                 prevout_n = txin.prevout.out_idx
@@ -710,8 +710,16 @@ class JsonDB(Logger):
 
     @modifier
     def add_transaction(self, tx_hash: str, tx: Transaction) -> None:
-        assert isinstance(tx, Transaction)
-        self.transactions[tx_hash] = tx
+        assert isinstance(tx, Transaction), tx
+        # note that tx might be a PartialTransaction
+        if not tx_hash:
+            raise Exception("trying to add tx to db without txid")
+        if tx_hash != tx.txid():
+            raise Exception(f"trying to add tx to db with inconsistent txid: {tx_hash} != {tx.txid()}")
+        # don't allow overwriting complete tx with partial tx
+        tx_we_already_have = self.transactions.get(tx_hash, None)
+        if tx_we_already_have is None or isinstance(tx_we_already_have, PartialTransaction):
+            self.transactions[tx_hash] = tx
 
     @modifier
     def remove_transaction(self, tx_hash) -> Optional[Transaction]:
@@ -870,11 +878,11 @@ class JsonDB(Logger):
         self.imported_addresses.pop(addr)
 
     @locked
-    def has_imported_address(self, addr):
+    def has_imported_address(self, addr: str) -> bool:
         return addr in self.imported_addresses
 
     @locked
-    def get_imported_addresses(self):
+    def get_imported_addresses(self) -> Sequence[str]:
         return list(sorted(self.imported_addresses.keys()))
 
     @locked
@@ -884,7 +892,7 @@ class JsonDB(Logger):
     def load_addresses(self, wallet_type):
         """ called from Abstract_Wallet.__init__ """
         if wallet_type in ['imported', 'mobile']:
-            self.imported_addresses = self.get_data_ref('addresses')
+            self.imported_addresses = self.get_data_ref('addresses')  # type: Dict[str, dict]
         else:
             self.get_data_ref('addresses')
             for name in ['receiving', 'change']:
@@ -913,9 +921,9 @@ class JsonDB(Logger):
         self.tx_fees = self.get_data_ref('tx_fees')  # type: Dict[str, TxFeesValue]
         # scripthash -> set of (outpoint, value)
         self._prevouts_by_scripthash = self.get_data_ref('prevouts_by_scripthash')  # type: Dict[str, Set[Tuple[str, int]]]
-        # convert raw hex transactions to Transaction objects
+        # convert raw transactions to Transaction objects
         for tx_hash, raw_tx in self.transactions.items():
-            self.transactions[tx_hash] = Transaction(raw_tx)
+            self.transactions[tx_hash] = tx_from_any(raw_tx)
         # convert txi, txo: list to set
         for t in self.txi, self.txo:
             for d in t.values():

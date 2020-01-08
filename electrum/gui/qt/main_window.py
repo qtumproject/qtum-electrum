@@ -42,6 +42,7 @@ from typing import Optional, TYPE_CHECKING, Sequence, List, Union
 import eth_abi
 
 from PyQt5.QtGui import QPixmap, QKeySequence, QIcon, QCursor, QFont
+from PyQt5.QtGui import QPixmap, QKeySequence, QIcon, QCursor, QFont
 from PyQt5.QtCore import Qt, QRect, QStringListModel, QSize, pyqtSignal
 from PyQt5.QtWidgets import (QMessageBox, QComboBox, QSystemTrayIcon, QTabWidget,
                              QMenuBar, QFileDialog, QCheckBox, QLabel,
@@ -64,7 +65,8 @@ from electrum.util import (format_time, format_satoshis, format_fee_satoshis,
                            decimal_point_to_base_unit_name,
                            UnknownBaseUnit, DECIMAL_POINT_DEFAULT, UserFacingException,
                            get_new_wallet_name, send_exception_to_crash_reporter,
-                           InvalidBitcoinURI, NotEnoughFunds)
+                           InvalidBitcoinURI, maybe_extract_bolt11_invoice, NotEnoughFunds,
+                           NoDynamicFeeEstimates)
 from electrum.util import PR_TYPE_ONCHAIN, PR_TYPE_LN
 from electrum.transaction import (Transaction, PartialTxInput,
                                   PartialTransaction, PartialTxOutput)
@@ -94,7 +96,7 @@ from .util import (read_QIcon, ColorScheme, text_dialog, icon_path, WaitingDialo
                    CloseButton, HelpButton, MessageBoxMixin, EnterButton,
                    import_meta_gui, export_meta_gui,
                    filename_field, address_field, char_width_in_lineedit, webopen,
-                   TRANSACTION_FILE_EXTENSION_FILTER)
+                   TRANSACTION_FILE_EXTENSION_FILTER, MONOSPACE_FONT)
 from .util import ButtonsTextEdit
 from .installwizard import WIF_HELP_TEXT
 from .history_list import HistoryList, HistoryModel
@@ -1049,17 +1051,35 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             buttons.addWidget(self.create_lightning_invoice_button)
         grid.addLayout(buttons, 4, 3, 1, 2)
 
-        self.receive_address_e = ButtonsTextEdit()
-        self.receive_address_e.addCopyButton(self.app)
-        self.receive_address_e.setReadOnly(True)
-        self.receive_address_e.textChanged.connect(self.update_receive_qr)
-        self.receive_address_e.textChanged.connect(self.update_receive_address_styling)
-        self.receive_address_e.setFocusPolicy(Qt.ClickFocus)
+        self.receive_payreq_e = ButtonsTextEdit()
+        self.receive_payreq_e.addCopyButton(self.app)
+        self.receive_payreq_e.setReadOnly(True)
+        self.receive_payreq_e.textChanged.connect(self.update_receive_qr)
+        self.receive_payreq_e.setFocusPolicy(Qt.ClickFocus)
 
-        self.receive_qr = QRCodeWidget(fixedSize=230)
+        self.receive_qr = QRCodeWidget(fixedSize=220)
         self.receive_qr.mouseReleaseEvent = lambda x: self.toggle_qr_window()
         self.receive_qr.enterEvent = lambda x: self.app.setOverrideCursor(QCursor(Qt.PointingHandCursor))
         self.receive_qr.leaveEvent = lambda x: self.app.setOverrideCursor(QCursor(Qt.ArrowCursor))
+
+        def on_receive_address_changed():
+            addr = str(self.receive_address_e.text())
+            self.receive_address_widgets.setVisible(bool(addr))
+
+        msg = _('Bitcoin address where the payment should be received. Note that each payment request uses a different Bitcoin address.')
+        receive_address_label = HelpLabel(_('Receiving address'), msg)
+
+        self.receive_address_e = ButtonsTextEdit()
+        self.receive_address_e.setFont(QFont(MONOSPACE_FONT))
+        self.receive_address_e.addCopyButton(self.app)
+        self.receive_address_e.setReadOnly(True)
+        self.receive_address_e.textChanged.connect(on_receive_address_changed)
+        self.receive_address_e.textChanged.connect(self.update_receive_address_styling)
+        self.receive_address_e.setMinimumHeight(6 * char_width_in_lineedit())
+        self.receive_address_e.setMaximumHeight(10 * char_width_in_lineedit())
+        qr_show = lambda: self.show_qrcode(str(self.receive_address_e.text()), _('Receiving address'), parent=self)
+        qr_icon = "qrcode_white.png" if ColorScheme.dark_scheme else "qrcode.png"
+        self.receive_address_e.addButton(qr_icon, qr_show, _("Show as QR code"))
 
         self.receive_requests_label = QLabel(_('Incoming payments'))
 
@@ -1071,14 +1091,29 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         vbox_g.addLayout(grid)
         vbox_g.addStretch()
 
-        self.receive_widgets = QTabWidget()
-        self.receive_widgets.addTab(self.receive_qr, _('QR Code'))
-        self.receive_widgets.addTab(self.receive_address_e, _('Text'))
+        receive_tabbed_widgets = QTabWidget()
+        receive_tabbed_widgets.addTab(self.receive_qr, _('QR Code'))
+        receive_tabbed_widgets.addTab(self.receive_payreq_e, _('Text'))
+
+        vbox_receive_address = QVBoxLayout()
+        vbox_receive_address.setContentsMargins(0, 0, 0, 0)
+        vbox_receive_address.setSpacing(0)
+        vbox_receive_address.addWidget(receive_address_label)
+        vbox_receive_address.addWidget(self.receive_address_e)
+        self.receive_address_widgets = QWidget()
+        self.receive_address_widgets.setLayout(vbox_receive_address)
+        size_policy = self.receive_address_widgets.sizePolicy()
+        size_policy.setRetainSizeWhenHidden(True)
+        self.receive_address_widgets.setSizePolicy(size_policy)
+
+        vbox_receive = QVBoxLayout()
+        vbox_receive.addWidget(receive_tabbed_widgets)
+        vbox_receive.addWidget(self.receive_address_widgets)
 
         hbox = QHBoxLayout()
         hbox.addLayout(vbox_g)
         hbox.addStretch()
-        hbox.addWidget(self.receive_widgets)
+        hbox.addLayout(vbox_receive)
 
         w = QWidget()
         w.searchable_list = self.request_list
@@ -1089,6 +1124,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         vbox.addWidget(self.receive_requests_label)
         vbox.addWidget(self.request_list)
         vbox.setStretchFactor(self.request_list, 1000)
+
+        on_receive_address_changed()
 
         return w
 
@@ -1183,6 +1220,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             self.saved = True
 
     def clear_receive_tab(self):
+        self.receive_payreq_e.setText('')
         self.receive_address_e.setText('')
         self.receive_message_e.setText('')
         self.receive_amount_e.setAmount(None)
@@ -1210,27 +1248,18 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
     def show_receive_tab(self):
         self.tabs.setCurrentIndex(self.tabs.indexOf(self.receive_tab))
 
-    def receive_at(self, addr):
-        if not bitcoin.is_address(addr):
-            return
-        self.show_receive_tab()
-        self.receive_address_e.setText(addr)
-
     def update_receive_qr(self):
-        uri = str(self.receive_address_e.text())
+        uri = str(self.receive_payreq_e.text())
+        if maybe_extract_bolt11_invoice(uri):
+            # encode lightning invoices as uppercase so QR encoding can use
+            # alphanumeric mode; resulting in smaller QR codes
+            uri = uri.upper()
         self.receive_qr.setData(uri)
         if self.qr_window and self.qr_window.isVisible():
             self.qr_window.qrw.setData(uri)
 
     def update_receive_address_styling(self):
         addr = str(self.receive_address_e.text())
-        # note: 'addr' could be ln invoice or BIP21 URI
-        try:
-            uri = util.parse_URI(addr)
-        except InvalidBitcoinURI:
-            pass
-        else:
-            addr = uri.get('address')
         if is_address(addr) and self.wallet.is_used(addr):
             self.receive_address_e.setStyleSheet(ColorScheme.RED.as_stylesheet(True))
             self.receive_address_e.setToolTip(_("This address has already been used. "
@@ -1336,14 +1365,20 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         outputs = self.payto_e.get_outputs(True)
         if not outputs:
             return
-        self.max_button.setChecked(True)
         make_tx = lambda fee_est: self.wallet.make_unsigned_transaction(
             coins=self.get_coins(),
             outputs=outputs,
             fee=fee_est,
             is_sweep=False)
 
-        tx = make_tx(None)
+        try:
+            tx = make_tx(None)
+        except (NotEnoughFunds, NoDynamicFeeEstimates) as e:
+            self.max_button.setChecked(False)
+            self.show_error(str(e))
+            return
+
+        self.max_button.setChecked(True)
         amount = tx.output_value()
         __, x_fee_amount = run_hook('get_tx_extra_fee', self.wallet, tx) or (None, 0)
         amount_after_all_fees = amount - x_fee_amount
@@ -1560,7 +1595,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
 
         output_value = '!' if '!' in output_values else sum(output_values)
         d = ConfirmTxDialog(window=self, make_tx=make_tx, output_value=output_value, is_sweep=is_sweep)
-        d.update_tx()
         if d.not_enough_funds:
             self.show_message(_('Not Enough Funds'))
             return
@@ -1759,7 +1793,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.payment_request = None
         self.do_clear()
 
-    def on_pr(self, request):
+    def on_pr(self, request: 'paymentrequest.PaymentRequest'):
+        self.set_onchain(True)
         self.payment_request = request
         if self.payment_request.verify(self.contacts):
             self.payment_request_ok_signal.emit()
@@ -1936,7 +1971,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             pr.verify(self.contacts)
             self.show_bip70_details(pr)
 
-    def show_bip70_details(self, pr):
+    def show_bip70_details(self, pr: 'paymentrequest.PaymentRequest'):
         key = pr.get_id()
         d = WindowModalDialog(self, _("BIP70 Invoice"))
         vbox = QVBoxLayout(d)
@@ -1944,7 +1979,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         grid.addWidget(QLabel(_("Requestor") + ':'), 0, 0)
         grid.addWidget(QLabel(pr.get_requestor()), 0, 1)
         grid.addWidget(QLabel(_("Amount") + ':'), 1, 0)
-        outputs_str = '\n'.join(map(lambda x: self.format_amount(x[2])+ self.base_unit() + ' @ ' + x[1], pr.get_outputs()))
+        outputs_str = '\n'.join(map(lambda x: self.format_amount(x.value)+ self.base_unit() + ' @ ' + x.address, pr.get_outputs()))
         grid.addWidget(QLabel(outputs_str), 1, 1)
         expires = pr.get_expiration_date()
         grid.addWidget(QLabel(_("Memo") + ':'), 2, 0)
@@ -1964,25 +1999,16 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
                 data = f.write(pr.raw)
             self.show_message(_('Invoice saved as' + ' ' + fn))
         exportButton = EnterButton(_('Save'), do_export)
-        def do_delete():
-            if self.question(_('Delete invoice?')):
-                self.wallet.delete_invoices(key)
-                self.history_list.update()
-                self.invoice_list.update()
-                d.close()
-        deleteButton = EnterButton(_('Delete'), do_delete)
-        vbox.addLayout(Buttons(exportButton, deleteButton, CloseButton(d)))
+        # note: "delete" disabled as invoice is saved with a different key in wallet.invoices that we do not have here
+        # def do_delete():
+        #     if self.question(_('Delete invoice?')):
+        #         self.wallet.delete_invoice(key)
+        #         self.history_list.update()
+        #         self.invoice_list.update()
+        #         d.close()
+        # deleteButton = EnterButton(_('Delete'), do_delete)
+        vbox.addLayout(Buttons(exportButton, CloseButton(d)))
         d.exec_()
-
-    def pay_bip70_invoice(self, key):
-        pr = self.wallet.get_invoice(key)
-        self.payment_request = pr
-        self.prepare_for_payment_request()
-        pr.error = None  # this forces verify() to re-run
-        if pr.verify(self.contacts):
-            self.payment_request_ok()
-        else:
-            self.payment_request_error()
 
     def create_console_tab(self):
         from .console import Console
@@ -2121,7 +2147,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         if not ok:
             return
         try:
-            self.wallet.update_password(old_password, new_password, encrypt_file)
+            self.wallet.update_password(old_password, new_password, encrypt_storage=encrypt_file)
         except InvalidPassword as e:
             self.show_error(str(e))
             return
@@ -2933,10 +2959,13 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         combined_fee = QLabel('')
         combined_feerate = QLabel('')
         def on_fee_edit(x):
-            out_amt = max_fee - fee_e.get_amount()
+            fee_for_child = fee_e.get_amount()
+            if fee_for_child is None:
+                return
+            out_amt = max_fee - fee_for_child
             out_amt_str = (self.format_amount(out_amt) + ' ' + self.base_unit()) if out_amt else ''
             output_amount.setText(out_amt_str)
-            comb_fee = parent_fee + fee_e.get_amount()
+            comb_fee = parent_fee + fee_for_child
             comb_fee_str = (self.format_amount(comb_fee) + ' ' + self.base_unit()) if comb_fee else ''
             combined_fee.setText(comb_fee_str)
             comb_feerate = comb_fee / total_size * 1000
@@ -2971,6 +3000,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         if not d.exec_():
             return
         fee = fee_e.get_amount()
+        if fee is None:
+            return  # fee left empty, treat is as "cancel"
         if fee > max_fee:
             self.show_error(_('Max fee exceeded'))
             return

@@ -31,7 +31,7 @@ import logging
 
 from aiorpcx import TaskGroup, run_in_thread, RPCError
 
-from .transaction import Transaction
+from .transaction import Transaction, PartialTransaction
 from .util import bh2u, make_aiohttp_session, NetworkJobOnDefaultServer
 from .bitcoin import address_to_scripthash, is_address, b58_address_to_hash160, hash160_to_p2pkh, TOKEN_TRANSFER_TOPIC
 from .network import UntrustedServerReturnedError
@@ -70,8 +70,8 @@ class SynchronizerBase(NetworkJobOnDefaultServer):
     """
     def __init__(self, network: 'Network'):
         self.asyncio_loop = network.asyncio_loop
-        NetworkJobOnDefaultServer.__init__(self, network)
         self._reset_request_counters()
+        NetworkJobOnDefaultServer.__init__(self, network)
 
     def _reset(self):
         super()._reset()
@@ -260,8 +260,9 @@ class Synchronizer(SynchronizerBase):
         for tx_hash, tx_height in hist:
             if tx_hash in self.requested_tx:
                 continue
-            if self.wallet.db.get_transaction(tx_hash):
-                continue
+            tx = self.wallet.db.get_transaction(tx_hash)
+            if tx and not isinstance(tx, PartialTransaction):
+                continue  # already have complete tx
             transaction_hashes.append(tx_hash)
             self.requested_tx[tx_hash] = tx_height
 

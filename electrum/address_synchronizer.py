@@ -112,7 +112,13 @@ class AddressSynchronizer(Logger):
     def get_addresses(self):
         return sorted(self.db.get_history())
 
-    def get_address_history(self, addr):
+    def get_address_history(self, addr: str) -> Sequence[Tuple[str, int]]:
+        """Returns the history for the address, in the format that would be returned by a server.
+
+        Note: The difference between db.get_addr_history and this method is that
+        db.get_addr_history stores the response from a server, so it only includes txns
+        a server sees, i.e. that does not contain local and future txns.
+        """
         h = []
         # we need self.transaction_lock but get_tx_height will take self.lock
         # so we need to take that too here, to enforce order of locks
@@ -196,7 +202,7 @@ class AddressSynchronizer(Logger):
         conflicting_txns = set()
         with self.transaction_lock:
             for txin in tx.inputs():
-                if txin.is_coinbase():
+                if txin.is_coinbase_input():
                     continue
                 prevout_hash = txin.prevout.txid.hex()
                 prevout_n = txin.prevout.out_idx
@@ -218,7 +224,8 @@ class AddressSynchronizer(Logger):
     def add_transaction(self, tx: Transaction, *, allow_unrelated=False) -> bool:
         """Returns whether the tx was successfully added to the wallet history."""
         assert tx, tx
-        assert tx.is_complete()
+        # note: tx.is_complete() is not necessarily True; tx might be partial
+        # but it *needs* to have a txid:
         tx_hash = tx.txid()
         if tx_hash is None:
             raise Exception("cannot add tx without txid to wallet history")
@@ -229,7 +236,7 @@ class AddressSynchronizer(Logger):
             # BUT we track is_mine inputs in a txn, and during subsequent calls
             # of add_transaction tx, we might learn of more-and-more inputs of
             # being is_mine, as we roll the gap_limit forward
-            is_coinbase = tx.inputs()[0].is_coinbase() or tx.outputs()[0].is_coinstake()
+            is_coinbase = tx.inputs()[0].is_coinbase_input() or tx.outputs()[0].is_coinstake_output()
             tx_height = self.get_tx_height(tx_hash).height
             if not allow_unrelated:
                 # note that during sync, if the transactions are not properly sorted,
@@ -280,7 +287,7 @@ class AddressSynchronizer(Logger):
                                 self._get_addr_balance_cache.pop(addr, None)  # invalidate cache
                             return
             for txi in tx.inputs():
-                if txi.is_coinbase():
+                if txi.is_coinbase_input():
                     continue
                 prevout_hash = txi.prevout.txid.hex()
                 prevout_n = txi.prevout.out_idx
@@ -315,7 +322,7 @@ class AddressSynchronizer(Logger):
             if tx is not None:
                 # if we have the tx, this branch is faster
                 for txin in tx.inputs():
-                    if txin.is_coinbase():
+                    if txin.is_coinbase_input():
                         continue
                     prevout_hash = txin.prevout.txid.hex()
                     prevout_n = txin.prevout.out_idx
@@ -386,7 +393,7 @@ class AddressSynchronizer(Logger):
 
     @profiler
     def load_local_history(self):
-        self._history_local = {}  # address -> set(txid)
+        self._history_local = {}  # type: Dict[str, Set[str]]  # address -> set(txid)
         self._address_history_changed_events = defaultdict(asyncio.Event)  # address -> Event
         for txid in itertools.chain(self.db.list_txi(), self.db.list_txo()):
             self._add_tx_to_local_history(txid)
@@ -759,7 +766,8 @@ class AddressSynchronizer(Logger):
         for prevout_str, v in coins.items():
             tx_height, value, is_cb = v
             prevout = TxOutpoint.from_str(prevout_str)
-            utxo = PartialTxInput(prevout=prevout)
+            utxo = PartialTxInput(prevout=prevout,
+                                  is_coinbase_output=is_cb)
             utxo._trusted_address = address
             utxo._trusted_value_sats = value
             utxo._is_coinstake = is_cb
@@ -827,7 +835,7 @@ class AddressSynchronizer(Logger):
                     continue
                 if nonlocal_only and utxo.block_height == TX_HEIGHT_LOCAL:
                     continue
-                if (mature_only and (utxo.prevout.is_coinbase() or utxo.is_coinstake())
+                if (mature_only and utxo.is_coinbase_output()
                         and utxo.block_height + COINBASE_MATURITY > mempool_height):
                     continue
                 coins.append(utxo)
@@ -850,11 +858,10 @@ class AddressSynchronizer(Logger):
             xx += x
         return cc, uu, xx
 
-    def is_used(self, address):
-        h = self.db.get_addr_history(address)
-        return len(h) != 0
+    def is_used(self, address: str) -> bool:
+        return self.get_address_history_len(address) != 0
 
-    def is_empty(self, address):
+    def is_empty(self, address: str) -> bool:
         c, u, x = self.get_addr_balance(address)
         return c+u+x == 0
 

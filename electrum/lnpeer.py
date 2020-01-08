@@ -50,7 +50,7 @@ from .lnutil import ln_dummy_address
 
 if TYPE_CHECKING:
     from .lnworker import LNWorker, LNGossip, LNWallet
-    from .lnrouter import RouteEdge
+    from .lnrouter import RouteEdge, LNPaymentRoute
     from .transaction import PartialTransaction
 
 
@@ -690,7 +690,6 @@ class Peer(Logger):
         chan.open_with_first_pcp(payload['first_per_commitment_point'], remote_sig)
         self.lnworker.save_channel(chan)
         self.lnworker.lnwatcher.add_channel(chan.funding_outpoint.to_str(), chan.get_funding_address())
-        self.lnworker.on_channels_updated()
 
     def validate_remote_reserve(self, payload_field: bytes, dust_limit: int, funding_sat: int) -> int:
         remote_reserve_sat = int.from_bytes(payload_field, 'big')
@@ -1127,7 +1126,7 @@ class Peer(Logger):
         while chan.get_latest_ctn(LOCAL) <= ctn:
             await self._local_changed_events[chan.channel_id].wait()
 
-    async def pay(self, route: List['RouteEdge'], chan: Channel, amount_msat: int,
+    async def pay(self, route: 'LNPaymentRoute', chan: Channel, amount_msat: int,
                   payment_hash: bytes, min_final_cltv_expiry: int) -> UpdateAddHtlc:
         if chan.get_state() != channel_states.OPEN:
             raise PaymentFailure('Channel not open')

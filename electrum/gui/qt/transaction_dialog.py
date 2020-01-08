@@ -50,7 +50,8 @@ from electrum.logging import get_logger
 
 from .util import (MessageBoxMixin, read_QIcon, Buttons, icon_path,
                    MONOSPACE_FONT, ColorScheme, ButtonsLineEdit, text_dialog,
-                   char_width_in_lineedit, TRANSACTION_FILE_EXTENSION_FILTER)
+                   char_width_in_lineedit, TRANSACTION_FILE_EXTENSION_FILTER,
+                   BlockingWaitingDialog)
 
 from .fee_slider import FeeSlider
 from .confirm_tx_dialog import TxEditor
@@ -282,7 +283,6 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
 
     def sign(self):
         def sign_done(success):
-            # note: with segwit we could save partially signed tx, because they have a txid
             if self.tx.is_complete():
                 self.prompt_if_unsaved = True
                 self.saved = False
@@ -481,7 +481,7 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
         i_text.setReadOnly(True)
         cursor = i_text.textCursor()
         for txin in self.tx.inputs():
-            if txin.is_coinbase():
+            if txin.is_coinbase_input():
                 cursor.insertText('coinbase')
             else:
                 prevout_hash = txin.prevout.txid.hex()
@@ -559,8 +559,6 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
         self.rbf_cb = QCheckBox(_('Replace by fee'))
         self.rbf_cb.setChecked(bool(self.config.get('use_rbf', True)))
         vbox_right.addWidget(self.rbf_cb)
-        self.rbf_label.setVisible(self.finalized)
-        self.rbf_cb.setVisible(not self.finalized)
 
         self.locktime_label = TxDetailLabel()
         vbox_right.addWidget(self.locktime_label)
@@ -572,6 +570,10 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
         hbox_stats.addLayout(vbox_right, 50)
 
         vbox.addLayout(hbox_stats)
+
+        # set visibility after parenting can be determined by Qt
+        self.rbf_label.setVisible(self.finalized)
+        self.rbf_cb.setVisible(not self.finalized)
 
     def set_title(self):
         self.setWindowTitle(_("Create transaction") if not self.finalized else _("Transaction"))
@@ -605,7 +607,7 @@ class PreviewTxDialog(BaseTxDialog, TxEditor):
         TxEditor.__init__(self, window=window, make_tx=make_tx, is_sweep=bool(external_keypairs))
         BaseTxDialog.__init__(self, parent=window, desc='', prompt_if_unsaved=False,
                               finalized=False, external_keypairs=external_keypairs)
-        self.update_tx()
+        BlockingWaitingDialog(window, _("Preparing transaction..."), self.update_tx)
         self.update()
 
     def create_fee_controls(self):

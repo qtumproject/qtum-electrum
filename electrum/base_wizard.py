@@ -35,7 +35,7 @@ from . import keystore
 from . import mnemonic
 from . import constants
 from .bip32 import is_bip32_derivation, xpub_type, normalize_bip32_derivation, BIP32Node
-from .keystore import bip44_derivation, purpose48_derivation, Hardware_KeyStore
+from .keystore import bip44_derivation, purpose48_derivation, Hardware_KeyStore, KeyStore
 from .wallet import (Imported_Wallet, Standard_Wallet, Multisig_Wallet,
                      wallet_types, Wallet, Abstract_Wallet)
 from .storage import (WalletStorage, StorageEncryptionVersion,
@@ -86,7 +86,7 @@ class BaseWizard(Logger):
         self.pw_args = None  # type: Optional[WizardWalletPasswordSetting]
         self._stack = []  # type: List[WizardStackItem]
         self.plugin = None  # type: Optional[BasePlugin]
-        self.keystores = []
+        self.keystores = []  # type: List[KeyStore]
         self.is_kivy = config.get('gui') == 'kivy'
         self.seed_type = None
 
@@ -385,7 +385,7 @@ class BaseWizard(Logger):
         elif purpose == HWD_SETUP_DECRYPT_WALLET:
             derivation = get_derivation_used_for_hw_device_encryption()
             xpub = self.plugin.get_xpub(device_info.device.id_, derivation, 'standard', self)
-            password = keystore.Xpub.get_pubkey_from_xpub(xpub, ())
+            password = keystore.Xpub.get_pubkey_from_xpub(xpub, ()).hex()
             try:
                 storage.decrypt(password)
             except InvalidPassword:

@@ -29,14 +29,14 @@ import sys
 import traceback
 import asyncio
 import socket
-from typing import Tuple, Union, List, TYPE_CHECKING, Optional
+from typing import Tuple, Union, List, TYPE_CHECKING, Optional, Set
 from collections import defaultdict
 from ipaddress import IPv4Network, IPv6Network, ip_address, IPv6Address
 import itertools
 import logging
 
 import aiorpcx
-from aiorpcx import RPCSession, Notification, NetAddress
+from aiorpcx import RPCSession, Notification, NetAddress, NewlineFramer
 from aiorpcx.curio import timeout_after, TaskTimeout
 from aiorpcx.jsonrpc import JSONRPC, CodeMessageError
 from aiorpcx.rawsocket import RSClient
@@ -61,6 +61,8 @@ if TYPE_CHECKING:
 ca_path = certifi.where()
 
 BUCKET_NAME_OF_ONION_SERVERS = 'onion'
+
+MAX_INCOMING_MSG_SIZE = 1_000_000  # in bytes
 
 
 class NetworkTimeout:
@@ -157,6 +159,10 @@ class NotificationSession(RPCSession):
         if self.interface.debug or self.interface.network.debug:
             self.interface.logger.debug(msg)
 
+    def default_framer(self):
+        # overridden so that max_size can be customized
+        return NewlineFramer(max_size=MAX_INCOMING_MSG_SIZE)
+
 
 class NetworkException(Exception): pass
 
@@ -234,7 +240,7 @@ class Interface(Logger):
         assert network.config.path
         self.cert_path = _get_cert_path_for_host(config=network.config, host=self.host)
         self.blockchain = None  # type: Optional[Blockchain]
-        self._requested_chunks = set()
+        self._requested_chunks = set()  # type: Set[int]
         self.network = network
         self._set_proxy(proxy)
         self.session = None  # type: Optional[NotificationSession]
@@ -432,7 +438,7 @@ class Interface(Logger):
         res = await self.session.send_request('blockchain.block.header', [height], timeout=timeout)
         return blockchain.deserialize_header(bytes.fromhex(res), height)
 
-    async def request_chunk(self, height, tip=None, *, can_return_early=False):
+    async def request_chunk(self, height: int, tip=None, *, can_return_early=False):
         index = height // CHUNK_SIZE
         if can_return_early and index in self._requested_chunks:
             return
@@ -445,8 +451,7 @@ class Interface(Logger):
             self._requested_chunks.add(index)
             res = await self.session.send_request('blockchain.block.headers', [index * CHUNK_SIZE, size])
         finally:
-            try: self._requested_chunks.remove(index)
-            except KeyError: pass
+            self._requested_chunks.discard(index)
         conn = self.blockchain.connect_chunk(index, res['hex'])
         if not conn:
             return conn, 0
