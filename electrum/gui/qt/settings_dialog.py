@@ -55,7 +55,6 @@ class SettingsDialog(WindowModalDialog):
         self.need_restart = False
         self.fx = self.window.fx
         self.wallet = self.window.wallet
-        
         vbox = QVBoxLayout()
         tabs = QTabWidget()
         gui_widgets = []

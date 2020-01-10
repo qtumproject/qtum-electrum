@@ -159,6 +159,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.contacts = wallet.contacts
         self.tray = gui_object.tray
         self.app = gui_object.app
+        qss_file = open('electrum/gui/qt/style.qss').read()
+        self.app.setStyleSheet(qss_file)
         self.cleaned_up = False
         self.payment_request = None  # type: Optional[paymentrequest.PaymentRequest]
         self.payto_URI = None
