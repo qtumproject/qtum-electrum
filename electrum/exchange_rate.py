@@ -160,6 +160,13 @@ class OKEX(ExchangeBase):
         return {ccy: Decimal(json['ticker']['last'])}
 
 
+class Binance(ExchangeBase):
+
+    async def get_rates(self, ccy):
+        json = await self.get_json('api.binance.com', '/api/v3/avgPrice?symbol=QTUM{}'.format(ccy.upper()))
+        return {ccy: Decimal(json['price'])}
+
+
 class BitStamp(ExchangeBase):
 
     async def get_currencies(self):
@@ -170,14 +177,6 @@ class BitStamp(ExchangeBase):
             json = await self.get_json('www.bitstamp.net', f'/api/v2/ticker/qtum{ccy.lower()}/')
             return {ccy: Decimal(json['last'])}
         return {}
-
-
-class Coinbase(ExchangeBase):
-
-    async def get_rates(self, ccy):
-        json = await self.get_json('api.coinbase.com',
-                             '/v2/exchange-rates?currency=QTUM')
-        return {ccy: Decimal(rate) for (ccy, rate) in json["data"]["rates"].items()}
 
 
 class CoinCap(ExchangeBase):
@@ -201,9 +200,8 @@ class CoinCap(ExchangeBase):
 class CoinGecko(ExchangeBase):
 
     async def get_rates(self, ccy):
-        json = await self.get_json('api.coingecko.com', '/api/v3/exchange_rates')
-        return dict([(ccy.upper(), Decimal(d['value']))
-                     for ccy, d in json['rates'].items()])
+        json = await self.get_json('api.coingecko.com', '/api/v3/coins/qtum/market_chart?vs_currency=%s&days=0' % ccy)
+        return {ccy: Decimal(json.get("prices", [[0, 0]])[0][1])}
 
     def history_ccys(self):
         # CoinGecko seems to have historical data for all ccys it supports
