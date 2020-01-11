@@ -283,6 +283,10 @@ that is always connected to the internet. Configure a port if you want it to be 
         colortheme_combo = QComboBox()
         colortheme_combo.addItem(_('Light'), 'default')
         colortheme_combo.addItem(_('Dark'), 'dark')
+        colortheme_combo.addItem(_('Qtum Light'), 'qtum_light')
+        colortheme_combo.addItem(_('Qtum Dark Blue'), 'qtum_almost_dark')
+        colortheme_combo.addItem(_('Qtum Dark'), 'qtum_dark')
+
         index = colortheme_combo.findData(self.config.get('qt_gui_color_theme', 'default'))
         colortheme_combo.setCurrentIndex(index)
         colortheme_label = QLabel(_('Color theme') + ':')

@@ -125,8 +125,6 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
         BaseWizard.__init__(self, config, plugins)
         self.setWindowTitle('Electrum  -  ' + _('Install Wizard'))
         self.app = app
-        qss_file = open('electrum/gui/qt/style.qss').read()
-        self.app.setStyleSheet(qss_file)
         self.config = config
         self.setMinimumSize(600, 400)
         self.accept_signal.connect(self.accept)
