@@ -268,7 +268,7 @@ class CoinChooserBase(Logger):
 
     def make_tx(self, *, coins: Sequence[PartialTxInput], inputs: List[PartialTxInput],
                 outputs: List[PartialTxOutput], change_addrs: Sequence[str],
-                fee_estimator_vb: Callable, dust_threshold: int, gas_fee: int, sender=None) -> PartialTransaction:
+                fee_estimator_vb: Callable, dust_threshold: int, gas_fee=0, sender=None) -> PartialTransaction:
         """Select unspent coins to spend to pay outputs.  If the change is
         greater than dust_threshold (after adding the change output to
         the transaction) it is kept, otherwise none is sent and it is
@@ -478,7 +478,7 @@ class CoinChooserQtum(CoinChooserPrivacy):
 
     def make_tx(self, *, coins: Sequence[PartialTxInput], inputs: List[PartialTxInput],
                 outputs: List[PartialTxOutput], change_addrs: Sequence[str],
-                fee_estimator_vb: Callable, dust_threshold: int, gas_fee: int, sender=None):
+                fee_estimator_vb: Callable, dust_threshold: int, gas_fee=0, sender=None):
         coins = list(coins)
         if sender is not None:
             found = False
