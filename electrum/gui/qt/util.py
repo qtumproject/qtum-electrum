@@ -20,7 +20,7 @@ from PyQt5.QtWidgets import (QPushButton, QLabel, QMessageBox, QHBoxLayout,
                              QAbstractItemView, QVBoxLayout, QLineEdit,
                              QStyle, QDialog, QGroupBox, QButtonGroup, QRadioButton,
                              QFileDialog, QWidget, QToolButton, QTreeView, QPlainTextEdit,
-                             QHeaderView, QApplication, QToolTip, QTreeWidget, QStyledItemDelegate)
+                             QHeaderView, QApplication, QToolTip, QTreeWidget, QStyledItemDelegate,QFrame)
 
 from electrum.i18n import _, languages
 from electrum.util import FileImportFailed, FileExportFailed, make_aiohttp_session, resource_path
@@ -378,7 +378,6 @@ class ChoicesLayout(object):
             msg = ""
         gb2 = QGroupBox(msg)
         vbox.addWidget(gb2)
-
         vbox2 = QVBoxLayout()
         gb2.setLayout(vbox2)
 
@@ -394,7 +393,6 @@ class ChoicesLayout(object):
 
         if on_clicked:
             group.buttonClicked.connect(partial(on_clicked, self))
-
         self.vbox = vbox
 
     def layout(self):

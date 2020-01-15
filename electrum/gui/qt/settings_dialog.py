@@ -40,7 +40,7 @@ from .util import (ColorScheme, WindowModalDialog, HelpLabel, Buttons,
 
 from electrum.i18n import languages
 from electrum import qrscanner
-
+from .theme_helper import set_qtum_theme_if_needed
 if TYPE_CHECKING:
     from electrum.simple_config import SimpleConfig
     from .main_window import ElectrumWindow
@@ -55,7 +55,6 @@ class SettingsDialog(WindowModalDialog):
         self.need_restart = False
         self.fx = self.window.fx
         self.wallet = self.window.wallet
-        
         vbox = QVBoxLayout()
         tabs = QTabWidget()
         gui_widgets = []
@@ -284,12 +283,16 @@ that is always connected to the internet. Configure a port if you want it to be 
         colortheme_combo = QComboBox()
         colortheme_combo.addItem(_('Light'), 'default')
         colortheme_combo.addItem(_('Dark'), 'dark')
+        colortheme_combo.addItem(_('Qtum Light'), 'qtum_light')
+        colortheme_combo.addItem(_('Qtum Dark Blue'), 'qtum_almost_dark')
+        colortheme_combo.addItem(_('Qtum Dark'), 'qtum_dark')
+
         index = colortheme_combo.findData(self.config.get('qt_gui_color_theme', 'default'))
         colortheme_combo.setCurrentIndex(index)
         colortheme_label = QLabel(_('Color theme') + ':')
         def on_colortheme(x):
             self.config.set_key('qt_gui_color_theme', colortheme_combo.itemData(x), True)
-            self.need_restart = True
+            set_qtum_theme_if_needed(self.config)
         colortheme_combo.currentIndexChanged.connect(on_colortheme)
         gui_widgets.append((colortheme_label, colortheme_combo))
 

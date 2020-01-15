@@ -89,7 +89,6 @@ class ElectrumWindow(App):
 
     electrum_config = ObjectProperty(None)
     language = StringProperty('en')
-
     # properties might be updated by the network
     num_blocks = NumericProperty(0)
     num_nodes = NumericProperty(0)

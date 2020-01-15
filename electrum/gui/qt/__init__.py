@@ -30,6 +30,7 @@ import traceback
 import threading
 from typing import Optional, TYPE_CHECKING
 
+from .theme_helper import set_qtum_theme_if_needed
 
 try:
     import PyQt5
@@ -128,24 +129,8 @@ class ElectrumGui(Logger):
         self.build_tray_menu()
         self.tray.show()
         self.app.new_window_signal.connect(self.start_new_window)
-        self.set_dark_theme_if_needed()
+        set_qtum_theme_if_needed(self.config)
         run_hook('init_qt', self)
-
-    def set_dark_theme_if_needed(self):
-        use_dark_theme = self.config.get('qt_gui_color_theme', 'default') == 'dark'
-        if use_dark_theme:
-            try:
-                import qdarkstyle
-                self.app.setStyleSheet(qdarkstyle.load_stylesheet_pyqt5())
-            except BaseException as e:
-                use_dark_theme = False
-                self.logger.warning(f'Error setting dark theme: {repr(e)}')
-        # Apply any necessary stylesheet patches
-        patch_qt_stylesheet(use_dark_theme=use_dark_theme)
-        # Even if we ourselves don't set the dark theme,
-        # the OS/window manager/etc might set *a dark theme*.
-        # Hence, try to choose colors accordingly:
-        ColorScheme.update_from_widget(QWidget(), force_dark=use_dark_theme)
 
     def build_tray_menu(self):
         # Avoid immediate GC of old menu when window closed via its action

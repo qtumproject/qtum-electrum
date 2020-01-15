@@ -601,7 +601,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
 
     def init_menubar(self):
         menubar = QMenuBar()
-
         file_menu = menubar.addMenu(_("&File"))
         self.recently_visited_menu = file_menu.addMenu(_("&Recently open"))
         file_menu.addAction(_("&Open"), self.open_wallet).setShortcut(QKeySequence.Open)
