@@ -129,7 +129,7 @@ class ElectrumGui(Logger):
         self.build_tray_menu()
         self.tray.show()
         self.app.new_window_signal.connect(self.start_new_window)
-        set_qtum_theme_if_needed(self)
+        set_qtum_theme_if_needed(self.config)
         run_hook('init_qt', self)
 
     def build_tray_menu(self):

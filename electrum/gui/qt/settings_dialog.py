@@ -40,7 +40,7 @@ from .util import (ColorScheme, WindowModalDialog, HelpLabel, Buttons,
 
 from electrum.i18n import languages
 from electrum import qrscanner
-from .theme_helper import *
+from .theme_helper import set_qtum_theme_if_needed
 if TYPE_CHECKING:
     from electrum.simple_config import SimpleConfig
     from .main_window import ElectrumWindow
@@ -292,7 +292,7 @@ that is always connected to the internet. Configure a port if you want it to be 
         colortheme_label = QLabel(_('Color theme') + ':')
         def on_colortheme(x):
             self.config.set_key('qt_gui_color_theme', colortheme_combo.itemData(x), True)
-            set_qtum_theme_if_needed(self)
+            set_qtum_theme_if_needed(self.config)
         colortheme_combo.currentIndexChanged.connect(on_colortheme)
         gui_widgets.append((colortheme_label, colortheme_combo))
 
