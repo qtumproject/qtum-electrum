@@ -40,7 +40,7 @@ from .logging import Logger
 
 if TYPE_CHECKING:
     from .network import Network
-    from .json_db import JsonDB
+    from .wallet_db import WalletDB
     from .bitcoin import Token
 
 
@@ -71,7 +71,7 @@ class AddressSynchronizer(Logger):
     inherited by wallet
     """
 
-    def __init__(self, db: 'JsonDB'):
+    def __init__(self, db: 'WalletDB'):
         self.db = db
         self.network = None  # type: Network
         Logger.__init__(self)
@@ -106,7 +106,8 @@ class AddressSynchronizer(Logger):
         self.load_unverified_transactions()
         self.remove_local_transactions_we_dont_have()
 
-    def is_mine(self, address) -> bool:
+    def is_mine(self, address: Optional[str]) -> bool:
+        if not address: return False
         return self.db.is_addr_in_history(address)
 
     def get_addresses(self):
@@ -594,8 +595,10 @@ class AddressSynchronizer(Logger):
     def add_future_tx(self, tx: Transaction, num_blocks: int) -> None:
         assert num_blocks > 0, num_blocks
         with self.lock:
-            self.add_transaction(tx)
-            self.future_tx[tx.txid()] = num_blocks
+            tx_was_added = self.add_transaction(tx)
+            if tx_was_added:
+                self.future_tx[tx.txid()] = num_blocks
+            return tx_was_added
 
     def get_tx_height(self, tx_hash: str) -> TxMinedInfo:
         with self.lock:

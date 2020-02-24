@@ -31,15 +31,12 @@ import threading
 import socket
 import json
 import sys
-import ipaddress
 import asyncio
-from typing import NamedTuple, Optional, Sequence, List, Dict, Tuple, TYPE_CHECKING
+from typing import NamedTuple, Optional, Sequence, List, Dict, Tuple, TYPE_CHECKING, Iterable
 import traceback
 import concurrent
 from concurrent import futures
 
-import dns
-import dns.resolver
 import aiorpcx
 from aiorpcx import TaskGroup
 from aiohttp import ClientResponse
@@ -54,9 +51,12 @@ from . import constants
 from . import blockchain
 from . import bitcoin
 from .blockchain import Blockchain
+from . import dns_hacks
+from .transaction import Transaction
+from .blockchain import Blockchain
 from .interface import (Interface, serialize_server, deserialize_server,
                         RequestTimedOut, NetworkTimeout, BUCKET_NAME_OF_ONION_SERVERS,
-                        NetworkException)
+                        NetworkException, RequestCorrupted)
 from .version import PROTOCOL_VERSION
 from .simple_config import SimpleConfig
 from .i18n import _
@@ -66,7 +66,7 @@ if TYPE_CHECKING:
     from .channel_db import ChannelDB
     from .lnworker import LNGossip
     from .lnwatcher import WatchTower
-    from .transaction import Transaction
+    from .daemon import Daemon
 
 
 _logger = get_logger(__name__)
@@ -237,7 +237,7 @@ class Network(Logger):
 
     LOGGING_SHORTCUT = 'n'
 
-    def __init__(self, config: SimpleConfig):
+    def __init__(self, config: SimpleConfig, *, daemon: 'Daemon' = None):
         global _INSTANCE
         assert _INSTANCE is None, "Network is a singleton!"
         _INSTANCE = self
@@ -250,6 +250,9 @@ class Network(Logger):
 
         assert isinstance(config, SimpleConfig), f"config should be a SimpleConfig instead of {type(config)}"
         self.config = config
+
+        self.daemon = daemon
+
         blockchain.read_blockchains(self.config)
         self.logger.info(f"blockchains {list(map(lambda b: b.forkpoint, blockchain.blockchains.values()))}")
         self._blockchain_preferred_block = self.config.get('blockchain_preferred_block', None)  # type: Optional[Dict]
@@ -310,21 +313,21 @@ class Network(Logger):
         self.channel_db = None  # type: Optional[ChannelDB]
         self.lngossip = None  # type: Optional[LNGossip]
         self.local_watchtower = None  # type: Optional[WatchTower]
+        if self.config.get('run_watchtower', False):
+            from . import lnwatcher
+            self.local_watchtower = lnwatcher.WatchTower(self)
+            self.local_watchtower.start_network(self)
+            asyncio.ensure_future(self.local_watchtower.start_watching())
 
     def maybe_init_lightning(self):
         if self.channel_db is None:
-            from . import lnwatcher
             from . import lnworker
             from . import lnrouter
             from . import channel_db
             self.channel_db = channel_db.ChannelDB(self)
             self.path_finder = lnrouter.LNPathFinder(self.channel_db)
             self.lngossip = lnworker.LNGossip(self)
-            self.local_watchtower = lnwatcher.WatchTower(self) if self.config.get('local_watchtower', False) else None
             self.lngossip.start_network(self)
-            if self.local_watchtower:
-                self.local_watchtower.start_network(self)
-                asyncio.ensure_future(self.local_watchtower.start_watching)
 
     def run_from_another_thread(self, coro, *, timeout=None):
         assert self._loop_thread != threading.current_thread(), 'must not be called from network thread'
@@ -554,70 +557,9 @@ class Network(Logger):
 
     def _set_proxy(self, proxy: Optional[dict]):
         self.proxy = proxy
-        # Store these somewhere so we can un-monkey-patch
-        if not hasattr(socket, "_getaddrinfo"):
-            socket._getaddrinfo = socket.getaddrinfo
-        if proxy:
-            self.logger.info(f'setting proxy {proxy}')
-            # prevent dns leaks, see http://stackoverflow.com/questions/13184205/dns-over-proxy
-            socket.getaddrinfo = lambda *args: [(socket.AF_INET, socket.SOCK_STREAM, 6, '', (args[0], args[1]))]
-        else:
-            if sys.platform == 'win32':
-                # On Windows, socket.getaddrinfo takes a mutex, and might hold it for up to 10 seconds
-                # when dns-resolving. To speed it up drastically, we resolve dns ourselves, outside that lock.
-                # see #4421
-                socket.getaddrinfo = self._fast_getaddrinfo
-                resolver = dns.resolver.get_default_resolver()
-                if resolver.cache is None:
-                    resolver.cache = dns.resolver.Cache()
-            else:
-                socket.getaddrinfo = socket._getaddrinfo
+        dns_hacks.configure_dns_depending_on_proxy(bool(proxy))
+        self.logger.info(f'setting proxy {proxy}')
         self.trigger_callback('proxy_set', self.proxy)
-
-    @staticmethod
-    def _fast_getaddrinfo(host, *args, **kwargs):
-        def needs_dns_resolving(host):
-            try:
-                ipaddress.ip_address(host)
-                return False  # already valid IP
-            except ValueError:
-                pass  # not an IP
-            if str(host) in ('localhost', 'localhost.',):
-                return False
-            return True
-        def resolve_with_dnspython(host):
-            addrs = []
-            expected_dnspython_errors = (dns.resolver.NXDOMAIN, dns.resolver.NoAnswer)
-            # try IPv6
-            try:
-                answers = dns.resolver.query(host, dns.rdatatype.AAAA)
-                addrs += [str(answer) for answer in answers]
-            except expected_dnspython_errors as e:
-                pass
-            except BaseException as e:
-                _logger.info(f'dnspython failed to resolve dns (AAAA) for {repr(host)} with error: {repr(e)}')
-            # try IPv4
-            try:
-                answers = dns.resolver.query(host, dns.rdatatype.A)
-                addrs += [str(answer) for answer in answers]
-            except expected_dnspython_errors as e:
-                # dns failed for some reason, e.g. dns.resolver.NXDOMAIN this is normal.
-                # Simply report back failure; except if we already have some results.
-                if not addrs:
-                    raise socket.gaierror(11001, 'getaddrinfo failed') from e
-            except BaseException as e:
-                # Possibly internal error in dnspython :( see #4483 and #5638
-                _logger.info(f'dnspython failed to resolve dns (A) for {repr(host)} with error: {repr(e)}')
-            if addrs:
-                return addrs
-            # Fall back to original socket.getaddrinfo to resolve dns.
-            return [host]
-        addrs = [host]
-        if needs_dns_resolving(host):
-            addrs = resolve_with_dnspython(host)
-        list_of_list_of_socketinfos = [socket._getaddrinfo(addr, *args, **kwargs) for addr in addrs]
-        list_of_socketinfos = [item for lst in list_of_list_of_socketinfos for item in lst]
-        return list_of_socketinfos
 
     @log_exceptions
     async def set_parameters(self, net_params: NetworkParameters):
@@ -750,7 +692,7 @@ class Network(Logger):
             self.trigger_callback('network_updated')
             if blockchain_updated: self.trigger_callback('blockchain_updated')
 
-    async def _close_interface(self, interface):
+    async def _close_interface(self, interface: Interface):
         if interface:
             with self.interfaces_lock:
                 if self.interfaces.get(interface.server) == interface:
@@ -893,7 +835,7 @@ class Network(Logger):
                     if success_fut.exception():
                         try:
                             raise success_fut.exception()
-                        except RequestTimedOut:
+                        except (RequestTimedOut, RequestCorrupted):
                             await iface.close()
                             await iface.got_disconnected
                             continue  # try again
@@ -938,6 +880,14 @@ class Network(Logger):
         if out != tx.txid():
             self.logger.info(f"unexpected txid for broadcast_transaction [DO NOT TRUST THIS MESSAGE]: {out} != {tx.txid()}")
             raise TxBroadcastHashMismatch(_("Server returned unexpected transaction ID."))
+
+    async def try_broadcasting(self, tx, name):
+        try:
+            await self.broadcast_transaction(tx)
+        except Exception as e:
+            self.logger.info(f'error: could not broadcast {name} {tx.txid()}, {str(e)}')
+        else:
+            self.logger.info(f'success: broadcasting {name} {tx.txid()}')
 
     @staticmethod
     def sanitize_tx_broadcast_response(server_msg) -> str:
@@ -1090,8 +1040,19 @@ class Network(Logger):
     async def get_transaction(self, tx_hash: str, *, timeout=None) -> str:
         if not is_hash256_str(tx_hash):
             raise Exception(f"{repr(tx_hash)} is not a txid")
-        return await self.interface.session.send_request('blockchain.transaction.get', [tx_hash],
-                                                         timeout=timeout)
+        iface = self.interface
+        raw = await iface.session.send_request('blockchain.transaction.get', [tx_hash], timeout=timeout)
+        # validate response
+        tx = Transaction(raw)
+        try:
+            tx.deserialize()  # see if raises
+        except Exception as e:
+            self.logger.warning(f"cannot deserialize received transaction (txid {tx_hash}). from {str(iface)}")
+            raise RequestCorrupted() from e  # TODO ban server?
+        if tx.txid() != tx_hash:
+            self.logger.warning(f"received tx does not match expected txid {tx_hash} (got {tx.txid()}). from {str(iface)}")
+            raise RequestCorrupted()  # TODO ban server?
+        return raw
 
     @best_effort_reliable
     @catch_server_exceptions
@@ -1211,7 +1172,12 @@ class Network(Logger):
 
         self.trigger_callback('network_updated')
 
-    def start(self, jobs: List=None):
+    def start(self, jobs: Iterable = None):
+        """Schedule starting the network, along with the given job co-routines.
+
+        Note: the jobs will *restart* every time the network restarts, e.g. on proxy
+        setting changes.
+        """
         self._jobs = jobs or []
         asyncio.run_coroutine_threadsafe(self._start(), self.asyncio_loop)
 
@@ -1290,7 +1256,7 @@ class Network(Logger):
             except asyncio.CancelledError:
                 # suppress spurious cancellations
                 group = self.main_taskgroup
-                if not group or group._closed:
+                if not group or group.closed():
                     raise
             await asyncio.sleep(0.1)
 

@@ -12,7 +12,7 @@ from functools import partial, lru_cache
 from typing import NamedTuple, Callable, Optional, TYPE_CHECKING, Union, List, Dict, Any
 
 from PyQt5.QtGui import (QFont, QColor, QCursor, QPixmap, QStandardItem,
-                         QPalette, QIcon, QFontMetrics)
+                         QPalette, QIcon, QFontMetrics, QShowEvent)
 from PyQt5.QtCore import (Qt, QPersistentModelIndex, QModelIndex, pyqtSignal,
                           QCoreApplication, QItemSelectionModel, QThread,
                           QSortFilterProxyModel, QSize, QLocale)
@@ -493,6 +493,7 @@ class ElectrumItemDelegate(QStyledItemDelegate):
         return super().createEditor(parent, option, idx)
 
 class MyTreeView(QTreeView):
+    ROLE_CLIPBOARD_DATA = Qt.UserRole + 100
 
     def __init__(self, parent: 'ElectrumWindow', create_menu, *,
                  stretch_column=None, editable_columns=None):
@@ -524,6 +525,9 @@ class MyTreeView(QTreeView):
         # So to speed the UI up considerably, set it to
         # only look at as many rows as currently visible.
         self.header().setResizeContentsPrecision(0)
+
+        self._pending_update = False
+        self._forced_update = False
 
     def set_editability(self, items):
         for idx, i in enumerate(items):
@@ -666,13 +670,29 @@ class MyTreeView(QTreeView):
         for column in self.Columns:
             column_title = self.model().horizontalHeaderItem(column).text()
             item_col = self.model().itemFromIndex(idx.sibling(idx.row(), column))
-            column_data = item_col.text().strip()
+            clipboard_data = item_col.data(self.ROLE_CLIPBOARD_DATA)
+            if clipboard_data is None:
+                clipboard_data = item_col.text().strip()
             cc.addAction(column_title,
-                         lambda text=column_data, title=column_title:
+                         lambda text=clipboard_data, title=column_title:
                          self.place_text_on_clipboard(text, title=title))
 
     def place_text_on_clipboard(self, text: str, *, title: str = None) -> None:
         self.parent.do_copy(text, title=title)
+
+    def showEvent(self, e: 'QShowEvent'):
+        super().showEvent(e)
+        if e.isAccepted() and self._pending_update:
+            self._forced_update = True
+            self.update()
+            self._forced_update = False
+
+    def maybe_defer_update(self) -> bool:
+        """Returns whether we should defer an update/refresh."""
+        defer = not self.isVisible() and not self._forced_update
+        # side-effect: if we decide to defer update, the state will become stale:
+        self._pending_update = defer
+        return defer
 
 
 class ButtonsWidget(QWidget):

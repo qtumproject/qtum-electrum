@@ -73,6 +73,14 @@ def satoshis(amount):
     return int(COIN*Decimal(amount)) if amount not in ['!', None] else amount
 
 
+def json_normalize(x):
+    # note: The return value of commands, when going through the JSON-RPC interface,
+    #       is json-encoded. The encoder used there cannot handle some types, e.g. electrum.util.Satoshis.
+    # note: We should not simply do "json_encode(x)" here, as then later x would get doubly json-encoded.
+    # see #5868
+    return json_decode(json_encode(x))
+
+
 class Command:
     def __init__(self, func, s):
         self.name = func.__name__
@@ -254,13 +262,13 @@ class Commands:
             raise Exception("Can't change the password of a wallet encrypted with a hw device.")
         b = wallet.storage.is_encrypted()
         wallet.update_password(password, new_password, encrypt_storage=b)
-        wallet.storage.write()
+        wallet.save_db()
         return {'password':wallet.has_password()}
 
     @command('w')
     async def get(self, key, wallet: Abstract_Wallet = None):
         """Return item from wallet storage"""
-        return wallet.storage.get(key)
+        return wallet.db.get(key)
 
     @command('')
     async def getconfig(self, key):
@@ -638,7 +646,7 @@ class Commands:
             from .exchange_rate import FxThread
             fx = FxThread(self.config, None)
             kwargs['fx'] = fx
-        return json_encode(wallet.get_detailed_history(**kwargs))
+        return json_normalize(wallet.get_detailed_history(**kwargs))
 
     @command('w')
     async def init_lightning(self, wallet: Abstract_Wallet = None):
@@ -655,7 +663,7 @@ class Commands:
     async def lightning_history(self, show_fiat=False, wallet: Abstract_Wallet = None):
         """ lightning history """
         lightning_history = wallet.lnworker.get_history() if wallet.lnworker else []
-        return json_encode(lightning_history)
+        return json_normalize(lightning_history)
 
     @command('w')
     async def setlabel(self, key, label, wallet: Abstract_Wallet = None):
@@ -822,7 +830,7 @@ class Commands:
         tx = Transaction(tx)
         if not wallet.add_transaction(tx):
             return False
-        wallet.storage.write()
+        wallet.save_db()
         return tx.txid()
 
     @command('wp')
@@ -898,7 +906,7 @@ class Commands:
         to_delete |= wallet.get_depending_transactions(txid)
         for tx_hash in to_delete:
             wallet.remove_transaction(tx_hash)
-        wallet.storage.write()
+        wallet.save_db()
 
     @command('wn')
     async def get_tx_status(self, txid, wallet: Abstract_Wallet = None):
@@ -939,7 +947,15 @@ class Commands:
 
     @command('wn')
     async def lnpay(self, invoice, attempts=1, timeout=10, wallet: Abstract_Wallet = None):
-        return await wallet.lnworker._pay(invoice, attempts=attempts)
+        lnworker = wallet.lnworker
+        lnaddr = lnworker._check_invoice(invoice, None)
+        payment_hash = lnaddr.paymenthash
+        success = await lnworker._pay(invoice, attempts=attempts)
+        return {
+            'payment_hash': payment_hash.hex(),
+            'success': success,
+            'preimage': lnworker.get_preimage(payment_hash).hex() if success else None,
+        }
 
     @command('w')
     async def nodeid(self, wallet: Abstract_Wallet = None):
@@ -948,7 +964,23 @@ class Commands:
 
     @command('w')
     async def list_channels(self, wallet: Abstract_Wallet = None):
-        return list(wallet.lnworker.list_channels())
+        # we output the funding_outpoint instead of the channel_id because lnd uses channel_point (funding outpoint) to identify channels
+        from .lnutil import LOCAL, REMOTE, format_short_channel_id
+        encoder = util.MyEncoder()
+        l = list(wallet.lnworker.channels.items())
+        return [
+            {
+                'local_htlcs': json.loads(encoder.encode(chan.hm.log[LOCAL])),
+                'remote_htlcs': json.loads(encoder.encode(chan.hm.log[REMOTE])),
+                'channel_id': format_short_channel_id(chan.short_channel_id) if chan.short_channel_id else None,
+                'full_channel_id': bh2u(chan.channel_id),
+                'channel_point': chan.funding_outpoint.to_str(),
+                'state': chan.get_state().name,
+                'remote_pubkey': bh2u(chan.node_id),
+                'local_balance': chan.balance(LOCAL)//1000,
+                'remote_balance': chan.balance(REMOTE)//1000,
+            } for channel_id, chan in l
+        ]
 
     @command('wn')
     async def dumpgraph(self, wallet: Abstract_Wallet = None):
@@ -968,10 +1000,6 @@ class Commands:
     async def list_invoices(self, wallet: Abstract_Wallet = None):
         return wallet.get_invoices()
 
-    @command('w')
-    async def lightning_history(self, wallet: Abstract_Wallet = None):
-        return wallet.lnworker.get_history()
-
     @command('wn')
     async def close_channel(self, channel_point, force=False, wallet: Abstract_Wallet = None):
         txid, index = channel_point.split(':')
@@ -987,6 +1015,12 @@ class Commands:
         chan = wallet.lnworker.channels[chan_id]
         tx = chan.force_close_tx()
         return tx.serialize()
+
+    @command('wn')
+    async def get_watchtower_ctn(self, channel_point, wallet: Abstract_Wallet = None):
+        """ return the local watchtower's ctn of channel. used in regtests """
+        return await self.network.local_watchtower.sweepstore.get_ctn(channel_point, None)
+
 
 def eval_bool(x: str) -> bool:
     if x == 'false': return False

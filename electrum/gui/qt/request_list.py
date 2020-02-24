@@ -24,10 +24,11 @@
 # SOFTWARE.
 
 from enum import IntEnum
+from typing import Optional
 
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QMenu
-from PyQt5.QtCore import Qt, QItemSelectionModel
+from PyQt5.QtCore import Qt, QItemSelectionModel, QModelIndex
 
 from electrum.i18n import _
 from electrum.util import format_time, get_request_status
@@ -61,6 +62,7 @@ class RequestList(MyTreeView):
         super().__init__(parent, self.create_menu,
                          stretch_column=self.Columns.DESCRIPTION,
                          editable_columns=[])
+        self.wallet = self.parent.wallet
         self.setModel(QStandardItemModel(self))
         self.setSortingEnabled(True)
         self.update()
@@ -74,7 +76,13 @@ class RequestList(MyTreeView):
                 self.selectionModel().setCurrentIndex(item, QItemSelectionModel.SelectCurrent | QItemSelectionModel.Rows)
                 break
 
-    def item_changed(self, idx):
+    def item_changed(self, idx: Optional[QModelIndex]):
+        if idx is None:
+            self.parent.receive_payreq_e.setText('')
+            self.parent.receive_address_e.setText('')
+            return
+        if not idx.isValid():
+            return
         # TODO use siblingAtColumn when min Qt version is >=5.11
         item = self.model().itemFromIndex(idx.sibling(idx.row(), self.Columns.DATE))
         request_type = item.data(ROLE_REQUEST_TYPE)
@@ -89,6 +97,10 @@ class RequestList(MyTreeView):
         else:
             self.parent.receive_payreq_e.setText(req.get('URI'))
             self.parent.receive_address_e.setText(req['address'])
+
+    def clearSelection(self):
+        super().clearSelection()
+        self.selectionModel().clearCurrentIndex()
 
     def refresh_status(self):
         m = self.model()
@@ -106,8 +118,7 @@ class RequestList(MyTreeView):
                 status_item.setIcon(read_QIcon(pr_icons.get(status)))
 
     def update(self):
-        self.wallet = self.parent.wallet
-        domain = self.wallet.get_receiving_addresses()
+        # not calling maybe_defer_update() as it interferes with conditional-visibility
         self.parent.update_receive_address_styling()
         self.model().clear()
         self.update_headers(self.__class__.headers)
@@ -146,6 +157,9 @@ class RequestList(MyTreeView):
             b = self.model().rowCount() > 0
             self.setVisible(b)
             self.parent.receive_requests_label.setVisible(b)
+            if not b:
+                # list got hidden, so selected item should also be cleared:
+                self.item_changed(None)
 
     def create_menu(self, position):
         idx = self.indexAt(position)
