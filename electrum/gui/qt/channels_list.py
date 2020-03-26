@@ -16,7 +16,6 @@ from electrum.lnutil import LOCAL, REMOTE, format_short_channel_id, LN_MAX_FUNDI
 from .util import (MyTreeView, WindowModalDialog, Buttons, OkButton, CancelButton,
                    EnterButton, WaitingDialog, MONOSPACE_FONT)
 from .amountedit import BTCAmountEdit, FreezableLineEdit
-from .channel_details import ChannelDetailsDialog
 
 
 ROLE_CHANNEL_ID = Qt.UserRole
@@ -29,13 +28,15 @@ class ChannelsList(MyTreeView):
     class Columns(IntEnum):
         SHORT_CHANID = 0
         NODE_ID = 1
-        LOCAL_BALANCE = 2
-        REMOTE_BALANCE = 3
-        CHANNEL_STATUS = 4
+        NODE_ALIAS = 2
+        LOCAL_BALANCE = 3
+        REMOTE_BALANCE = 4
+        CHANNEL_STATUS = 5
 
     headers = {
         Columns.SHORT_CHANID: _('Short Channel ID'),
         Columns.NODE_ID: _('Node ID'),
+        Columns.NODE_ALIAS: _('Node alias'),
         Columns.LOCAL_BALANCE: _('Local'),
         Columns.REMOTE_BALANCE: _('Remote'),
         Columns.CHANNEL_STATUS: _('Status'),
@@ -63,11 +64,17 @@ class ChannelsList(MyTreeView):
             if bal_other != bal_minus_htlcs_other:
                 label += ' (+' + self.parent.format_amount(bal_other - bal_minus_htlcs_other) + ')'
             labels[subject] = label
-        status = self.lnworker.get_channel_status(chan)
+        status = chan.get_state_for_GUI()
         closed = chan.is_closed()
+        if self.parent.network.is_lightning_running():
+            node_info = self.lnworker.channel_db.get_node_info_for_node_id(chan.node_id)
+            node_alias = (node_info.alias if node_info else '') or ''
+        else:
+            node_alias = ''
         return [
             format_short_channel_id(chan.short_channel_id),
             bh2u(chan.node_id),
+            node_alias,
             '' if closed else labels[LOCAL],
             '' if closed else labels[REMOTE],
             status
@@ -91,10 +98,16 @@ class ChannelsList(MyTreeView):
         WaitingDialog(self, 'please wait..', task, self.on_success, self.on_failure)
 
     def force_close(self, channel_id):
+        chan = self.lnworker.channels[channel_id]
+        to_self_delay = chan.config[REMOTE].to_self_delay
         if self.lnworker.wallet.is_lightning_backup():
             msg = _('WARNING: force-closing from an old state might result in fund loss.\nAre you sure?')
         else:
-            msg = _('Force-close channel?\nReclaimed funds will not be immediately available.')
+            msg = _('Force-close channel?') + '\n\n'\
+                  + _(f'Funds retrieved from this channel will not be available before {to_self_delay} blocks after forced closure.') + ' '\
+                  + _('After that delay, funds will be sent to an address derived from your wallet seed.') + '\n\n'\
+                  + _('In the meantime, channel funds will not be recoverable from your seed, and will be lost if you lose your wallet.') + ' '\
+                  + _('To prevent that, you should backup your wallet if you have not already done so.')
         if self.parent.question(msg):
             def task():
                 coro = self.lnworker.force_close_channel(channel_id)
@@ -113,8 +126,11 @@ class ChannelsList(MyTreeView):
             return
         channel_id = idx.sibling(idx.row(), self.Columns.NODE_ID).data(ROLE_CHANNEL_ID)
         chan = self.lnworker.channels[channel_id]
-        menu.addAction(_("Details..."), lambda: self.details(channel_id))
+        menu.addAction(_("Details..."), lambda: self.parent.show_channel(channel_id))
         self.add_copy_menu(menu, idx)
+        funding_tx = self.parent.wallet.db.get_transaction(chan.funding_outpoint.txid)
+        if funding_tx:
+            menu.addAction(_("View funding transaction"), lambda: self.parent.show_transaction(funding_tx))
         if not chan.is_closed():
             if chan.peer_state == peer_states.GOOD:
                 menu.addAction(_("Close channel"), lambda: self.close_channel(channel_id))
@@ -127,12 +143,8 @@ class ChannelsList(MyTreeView):
                 if closing_tx:
                     menu.addAction(_("View closing transaction"), lambda: self.parent.show_transaction(closing_tx))
         if chan.is_redeemed():
-            menu.addAction(_("Remove"), lambda: self.remove_channel(channel_id))
+            menu.addAction(_("Delete"), lambda: self.remove_channel(channel_id))
         menu.exec_(self.viewport().mapToGlobal(position))
-
-    def details(self, channel_id):
-        assert self.parent.wallet
-        ChannelDetailsDialog(self.parent, channel_id).show()
 
     @QtCore.pyqtSlot(Channel)
     def do_update_single_row(self, chan):
@@ -233,20 +245,21 @@ class ChannelsList(MyTreeView):
         suggest_button = QPushButton(d, text=_('Suggest'))
         suggest_button.clicked.connect(lambda: remote_nodeid.setText(bh2u(lnworker.suggest_peer() or b'')))
         clear_button = QPushButton(d, text=_('Clear'))
-        clear_button.clicked.connect(lambda: remote_nodeid.setText(''))
+        def on_clear():
+            amount_e.setText('')
+            remote_nodeid.setText('')
+            max_button.setChecked(False)
+        clear_button.clicked.connect(on_clear)
         h = QGridLayout()
         h.addWidget(QLabel(_('Your Node ID')), 0, 0)
-        h.addWidget(local_nodeid, 0, 1)
+        h.addWidget(local_nodeid, 0, 1, 1, 3)
         h.addWidget(QLabel(_('Remote Node ID')), 1, 0)
-        h.addWidget(remote_nodeid, 1, 1)
-        h.addWidget(suggest_button, 1, 2)
-        h.addWidget(clear_button, 1, 3)
-        h.addWidget(QLabel('Amount'), 2, 0)
-        hbox = QHBoxLayout()
-        hbox.addWidget(amount_e)
-        hbox.addWidget(max_button)
-        hbox.addStretch(1)
-        h.addLayout(hbox, 2, 1)
+        h.addWidget(remote_nodeid, 1, 1, 1, 3)
+        h.addWidget(suggest_button, 2, 1)
+        h.addWidget(clear_button, 2, 2)
+        h.addWidget(QLabel('Amount'), 3, 0)
+        h.addWidget(amount_e, 3, 1)
+        h.addWidget(max_button, 3, 2)
         vbox.addLayout(h)
         ok_button = OkButton(d)
         ok_button.setDefault(True)

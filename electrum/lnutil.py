@@ -41,22 +41,27 @@ def ln_dummy_address():
 
 from .json_db import StoredObject
 
+
+hex_to_bytes = lambda v: v if isinstance(v, bytes) else bytes.fromhex(v) if v is not None else None
+json_to_keypair = lambda v: v if isinstance(v, OnlyPubkeyKeypair) else Keypair(**v) if len(v)==2 else OnlyPubkeyKeypair(**v)
+
+
 @attr.s
 class OnlyPubkeyKeypair(StoredObject):
-    pubkey = attr.ib(type=bytes)
+    pubkey = attr.ib(type=bytes, converter=hex_to_bytes)
 
 @attr.s
 class Keypair(OnlyPubkeyKeypair):
-    privkey = attr.ib(type=bytes)
+    privkey = attr.ib(type=bytes, converter=hex_to_bytes)
 
 @attr.s
 class Config(StoredObject):
     # shared channel config fields
-    payment_basepoint = attr.ib(type=OnlyPubkeyKeypair)
-    multisig_key = attr.ib(type=OnlyPubkeyKeypair)
-    htlc_basepoint = attr.ib(type=OnlyPubkeyKeypair)
-    delayed_basepoint = attr.ib(type=OnlyPubkeyKeypair)
-    revocation_basepoint = attr.ib(type=OnlyPubkeyKeypair)
+    payment_basepoint = attr.ib(type=OnlyPubkeyKeypair, converter=json_to_keypair)
+    multisig_key = attr.ib(type=OnlyPubkeyKeypair, converter=json_to_keypair)
+    htlc_basepoint = attr.ib(type=OnlyPubkeyKeypair, converter=json_to_keypair)
+    delayed_basepoint = attr.ib(type=OnlyPubkeyKeypair, converter=json_to_keypair)
+    revocation_basepoint = attr.ib(type=OnlyPubkeyKeypair, converter=json_to_keypair)
     to_self_delay = attr.ib(type=int)
     dust_limit_sat = attr.ib(type=int)
     max_htlc_value_in_flight_msat = attr.ib(type=int)
@@ -66,17 +71,17 @@ class Config(StoredObject):
 
 @attr.s
 class LocalConfig(Config):
-    per_commitment_secret_seed = attr.ib(type=bytes)
+    per_commitment_secret_seed = attr.ib(type=bytes, converter=hex_to_bytes)
     funding_locked_received = attr.ib(type=bool)
     was_announced = attr.ib(type=bool)
-    current_commitment_signature = attr.ib(type=bytes)
-    current_htlc_signatures = attr.ib(type=bytes)
+    current_commitment_signature = attr.ib(type=bytes, converter=hex_to_bytes)
+    current_htlc_signatures = attr.ib(type=bytes, converter=hex_to_bytes)
 
 @attr.s
 class RemoteConfig(Config):
     htlc_minimum_msat = attr.ib(type=int)
-    next_per_commitment_point = attr.ib(type=bytes)
-    current_per_commitment_point = attr.ib(default=None, type=bytes)
+    next_per_commitment_point = attr.ib(type=bytes, converter=hex_to_bytes)
+    current_per_commitment_point = attr.ib(default=None, type=bytes, converter=hex_to_bytes)
 
 @attr.s
 class FeeUpdate(StoredObject):
@@ -107,7 +112,7 @@ class Outpoint(StoredObject):
 
 
 class PaymentAttemptFailureDetails(NamedTuple):
-    sender_idx: int
+    sender_idx: Optional[int]
     failure_msg: 'OnionRoutingFailureMessage'
     is_blacklisted: bool
 
@@ -118,6 +123,34 @@ class PaymentAttemptLog(NamedTuple):
     preimage: Optional[bytes] = None
     failure_details: Optional[PaymentAttemptFailureDetails] = None
     exception: Optional[Exception] = None
+
+    def formatted_tuple(self):
+        if not self.exception:
+            route = self.route
+            route_str = '%d'%len(route)
+            short_channel_id = None
+            if not self.success:
+                sender_idx = self.failure_details.sender_idx
+                failure_msg = self.failure_details.failure_msg
+                if sender_idx is not None:
+                    short_channel_id = route[sender_idx+1].short_channel_id
+                message = str(failure_msg.code.name)
+            else:
+                short_channel_id = route[-1].short_channel_id
+                message = _('Success')
+            chan_str = str(short_channel_id) if short_channel_id else _("Unknown")
+        else:
+            route_str = 'None'
+            chan_str = 'N/A'
+            message = str(self.exception)
+        return route_str, chan_str, message
+
+
+class BarePaymentAttemptLog(NamedTuple):
+    success: bool
+    preimage: Optional[bytes]
+    error_bytes: Optional[bytes]
+    error_reason: Optional['OnionRoutingFailureMessage'] = None
 
 
 class LightningError(Exception): pass
@@ -135,6 +168,7 @@ class PaymentFailure(UserFacingException): pass
 # TODO make some of these values configurable?
 DEFAULT_TO_SELF_DELAY = 144*5
 
+REDEEM_AFTER_DOUBLE_SPENT_DELAY = 30
 
 ##### CLTV-expiry-delta-related values
 # see https://github.com/lightningnetwork/lightning-rfc/blob/master/02-peer-protocol.md#cltv_expiry_delta-selection
@@ -656,15 +690,17 @@ class LnGlobalFeatures(IntFlag):
 # note that these are powers of two, not the bits themselves
 LN_GLOBAL_FEATURES_KNOWN_SET = set(LnGlobalFeatures)
 
-def ln_compare_features(our_features, their_features):
-    """raises ValueError if incompatible"""
+class IncompatibleLightningFeatures(ValueError): pass
+
+def ln_compare_features(our_features, their_features) -> int:
+    """raises IncompatibleLightningFeatures if incompatible"""
     our_flags = set(list_enabled_bits(our_features))
     their_flags = set(list_enabled_bits(their_features))
     for flag in our_flags:
         if flag not in their_flags and get_ln_flag_pair_of_bit(flag) not in their_flags:
             # they don't have this feature we wanted :(
             if flag % 2 == 0:  # even flags are compulsory
-                raise ValueError(LnLocalFeatures(1 << flag))
+                raise IncompatibleLightningFeatures(f"remote does not support {LnLocalFeatures(1 << flag)!r}")
             our_features ^= 1 << flag  # disable flag
         else:
             # They too have this flag.
@@ -823,8 +859,10 @@ class ShortChannelID(bytes):
         if isinstance(data, ShortChannelID) or data is None:
             return data
         if isinstance(data, str):
+            assert len(data) == 16
             return ShortChannelID.fromhex(data)
-        if isinstance(data, bytes):
+        if isinstance(data, (bytes, bytearray)):
+            assert len(data) == 8
             return ShortChannelID(data)
 
     @property
@@ -848,21 +886,21 @@ def format_short_channel_id(short_channel_id: Optional[bytes]):
         + 'x' + str(int.from_bytes(short_channel_id[6:], 'big'))
 
 
-class UpdateAddHtlc(namedtuple('UpdateAddHtlc', ['amount_msat', 'payment_hash', 'cltv_expiry', 'htlc_id', 'timestamp'])):
-    # note: typing.NamedTuple cannot be used because we are overriding __new__
+@attr.s(frozen=True)
+class UpdateAddHtlc:
+    amount_msat = attr.ib(type=int, kw_only=True)
+    payment_hash = attr.ib(type=bytes, kw_only=True, converter=hex_to_bytes)
+    cltv_expiry = attr.ib(type=int, kw_only=True)
+    timestamp = attr.ib(type=int, kw_only=True)
+    htlc_id = attr.ib(type=int, kw_only=True, default=None)
 
-    __slots__ = ()
-    def __new__(cls, *args, **kwargs):
-        # if you pass a hex-string as payment_hash, it is decoded to bytes.
-        # Bytes can't be saved to disk, so we save hex-strings.
-        if len(args) > 0:
-            args = list(args)
-            if type(args[1]) is str:
-                args[1] = bfh(args[1])
-            return super().__new__(cls, *args)
-        if type(kwargs['payment_hash']) is str:
-            kwargs['payment_hash'] = bfh(kwargs['payment_hash'])
-        if len(args) < 4 and 'htlc_id' not in kwargs:
-            kwargs['htlc_id'] = None
-        return super().__new__(cls, **kwargs)
+    @classmethod
+    def from_tuple(cls, amount_msat, payment_hash, cltv_expiry, htlc_id, timestamp) -> 'UpdateAddHtlc':
+        return cls(amount_msat=amount_msat,
+                   payment_hash=payment_hash,
+                   cltv_expiry=cltv_expiry,
+                   htlc_id=htlc_id,
+                   timestamp=timestamp)
 
+    def to_tuple(self):
+        return (self.amount_msat, self.payment_hash, self.cltv_expiry, self.htlc_id, self.timestamp)

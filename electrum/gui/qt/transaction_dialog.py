@@ -41,7 +41,7 @@ from qrcode import exceptions
 
 from electrum.simple_config import SimpleConfig
 from electrum.util import quantize_feerate
-from electrum.bitcoin import base_encode
+from electrum.bitcoin import base_encode, NLOCKTIME_BLOCKHEIGHT_MAX
 from electrum.i18n import _
 from electrum.plugin import run_hook
 from electrum import simple_config
@@ -50,12 +50,15 @@ from electrum.logging import get_logger
 
 from .util import (MessageBoxMixin, read_QIcon, Buttons, icon_path,
                    MONOSPACE_FONT, ColorScheme, ButtonsLineEdit, text_dialog,
-                   char_width_in_lineedit, TRANSACTION_FILE_EXTENSION_FILTER,
+                   char_width_in_lineedit, TRANSACTION_FILE_EXTENSION_FILTER_SEPARATE,
+                   TRANSACTION_FILE_EXTENSION_FILTER_ONLY_COMPLETE_TX,
+                   TRANSACTION_FILE_EXTENSION_FILTER_ONLY_PARTIAL_TX,
                    BlockingWaitingDialog)
 
 from .fee_slider import FeeSlider
 from .confirm_tx_dialog import TxEditor
 from .amountedit import FeerateEdit, BTCAmountEdit
+from .locktimeedit import LockTimeEdit
 
 if TYPE_CHECKING:
     from .main_window import ElectrumWindow
@@ -151,6 +154,9 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
         export_actions_menu.addSeparator()
         export_submenu = export_actions_menu.addMenu(_("For CoinJoin; strip privates"))
         self.add_export_actions_to_menu(export_submenu, gettx=self._gettx_for_coinjoin)
+        self.psbt_only_widgets.append(export_submenu)
+        export_submenu = export_actions_menu.addMenu(_("For hardware device; include xpubs"))
+        self.add_export_actions_to_menu(export_submenu, gettx=self._gettx_for_hardware_device)
         self.psbt_only_widgets.append(export_submenu)
 
         self.export_actions_button = QToolButton()
@@ -259,6 +265,21 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
         tx.prepare_for_export_for_coinjoin()
         return tx
 
+    def _gettx_for_hardware_device(self) -> PartialTransaction:
+        if not isinstance(self.tx, PartialTransaction):
+            raise Exception("Can only export partial transactions for hardware device.")
+        tx = copy.deepcopy(self.tx)
+        tx.add_info_from_wallet(self.wallet, include_xpubs_and_full_paths=True)
+        # log warning if PSBT_*_BIP32_DERIVATION fields cannot be filled with full path due to missing info
+        from electrum.keystore import Xpub
+        def is_ks_missing_info(ks):
+            return (isinstance(ks, Xpub) and (ks.get_root_fingerprint() is None
+                                              or ks.get_derivation_prefix() is None))
+        if any([is_ks_missing_info(ks) for ks in self.wallet.get_keystores()]):
+            _logger.warning('PSBT was requested to be filled with full bip32 paths but '
+                            'some keystores lacked either the derivation prefix or the root fingerprint')
+        return tx
+
     def copy_to_clipboard(self, *, tx: Transaction = None):
         if tx is None:
             tx = self.tx
@@ -306,12 +327,19 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
         if isinstance(tx, PartialTransaction):
             tx.finalize_psbt()
         if tx.is_complete():
-            name = 'signed_%s.txn' % (tx.txid()[0:8])
+            name = 'signed_%s' % (tx.txid()[0:8])
+            extension = 'txn'
+            default_filter = TRANSACTION_FILE_EXTENSION_FILTER_ONLY_COMPLETE_TX
         else:
-            name = self.wallet.basename() + time.strftime('-%Y%m%d-%H%M.psbt')
+            name = self.wallet.basename() + time.strftime('-%Y%m%d-%H%M')
+            extension = 'psbt'
+            default_filter = TRANSACTION_FILE_EXTENSION_FILTER_ONLY_PARTIAL_TX
+        name = f'{name}.{extension}'
         fileName = self.main_window.getSaveFileName(_("Select where to save your transaction"),
                                                     name,
-                                                    TRANSACTION_FILE_EXTENSION_FILTER)
+                                                    TRANSACTION_FILE_EXTENSION_FILTER_SEPARATE,
+                                                    default_extension=extension,
+                                                    default_filter=default_filter)
         if not fileName:
             return
         if tx.is_complete():  # network tx hex
@@ -390,7 +418,12 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
         can_sign = not self.tx.is_complete() and \
             (self.wallet.can_sign(self.tx) or bool(self.external_keypairs))
         self.sign_button.setEnabled(can_sign)
-        self.tx_hash_e.setText(tx_details.txid or _('Unknown'))
+        if self.finalized and tx_details.txid:
+            self.tx_hash_e.setText(tx_details.txid)
+        else:
+            # note: when not finalized, RBF and locktime changes do not trigger
+            #       a make_tx, so the txid is unreliable, hence:
+            self.tx_hash_e.setText(_('Unknown'))
         if desc is None:
             self.tx_desc.hide()
         else:
@@ -408,7 +441,13 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
             self.date_label.show()
         else:
             self.date_label.hide()
-        self.locktime_label.setText(f"LockTime: {self.tx.locktime}")
+        if self.tx.locktime <= NLOCKTIME_BLOCKHEIGHT_MAX:
+            locktime_final_str = f"LockTime: {self.tx.locktime} (height)"
+        else:
+            locktime_final_str = f"LockTime: {self.tx.locktime} ({datetime.datetime.fromtimestamp(self.tx.locktime)})"
+        self.locktime_final_label.setText(locktime_final_str)
+        if self.locktime_e.get_locktime() is None:
+            self.locktime_e.set_locktime(self.tx.locktime)
         self.rbf_label.setText(_('Replace by fee') + f": {not self.tx.is_final()}")
 
         if tx_mined_status.header_hash:
@@ -585,8 +624,22 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
         self.rbf_cb.setChecked(bool(self.config.get('use_rbf', True)))
         vbox_right.addWidget(self.rbf_cb)
 
-        self.locktime_label = TxDetailLabel()
-        vbox_right.addWidget(self.locktime_label)
+        self.locktime_final_label = TxDetailLabel()
+        vbox_right.addWidget(self.locktime_final_label)
+
+        locktime_setter_hbox = QHBoxLayout()
+        locktime_setter_hbox.setContentsMargins(0, 0, 0, 0)
+        locktime_setter_hbox.setSpacing(0)
+        locktime_setter_label = TxDetailLabel()
+        locktime_setter_label.setText("LockTime: ")
+        self.locktime_e = LockTimeEdit()
+        locktime_setter_hbox.addWidget(locktime_setter_label)
+        locktime_setter_hbox.addWidget(self.locktime_e)
+        locktime_setter_hbox.addStretch(1)
+        self.locktime_setter_widget = QWidget()
+        self.locktime_setter_widget.setLayout(locktime_setter_hbox)
+        vbox_right.addWidget(self.locktime_setter_widget)
+
         self.block_height_label = TxDetailLabel()
         vbox_right.addWidget(self.block_height_label)
         vbox_right.addStretch(1)
@@ -594,12 +647,15 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
 
         vbox.addLayout(hbox_stats)
 
+        # below columns
         self.block_hash_label = TxDetailLabel(word_wrap=True)
         vbox.addWidget(self.block_hash_label)
 
         # set visibility after parenting can be determined by Qt
         self.rbf_label.setVisible(self.finalized)
         self.rbf_cb.setVisible(not self.finalized)
+        self.locktime_final_label.setVisible(self.finalized)
+        self.locktime_setter_widget.setVisible(not self.finalized)
 
     def set_title(self):
         self.setWindowTitle(_("Create transaction") if not self.finalized else _("Transaction"))
@@ -812,10 +868,12 @@ class PreviewTxDialog(BaseTxDialog, TxEditor):
             return
         self.finalized = True
         self.tx.set_rbf(self.rbf_cb.isChecked())
-        for widget in [self.fee_slider, self.feecontrol_fields, self.rbf_cb]:
+        self.tx.locktime = self.locktime_e.get_locktime()
+        for widget in [self.fee_slider, self.feecontrol_fields, self.rbf_cb,
+                       self.locktime_setter_widget, self.locktime_e]:
             widget.setEnabled(False)
             widget.setVisible(False)
-        for widget in [self.rbf_label]:
+        for widget in [self.rbf_label, self.locktime_final_label]:
             widget.setVisible(True)
         self.set_title()
         self.set_buttons_visibility()

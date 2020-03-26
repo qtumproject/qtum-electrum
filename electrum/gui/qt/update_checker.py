@@ -8,7 +8,7 @@ from distutils.version import StrictVersion
 
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLabel, QProgressBar,
-                             QHBoxLayout, QPushButton)
+                             QHBoxLayout, QPushButton, QDialog)
 
 from electrum import version
 from electrum import constants
@@ -18,13 +18,13 @@ from electrum.util import make_aiohttp_session
 from electrum.logging import Logger
 
 
-class UpdateCheck(QWidget, Logger):
+class UpdateCheck(QDialog, Logger):
     url = "https://api.github.com/repos/qtumproject/qtum-electrum/releases/latest"
     download_url = "https://github.com/qtumproject/qtum-electrum/releases/latest"
 
     def __init__(self, main_window, latest_version=None):
         self.main_window = main_window
-        QWidget.__init__(self)
+        QDialog.__init__(self)
         self.setWindowTitle('Qtum Electrum - ' + _('Update Check'))
         self.content = QVBoxLayout()
         self.content.setContentsMargins(*[10] * 4)

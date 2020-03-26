@@ -88,7 +88,7 @@ class SynchronizerBase(NetworkJobOnDefaultServer):
 
     async def _start_tasks(self):
         try:
-            async with self.group as group:
+            async with self.taskgroup as group:
                 await group.spawn(self.send_subscriptions())
                 await group.spawn(self.handle_status())
                 await group.spawn(self.send_token_subscriptions())
@@ -146,7 +146,7 @@ class SynchronizerBase(NetworkJobOnDefaultServer):
 
         while True:
             addr = await self.add_queue.get()
-            await self.group.spawn(subscribe_to_address, addr)
+            await self.taskgroup.spawn(subscribe_to_address, addr)
 
     async def send_token_subscriptions(self):
         async def subscribe_to_token(key):
@@ -171,7 +171,7 @@ class SynchronizerBase(NetworkJobOnDefaultServer):
         while True:
             h, status = await self.status_queue.get()
             addr = self.scripthash_to_address[h]
-            await self.group.spawn(self._on_address_status, addr, status)
+            await self.taskgroup.spawn(self._on_address_status, addr, status)
             self._processed_some_notifications = True
 
     async def handle_token_status(self):

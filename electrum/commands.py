@@ -49,7 +49,7 @@ from .transaction import (Transaction, multisig_script, TxOutput, PartialTransac
                           tx_from_any, PartialTxInput, TxOutpoint)
 from .paymentrequest import PR_PAID, PR_UNPAID, PR_UNKNOWN, PR_EXPIRED
 from .synchronizer import Notifier
-from .wallet import Abstract_Wallet, create_new_wallet, restore_wallet_from_text
+from .wallet import Abstract_Wallet, create_new_wallet, restore_wallet_from_text, Deterministic_Wallet
 from .address_synchronizer import TX_HEIGHT_LOCAL
 from .mnemonic import Mnemonic
 from .lnutil import SENT, RECEIVED
@@ -757,7 +757,7 @@ class Commands:
     def _format_request(self, out):
         from .util import get_request_status
         out['amount_BTC'] = format_satoshis(out.get('amount'))
-        out['status_str'] = get_request_status(out)
+        out['status'], out['status_str'] = get_request_status(out)
         return out
 
     @command('w')
@@ -793,6 +793,30 @@ class Commands:
     async def createnewaddress(self, wallet: Abstract_Wallet = None):
         """Create a new receiving address, beyond the gap limit of the wallet"""
         return wallet.create_new_address(False)
+
+    @command('w')
+    async def changegaplimit(self, new_limit, iknowwhatimdoing=False, wallet: Abstract_Wallet = None):
+        """Change the gap limit of the wallet."""
+        if not iknowwhatimdoing:
+            raise Exception("WARNING: Are you SURE you want to change the gap limit?\n"
+                            "It makes recovering your wallet from seed difficult!\n"
+                            "Please do your research and make sure you understand the implications.\n"
+                            "Typically only merchants and power users might want to do this.\n"
+                            "To proceed, try again, with the --iknowwhatimdoing option.")
+        if not isinstance(wallet, Deterministic_Wallet):
+            raise Exception("This wallet is not deterministic.")
+        return wallet.change_gap_limit(new_limit)
+
+    @command('wn')
+    async def getminacceptablegap(self, wallet: Abstract_Wallet = None):
+        """Returns the minimum value for gap limit that would be sufficient to discover all
+        known addresses in the wallet.
+        """
+        if not isinstance(wallet, Deterministic_Wallet):
+            raise Exception("This wallet is not deterministic.")
+        if not wallet.is_up_to_date():
+            raise Exception("Wallet not fully synchronized.")
+        return wallet.min_acceptable_gap()
 
     @command('w')
     async def getunusedaddress(self, wallet: Abstract_Wallet = None):
@@ -970,15 +994,18 @@ class Commands:
         l = list(wallet.lnworker.channels.items())
         return [
             {
-                'local_htlcs': json.loads(encoder.encode(chan.hm.log[LOCAL])),
-                'remote_htlcs': json.loads(encoder.encode(chan.hm.log[REMOTE])),
-                'channel_id': format_short_channel_id(chan.short_channel_id) if chan.short_channel_id else None,
-                'full_channel_id': bh2u(chan.channel_id),
+                'short_channel_id': format_short_channel_id(chan.short_channel_id) if chan.short_channel_id else None,
+                'channel_id': bh2u(chan.channel_id),
                 'channel_point': chan.funding_outpoint.to_str(),
                 'state': chan.get_state().name,
+                'peer_state': chan.peer_state.name,
                 'remote_pubkey': bh2u(chan.node_id),
                 'local_balance': chan.balance(LOCAL)//1000,
                 'remote_balance': chan.balance(REMOTE)//1000,
+                'local_reserve': chan.config[LOCAL].reserve_sat,
+                'remote_reserve': chan.config[REMOTE].reserve_sat,
+                'local_unsettled_sent': chan.unsettled_sent_balance(LOCAL)//1000,
+                'remote_unsettled_sent': chan.unsettled_sent_balance(REMOTE)//1000,
             } for channel_id, chan in l
         ]
 
@@ -991,6 +1018,11 @@ class Commands:
         import ast
         self.network.config.fee_estimates = ast.literal_eval(fees)
         self.network.notify('fee')
+
+    @command('wn')
+    async def enable_htlc_settle(self, b: bool, wallet: Abstract_Wallet = None):
+        e = wallet.lnworker.enable_htlc_settle
+        e.set() if b else e.clear()
 
     @command('n')
     async def clear_ln_blacklist(self):
@@ -1008,8 +1040,11 @@ class Commands:
         return await coro
 
     @command('wn')
-    async def get_channel_ctx(self, channel_point, wallet: Abstract_Wallet = None):
+    async def get_channel_ctx(self, channel_point, iknowwhatimdoing=False, wallet: Abstract_Wallet = None):
         """ return the current commitment transaction of a channel """
+        if not iknowwhatimdoing:
+            raise Exception("WARNING: this command is potentially unsafe.\n"
+                            "To proceed, try again, with the --iknowwhatimdoing option.")
         txid, index = channel_point.split(':')
         chan_id, _ = channel_id_from_funding_tx(txid, int(index))
         chan = wallet.lnworker.channels[chan_id]
@@ -1093,6 +1128,7 @@ command_options = {
     'fee_level':   (None, "Float between 0.0 and 1.0, representing fee slider position"),
     'from_height': (None, "Only show transactions that confirmed after given block height"),
     'to_height':   (None, "Only show transactions that confirmed before given block height"),
+    'iknowwhatimdoing': (None, "Acknowledge that I understand the full implications of what I am about to do"),
 }
 
 
@@ -1188,7 +1224,7 @@ argparse._SubParsersAction.__call__ = subparser_call
 def add_network_options(parser):
     parser.add_argument("-1", "--oneserver", action="store_true", dest="oneserver", default=None, help="connect to one server only")
     parser.add_argument("-s", "--server", dest="server", default=None, help="set server host:port:protocol, where protocol is either t (tcp) or s (ssl)")
-    parser.add_argument("-p", "--proxy", dest="proxy", default=None, help="set proxy [type:]host[:port], where type is socks4,socks5 or http")
+    parser.add_argument("-p", "--proxy", dest="proxy", default=None, help="set proxy [type:]host[:port] (or 'none' to disable proxy), where type is socks4,socks5 or http")
     parser.add_argument("--noonion", action="store_true", dest="noonion", default=None, help="do not try to connect to onion servers")
     parser.add_argument("--skipmerklecheck", action="store_true", dest="skipmerklecheck", default=False, help="Tolerate invalid merkle proofs from server")
 
@@ -1205,6 +1241,7 @@ def add_global_options(parser):
 
 def add_wallet_option(parser):
     parser.add_argument("-w", "--wallet", dest="wallet_path", help="wallet path")
+    parser.add_argument("--forgetconfig", action="store_true", dest="forget_config", default=False, help="Forget config on exit")
 
 def get_parser():
     # create main parser

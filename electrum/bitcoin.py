@@ -46,6 +46,10 @@ COINBASE_MATURITY = 500
 COIN = 100000000
 TOTAL_COIN_SUPPLY_LIMIT_IN_BTC = 100664516
 
+NLOCKTIME_MIN = 0
+NLOCKTIME_BLOCKHEIGHT_MAX = 500_000_000 - 1
+NLOCKTIME_MAX = 2 ** 32 - 1
+
 # supported types of transaction outputs
 # TODO kill these with fire
 TYPE_ADDRESS = 0
@@ -304,22 +308,27 @@ def add_number_to_script(i: int) -> bytes:
 
 
 def relayfee(network: 'Network' = None) -> int:
+    """Returns feerate in sat/kbyte."""
     from .simple_config import FEERATE_DEFAULT_RELAY, FEERATE_MAX_RELAY
     if network and network.relay_fee is not None:
         fee = network.relay_fee
     else:
         fee = FEERATE_DEFAULT_RELAY
+    # sanity safeguards, as network.relay_fee is coming from a server:
     fee = min(fee, FEERATE_MAX_RELAY)
-    fee = max(fee, 0)
+    fee = max(fee, FEERATE_DEFAULT_RELAY)
     return fee
 
 
-def dust_threshold(network: 'Network'=None) -> int:
+def dust_threshold(network: 'Network' = None) -> int:
+    """Returns the dust limit in satoshis."""
     # Change <= dust threshold is added to the tx fee
     # for Bitcoin DEFAULT_MIN_RELAY_TX_FEE=1000, DUST_RELAY_TX_FEE=3000
     # for Qtum DEFAULT_MIN_RELAY_TX_FEE=400000, DUST_RELAY_TX_FEE=400000
     # we don't need plus 3 to relayfee
-    return 182 * relayfee(network) // 1000
+    dust_lim = 182 * relayfee(network)  # in msat
+    # convert to sat, but round up:
+    return (dust_lim // 1000) + (dust_lim % 1000 > 0)
 
 
 def hash_encode(x: bytes) -> str:

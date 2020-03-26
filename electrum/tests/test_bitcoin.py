@@ -9,6 +9,7 @@ from electrum.bitcoin import (public_key_to_p2pkh, address_from_private_key,
                               is_compressed_privkey, EncodeBase58Check, DecodeBase58Check,
                               script_num_to_hex, push_script, add_number_to_script, int_to_hex,
                               opcodes, base_encode, base_decode, BitcoinException)
+from electrum import bip32
 from electrum.bip32 import (BIP32Node, convert_bip32_intpath_to_strpath,
                             xpub_from_xprv, xpub_type, is_xprv, is_bip32_derivation,
                             is_xpub, convert_bip32_path_to_list_of_uint32,
@@ -33,8 +34,8 @@ except ImportError:
 
 
 def needs_test_with_all_aes_implementations(func):
-    """Function decorator to run a unit test twice:
-    once when pycryptodomex is not available, once when it is.
+    """Function decorator to run a unit test multiple times:
+    once with each AES implementation.
 
     NOTE: this is inherently sequential;
     tests running in parallel would break things
@@ -43,18 +44,46 @@ def needs_test_with_all_aes_implementations(func):
         if FAST_TESTS:  # if set, only run tests once, using fastest implementation
             func(*args, **kwargs)
             return
-        _aes = crypto.AES
-        crypto.AES = None
+        has_cryptodome = crypto.HAS_CRYPTODOME
+        has_cryptography = crypto.HAS_CRYPTOGRAPHY
         try:
-            # first test without pycryptodomex
-            func(*args, **kwargs)
+            (crypto.HAS_CRYPTODOME, crypto.HAS_CRYPTOGRAPHY) = False, False
+            func(*args, **kwargs)  # pyaes
+            if has_cryptodome:
+                (crypto.HAS_CRYPTODOME, crypto.HAS_CRYPTOGRAPHY) = True, False
+                func(*args, **kwargs)  # cryptodome
+            if has_cryptography:
+                (crypto.HAS_CRYPTODOME, crypto.HAS_CRYPTOGRAPHY) = False, True
+                func(*args, **kwargs)  # cryptography
         finally:
-            crypto.AES = _aes
-        # if pycryptodomex is not available, we are done
-        if not _aes:
+            crypto.HAS_CRYPTODOME = has_cryptodome
+            crypto.HAS_CRYPTOGRAPHY = has_cryptography
+    return run_test
+
+
+def needs_test_with_all_chacha20_implementations(func):
+    """Function decorator to run a unit test multiple times:
+    once with each ChaCha20/Poly1305 implementation.
+
+    NOTE: this is inherently sequential;
+    tests running in parallel would break things
+    """
+    def run_test(*args, **kwargs):
+        if FAST_TESTS:  # if set, only run tests once, using fastest implementation
+            func(*args, **kwargs)
             return
-        # if pycryptodomex is available, test again now
-        func(*args, **kwargs)
+        has_cryptodome = crypto.HAS_CRYPTODOME
+        has_cryptography = crypto.HAS_CRYPTOGRAPHY
+        try:
+            if has_cryptodome:
+                (crypto.HAS_CRYPTODOME, crypto.HAS_CRYPTOGRAPHY) = True, False
+                func(*args, **kwargs)  # cryptodome
+            if has_cryptography:
+                (crypto.HAS_CRYPTODOME, crypto.HAS_CRYPTOGRAPHY) = False, True
+                func(*args, **kwargs)  # cryptography
+        finally:
+            crypto.HAS_CRYPTODOME = has_cryptodome
+            crypto.HAS_CRYPTOGRAPHY = has_cryptography
     return run_test
 
 
@@ -66,7 +95,11 @@ class Test_bitcoin(ElectrumTestCase):
 
     def test_pycryptodomex_is_available(self):
         # we want the unit testing framework to test with pycryptodomex available.
-        self.assertTrue(bool(crypto.AES))
+        self.assertTrue(bool(crypto.HAS_CRYPTODOME))
+
+    def test_cryptography_is_available(self):
+        # we want the unit testing framework to test with cryptography available.
+        self.assertTrue(bool(crypto.HAS_CRYPTOGRAPHY))
 
     @needs_test_with_all_aes_implementations
     def test_crypto(self):
@@ -221,6 +254,34 @@ class Test_bitcoin(ElectrumTestCase):
             enc = crypto.pw_encode(payload, password, version=version)
             with self.assertRaises(InvalidPassword):
                 crypto.pw_decode(enc, wrong_password, version=version)
+
+    @needs_test_with_all_chacha20_implementations
+    def test_chacha20_poly1305_encrypt(self):
+        key = bytes.fromhex('37326d9d69a83b815ddfd947d21b0dd39111e5b6a5a44042c44d570ea03e3179')
+        nonce = bytes.fromhex('010203040506070809101112')
+        associated_data = bytes.fromhex('30c9572d4305d4f3ccb766b1db884da6f1e0086f55136a39740700c272095717')
+        data = bytes.fromhex('4a6cd75da76cedf0a8a47e3a5734a328')
+        self.assertEqual(bytes.fromhex('90fb51fcde1fbe4013500bd7a32280445d80ee21f0aa3acd30df72cf609de064'),
+                         crypto.chacha20_poly1305_encrypt(key=key, nonce=nonce, associated_data=associated_data, data=data))
+
+    @needs_test_with_all_chacha20_implementations
+    def test_chacha20_poly1305_decrypt(self):
+        key = bytes.fromhex('37326d9d69a83b815ddfd947d21b0dd39111e5b6a5a44042c44d570ea03e3179')
+        nonce = bytes.fromhex('010203040506070809101112')
+        associated_data = bytes.fromhex('30c9572d4305d4f3ccb766b1db884da6f1e0086f55136a39740700c272095717')
+        data = bytes.fromhex('90fb51fcde1fbe4013500bd7a32280445d80ee21f0aa3acd30df72cf609de064')
+        self.assertEqual(bytes.fromhex('4a6cd75da76cedf0a8a47e3a5734a328'),
+                         crypto.chacha20_poly1305_decrypt(key=key, nonce=nonce, associated_data=associated_data, data=data))
+        with self.assertRaises(ValueError):
+            crypto.chacha20_poly1305_decrypt(key=key, nonce=nonce, associated_data=b'', data=data)
+
+    @needs_test_with_all_chacha20_implementations
+    def test_chacha20_encrypt(self):
+        key = bytes.fromhex('37326d9d69a83b815ddfd947d21b0dd39111e5b6a5a44042c44d570ea03e3179')
+        nonce = bytes.fromhex('0102030405060708')
+        data = bytes.fromhex('38a0e0a7c865fe9ca31f0730cfcab610f18e6da88dc3790f1d243f711a257c78')
+        self.assertEqual(bytes.fromhex('f62fbd74d197323c7c3d5658476a884d38ee6f4b5500add1e8dc80dcd9c15dff'),
+                         crypto.chacha20_encrypt(key=key, nonce=nonce, data=data))
 
     def test_sha256d(self):
         self.assertEqual(b'\x95MZI\xfdp\xd9\xb8\xbc\xdb5\xd2R&x)\x95\x7f~\xf7\xfalt\xf8\x84\x19\xbd\xc5\xe8"\t\xf4',
@@ -456,6 +517,77 @@ class Test_xprv_xpub(ElectrumTestCase):
         self.assertEqual("m", normalize_bip32_derivation("m////"))
         self.assertEqual("m/0/2/1'", normalize_bip32_derivation("m/0/2/-1/"))
         self.assertEqual("m/0/1'/1'/5'", normalize_bip32_derivation("m/0//-1/1'///5h"))
+
+    def test_is_xkey_consistent_with_key_origin_info(self):
+        ### actual data (high depth path)
+        self.assertTrue(bip32.is_xkey_consistent_with_key_origin_info(
+            "Zpub75NQordWKAkaF7utBw95GEodyxqwFdR3idtTqQtrvWkYFeiuYdg5c3Q9L9bLjPLhEahLCTjmmS2YQcXPwr6twYCEJ55k6uhE5JxRqvUowmd",
+            derivation_prefix="m/48'/1'/0'/2'",
+            root_fingerprint="b2768d2f"))
+        # ok to skip args
+        self.assertTrue(bip32.is_xkey_consistent_with_key_origin_info(
+            "Zpub75NQordWKAkaF7utBw95GEodyxqwFdR3idtTqQtrvWkYFeiuYdg5c3Q9L9bLjPLhEahLCTjmmS2YQcXPwr6twYCEJ55k6uhE5JxRqvUowmd",
+            derivation_prefix="m/48'/1'/0'/2'"))
+        self.assertTrue(bip32.is_xkey_consistent_with_key_origin_info(
+            "Zpub75NQordWKAkaF7utBw95GEodyxqwFdR3idtTqQtrvWkYFeiuYdg5c3Q9L9bLjPLhEahLCTjmmS2YQcXPwr6twYCEJ55k6uhE5JxRqvUowmd",
+            root_fingerprint="b2768d2f"))
+        # path changed: wrong depth
+        self.assertFalse(bip32.is_xkey_consistent_with_key_origin_info(
+            "Zpub75NQordWKAkaF7utBw95GEodyxqwFdR3idtTqQtrvWkYFeiuYdg5c3Q9L9bLjPLhEahLCTjmmS2YQcXPwr6twYCEJ55k6uhE5JxRqvUowmd",
+            derivation_prefix="m/48'/0'/2'",
+            root_fingerprint="b2768d2f"))
+        # path changed: wrong child index
+        self.assertFalse(bip32.is_xkey_consistent_with_key_origin_info(
+            "Zpub75NQordWKAkaF7utBw95GEodyxqwFdR3idtTqQtrvWkYFeiuYdg5c3Q9L9bLjPLhEahLCTjmmS2YQcXPwr6twYCEJ55k6uhE5JxRqvUowmd",
+            derivation_prefix="m/48'/1'/0'/3'",
+            root_fingerprint="b2768d2f"))
+        # path changed: but cannot tell
+        self.assertTrue(bip32.is_xkey_consistent_with_key_origin_info(
+            "Zpub75NQordWKAkaF7utBw95GEodyxqwFdR3idtTqQtrvWkYFeiuYdg5c3Q9L9bLjPLhEahLCTjmmS2YQcXPwr6twYCEJ55k6uhE5JxRqvUowmd",
+            derivation_prefix="m/48'/1'/1'/2'",
+            root_fingerprint="b2768d2f"))
+        # fp changed: but cannot tell
+        self.assertTrue(bip32.is_xkey_consistent_with_key_origin_info(
+            "Zpub75NQordWKAkaF7utBw95GEodyxqwFdR3idtTqQtrvWkYFeiuYdg5c3Q9L9bLjPLhEahLCTjmmS2YQcXPwr6twYCEJ55k6uhE5JxRqvUowmd",
+            derivation_prefix="m/48'/1'/0'/2'",
+            root_fingerprint="aaaaaaaa"))
+
+        ### actual data (depth=1 path)
+        self.assertTrue(bip32.is_xkey_consistent_with_key_origin_info(
+            "zpub6nsHdRuY92FsMKdbn9BfjBCG6X8pyhCibNP6uDvpnw2cyrVhecvHRMa3Ne8kdJZxjxgwnpbHLkcR4bfnhHy6auHPJyDTQ3kianeuVLdkCYQ",
+            derivation_prefix="m/0'",
+            root_fingerprint="b2e35a7d"))
+        # path changed: wrong depth
+        self.assertFalse(bip32.is_xkey_consistent_with_key_origin_info(
+            "zpub6nsHdRuY92FsMKdbn9BfjBCG6X8pyhCibNP6uDvpnw2cyrVhecvHRMa3Ne8kdJZxjxgwnpbHLkcR4bfnhHy6auHPJyDTQ3kianeuVLdkCYQ",
+            derivation_prefix="m/0'/0'",
+            root_fingerprint="b2e35a7d"))
+        # path changed: wrong child index
+        self.assertFalse(bip32.is_xkey_consistent_with_key_origin_info(
+            "zpub6nsHdRuY92FsMKdbn9BfjBCG6X8pyhCibNP6uDvpnw2cyrVhecvHRMa3Ne8kdJZxjxgwnpbHLkcR4bfnhHy6auHPJyDTQ3kianeuVLdkCYQ",
+            derivation_prefix="m/1'",
+            root_fingerprint="b2e35a7d"))
+        # fp changed: can tell
+        self.assertFalse(bip32.is_xkey_consistent_with_key_origin_info(
+            "zpub6nsHdRuY92FsMKdbn9BfjBCG6X8pyhCibNP6uDvpnw2cyrVhecvHRMa3Ne8kdJZxjxgwnpbHLkcR4bfnhHy6auHPJyDTQ3kianeuVLdkCYQ",
+            derivation_prefix="m/0'",
+            root_fingerprint="aaaaaaaa"))
+
+        ### actual data (depth=0 path)
+        self.assertTrue(bip32.is_xkey_consistent_with_key_origin_info(
+            "xpub661MyMwAqRbcFWohJWt7PHsFEJfZAvw9ZxwQoDa4SoMgsDDM1T7WK3u9E4edkC4ugRnZ8E4xDZRpk8Rnts3Nbt97dPwT52CwBdDWroaZf8U",
+            derivation_prefix="m",
+            root_fingerprint="48adc7a0"))
+        # path changed: wrong depth
+        self.assertFalse(bip32.is_xkey_consistent_with_key_origin_info(
+            "xpub661MyMwAqRbcFWohJWt7PHsFEJfZAvw9ZxwQoDa4SoMgsDDM1T7WK3u9E4edkC4ugRnZ8E4xDZRpk8Rnts3Nbt97dPwT52CwBdDWroaZf8U",
+            derivation_prefix="m/0",
+            root_fingerprint="48adc7a0"))
+        # fp changed: can tell
+        self.assertFalse(bip32.is_xkey_consistent_with_key_origin_info(
+            "xpub661MyMwAqRbcFWohJWt7PHsFEJfZAvw9ZxwQoDa4SoMgsDDM1T7WK3u9E4edkC4ugRnZ8E4xDZRpk8Rnts3Nbt97dPwT52CwBdDWroaZf8U",
+            derivation_prefix="m",
+            root_fingerprint="aaaaaaaa"))
 
     def test_is_all_public_derivation(self):
         self.assertFalse(is_all_public_derivation("m/0/1'/1'"))

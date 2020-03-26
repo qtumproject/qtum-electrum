@@ -86,6 +86,7 @@ PR_UNKNOWN  = 2     # sent but not propagated
 PR_PAID     = 3     # send and propagated
 PR_INFLIGHT = 4     # unconfirmed
 PR_FAILED   = 5
+PR_ROUTING  = 6
 
 pr_color = {
     PR_UNPAID:   (.7, .7, .7, 1),
@@ -94,6 +95,7 @@ pr_color = {
     PR_EXPIRED:  (.9, .2, .2, 1),
     PR_INFLIGHT: (.9, .6, .3, 1),
     PR_FAILED:   (.9, .2, .2, 1),
+    PR_ROUTING: (.9, .6, .3, 1),
 }
 
 pr_tooltips = {
@@ -103,15 +105,19 @@ pr_tooltips = {
     PR_EXPIRED:_('Expired'),
     PR_INFLIGHT:_('In progress'),
     PR_FAILED:_('Failed'),
+    PR_ROUTING: _('Computing route...'),
 }
 
+PR_DEFAULT_EXPIRATION_WHEN_CREATING = 24*60*60  # 1 day
 pr_expiration_values = {
     0: _('Never'),
     10*60: _('10 minutes'),
     60*60: _('1 hour'),
     24*60*60: _('1 day'),
-    7*24*60*60: _('1 week')
+    7*24*60*60: _('1 week'),
 }
+assert PR_DEFAULT_EXPIRATION_WHEN_CREATING in pr_expiration_values
+
 
 unpack_int32_from = Struct('<i').unpack_from
 unpack_int64_from = Struct('<q').unpack_from
@@ -123,6 +129,8 @@ unpack_uint64_from = Struct('<Q').unpack_from
 def get_request_status(req):
     status = req['status']
     exp = req.get('exp', 0) or 0
+    if req.get('type') == PR_TYPE_LN and exp == 0:
+        status = PR_EXPIRED  # for BOLT-11 invoices, exp==0 means 0 seconds
     if req['status'] == PR_UNPAID and exp > 0 and req['time'] + req['exp'] < time.time():
         status = PR_EXPIRED
     status_str = pr_tooltips[status]
@@ -277,6 +285,9 @@ class MyEncoder(json.JSONEncoder):
     def default(self, obj):
         # note: this does not get called for namedtuples :(  https://bugs.python.org/issue30343
         from .transaction import Transaction, TxOutput
+        from .lnutil import UpdateAddHtlc
+        if isinstance(obj, UpdateAddHtlc):
+            return obj.to_tuple()
         if isinstance(obj, Transaction):
             return obj.serialize()
         if isinstance(obj, TxOutput):
@@ -574,7 +585,9 @@ def xor_bytes(a: bytes, b: bytes) -> bytes:
 
 
 def user_dir():
-    if 'ANDROID_DATA' in os.environ:
+    if "ELECTRUMDIR" in os.environ:
+        return os.environ["ELECTRUMDIR"]
+    elif 'ANDROID_DATA' in os.environ:
         return android_data_dir()
     elif os.name == 'posix':
         return os.path.join(os.environ["HOME"], ".qtum-electrum")
@@ -910,11 +923,12 @@ def create_bip21_uri(addr, amount_sat: Optional[int], message: Optional[str],
 
 
 def maybe_extract_bolt11_invoice(data: str) -> Optional[str]:
-    lower = data.lower()
-    if lower.startswith('lightning:ln'):
-        lower = lower[10:]
-    if lower.startswith('ln'):
-        return lower
+    data = data.strip()  # whitespaces
+    data = data.lower()
+    if data.startswith('lightning:ln'):
+        data = data[10:]
+    if data.startswith('ln'):
+        return data
     return None
 
 
@@ -1104,14 +1118,14 @@ class NetworkJobOnDefaultServer(Logger):
         """Initialise fields. Called every time the underlying
         server connection changes.
         """
-        self.group = SilentTaskGroup()
+        self.taskgroup = SilentTaskGroup()
 
     async def _start(self, interface: 'Interface'):
         self.interface = interface
-        await interface.group.spawn(self._start_tasks)
+        await interface.taskgroup.spawn(self._start_tasks)
 
     async def _start_tasks(self):
-        """Start tasks in self.group. Called every time the underlying
+        """Start tasks in self.taskgroup. Called every time the underlying
         server connection changes.
         """
         raise NotImplementedError()  # implemented by subclasses
@@ -1121,7 +1135,7 @@ class NetworkJobOnDefaultServer(Logger):
         await self._stop()
 
     async def _stop(self):
-        await self.group.cancel_remaining()
+        await self.taskgroup.cancel_remaining()
 
     @log_exceptions
     async def _restart(self, *args):

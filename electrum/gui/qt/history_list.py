@@ -167,11 +167,20 @@ class HistoryModel(QAbstractItemModel, Logger):
                 icon = "lightning" if is_lightning else TX_ICONS[status]
                 return QVariant(read_QIcon(icon))
             elif col == HistoryColumns.STATUS and role == Qt.ToolTipRole:
-                msg = 'lightning transaction' if is_lightning else str(conf) + _(" confirmation" + ("s" if conf != 1 else ""))
+                if is_lightning:
+                    msg = 'lightning transaction'
+                else:  # on-chain
+                    if tx_item['height'] == TX_HEIGHT_LOCAL:
+                        # note: should we also explain double-spends?
+                        msg = _("This transaction is only available on your local machine.\n"
+                                "The currently connected server does not know about it.\n"
+                                "You can either broadcast it now, or simply remove it.")
+                    else:
+                        msg = str(conf) + _(" confirmation" + ("s" if conf != 1 else ""))
                 return QVariant(msg)
             elif col > HistoryColumns.DESCRIPTION and role == Qt.TextAlignmentRole:
                 return QVariant(Qt.AlignRight | Qt.AlignVCenter)
-            elif col != HistoryColumns.STATUS and role == Qt.FontRole:
+            elif col > HistoryColumns.DESCRIPTION and role == Qt.FontRole:
                 monospace_font = QFont(MONOSPACE_FONT)
                 return QVariant(monospace_font)
             #elif col == HistoryColumns.DESCRIPTION and role == Qt.DecorationRole and not is_lightning\
@@ -251,9 +260,10 @@ class HistoryModel(QAbstractItemModel, Logger):
         if fx: fx.history_used_spot = False
         wallet = self.parent.wallet
         self.set_visibility_of_columns()
-        transactions = wallet.get_full_history(self.parent.fx,
-                                               onchain_domain=self.get_domain(),
-                                               include_lightning=self.should_include_lightning_payments())
+        transactions = wallet.get_full_history(
+            self.parent.fx,
+            onchain_domain=self.get_domain(),
+            include_lightning=self.should_include_lightning_payments())
         if transactions == list(self.transactions.values()):
             return
         old_length = len(self.transactions)
@@ -562,6 +572,10 @@ class HistoryList(MyTreeView, AcceptFileDragDrop):
         if self.hm.flags(self.model().mapToSource(idx)) & Qt.ItemIsEditable:
             super().mouseDoubleClickEvent(event)
         else:
+            if tx_item.get('lightning'):
+                if tx_item['type'] == 'payment':
+                    self.parent.show_lightning_transaction(tx_item)
+                return
             tx_hash = tx_item['txid']
             tx = self.wallet.db.get_transaction(tx_hash)
             if not tx:
@@ -581,16 +595,11 @@ class HistoryList(MyTreeView, AcceptFileDragDrop):
             column_title = self.hm.headerData(column, Qt.Horizontal, Qt.DisplayRole)
             idx2 = idx.sibling(idx.row(), column)
             column_data = (self.hm.data(idx2, Qt.DisplayRole).value() or '').strip()
-            cc.addAction(column_title,
-                         lambda text=column_data, title=column_title:
-                         self.place_text_on_clipboard(text, title=title))
-
-        tx_item = self.hm.transactions.value_from_pos(idx.row())
-        if tx_item.get('lightning'):
-            return
-        tx_hash = tx_item['txid']
-        tx = self.wallet.db.get_transaction(tx_hash)
-        cc.addAction(_("raw transaction"), lambda t=str(tx): self.parent.app.clipboard().setText(t))
+            cc.addAction(
+                column_title,
+                lambda text=column_data, title=column_title:
+                self.place_text_on_clipboard(text, title=title))
+        return cc
 
     def create_menu(self, position: QPoint):
         org_idx: QModelIndex = self.indexAt(position)
@@ -601,7 +610,10 @@ class HistoryList(MyTreeView, AcceptFileDragDrop):
         tx_item = self.hm.transactions.value_from_pos(idx.row())
         if tx_item.get('lightning') and tx_item['type'] == 'payment':
             menu = QMenu()
-            menu.addAction(_("Details"), lambda: self.parent.show_lightning_transaction(tx_item))
+            menu.addAction(_("View Payment"), lambda: self.parent.show_lightning_transaction(tx_item))
+            cc = self.add_copy_menu(menu, idx)
+            cc.addAction(_("Payment Hash"), lambda: self.place_text_on_clipboard(tx_item['payment_hash'], title="Payment Hash"))
+            cc.addAction(_("Preimage"), lambda: self.place_text_on_clipboard(tx_item['preimage'], title="Preimage"))
             menu.exec_(self.viewport().mapToGlobal(position))
             return
         tx_hash = tx_item['txid']
@@ -612,26 +624,27 @@ class HistoryList(MyTreeView, AcceptFileDragDrop):
         if not tx:
             return
         tx_URL = block_explorer_URL(self.config, tx=tx_hash)
-        height = self.wallet.get_tx_height(tx_hash).height
-        is_relevant, is_mine, v, fee = self.wallet.get_wallet_delta(tx)
-        is_unconfirmed = height <= 0
+        tx_details = self.wallet.get_tx_info(tx)
+        is_unconfirmed = tx_details.tx_mined_status.height <= 0
         invoice_keys = self.wallet._get_relevant_invoice_keys_for_tx(tx)
         menu = QMenu()
-        if height in [TX_HEIGHT_FUTURE, TX_HEIGHT_LOCAL]:
+        if tx_details.can_remove:
             menu.addAction(_("Remove"), lambda: self.remove_local_tx(tx_hash))
-        menu.addAction(_("Copy Transaction ID"), lambda: self.place_text_on_clipboard(tx_hash, title="TXID"))
-        self.add_copy_menu(menu, idx)
+        cc = self.add_copy_menu(menu, idx)
+        cc.addAction(_("Transaction ID"), lambda: self.place_text_on_clipboard(tx_hash, title="TXID"))
         for c in self.editable_columns:
             if self.isColumnHidden(c): continue
             label = self.hm.headerData(c, Qt.Horizontal, Qt.DisplayRole)
             # TODO use siblingAtColumn when min Qt version is >=5.11
             persistent = QPersistentModelIndex(org_idx.sibling(org_idx.row(), c))
             menu.addAction(_("Edit {}").format(label), lambda p=persistent: self.edit(QModelIndex(p)))
-        menu.addAction(_("Details"), lambda: self.show_transaction(tx_item, tx))
+        menu.addAction(_("View Transaction"), lambda: self.show_transaction(tx_item, tx))
+        channel_id = tx_item.get('channel_id')
+        if channel_id:
+            menu.addAction(_("View Channel"), lambda: self.parent.show_channel(bytes.fromhex(channel_id)))
         if is_unconfirmed and tx:
             # note: the current implementation of RBF *needs* the old tx fee
-            rbf = is_mine and not tx.is_final() and fee is not None
-            if rbf:
+            if tx_details.can_bump and tx_details.fee is not None:
                 menu.addAction(_("Increase fee"), lambda: self.parent.bump_fee_dialog(tx))
             else:
                 child_tx = self.wallet.cpfp(tx, 0)
@@ -644,9 +657,9 @@ class HistoryList(MyTreeView, AcceptFileDragDrop):
 
         menu.exec_(self.viewport().mapToGlobal(position))
 
-    def remove_local_tx(self, delete_tx):
-        to_delete = {delete_tx}
-        to_delete |= self.wallet.get_depending_transactions(delete_tx)
+    def remove_local_tx(self, tx_hash: str):
+        to_delete = {tx_hash}
+        to_delete |= self.wallet.get_depending_transactions(tx_hash)
         question = _("Are you sure you want to remove this transaction?")
         if len(to_delete) > 1:
             question = (_("Are you sure you want to remove this transaction and {} child transactions?")

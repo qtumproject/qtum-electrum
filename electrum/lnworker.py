@@ -7,7 +7,7 @@ import os
 from decimal import Decimal
 import random
 import time
-from typing import Optional, Sequence, Tuple, List, Dict, TYPE_CHECKING
+from typing import Optional, Sequence, Tuple, List, Dict, TYPE_CHECKING, NamedTuple
 import threading
 import socket
 import json
@@ -19,11 +19,12 @@ from concurrent import futures
 
 import dns.resolver
 import dns.exception
+from aiorpcx import run_in_thread
 
 from . import constants
 from . import keystore
 from .util import profiler
-from .util import PR_UNPAID, PR_EXPIRED, PR_PAID, PR_INFLIGHT, PR_FAILED
+from .util import PR_UNPAID, PR_EXPIRED, PR_PAID, PR_INFLIGHT, PR_FAILED, PR_ROUTING
 from .util import PR_TYPE_LN
 from .lnutil import LN_MAX_FUNDING_SAT
 from .keystore import BIP32_KeyStore
@@ -32,7 +33,7 @@ from .transaction import Transaction
 from .crypto import sha256
 from .bip32 import BIP32Node
 from .util import bh2u, bfh, InvoiceError, resolve_dns_srv, is_ip_address, log_exceptions
-from .util import ignore_exceptions, make_aiohttp_session
+from .util import ignore_exceptions, make_aiohttp_session, SilentTaskGroup
 from .util import timestamp_to_datetime
 from .util import MyEncoder
 from .logging import Logger
@@ -52,20 +53,24 @@ from .lnutil import (Outpoint, LNPeerAddr,
                      UnknownPaymentHash, MIN_FINAL_CLTV_EXPIRY_FOR_INVOICE,
                      NUM_MAX_EDGES_IN_PAYMENT_PATH, SENT, RECEIVED, HTLCOwner,
                      UpdateAddHtlc, Direction, LnLocalFeatures,
-                     ShortChannelID, PaymentAttemptLog, PaymentAttemptFailureDetails)
+                     ShortChannelID, PaymentAttemptLog, PaymentAttemptFailureDetails,
+                     BarePaymentAttemptLog)
 from .lnutil import ln_dummy_address, ln_compare_features
 from .transaction import PartialTxOutput, PartialTransaction, PartialTxInput
-from .lnonion import OnionFailureCode
+from .lnonion import OnionFailureCode, process_onion_packet, OnionPacket
 from .lnmsg import decode_msg
 from .i18n import _
 from .lnrouter import RouteEdge, LNPaymentRoute, is_route_sane_to_use
 from .address_synchronizer import TX_HEIGHT_LOCAL
 from . import lnsweep
-from .lnwatcher import LNWalletWatcher
+from .lnwatcher import LNWalletWatcher, CHANNEL_OPENING_TIMEOUT
 
 if TYPE_CHECKING:
     from .network import Network
     from .wallet import Abstract_Wallet
+
+
+SAVED_PR_STATUS = [PR_PAID, PR_UNPAID, PR_INFLIGHT] # status that are persisted
 
 
 NUM_PEERS_TARGET = 4
@@ -83,11 +88,9 @@ FALLBACK_NODE_LIST_MAINNET = [
 ]
 
 
-from typing import NamedTuple
-
 class PaymentInfo(NamedTuple):
     payment_hash: bytes
-    amount: int
+    amount: int  # in satoshis
     direction: int
     status: int
 
@@ -103,6 +106,7 @@ class LNWorker(Logger):
         Logger.__init__(self)
         self.node_keypair = generate_keypair(BIP32Node.from_xkey(xprv), LnKeyFamily.NODE_KEY)
         self.peers = {}  # type: Dict[bytes, Peer]  # pubkey -> Peer
+        self.taskgroup = SilentTaskGroup()
         # set some feature flags as baseline for both LNWallet and LNGossip
         # note that e.g. DATA_LOSS_PROTECT is needed for LNGossip as many peers require it
         self.localfeatures = LnLocalFeatures(0)
@@ -113,6 +117,7 @@ class LNWorker(Logger):
         return {}
 
     async def maybe_listen(self):
+        # FIXME: only one LNWorker can listen at a time (single port)
         listen_addr = self.config.get('lightning_listen')
         if listen_addr:
             addr, port = listen_addr.rsplit(':', 2)
@@ -128,11 +133,27 @@ class LNWorker(Logger):
                     return
                 peer = Peer(self, node_id, transport)
                 self.peers[node_id] = peer
-                await self.network.main_taskgroup.spawn(peer.main_loop())
-            await asyncio.start_server(cb, addr, int(port))
+                await self.taskgroup.spawn(peer.main_loop())
+            try:
+                # FIXME: server.close(), server.wait_closed(), etc... ?
+                server = await asyncio.start_server(cb, addr, int(port))
+            except OSError as e:
+                self.logger.error(f"cannot listen for lightning p2p. error: {e!r}")
 
-    @log_exceptions
+    @ignore_exceptions  # don't kill outer taskgroup
     async def main_loop(self):
+        self.logger.info("starting taskgroup.")
+        try:
+            async with self.taskgroup as group:
+                await group.spawn(self._maintain_connectivity())
+        except asyncio.CancelledError:
+            raise
+        except Exception as e:
+            self.logger.exception("taskgroup died.")
+        finally:
+            self.logger.info("taskgroup stopped.")
+
+    async def _maintain_connectivity(self):
         while True:
             await asyncio.sleep(1)
             now = time.time()
@@ -153,11 +174,14 @@ class LNWorker(Logger):
         self._last_tried_peer[peer_addr] = time.time()
         self.logger.info(f"adding peer {peer_addr}")
         peer = Peer(self, node_id, transport)
-        await self.network.main_taskgroup.spawn(peer.main_loop())
+        await self.taskgroup.spawn(peer.main_loop())
         self.peers[node_id] = peer
         return peer
 
-    def num_peers(self):
+    def peer_closed(self, peer: Peer) -> None:
+        self.peers.pop(peer.pubkey)
+
+    def num_peers(self) -> int:
         return sum([p.is_initialized() for p in self.peers.values()])
 
     def start_network(self, network: 'Network'):
@@ -229,17 +253,24 @@ class LNWorker(Logger):
                 #self.logger.info('taking random ln peer from our channel db')
                 return [peer]
 
-        # TODO remove this. For some reason the dns seeds seem to ignore the realm byte
-        # and only return mainnet nodes. so for the time being dns seeding is disabled:
-        if constants.net in (constants.QtumTestnet, ):
-            return [random.choice(FALLBACK_NODE_LIST_TESTNET)] if FALLBACK_NODE_LIST_TESTNET else []
-        elif constants.net in (constants.QtumMainnet, ):
-            return [random.choice(FALLBACK_NODE_LIST_MAINNET)] if FALLBACK_NODE_LIST_MAINNET else []
+        # getting desperate... let's try hardcoded fallback list of peers
+        if constants.net in (constants.BitcoinTestnet, ):
+            fallback_list = FALLBACK_NODE_LIST_TESTNET
+        elif constants.net in (constants.BitcoinMainnet, ):
+            fallback_list = FALLBACK_NODE_LIST_MAINNET
         else:
-            return []
+            return []  # regtest??
 
-        # try peers from dns seed.
-        # return several peers to reduce the number of dns queries.
+        fallback_list = [peer for peer in fallback_list if peer not in self._last_tried_peer]
+        if fallback_list:
+            return [random.choice(fallback_list)]
+
+        # last resort: try dns seeds (BOLT-10)
+        return await run_in_thread(self._get_peers_from_dns_seeds)
+
+    def _get_peers_from_dns_seeds(self) -> Sequence[LNPeerAddr]:
+        # NOTE: potentially long blocking call, do not run directly on asyncio event loop.
+        # Return several peers to reduce the number of dns queries.
         if not constants.net.LN_DNS_SEEDS:
             return []
         dns_seed = random.choice(constants.net.LN_DNS_SEEDS)
@@ -250,6 +281,7 @@ class LNWorker(Logger):
             srv_answers = resolve_dns_srv('r{}.{}'.format(
                 constants.net.LN_REALM_BYTE, dns_seed))
         except dns.exception.DNSException as e:
+            self.logger.info(f'failed querying (1) dns seed "{dns_seed}" for ln peers: {repr(e)}')
             return []
         random.shuffle(srv_answers)
         num_peers = 2 * NUM_PEERS_TARGET
@@ -260,7 +292,8 @@ class LNWorker(Logger):
             try:
                 # note: this might block for several seconds
                 answers = dns.resolver.query(srv_ans['host'])
-            except dns.exception.DNSException:
+            except dns.exception.DNSException as e:
+                self.logger.info(f'failed querying (2) dns seed "{dns_seed}" for ln peers: {repr(e)}')
                 continue
             try:
                 ln_host = str(answers[0])
@@ -269,9 +302,9 @@ class LNWorker(Logger):
                 pubkey = get_compressed_pubkey_from_bech32(bech32_pubkey)
                 peers.append(LNPeerAddr(ln_host, port, pubkey))
             except Exception as e:
-                self.logger.info('error with parsing peer from dns seed: {}'.format(e))
+                self.logger.info(f'error with parsing peer from dns seed: {repr(e)}')
                 continue
-        self.logger.info('got {} ln peers from dns seed'.format(len(peers)))
+        self.logger.info(f'got {len(peers)} ln peers from dns seed')
         return peers
 
     @staticmethod
@@ -302,7 +335,7 @@ class LNGossip(LNWorker):
     def start_network(self, network: 'Network'):
         assert network
         super().start_network(network)
-        asyncio.run_coroutine_threadsafe(network.daemon.taskgroup.spawn(self.maintain_db()), self.network.asyncio_loop)
+        asyncio.run_coroutine_threadsafe(self.taskgroup.spawn(self.maintain_db()), self.network.asyncio_loop)
 
     async def maintain_db(self):
         await self.channel_db.load_data()
@@ -318,16 +351,26 @@ class LNGossip(LNWorker):
         self.unknown_ids.update(new)
         self.network.trigger_callback('unknown_channels', len(self.unknown_ids))
         self.network.trigger_callback('gossip_peers', self.num_peers())
+        self.network.trigger_callback('ln_gossip_sync_progress')
 
     def get_ids_to_query(self):
         N = 500
         l = list(self.unknown_ids)
         self.unknown_ids = set(l[N:])
         self.network.trigger_callback('unknown_channels', len(self.unknown_ids))
+        self.network.trigger_callback('ln_gossip_sync_progress')
         return l[0:N]
 
-    def peer_closed(self, peer):
-        self.peers.pop(peer.pubkey)
+    def get_sync_progress_estimate(self) -> Tuple[Optional[int], Optional[int]]:
+        if self.num_peers() == 0:
+            return None, None
+        nchans_with_0p, nchans_with_1p, nchans_with_2p = self.channel_db.get_num_channels_partitioned_by_policy_count()
+        num_db_channels = nchans_with_0p + nchans_with_1p + nchans_with_2p
+        # some channels will never have two policies (only one is in gossip?...)
+        # so if we have at least 1 policy for a channel, we consider that channel "complete" here
+        current_est = num_db_channels - nchans_with_0p
+        total_est = len(self.unknown_ids) + num_db_channels
+        return current_est, total_est
 
 
 class LNWallet(LNWorker):
@@ -344,7 +387,11 @@ class LNWallet(LNWorker):
         self.preimages = self.db.get_dict('lightning_preimages')   # RHASH -> preimage
         self.sweep_address = wallet.get_receiving_address()
         self.lock = threading.RLock()
-        self.logs = defaultdict(list)  # type: Dict[str, List[PaymentAttemptLog]]  # key is RHASH
+        self.logs = defaultdict(list)  # (not persisted) type: Dict[str, List[PaymentAttemptLog]]  # key is RHASH
+        self.is_routing = set()        # (not persisted) keys of invoices that are in PR_ROUTING state
+        # used in tests
+        self.enable_htlc_settle = asyncio.Event()
+        self.enable_htlc_settle.set()
 
         # note: accessing channels (besides simple lookup) needs self.lock!
         self.channels = {}
@@ -352,8 +399,7 @@ class LNWallet(LNWorker):
         for channel_id, c in channels.items():
             self.channels[bfh(channel_id)] = Channel(c, sweep_address=self.sweep_address, lnworker=self)
 
-        # timestamps of opening and closing transactions
-        self.pending_payments = defaultdict(asyncio.Future)
+        self.pending_payments = defaultdict(asyncio.Future)  # type: Dict[bytes, asyncio.Future[BarePaymentAttemptLog]]
 
     @ignore_exceptions
     @log_exceptions
@@ -406,7 +452,6 @@ class LNWallet(LNWorker):
         self.lnwatcher = LNWalletWatcher(self, network)
         self.lnwatcher.start_network(network)
         self.network = network
-        daemon = network.daemon
         for chan_id, chan in self.channels.items():
             self.lnwatcher.add_channel(chan.funding_outpoint.to_str(), chan.get_funding_address())
 
@@ -418,32 +463,14 @@ class LNWallet(LNWorker):
                 self.sync_with_local_watchtower(),
                 self.sync_with_remote_watchtower(),
         ]:
-            # FIXME: exceptions in those coroutines will cancel daemon.taskgroup
-            asyncio.run_coroutine_threadsafe(daemon.taskgroup.spawn(coro), self.network.asyncio_loop)
+            tg_coro = self.taskgroup.spawn(coro)
+            asyncio.run_coroutine_threadsafe(tg_coro, self.network.asyncio_loop)
 
     def peer_closed(self, peer):
         for chan in self.channels_for_peer(peer.pubkey).values():
             chan.peer_state = peer_states.DISCONNECTED
             self.network.trigger_callback('channel', chan)
-        self.peers.pop(peer.pubkey)
-
-    def get_channel_status(self, chan):
-        # status displayed in the GUI
-        cs = chan.get_state()
-        if chan.is_closed():
-            return cs.name
-        peer = self.peers.get(chan.node_id)
-        ps = chan.peer_state
-        if ps != peer_states.GOOD:
-            return ps.name
-        return cs.name
-
-    def payment_completed(self, chan: Channel, direction: Direction,
-                          htlc: UpdateAddHtlc):
-        chan_id = chan.channel_id
-        preimage = self.get_preimage(htlc.payment_hash)
-        timestamp = int(time.time())
-        self.network.trigger_callback('ln_payment_completed', timestamp, direction, htlc, preimage, chan_id)
+        super().peer_closed(peer)
 
     def get_settled_payments(self):
         # return one item per payment_hash
@@ -527,7 +554,7 @@ class LNWallet(LNWorker):
             item = {
                 'channel_id': bh2u(chan.channel_id),
                 'type': 'channel_opening',
-                'label': _('Open channel'),
+                'label': self.wallet.get_label(funding_txid) or (_('Open channel') + ' ' + chan.get_id_for_log()),
                 'txid': funding_txid,
                 'amount_msat': chan.balance(LOCAL, ctn=0),
                 'direction': 'received',
@@ -542,7 +569,7 @@ class LNWallet(LNWorker):
             item = {
                 'channel_id': bh2u(chan.channel_id),
                 'txid': closing_txid,
-                'label': _('Close channel'),
+                'label': self.wallet.get_label(closing_txid) or (_('Close channel') + ' ' + chan.get_id_for_log()),
                 'type': 'channel_closure',
                 'amount_msat': -chan.balance_minus_outgoing_htlcs(LOCAL),
                 'direction': 'sent',
@@ -632,8 +659,11 @@ class LNWallet(LNWorker):
                 return chan
 
     async def update_unfunded_channel(self, chan, funding_txid):
-        if chan.get_state() in [channel_states.PREOPENING, channel_states.OPENING]:
+        if chan.get_state() in [channel_states.PREOPENING, channel_states.OPENING, channel_states.FORCE_CLOSING]:
             if chan.constraints.is_initiator:
+                # set channel state to REDEEMED so that it can be removed manually
+                # to protect ourselves against a server lying by omission,
+                # we check that funding_inputs have been double spent and deeply mined
                 inputs = chan.storage.get('funding_inputs', [])
                 if not inputs:
                     self.logger.info(f'channel funding inputs are not provided')
@@ -644,25 +674,21 @@ class LNWallet(LNWorker):
                         continue
                     if spender_txid != funding_txid:
                         tx_mined_height = self.wallet.get_tx_height(spender_txid)
-                        if tx_mined_height.conf > 6:
-                            self.logger.info(f'channel is double spent {inputs}, {ds}')
-                            # set to REDEEMED so that it can be removed manually
+                        if tx_mined_height.conf > lnutil.REDEEM_AFTER_DOUBLE_SPENT_DELAY:
+                            self.logger.info(f'channel is double spent {inputs}')
                             chan.set_state(channel_states.REDEEMED)
                             break
             else:
                 now = int(time.time())
-                if now - chan.storage.get('init_timestamp', 0) > CHANNEL_INIT_TIMEOUT:
+                if now - chan.storage.get('init_timestamp', 0) > CHANNEL_OPENING_TIMEOUT:
                     self.remove_channel(chan.channel_id)
 
     async def update_open_channel(self, chan, funding_txid, funding_height):
 
         if chan.get_state() == channel_states.OPEN and self.should_channel_be_closed_due_to_expiring_htlcs(chan):
             self.logger.info(f"force-closing due to expiring htlcs")
-            await self.force_close_channel(chan.channel_id)
+            await self.try_force_closing(chan.channel_id)
             return
-
-        if chan.get_state() == channel_states.PREOPENING:
-            chan.set_state(channel_states.OPENING)
 
         if chan.get_state() == channel_states.OPENING:
             if chan.short_channel_id is None:
@@ -680,7 +706,7 @@ class LNWallet(LNWorker):
             if peer is None:
                 self.logger.info("peer not found for {}".format(bh2u(chan.node_id)))
                 return
-            await peer.bitcoin_fee_update(chan)
+            await peer.maybe_update_fee(chan)
             conf = self.lnwatcher.get_tx_height(chan.funding_outpoint.txid).conf
             peer.on_network_update(chan, conf)
 
@@ -695,12 +721,14 @@ class LNWallet(LNWorker):
 
     async def update_closed_channel(self, chan, funding_txid, funding_height, closing_txid, closing_height, keep_watching):
 
-        # remove from channel_db
-        if chan.short_channel_id is not None:
-            self.channel_db.remove_channel(chan.short_channel_id)
-
         if chan.get_state() < channel_states.CLOSED:
-            chan.set_state(channel_states.CLOSED)
+            conf = closing_height.conf
+            if conf > 0:
+                chan.set_state(channel_states.CLOSED)
+            else:
+                # we must not trust the server with unconfirmed transactions
+                # if the remote force closed, we remain OPEN until the closing tx is confirmed
+                pass
 
         if chan.get_state() == channel_states.CLOSED and not keep_watching:
             chan.set_state(channel_states.REDEEMED)
@@ -752,14 +780,11 @@ class LNWallet(LNWorker):
             funding_sat=funding_sat,
             push_msat=push_sat * 1000,
             temp_channel_id=os.urandom(32))
-        self.add_new_channel(chan)
         self.network.trigger_callback('channels_updated', self.wallet)
         self.wallet.add_transaction(funding_tx)  # save tx as local into the wallet
         self.wallet.set_label(funding_tx.txid(), _('Open channel'))
         if funding_tx.is_complete():
-            # TODO make more robust (timeout low? server returns error?)
-            await asyncio.wait_for(self.network.broadcast_transaction(funding_tx), LN_P2P_NETWORK_TIMEOUT)
-            chan.set_state(channel_states.OPENING)
+            await self.network.try_broadcasting(funding_tx, 'open_channel')
         return chan, funding_tx
 
     def add_channel(self, chan):
@@ -785,8 +810,11 @@ class LNWallet(LNWorker):
                 if not addrs:
                     raise ConnStringFormatError(_('Don\'t know any addresses for node:') + ' ' + bh2u(node_id))
                 host, port, timestamp = self.choose_preferred_address(addrs)
+            port = int(port)
+            # Try DNS-resolving the host (if needed). This is simply so that
+            # the caller gets a nice exception if it cannot be resolved.
             try:
-                socket.getaddrinfo(host, int(port))
+                await asyncio.get_event_loop().getaddrinfo(host, port)
             except socket.gaierror:
                 raise ConnStringFormatError(_('Hostname does not resolve (getaddrinfo failed)'))
             # add peer
@@ -849,57 +877,75 @@ class LNWallet(LNWorker):
         self.wallet.set_label(key, lnaddr.get_description())
         log = self.logs[key]
         success = False
+        reason = ''
         for i in range(attempts):
             try:
-                route = await self._create_route_from_invoice(decoded_invoice=lnaddr)
-                self.set_payment_status(payment_hash, PR_INFLIGHT)
+                # note: path-finding runs in a separate thread so that we don't block the asyncio loop
+                # graph updates might occur during the computation
+                self.set_invoice_status(key, PR_ROUTING)
+                self.network.trigger_callback('invoice_status', key)
+                route = await run_in_thread(self._create_route_from_invoice, lnaddr)
+                self.set_invoice_status(key, PR_INFLIGHT)
                 self.network.trigger_callback('invoice_status', key)
                 payment_attempt_log = await self._pay_to_route(route, lnaddr)
             except Exception as e:
                 log.append(PaymentAttemptLog(success=False, exception=e))
-                self.set_payment_status(payment_hash, PR_UNPAID)
+                self.set_invoice_status(key, PR_UNPAID)
+                reason = str(e)
                 break
             log.append(payment_attempt_log)
             success = payment_attempt_log.success
             if success:
                 break
+        else:
+            reason = _(f'Failed after {attempts} attempts')
         self.network.trigger_callback('invoice_status', key)
+        if success:
+            self.network.trigger_callback('payment_succeeded', key)
+        else:
+            self.network.trigger_callback('payment_failed', key, reason)
+        self.logger.debug(f'payment attempts log for RHASH {key}: {repr(log)}')
         return success
 
     async def _pay_to_route(self, route: LNPaymentRoute, lnaddr: LnAddr) -> PaymentAttemptLog:
         short_channel_id = route[0].short_channel_id
         chan = self.get_channel_by_short_id(short_channel_id)
-        if not chan:
-            self.channel_db.remove_channel(short_channel_id)
-            raise Exception(f"PathFinder returned path with short_channel_id "
-                            f"{short_channel_id} that is not in channel list")
         peer = self.peers.get(route[0].node_id)
         if not peer:
             raise Exception('Dropped peer')
-        htlc = await peer.pay(route, chan, int(lnaddr.amount * COIN * 1000), lnaddr.paymenthash, lnaddr.get_min_final_cltv_expiry())
+        await peer.initialized
+        htlc = peer.pay(route, chan, int(lnaddr.amount * COIN * 1000), lnaddr.paymenthash, lnaddr.get_min_final_cltv_expiry())
         self.network.trigger_callback('htlc_added', htlc, lnaddr, SENT)
-        success, preimage, reason = await self.await_payment(lnaddr.paymenthash)
-        if success:
+        payment_attempt = await self.await_payment(lnaddr.paymenthash)
+        if payment_attempt.success:
             failure_log = None
         else:
-            failure_msg, sender_idx = chan.decode_onion_error(reason, route, htlc.htlc_id)
-            blacklist = self.handle_error_code_from_failed_htlc(failure_msg, sender_idx, route, peer)
-            if blacklist:
-                # blacklist channel after reporter node
-                # TODO this should depend on the error (even more granularity)
-                # also, we need finer blacklisting (directed edges; nodes)
-                try:
-                    short_chan_id = route[sender_idx + 1].short_channel_id
-                except IndexError:
-                    self.logger.info("payment destination reported error")
-                else:
-                    self.network.path_finder.add_to_blacklist(short_chan_id)
+            if payment_attempt.error_bytes:
+                # TODO "decode_onion_error" might raise, catch and maybe blacklist/penalise someone?
+                failure_msg, sender_idx = chan.decode_onion_error(payment_attempt.error_bytes, route, htlc.htlc_id)
+                is_blacklisted = self.handle_error_code_from_failed_htlc(failure_msg, sender_idx, route, peer)
+                if is_blacklisted:
+                    # blacklist channel after reporter node
+                    # TODO this should depend on the error (even more granularity)
+                    # also, we need finer blacklisting (directed edges; nodes)
+                    try:
+                        short_chan_id = route[sender_idx + 1].short_channel_id
+                    except IndexError:
+                        self.logger.info("payment destination reported error")
+                    else:
+                        self.network.path_finder.add_to_blacklist(short_chan_id)
+            else:
+                # probably got "update_fail_malformed_htlc". well... who to penalise now?
+                assert payment_attempt.error_reason is not None
+                sender_idx = None
+                failure_msg = payment_attempt.error_reason
+                is_blacklisted = False
             failure_log = PaymentAttemptFailureDetails(sender_idx=sender_idx,
                                                        failure_msg=failure_msg,
-                                                       is_blacklisted=blacklist)
+                                                       is_blacklisted=is_blacklisted)
         return PaymentAttemptLog(route=route,
-                                 success=success,
-                                 preimage=preimage,
+                                 success=payment_attempt.success,
+                                 preimage=payment_attempt.preimage,
                                  failure_details=failure_log)
 
     def handle_error_code_from_failed_htlc(self, failure_msg, sender_idx, route, peer):
@@ -962,7 +1008,8 @@ class LNWallet(LNWorker):
                 f"min_final_cltv_expiry: {addr.get_min_final_cltv_expiry()}"))
         return addr
 
-    async def _create_route_from_invoice(self, decoded_invoice) -> LNPaymentRoute:
+    @profiler
+    def _create_route_from_invoice(self, decoded_invoice) -> LNPaymentRoute:
         amount_msat = int(decoded_invoice.amount * COIN * 1000)
         invoice_pubkey = decoded_invoice.pubkey.serialize()
         # use 'r' field from invoice
@@ -1037,7 +1084,7 @@ class LNWallet(LNWorker):
             raise Exception(_("add invoice timed out"))
 
     @log_exceptions
-    async def _add_request_coro(self, amount_sat, message, expiry):
+    async def _add_request_coro(self, amount_sat, message, expiry: int):
         timestamp = int(time.time())
         routing_hints = await self._calc_routing_hints_for_invoice(amount_sat)
         if not routing_hints:
@@ -1047,6 +1094,12 @@ class LNWallet(LNWorker):
         payment_hash = sha256(payment_preimage)
         info = PaymentInfo(payment_hash, amount_sat, RECEIVED, PR_UNPAID)
         amount_btc = amount_sat/Decimal(COIN) if amount_sat else None
+        if expiry == 0:
+            # hack: BOLT-11 is not really clear on what an expiry of 0 means.
+            # It probably interprets it as 0 seconds, so already expired...
+            # Our higher level invoices code however uses 0 for "never".
+            # Hence set some high expiration here
+            expiry = 100 * 365 * 24 * 60 * 60  # 100 years
         lnaddr = LnAddr(payment_hash, amount_btc,
                         tags=[('d', message),
                               ('c', MIN_FINAL_CLTV_EXPIRY_FOR_INVOICE),
@@ -1088,7 +1141,7 @@ class LNWallet(LNWorker):
 
     def save_payment_info(self, info: PaymentInfo) -> None:
         key = info.payment_hash.hex()
-        assert info.status in [PR_PAID, PR_UNPAID, PR_INFLIGHT]
+        assert info.status in SAVED_PR_STATUS
         with self.lock:
             self.payments[key] = info.amount, info.direction, info.status
         self.wallet.save_db()
@@ -1102,17 +1155,27 @@ class LNWallet(LNWorker):
         return status
 
     def get_invoice_status(self, key):
+        log = self.logs[key]
+        if key in self.is_routing:
+            return PR_ROUTING
         # status may be PR_FAILED
         status = self.get_payment_status(bfh(key))
-        log = self.logs[key]
         if status == PR_UNPAID and log:
             status = PR_FAILED
         return status
 
-    async def await_payment(self, payment_hash):
-        success, preimage, reason = await self.pending_payments[payment_hash]
+    def set_invoice_status(self, key, status):
+        if status == PR_ROUTING:
+            self.is_routing.add(key)
+        elif key in self.is_routing:
+            self.is_routing.remove(key)
+        if status in SAVED_PR_STATUS:
+            self.set_payment_status(bfh(key), status)
+
+    async def await_payment(self, payment_hash: bytes) -> BarePaymentAttemptLog:
+        payment_attempt = await self.pending_payments[payment_hash]
         self.pending_payments.pop(payment_hash)
-        return success, preimage, reason
+        return payment_attempt
 
     def set_payment_status(self, payment_hash: bytes, status):
         try:
@@ -1123,18 +1186,38 @@ class LNWallet(LNWorker):
         info = info._replace(status=status)
         self.save_payment_info(info)
 
-    def payment_failed(self, payment_hash: bytes, reason):
+    def payment_failed(self, chan, payment_hash: bytes, payment_attempt: BarePaymentAttemptLog):
         self.set_payment_status(payment_hash, PR_UNPAID)
-        self.pending_payments[payment_hash].set_result((False, None, reason))
+        key = payment_hash.hex()
+        f = self.pending_payments.get(payment_hash)
+        if f and not f.cancelled():
+            f.set_result(payment_attempt)
+        else:
+            chan.logger.info('received unexpected payment_failed, probably from previous session')
+            self.network.trigger_callback('invoice_status', key)
+            self.network.trigger_callback('payment_failed', key, '')
+        self.network.trigger_callback('ln_payment_failed', payment_hash, chan.channel_id)
 
-    def payment_sent(self, payment_hash: bytes):
+    def payment_sent(self, chan, payment_hash: bytes):
         self.set_payment_status(payment_hash, PR_PAID)
         preimage = self.get_preimage(payment_hash)
-        self.pending_payments[payment_hash].set_result((True, preimage, None))
+        key = payment_hash.hex()
+        f = self.pending_payments.get(payment_hash)
+        if f and not f.cancelled():
+            payment_attempt = BarePaymentAttemptLog(success=True,
+                                                    preimage=preimage,
+                                                    error_bytes=None)
+            f.set_result(payment_attempt)
+        else:
+            chan.logger.info('received unexpected payment_sent, probably from previous session')
+            self.network.trigger_callback('invoice_status', key)
+            self.network.trigger_callback('payment_succeeded', key)
+        self.network.trigger_callback('ln_payment_completed', payment_hash, chan.channel_id)
 
-    def payment_received(self, payment_hash: bytes):
+    def payment_received(self, chan, payment_hash: bytes):
         self.set_payment_status(payment_hash, PR_PAID)
         self.network.trigger_callback('request_status', payment_hash.hex(), PR_PAID)
+        self.network.trigger_callback('ln_payment_completed', payment_hash, chan.channel_id)
 
     async def _calc_routing_hints_for_invoice(self, amount_sat):
         """calculate routing hints (BOLT-11 'r' field)"""
@@ -1207,11 +1290,19 @@ class LNWallet(LNWorker):
         return await peer.close_channel(chan_id)
 
     async def force_close_channel(self, chan_id):
+        # returns txid or raises
+        chan = self.channels[chan_id]
+        tx = chan.force_close_tx()
+        await self.network.broadcast_transaction(tx)
+        chan.set_state(channel_states.FORCE_CLOSING)
+        return tx.txid()
+
+    async def try_force_closing(self, chan_id):
+        # fails silently but sets the state, so that we will retry later
         chan = self.channels[chan_id]
         tx = chan.force_close_tx()
         chan.set_state(channel_states.FORCE_CLOSING)
         await self.network.try_broadcasting(tx, 'force-close')
-        return tx.txid()
 
     def remove_channel(self, chan_id):
         chan = self.channels[chan_id]
@@ -1225,24 +1316,33 @@ class LNWallet(LNWorker):
 
     @ignore_exceptions
     @log_exceptions
-    async def reestablish_peer_for_given_channel(self, chan):
+    async def reestablish_peer_for_given_channel(self, chan: Channel) -> None:
         now = time.time()
-        # try last good address first
-        peer = self.channel_db.get_last_good_address(chan.node_id)
-        if peer:
+        peer_addresses = []
+        # will try last good address first, from gossip
+        last_good_addr = self.channel_db.get_last_good_address(chan.node_id)
+        if last_good_addr:
+            peer_addresses.append(last_good_addr)
+        # will try addresses for node_id from gossip
+        addrs_from_gossip = self.channel_db.get_node_addresses(chan.node_id) or []
+        for host, port, ts in addrs_from_gossip:
+            peer_addresses.append(LNPeerAddr(host, port, chan.node_id))
+        # will try addresses stored in channel storage
+        peer_addresses += list(chan.get_peer_addresses())
+        # Now select first one that has not failed recently.
+        # Use long retry interval to check. This ensures each address we gathered gets a chance.
+        for peer in peer_addresses:
+            last_tried = self._last_tried_peer.get(peer, 0)
+            if last_tried + PEER_RETRY_INTERVAL < now:
+                await self._add_peer(peer.host, peer.port, peer.pubkey)
+                return
+        # Still here? That means all addresses failed ~recently.
+        # Use short retry interval now.
+        for peer in peer_addresses:
             last_tried = self._last_tried_peer.get(peer, 0)
             if last_tried + PEER_RETRY_INTERVAL_FOR_CHANNELS < now:
                 await self._add_peer(peer.host, peer.port, peer.pubkey)
                 return
-        # try random address for node_id
-        addresses = self.channel_db.get_node_addresses(chan.node_id)
-        if not addresses:
-            return
-        host, port, t = random.choice(list(addresses))
-        peer = LNPeerAddr(host, port, chan.node_id)
-        last_tried = self._last_tried_peer.get(peer, 0)
-        if last_tried + PEER_RETRY_INTERVAL_FOR_CHANNELS < now:
-            await self._add_peer(host, port, chan.node_id)
 
     async def reestablish_peers_and_channels(self):
         while True:
@@ -1253,23 +1353,16 @@ class LNWallet(LNWorker):
             with self.lock:
                 channels = list(self.channels.values())
             for chan in channels:
-                if chan.is_closed() or chan.is_closing():
+                if chan.is_closed():
                     continue
-                if constants.net is not constants.QtumRegtest:
-                    chan_feerate = chan.get_latest_feerate(LOCAL)
-                    ratio = chan_feerate / self.current_feerate_per_kw()
-                    if ratio < 0.5:
-                        self.logger.warning(f"fee level for channel {bh2u(chan.channel_id)} is {chan_feerate} sat/kiloweight, "
-                                            f"current recommended feerate is {self.current_feerate_per_kw()} sat/kiloweight, consider force closing!")
                 # reestablish
                 if not chan.should_try_to_reestablish_peer():
                     continue
                 peer = self.peers.get(chan.node_id, None)
                 if peer:
-                    await peer.group.spawn(peer.reestablish_channel(chan))
+                    await peer.taskgroup.spawn(peer.reestablish_channel(chan))
                 else:
-                    await self.network.main_taskgroup.spawn(
-                        self.reestablish_peer_for_given_channel(chan))
+                    await self.taskgroup.spawn(self.reestablish_peer_for_given_channel(chan))
 
     def current_feerate_per_kw(self):
         from .simple_config import FEE_LN_ETA_TARGET, FEERATE_FALLBACK_STATIC_FEE, FEERATE_REGTEST_HARDCODED
