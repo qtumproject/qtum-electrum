@@ -165,7 +165,7 @@ class SynchronizerBase(NetworkJobOnDefaultServer):
 
         while True:
             key = await self.token_add_queue.get()
-            await self.group.spawn(subscribe_to_token, key)
+            await self.taskgroup.spawn(subscribe_to_token, key)
 
     async def handle_status(self):
         while True:
@@ -178,7 +178,7 @@ class SynchronizerBase(NetworkJobOnDefaultServer):
         while True:
             bind_addr, contract_addr, __, status = await self.token_status_queue.get()
             key = '{}_{}'.format(contract_addr, hash160_to_p2pkh(binascii.a2b_hex(bind_addr)))
-            await self.group.spawn(self._on_token_status, key, status)
+            await self.taskgroup.spawn(self._on_token_status, key, status)
             self._processed_some_notifications = True
 
     def num_requests_sent_and_answered(self) -> Tuple[int, int]:
