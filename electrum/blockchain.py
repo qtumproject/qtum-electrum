@@ -395,7 +395,7 @@ class Blockchain(Logger):
                           prev_hash=parent.get_hash(forkpoint-1))
         self.logger.info(f'[fork] {forkpoint}, {parent.forkpoint}')
         self.assert_headers_file_available(parent.path())
-        open(self.path(), 'w+').close()
+        # open(self.path(), 'w+').close()
         self.save_header(header)
         # put into global dict. note that in some cases
         # save_header might have already put it there but that's OK
