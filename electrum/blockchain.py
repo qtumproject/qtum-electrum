@@ -719,7 +719,7 @@ class Blockchain(Logger):
         else:
             nActualSpace = min(nActualSpace, POW_TARGET_TIMESPACE * 20)
             nInterval = POW_TARGET_TIMESPAN_V2 // POW_TARGET_TIMESPACE
-            t1 = 2 * (nActualSpace - POW_TARGET_TIMESPACE) // 16
+            t1 = int(2 * (nActualSpace - POW_TARGET_TIMESPACE) / 16)
             t2 = (nInterval + 1) * POW_TARGET_TIMESPACE // 16
             new_target *= math.exp(t1 / t2)
             new_target = int(new_target)
