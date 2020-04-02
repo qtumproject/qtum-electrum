@@ -3303,7 +3303,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
     def create_smart_contract(self, name, bytecode, abi, constructor, args, gas_limit, gas_price, sender, dialog, preview):
 
         def broadcast_done(tx):
-            if is_opcreate_script(bfh(tx.outputs()[0].address)):
+            if is_opcreate_script(tx.outputs()[0].scriptpubkey):
                 reversed_txid = binascii.a2b_hex(tx.txid())[::-1]
                 output_index = b'\x00\x00\x00\x00'
                 contract_addr = bh2u(hash_160(reversed_txid + output_index))
