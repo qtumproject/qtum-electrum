@@ -44,7 +44,7 @@ from .util import profiler, to_bytes, bh2u, bfh
 from . import ecc, bitcoin, constants, segwit_addr, bip32
 from .bip32 import BIP32Node
 from .util import profiler, to_bytes, bh2u, bfh, chunks, is_hex_str
-from .bitcoin import (TYPE_ADDRESS, TYPE_SCRIPT, TYPE_PUBKEY, hash_160,
+from .bitcoin import (TYPE_ADDRESS, TYPE_SCRIPT, push_data, hash_160,
                       hash160_to_p2sh, hash160_to_p2pkh, hash_to_segwit_addr,
                       var_int, TOTAL_COIN_SUPPLY_LIMIT_IN_BTC, COIN,
                       int_to_hex, push_script, b58_address_to_hash160,
@@ -2016,7 +2016,7 @@ def contract_script(gas_limit, gas_price, datahex, contract_addr, opcode) -> byt
     script = '0104'
     script += bh2u(contract_encode_number(gas_limit))
     script += bh2u(contract_encode_number(gas_price))
-    script += push_script(datahex)
+    script += push_data(datahex)
 
     if opcode == opcodes.OP_CALL:
         script += push_script(contract_addr)

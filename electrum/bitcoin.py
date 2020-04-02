@@ -303,6 +303,12 @@ def push_script(data: str) -> str:
     return _op_push(data_len) + bh2u(data)
 
 
+def push_data(data: str) -> str:
+    data = bfh(data)
+    data_len = len(data)
+    return _op_push(data_len) + bh2u(data)
+
+
 def add_number_to_script(i: int) -> bytes:
     return bfh(push_script(script_num_to_hex(i)))
 
