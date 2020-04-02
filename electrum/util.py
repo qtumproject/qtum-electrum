@@ -672,7 +672,7 @@ def format_satoshis(x, num_zeros=0, decimal_point=8, precision=None, is_diff=Fal
     # initial result
     scale_factor = pow(10, decimal_point)
     if not isinstance(x, Decimal):
-        x = Decimal(x).quantize(Decimal('1E-8'))
+        x = Decimal(x).quantize(Decimal('1E-8'), context=decimal.Context(prec=36))
     result = ("{:" + decimal_format + "f}").format(x / scale_factor)
     if "." not in result: result += "."
     result = result.rstrip('0')
