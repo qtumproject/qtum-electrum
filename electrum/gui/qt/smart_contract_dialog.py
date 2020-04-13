@@ -276,6 +276,8 @@ class ContractFuncLayout(QGridLayout):
             elif 'int' in _type:
                 if not isinstance(args[index], int):
                     raise ParseArgsException('inavlid input:{}'.format(args[index]))
+            elif _type == 'bytes':
+                args[index] = bytes.fromhex(args[index])
 
         return abi, args, sender
 
