@@ -31,7 +31,6 @@ from typing import Dict, Optional, List, Tuple, Set, Iterable, NamedTuple, Seque
 
 from . import util
 from .logging import Logger
-from .bitcoin import Token
 
 JsonDBJsonEncoder = util.MyEncoder
 
@@ -149,8 +148,6 @@ class StoredDict(dict):
     def get(self, key, default=None):
         key = self.convert_key(key)
         return dict.get(self, key, default)
-
-
 
 
 class JsonDB(Logger):

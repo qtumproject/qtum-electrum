@@ -22,11 +22,11 @@
 # ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
-
+import binascii
 import hashlib
 from typing import List, Tuple, TYPE_CHECKING, Optional, Union, NamedTuple
 from enum import IntEnum
-from eth_abi import encode_abi
+from eth_abi import encode_abi, decode_abi
 from eth_utils import function_abi_to_4byte_selector
 
 from .util import bfh, bh2u, BitcoinException, assert_bytes, to_bytes, inv_dict
@@ -38,7 +38,6 @@ from .crypto import sha256d, sha256, hash_160, hmac_oneshot
 
 if TYPE_CHECKING:
     from .network import Network
-
 
 ################################## transactions
 
@@ -53,8 +52,8 @@ NLOCKTIME_MAX = 2 ** 32 - 1
 # supported types of transaction outputs
 # TODO kill these with fire
 TYPE_ADDRESS = 0
-TYPE_PUBKEY  = 1
-TYPE_SCRIPT  = 2
+TYPE_PUBKEY = 1
+TYPE_SCRIPT = 2
 
 RECOMMEND_CONFIRMATIONS = 6
 
@@ -209,21 +208,22 @@ def rev_hex(s: str) -> str:
     return bh2u(bfh(s)[::-1])
 
 
-def int_to_hex(i: int, length: int=1) -> str:
+def int_to_hex(i: int, length: int = 1) -> str:
     """Converts int to little-endian hex string.
     `length` is the number of bytes available
     """
     if not isinstance(i, int):
         raise TypeError('{} instead of int'.format(i))
     range_size = pow(256, length)
-    if i < -(range_size//2) or i >= range_size:
+    if i < -(range_size // 2) or i >= range_size:
         raise OverflowError('cannot convert int {} to hex ({} bytes)'.format(i, length))
     if i < 0:
         # two's complement
         i = range_size + i
     s = hex(i)[2:].rstrip('L')
-    s = "0"*(2*length - len(s)) + s
+    s = "0" * (2 * length - len(s)) + s
     return rev_hex(s)
+
 
 def script_num_to_hex(i: int) -> str:
     """See CScriptNum in Bitcoin Core.
@@ -254,14 +254,14 @@ def var_int(i: int) -> str:
     # https://github.com/bitcoin/bitcoin/blob/efe1ee0d8d7f82150789f1f6840f139289628a2b/src/serialize.h#L247
     # "CompactSize"
     assert i >= 0, i
-    if i<0xfd:
+    if i < 0xfd:
         return int_to_hex(i)
-    elif i<=0xffff:
-        return "fd"+int_to_hex(i,2)
-    elif i<=0xffffffff:
-        return "fe"+int_to_hex(i,4)
+    elif i <= 0xffff:
+        return "fd" + int_to_hex(i, 2)
+    elif i <= 0xffffffff:
+        return "fe" + int_to_hex(i, 4)
     else:
-        return "ff"+int_to_hex(i,8)
+        return "ff" + int_to_hex(i, 8)
 
 
 def witness_push(item: str) -> str:
@@ -365,33 +365,41 @@ def hash160_to_p2pkh(h160: bytes, *, net=None) -> str:
     if net is None: net = constants.net
     return hash160_to_b58_address(h160, net.ADDRTYPE_P2PKH)
 
+
 def hash160_to_p2sh(h160: bytes, *, net=None) -> str:
     if net is None: net = constants.net
     return hash160_to_b58_address(h160, net.ADDRTYPE_P2SH)
+
 
 def public_key_to_p2pkh(public_key: bytes, *, net=None) -> str:
     if net is None: net = constants.net
     return hash160_to_p2pkh(hash_160(public_key), net=net)
 
+
 def hash_to_segwit_addr(h: bytes, witver: int, *, net=None) -> str:
     if net is None: net = constants.net
     return segwit_addr.encode(net.SEGWIT_HRP, witver, h)
+
 
 def public_key_to_p2wpkh(public_key: bytes, *, net=None) -> str:
     if net is None: net = constants.net
     return hash_to_segwit_addr(hash_160(public_key), witver=0, net=net)
 
+
 def script_to_p2wsh(script: str, *, net=None) -> str:
     if net is None: net = constants.net
     return hash_to_segwit_addr(sha256(bfh(script)), witver=0, net=net)
+
 
 def p2wpkh_nested_script(pubkey: str) -> str:
     pkh = bh2u(hash_160(bfh(pubkey)))
     return '00' + push_script(pkh)
 
+
 def p2wsh_nested_script(witness_script: str) -> str:
     wsh = bh2u(sha256(bfh(witness_script)))
     return '00' + push_script(wsh)
+
 
 def pubkey_to_address(txin_type: str, pubkey: str, *, net=None) -> str:
     if net is None: net = constants.net
@@ -450,16 +458,20 @@ def address_to_script(addr: str, *, net=None) -> str:
         raise BitcoinException(f'unknown address type: {addrtype}')
     return script
 
+
 def address_to_scripthash(addr: str) -> str:
     script = address_to_script(addr)
     return script_to_scripthash(script)
+
 
 def script_to_scripthash(script: str) -> str:
     h = sha256(bfh(script))[0:32]
     return bh2u(bytes(reversed(h)))
 
+
 def public_key_to_p2pk_script(pubkey: str) -> str:
     return push_script(pubkey) + opcodes.OP_CHECKSIG.hex()
+
 
 def pubkeyhash_to_p2pkh_script(pubkey_hash160: str) -> str:
     script = bytes([opcodes.OP_DUP, opcodes.OP_HASH160]).hex()
@@ -569,12 +581,12 @@ def DecodeBase58Check(psz: Union[bytes, str]) -> bytes:
 # extended WIF for segwit (used in 3.0.x; but still used internally)
 # the keys in this dict should be a superset of what Imported Wallets can import
 WIF_SCRIPT_TYPES = {
-    'p2pkh':0,
-    'p2wpkh':1,
-    'p2wpkh-p2sh':2,
-    'p2sh':5,
-    'p2wsh':6,
-    'p2wsh-p2sh':7
+    'p2pkh': 0,
+    'p2wpkh': 1,
+    'p2wpkh-p2sh': 2,
+    'p2sh': 5,
+    'p2wsh': 6,
+    'p2wsh-p2sh': 7
 }
 WIF_SCRIPT_TYPES_INV = inv_dict(WIF_SCRIPT_TYPES)
 
@@ -584,7 +596,7 @@ def is_segwit_script_type(txin_type: str) -> bool:
 
 
 def serialize_privkey(secret: bytes, compressed: bool, txin_type: str,
-                      internal_use: bool=False) -> str:
+                      internal_use: bool = False) -> str:
     # we only export secrets inside curve range
     secret = ecc.ECPrivkey.normalize_secret_bytes(secret)
     if internal_use:
@@ -656,6 +668,7 @@ def address_from_private_key(sec: str) -> str:
     public_key = ecc.ECPrivkey(privkey).get_public_key_hex(compressed=compressed)
     return pubkey_to_address(txin_type, public_key)
 
+
 def is_segwit_address(addr: str, *, net=None) -> bool:
     if net is None: net = constants.net
     try:
@@ -663,6 +676,17 @@ def is_segwit_address(addr: str, *, net=None) -> bool:
     except Exception as e:
         return False
     return witprog is not None
+
+
+def is_p2pkh_address(addr: str, *, net=None) -> bool:
+    if net is None: net = constants.net
+    try:
+        # test length, checksum, encoding:
+        addrtype, h = b58_address_to_hash160(addr)
+    except Exception:
+        return False
+    return addrtype == net.ADDRTYPE_P2PKH
+
 
 def is_b58_address(addr: str, *, net=None) -> bool:
     if net is None: net = constants.net
@@ -674,6 +698,7 @@ def is_b58_address(addr: str, *, net=None) -> bool:
     if addrtype not in [net.ADDRTYPE_P2PKH, net.ADDRTYPE_P2SH]:
         return False
     return True
+
 
 def is_address(addr: str, *, net=None) -> bool:
     if net is None: net = constants.net
@@ -702,6 +727,7 @@ def is_minikey(text: str) -> bool:
     return (len(text) >= 20 and text[0] == 'S'
             and all(ord(c) in __b58chars for c in text)
             and sha256(text + '?')[0] == 0x00)
+
 
 def minikey_to_private_key(text: str) -> bytes:
     return sha256(text)
@@ -735,6 +761,12 @@ class Token(NamedTuple):
         return f'{self.contract_addr}_{self.bind_addr}'
 
 
+class Delegation(NamedTuple):
+    addr: str
+    staker: str
+    fee: int
+
+
 def eth_abi_encode(abi, args):
     """
     >> abi = {"constant":True,"inputs":[{"name":"","type":"address"}],
@@ -754,3 +786,148 @@ def eth_abi_encode(abi, args):
     else:
         result = encode_abi(types, args)
     return bh2u(result)
+
+
+def eth_output_decode(abi, result):
+    types = list([x['type'] for x in abi.get('outputs', [])])
+    try:
+        if isinstance(result, dict):
+            output = decode_abi(types, binascii.a2b_hex(result['executionResult']['output']))
+        else:
+            output = decode_abi(types, binascii.a2b_hex(result))
+    except:
+        return None
+    return output
+
+
+DELEGATION_CONTRACT = '0000000000000000000000000000000000000086'
+
+
+DELEGATE_ABI = [
+    {
+        "constant": False,
+        "inputs": [],
+        "name": "removeDelegation",
+        "outputs": [],
+        "payable": False,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": False,
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "_staker",
+                "type": "address"
+            },
+            {
+                "internalType": "uint8",
+                "name": "_fee",
+                "type": "uint8"
+            },
+            {
+                "internalType": "bytes",
+                "name": "_PoD",
+                "type": "bytes"
+            }
+        ],
+        "name": "addDelegation",
+        "outputs": [],
+        "payable": False,
+        "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "constant": True,
+        "inputs": [
+            {
+                "internalType": "address",
+                "name": "",
+                "type": "address"
+            }
+        ],
+        "name": "delegations",
+        "outputs": [
+            {
+                "internalType": "address",
+                "name": "staker",
+                "type": "address"
+            },
+            {
+                "internalType": "uint8",
+                "name": "fee",
+                "type": "uint8"
+            },
+            {
+                "internalType": "uint256",
+                "name": "blockHeight",
+                "type": "uint256"
+            },
+            {
+                "internalType": "bytes",
+                "name": "PoD",
+                "type": "bytes"
+            }
+        ],
+        "payable": False,
+        "stateMutability": "view",
+        "type": "function"
+    },
+    {
+        "anonymous": False,
+        "inputs": [
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "_staker",
+                "type": "address"
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "_delegate",
+                "type": "address"
+            },
+            {
+                "indexed": False,
+                "internalType": "uint8",
+                "name": "fee",
+                "type": "uint8"
+            },
+            {
+                "indexed": False,
+                "internalType": "uint256",
+                "name": "blockHeight",
+                "type": "uint256"
+            },
+            {
+                "indexed": False,
+                "internalType": "bytes",
+                "name": "PoD",
+                "type": "bytes"
+            }
+        ],
+        "name": "AddDelegation",
+        "type": "event"
+    },
+    {
+        "anonymous": False,
+        "inputs": [
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "_staker",
+                "type": "address"
+            },
+            {
+                "indexed": True,
+                "internalType": "address",
+                "name": "_delegate",
+                "type": "address"
+            }
+        ],
+        "name": "RemoveDelegation",
+        "type": "event"
+    }
+]

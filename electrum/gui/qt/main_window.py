@@ -55,7 +55,7 @@ import electrum
 from electrum import (keystore, simple_config, ecc, constants, util, bitcoin, commands,
                       coinchooser, paymentrequest)
 from electrum.bitcoin import COIN, is_address, TYPE_ADDRESS, b58_address_to_hash160, Token, opcodes, \
-    TYPE_SCRIPT, is_hash160, hash_160, eth_abi_encode
+    TYPE_SCRIPT, is_hash160, hash_160, eth_abi_encode, Delegation, DELEGATE_ABI, DELEGATION_CONTRACT
 from electrum.plugin import run_hook
 from electrum.i18n import _
 from electrum.util import (format_time, format_satoshis, format_fee_satoshis,
@@ -106,6 +106,7 @@ from .confirm_tx_dialog import ConfirmTxDialog
 from .transaction_dialog import PreviewTxDialog
 from .token_dialog import TokenAddDialog, TokenInfoDialog, TokenSendDialog
 from .smart_contract_dialog import ContractCreateDialog, ContractEditDialog, ContractFuncDialog
+from .delegation_dialog import DelegationDialog
 
 if TYPE_CHECKING:
     from . import ElectrumGui
@@ -219,6 +220,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.channels_tab = self.create_channels_tab()
         self.tokens_tab = self.create_tokens_tab()
         self.smart_contract_tab = self.create_smart_contract_tab()
+        self.delegations_tab = self.create_delegations_tab()
 
         tabs.addTab(self.create_history_tab(), read_QIcon("tab_history.png"), _('History'))
         tabs.addTab(self.send_tab, read_QIcon("tab_send.png"), _('Send'))
@@ -240,6 +242,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         add_optional_tab(tabs, self.contacts_tab, read_QIcon("tab_contacts.png"), _("Con&tacts"), "contacts")
         add_optional_tab(tabs, self.console_tab, read_QIcon("tab_console.png"), _("Con&sole"), "console")
         add_optional_tab(tabs, self.smart_contract_tab, read_QIcon("tab_console.png"), _('Smart Contract'), 'contract')
+        add_optional_tab(tabs, self.delegations_tab, read_QIcon("tab_console.png"), _('Delegations'), 'delegations')
 
         tabs.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
 
@@ -704,6 +707,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         add_toggle_action(view_menu, self.contacts_tab)
         add_toggle_action(view_menu, self.console_tab)
         add_toggle_action(view_menu, self.smart_contract_tab)
+        add_toggle_action(view_menu, self.delegations_tab)
 
         tools_menu = menubar.addMenu(_("&Tools"))
 
@@ -3172,6 +3176,34 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         except (BaseException,) as e:
             traceback.print_exc(file=sys.stderr)
             dialog.show_message(str(e))
+
+    def set_delegation(self, dele: 'Delegation'):
+        self.wallet.add_delegation(dele)
+        self.delegation_list.update()
+
+    def delete_delegation(self, addr: str):
+        self.wallet.delete_delegation(addr)
+        self.delegation_list.update()
+
+    def call_add_delegation(self, addr, staker, fee, gas_limit, gas_price, dialog):
+        # todo pod
+        pod = bfh('2068ab25fe65907b72118d08f0ce37c31d3003aa91920b77e917b814b9246c48763f863fdd481dbfcdecc811df1636e526c971312f7e5e11e82ed3e02bc161b71e')
+        args = [staker.lower(), fee, pod]
+        self.sendto_smart_contract(DELEGATION_CONTRACT, DELEGATE_ABI[1], args,
+                                   gas_limit, gas_price, 0, addr, dialog, False)
+
+    def call_remove_delegation(self, addr, gas_limit, gas_price, dialog):
+        self.sendto_smart_contract(DELEGATION_CONTRACT, DELEGATE_ABI[0], [],
+                                   gas_limit, gas_price, 0, addr, dialog, False)
+
+    def create_delegations_tab(self):
+        from .delegation_list import DelegationList
+        self.delegation_list = l = DelegationList(self)
+        return self.create_list_tab(l)
+
+    def delegation_dialog(self, dele=None, mode='add'):
+        d = DelegationDialog(self, dele, mode)
+        d.show()
 
     def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog, broadcast_done=None, preview=False):
         coins = self.get_coins()

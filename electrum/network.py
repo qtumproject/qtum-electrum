@@ -46,7 +46,7 @@ from .util import (log_exceptions, ignore_exceptions,
                    bfh, SilentTaskGroup, make_aiohttp_session, send_exception_to_crash_reporter,
                    is_hash256_str, is_non_negative_integer, bh2u)
 
-from .bitcoin import COIN, b58_address_to_hash160, TOKEN_TRANSFER_TOPIC
+from .bitcoin import COIN, b58_address_to_hash160, TOKEN_TRANSFER_TOPIC, DELEGATION_CONTRACT, DELEGATE_ABI, eth_output_decode
 from . import constants
 from . import blockchain
 from . import bitcoin
@@ -1368,3 +1368,10 @@ class Network(Logger):
         __, hash160 = b58_address_to_hash160(bind_addr)
         hash160 = bh2u(hash160)
         return await self.interface.session.send_request('blockchain.contract.event.get_history', [hash160, contract_addr, TOKEN_TRANSFER_TOPIC])
+
+    async def request_delegation_info(self, addr):
+        __, hash160 = b58_address_to_hash160(addr)
+        hash160 = bh2u(hash160)
+        datahex = 'bffe3486{}'.format(hash160.zfill(64))
+        result = await self.call_contract(DELEGATION_CONTRACT, datahex, '')
+        return eth_output_decode(DELEGATE_ABI[2], result)

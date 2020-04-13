@@ -41,7 +41,7 @@ from .logging import Logger
 if TYPE_CHECKING:
     from .network import Network
     from .wallet_db import WalletDB
-    from .bitcoin import Token
+    from .bitcoin import Token, Delegation
 
 
 TX_HEIGHT_FUTURE = -3
@@ -924,3 +924,14 @@ class AddressSynchronizer(Logger):
                 self.db.delete_token(key)
             if key in self.db.list_token_histories():
                 self.db.delete_token_history(key)
+
+    def add_delegation(self, dele: 'Delegation'):
+        self.db.set_delegation(dele)
+        if self.synchronizer:
+            #self.synchronizer.add_delegation(dele)
+            print('todo self.synchronizer.add_delegation')
+
+    def delete_delegation(self, key):
+        with self.token_lock:
+            if key in self.db.list_delegations():
+                self.db.delete_delegation(key)

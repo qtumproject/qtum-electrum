@@ -42,7 +42,7 @@ from .lnutil import ChannelConstraints, Outpoint, ShachainElement
 from .json_db import StoredDict, JsonDB, locked, modifier
 from .plugin import run_hook, plugin_loaders
 from .paymentrequest import PaymentRequest
-from .bitcoin import Token
+from .bitcoin import Token, Delegation
 
 if TYPE_CHECKING:
     from .storage import WalletStorage
@@ -1091,6 +1091,7 @@ class WalletDB(JsonDB):
         # txid -> raw tx
         self.token_txs = self.get_dict('token_txs')
         self.smart_contracts = self.get_dict('smart_contracts')
+        self.delegations = self.get_dict('delegations')
 
         if self.token_history:
             token_hist_txids = [x2[0] for x2 in reduce(lambda x1, y1: x1+y1, self.token_history.values())]
@@ -1165,6 +1166,25 @@ class WalletDB(JsonDB):
     @locked
     def list_tx_receipts(self) -> list:
         return list(self.tx_receipt.keys())
+
+    @modifier
+    def set_delegation(self, dele: Delegation):
+        self.delegations[dele.addr] = [dele.staker, dele.fee]
+
+    @modifier
+    def delete_delegation(self, addr: str):
+        self.delegations.pop(addr, None)
+
+    @locked
+    def get_delegation(self, addr: str) -> Optional[Delegation]:
+        dele = self.delegations.get(addr, [])
+        if len(dele) != 2:
+            return None
+        return Delegation(addr=addr, staker=dele[0], fee=dele[1])
+
+    @locked
+    def list_delegations(self) -> Sequence[str]:
+        return list(self.delegations.keys())
 
     @modifier
     def clear_history(self):
