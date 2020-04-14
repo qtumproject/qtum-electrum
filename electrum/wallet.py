@@ -1959,7 +1959,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
                             continue
 
                         # check user bind address
-                        _, hash160b = b58_address_to_hash160(bind_addr)
+                        __, hash160b = b58_address_to_hash160(bind_addr)
                         hash160 = bh2u(hash160b).zfill(64)
                         if hash160 not in topics:
                             self.logger.info("address mismatch")

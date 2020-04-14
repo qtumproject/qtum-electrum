@@ -621,7 +621,7 @@ class MyTreeView(QTreeView):
             self.setRowHidden(row_num, QModelIndex(), False)
             return
         for column in self.filter_columns:
-            txt, _ = self.text_txid_from_coordinate(row_num, column)
+            txt, __ = self.text_txid_from_coordinate(row_num, column)
             txt = txt.lower()
             if self.current_filter in txt:
                 # the filter matched, but the date filter might apply
