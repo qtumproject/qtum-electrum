@@ -3186,11 +3186,20 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.delegation_list.update()
 
     def call_add_delegation(self, addr, staker, fee, gas_limit, gas_price, dialog):
-        # todo pod
-        pod = bfh('2068ab25fe65907b72118d08f0ce37c31d3003aa91920b77e917b814b9246c48763f863fdd481dbfcdecc811df1636e526c971312f7e5e11e82ed3e02bc161b71e')
+        """
+        :param staker: hash160 str
+        """
+        if self.wallet.has_keystore_encryption():
+            password = self.password_dialog(_("Enter your password to proceed"))
+            if not password:
+                return
+        else:
+            password = None
+
+        pod = self.wallet.sign_message(addr, staker, password)
         args = [staker.lower(), fee, pod]
         self.sendto_smart_contract(DELEGATION_CONTRACT, DELEGATE_ABI[1], args,
-                                   gas_limit, gas_price, 0, addr, dialog, False)
+                                   gas_limit, gas_price, 0, addr, dialog, False, password)
 
     def call_remove_delegation(self, addr, gas_limit, gas_price, dialog):
         self.sendto_smart_contract(DELEGATION_CONTRACT, DELEGATE_ABI[0], [],
@@ -3205,7 +3214,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         d = DelegationDialog(self, dele, mode)
         d.show()
 
-    def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog, broadcast_done=None, preview=False):
+    def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog, broadcast_done=None, preview=False, password=None):
         coins = self.get_coins()
         try:
             tx = self.wallet.make_unsigned_transaction(coins=coins,
@@ -3244,17 +3253,18 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         if fee - gas_fee > confirm_rate * tx.estimated_size() / 1000:
             msg.append(_('Warning') + ': ' + _("The fee for this transaction seems unusually high."))
 
-        if self.wallet.has_keystore_encryption():
-            msg.append("")
-            msg.append(_("Enter your password to proceed"))
-            password = self.password_dialog('\n'.join(msg))
-            if not password:
-                return
-        else:
-            msg.append(_('Proceed?'))
-            password = None
-            if not self.question('\n'.join(msg)):
-                return
+        if not password:
+            if self.wallet.has_keystore_encryption():
+                msg.append("")
+                msg.append(_("Enter your password to proceed"))
+                password = self.password_dialog('\n'.join(msg))
+                if not password:
+                    return
+            else:
+                msg.append(_('Proceed?'))
+                password = None
+                if not self.question('\n'.join(msg)):
+                    return
 
         def sign_done(success):
             if success:
@@ -3321,13 +3331,13 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             self.logger.exception('')
             dialog.show_message(f'{e} {result}')
 
-    def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog, preview):
+    def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog, preview, password=None):
         try:
             abi_encoded = eth_abi_encode(abi, args)
             script = contract_script(gas_limit, gas_price, abi_encoded, address, opcodes.OP_CALL)
             outputs = [PartialTxOutput(scriptpubkey=script, value=amount)]
             tx_desc = 'contract sendto {}'.format(self.wallet.db.smart_contracts[address][0])
-            self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog, None, preview)
+            self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog, None, preview, password)
         except (BaseException,) as e:
             self.logger.exception('')
             dialog.show_message(str(e))
