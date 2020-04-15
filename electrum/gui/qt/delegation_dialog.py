@@ -36,12 +36,13 @@ class DelegationLayout(QGridLayout):
         if dele and dele.addr:
             self.addresses = [dele.addr]
         else:
-            self.addresses = [''] + self.dialog.parent().wallet.get_addresses_sort_by_balance()
-            addr_type, __ = b58_address_to_hash160(self.addresses[1])
-            if not addr_type == constants.net.ADDRTYPE_P2PKH:
-                self.dialog.show_message(_('only P2PKH address supports staking delegation'))
-                self.dialog.reject()
-                return
+            self.addresses = ['']
+            for addr in self.dialog.parent().wallet.get_addresses_sort_by_balance():
+                if addr in self.dialog.parent().wallet.db.list_delegations():
+                    continue
+                addr_type, __ = b58_address_to_hash160(addr)
+                if addr_type == constants.net.ADDRTYPE_P2PKH:
+                    self.addresses.append(addr)
 
         address_lb = QLabel(_("Address:"))
         self.address_combo = QComboBox()
