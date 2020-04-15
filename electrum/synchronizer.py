@@ -457,7 +457,10 @@ class Synchronizer(SynchronizerBase):
     async def _update_delegation_info(self, addr):
         try:
             r = await self.network.request_delegation_info(addr)
-            staker = hash160_to_b58_address(bfh(r[0][2:]), constants.net.ADDRTYPE_P2PKH)
+            if r[0] == '0x0000000000000000000000000000000000000000':
+                staker = ''
+            else:
+                staker = hash160_to_b58_address(bfh(r[0][2:]), constants.net.ADDRTYPE_P2PKH)
             fee = r[1]
             dele = self.wallet.db.get_delegation(addr)
             if dele and staker == dele.staker and fee == dele.fee:

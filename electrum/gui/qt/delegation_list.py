@@ -106,7 +106,8 @@ class DelegationList(MyTreeView):
                 copy_text = copy_text.strip()
             menu.addAction(_("Copy {}").format(column_title), lambda: self.place_text_on_clipboard(copy_text))
             menu.addAction(_("Update"), lambda: self.parent.delegation_dialog(dele, mode='update'))
-            menu.addAction(_("Remove Delegation"), lambda: self.parent.delegation_dialog(dele, mode='remove'))
+            if dele and dele.staker:
+                menu.addAction(_("Remove Delegation"), lambda: self.parent.delegation_dialog(dele, mode='remove'))
         menu.exec_(self.viewport().mapToGlobal(position))
 
     def place_text_on_clipboard(self, text: str, *, title: str = None) -> None:
