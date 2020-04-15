@@ -82,6 +82,7 @@ class AddressSynchronizer(Logger):
         self.lock = threading.RLock()
         self.transaction_lock = threading.RLock()
         self.token_lock = threading.RLock()
+        self.delegation_lock = threading.RLock()
         self.future_tx = {}  # type: Dict[str, int]  # txid -> blocks remaining
         # Transactions pending verification.  txid -> tx_height. Access with self.lock.
         self.unverified_tx = defaultdict(int)
@@ -926,12 +927,10 @@ class AddressSynchronizer(Logger):
                 self.db.delete_token_history(key)
 
     def add_delegation(self, dele: 'Delegation'):
-        self.db.set_delegation(dele)
-        if self.synchronizer:
-            #self.synchronizer.add_delegation(dele)
-            print('todo self.synchronizer.add_delegation')
+        with self.delegation_lock:
+            self.db.set_delegation(dele)
 
     def delete_delegation(self, key):
-        with self.token_lock:
+        with self.delegation_lock:
             if key in self.db.list_delegations():
                 self.db.delete_delegation(key)

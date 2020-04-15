@@ -282,7 +282,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
                          'new_transaction', 'status',
                          'banner', 'verified', 'fee', 'fee_histogram', 'on_quotes',
                          'on_history', 'channel', 'channels_updated',
-                         'payment_failed', 'payment_succeeded', 'on_token',
+                         'payment_failed', 'payment_succeeded', 'on_token', 'on_delegation',
                          'invoice_status', 'request_status', 'ln_gossip_sync_progress']
             # To avoid leaking references to "self" that prevent the
             # window from being GC-ed when closed, callbacks should be
@@ -328,6 +328,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.token_hist_model.refresh('fx_token')
         self.token_hist_list.update()
         self.token_balance_list.update()
+
+    def on_fx_delegation(self):
+        self.delegation_list.update()
 
     def on_fx_quotes(self):
         self.update_status()
@@ -435,6 +438,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             self.on_fx_history()
         elif event == 'on_token':
             self.on_fx_token()
+        elif event == 'on_delegation':
+            self.on_fx_delegation()
         elif event == 'channels_updated':
             self.channels_list.update_rows.emit(*args)
         elif event == 'channel':

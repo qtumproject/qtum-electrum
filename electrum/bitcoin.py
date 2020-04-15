@@ -763,7 +763,7 @@ class Token(NamedTuple):
 
 class Delegation(NamedTuple):
     addr: str
-    staker: str
+    staker: str     # base58 address
     fee: int
 
 
@@ -801,7 +801,7 @@ def eth_output_decode(abi, result):
 
 
 DELEGATION_CONTRACT = '0000000000000000000000000000000000000086'
-
+ADD_DELEGATION_TOPIC = 'a23803f3b2b56e71f2921c22b23c32ef596a439dbe03f7250e6b58a30eb910b5'
 
 DELEGATE_ABI = [
     {

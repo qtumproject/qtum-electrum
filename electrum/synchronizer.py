@@ -28,20 +28,23 @@ import binascii
 from typing import Dict, List, TYPE_CHECKING, Tuple
 from collections import defaultdict
 import logging
+from concurrent.futures import CancelledError
 
 from aiorpcx import TaskGroup, run_in_thread, RPCError
 
 from .transaction import Transaction, PartialTransaction
-from .util import bh2u, make_aiohttp_session, NetworkJobOnDefaultServer
-from .bitcoin import address_to_scripthash, is_address, b58_address_to_hash160, hash160_to_p2pkh, TOKEN_TRANSFER_TOPIC
+from .util import bh2u, make_aiohttp_session, NetworkJobOnDefaultServer, bfh
+from .bitcoin import (address_to_scripthash, is_address, b58_address_to_hash160, hash160_to_b58_address,
+                      hash160_to_p2pkh, TOKEN_TRANSFER_TOPIC, Delegation, DELEGATION_CONTRACT, ADD_DELEGATION_TOPIC)
 from .network import UntrustedServerReturnedError
 from .logging import Logger
 from .interface import GracefulDisconnect
+from . import constants
 
 if TYPE_CHECKING:
     from .network import Network
     from .address_synchronizer import AddressSynchronizer
-    from .bitcoin import Token
+    from .bitcoin import Token, Delegation
 
 
 class SynchronizerFailure(Exception): pass
@@ -85,12 +88,14 @@ class SynchronizerBase(NetworkJobOnDefaultServer):
         self.status_queue = asyncio.Queue()
         self.token_add_queue = asyncio.Queue()
         self.token_status_queue = asyncio.Queue()
+        self.delegation_status_queue = asyncio.Queue()
 
     async def _start_tasks(self):
         try:
             async with self.taskgroup as group:
                 await group.spawn(self.send_subscriptions())
                 await group.spawn(self.handle_status())
+                await group.spawn(self.handle_delegation_status())
                 await group.spawn(self.send_token_subscriptions())
                 await group.spawn(self.handle_token_status())
                 await group.spawn(self.main())
@@ -98,12 +103,15 @@ class SynchronizerBase(NetworkJobOnDefaultServer):
             # we are being cancelled now
             self.session.unsubscribe(self.status_queue)
             self.session.unsubscribe(self.token_status_queue)
+            self.session.unsubscribe(self.delegation_status_queue)
 
     def _reset_request_counters(self):
         self._requests_sent = 0
         self._requests_answered = 0
         self._token_requests_sent = 0
         self._token_requests_answered = 0
+        self._delegation_requests_sent = 0
+        self._delegation_requests_answered = 0
 
     def add(self, addr):
         asyncio.run_coroutine_threadsafe(self._add_address(addr), self.asyncio_loop)
@@ -130,6 +138,9 @@ class SynchronizerBase(NetworkJobOnDefaultServer):
         """Handle the change of the status of an address."""
         raise NotImplementedError()  # implemented by subclasses
 
+    async def _on_delegation_status(self, addr, status):
+        raise NotImplementedError()  # implemented by subclasses
+
     async def send_subscriptions(self):
         async def subscribe_to_address(addr):
             h = address_to_scripthash(addr)
@@ -144,9 +155,23 @@ class SynchronizerBase(NetworkJobOnDefaultServer):
             self._requests_answered += 1
             self.requested_addrs.remove(addr)
 
+        async def subscribe_to_delegation(addr):
+            self._delegation_requests_sent += 1
+            try:
+                await self.session.subscribe('blockchain.contract.event.subscribe',
+                                             [bh2u(b58_address_to_hash160(addr)[1]), DELEGATION_CONTRACT,
+                                              ADD_DELEGATION_TOPIC],
+                                             self.delegation_status_queue)
+            except RPCError as e:
+                if e.message == 'history too large':  # no unique error code
+                    raise GracefulDisconnect(e, log_level=logging.ERROR) from e
+                raise
+            self._delegation_requests_answered += 1
+
         while True:
             addr = await self.add_queue.get()
             await self.taskgroup.spawn(subscribe_to_address, addr)
+            await self.taskgroup.spawn(subscribe_to_delegation, addr)
 
     async def send_token_subscriptions(self):
         async def subscribe_to_token(key):
@@ -181,9 +206,15 @@ class SynchronizerBase(NetworkJobOnDefaultServer):
             await self.taskgroup.spawn(self._on_token_status, key, status)
             self._processed_some_notifications = True
 
+    async def handle_delegation_status(self):
+        while True:
+            addr, __, __, status = await self.delegation_status_queue.get()
+            await self.taskgroup.spawn(self._on_delegation_status, addr, status)
+            self._processed_some_notifications = True
+
     def num_requests_sent_and_answered(self) -> Tuple[int, int]:
-        requests_sent = self._requests_sent + self._token_requests_sent
-        requests_answered = self._requests_answered + self._token_requests_answered
+        requests_sent = self._requests_sent + self._token_requests_sent + self._delegation_requests_sent
+        requests_answered = self._requests_answered + self._token_requests_answered + self._delegation_requests_answered
         return requests_sent, requests_answered
 
     async def main(self):
@@ -422,6 +453,26 @@ class Synchronizer(SynchronizerBase):
         self.wallet.network.trigger_callback('new_token_transaction', tx)
         if not self.requested_token_txs and not self.requested_tx_receipt:
             self.network.trigger_callback('on_token')
+
+    async def _update_delegation_info(self, addr):
+        try:
+            r = await self.network.request_delegation_info(addr)
+            staker = hash160_to_b58_address(bfh(r[0][2:]), constants.net.ADDRTYPE_P2PKH)
+            fee = r[1]
+            dele = self.wallet.db.get_delegation(addr)
+            if dele and staker == dele.staker and fee == dele.fee:
+                return
+            self.wallet.db.set_delegation(Delegation(addr=addr, staker=staker, fee=fee))
+            self.network.trigger_callback('on_delegation')
+        except CancelledError:
+            pass
+        except BaseException as e:
+            self.logger.error(f'_update_delegation_info error: {type(e)} {e}')
+
+    async def _on_delegation_status(self, h160_addr, status):
+        if status is None:
+            return
+        await self._update_delegation_info(hash160_to_b58_address(bfh(h160_addr), constants.net.ADDRTYPE_P2PKH))
 
     async def main(self):
         self.wallet.set_up_to_date(False)
