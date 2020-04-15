@@ -35,7 +35,6 @@ class DelegationList(MyTreeView):
         self.setSelectionMode(QAbstractItemView.ExtendedSelection)
         self.setSortingEnabled(True)
         self.setModel(QStandardItemModel(self))
-        self.update()
 
     def get_toolbar_buttons(self):
         return []

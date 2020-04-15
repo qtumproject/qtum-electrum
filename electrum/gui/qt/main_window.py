@@ -1007,6 +1007,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.token_hist_model.refresh('update_tabs')
         self.token_hist_list.update()
         self.smart_contract_list.update()
+        self.delegation_list.update()
 
         self.channels_list.update_rows.emit(wallet)
         self.update_completions()
