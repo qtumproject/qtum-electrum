@@ -85,7 +85,7 @@ class DelegationList(MyTreeView):
         except:
             return
         dele = self.parent.wallet.db.get_delegation(addr)
-        self.parent.delegation_dialog(dele, mode='update')
+        self.parent.delegation_dialog(dele, mode='edit')
 
     def create_menu(self, position: QPoint):
         menu = QMenu()
@@ -105,9 +105,9 @@ class DelegationList(MyTreeView):
             if col == self.Columns.BALANCE:
                 copy_text = copy_text.strip()
             menu.addAction(_("Copy {}").format(column_title), lambda: self.place_text_on_clipboard(copy_text))
-            menu.addAction(_("Update"), lambda: self.parent.delegation_dialog(dele, mode='update'))
+            menu.addAction(_("Edit"), lambda: self.parent.delegation_dialog(dele, mode='edit'))
             if dele and dele.staker:
-                menu.addAction(_("Remove Delegation"), lambda: self.parent.delegation_dialog(dele, mode='remove'))
+                menu.addAction(_("Undelegate"), lambda: self.parent.delegation_dialog(dele, mode='undelegate'))
         menu.exec_(self.viewport().mapToGlobal(position))
 
     def place_text_on_clipboard(self, text: str, *, title: str = None) -> None:

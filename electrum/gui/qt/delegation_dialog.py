@@ -104,12 +104,12 @@ class DelegationLayout(QGridLayout):
             self.staker_e.setText(self.dele.staker)
             self.fee_e.setText(str(self.dele.fee))
 
-        dele_readonly = self.mode == 'remove' or (self.mode == 'add' and dele_exist)
+        dele_readonly = self.mode == 'undelegate' or (self.mode == 'add' and dele_exist)
         if dele_readonly:
             self.staker_e.setReadOnly(True)
             self.fee_e.setReadOnly(True)
 
-        can_edit_gas = self.mode in ['remove', 'update'] or (self.mode == 'add' and not dele_exist)
+        can_edit_gas = self.mode in ['undelegate', 'edit'] or (self.mode == 'add' and not dele_exist)
         if can_edit_gas:
             # add e existed delegation
             self.optional_lb.setHidden(False)
@@ -163,11 +163,11 @@ class DelegationLayout(QGridLayout):
 
             if self.mode == 'add' and dele_exist:
                 self.dialog.parent().set_delegation(self.dele)
-            elif self.mode in ['update', 'add']:
+            elif self.mode in ['edit', 'add']:
                 if dele_exist and self.staker_e.text() == self.dele.staker and fee == self.dele.fee:
                     return
                 self.dialog.parent().call_add_delegation(addr, staker, fee, gas_limit, gas_price, self.dialog)
-            elif self.mode == 'remove':
+            elif self.mode == 'undelegate':
                 self.dialog.parent().call_remove_delegation(addr, gas_limit, gas_price, self.dialog)
 
             self.dialog.reject()
