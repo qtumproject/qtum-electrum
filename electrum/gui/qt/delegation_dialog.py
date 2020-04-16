@@ -159,6 +159,9 @@ class DelegationLayout(QGridLayout):
                 raise Exception('please select a address')
 
             gas_limit, gas_price = self.parse_values()
+            if gas_limit < 2250000:
+                raise Exception('a minimum of 2,250,000 gas_limit is required')
+
             dele_exist = self.dele and self.dele.staker and self.dele.fee
 
             if self.mode == 'add' and dele_exist:
