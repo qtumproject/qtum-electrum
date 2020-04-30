@@ -934,10 +934,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
         try:
             tx = self.db.get_transaction(tx_hash)
             if tx.outputs()[0].is_coinstake():
-                is_relevant, is_mine, delta, fee = self.get_wallet_delta(tx)
-                if delta and 0 < delta < 4 * 10 ** 7:
-                    return _('contract gas refund')
-                return _('stake mined')
+                return 'coinstake'
             elif tx.inputs()[0].is_coinbase_input():
                 return 'coinbase'
         except (BaseException,) as e:
