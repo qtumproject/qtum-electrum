@@ -34,7 +34,7 @@ from aiorpcx import TaskGroup, run_in_thread, RPCError
 
 from . import util
 from .transaction import Transaction, PartialTransaction
-from .util import bh2u, make_aiohttp_session, NetworkJobOnDefaultServer, random_shuffled_copy
+from .util import bh2u, make_aiohttp_session, NetworkJobOnDefaultServer, random_shuffled_copy, bfh
 from .bitcoin import (address_to_scripthash, is_address, b58_address_to_hash160, hash160_to_b58_address,
                       hash160_to_p2pkh, TOKEN_TRANSFER_TOPIC, Delegation, DELEGATION_CONTRACT,
                       ADD_DELEGATION_TOPIC)
@@ -422,9 +422,9 @@ class Synchronizer(SynchronizerBase):
         self.wallet.receive_tx_receipt_callback(tx_hash, result)
         self.logger.info(f"received tx_receipt {tx_hash} height: {tx_height}")
         # callbacks
-        self.wallet.network.trigger_callback('new_transaction_receipt', result)
+        util.trigger_callback('new_transaction_receipt', self.wallet, result)
         if not self.requested_tx_receipt and not self.requested_token_txs:
-            self.network.trigger_callback('on_token')
+            util.trigger_callback('on_token', self.wallet)
 
     async def _get_token_transaction(self, tx_hash, *, allow_server_not_finding_tx=False):
         self._token_requests_sent += 1
@@ -455,9 +455,9 @@ class Synchronizer(SynchronizerBase):
         self.wallet.receive_token_tx_callback(tx_hash, tx, tx_height)
         self.logger.info(f"received tx {tx_hash} height: {tx_height} bytes: {len(raw_tx)}")
         # callbacks
-        self.wallet.network.trigger_callback('new_token_transaction', tx)
+        util.trigger_callback('new_token_transaction', self.wallet, tx)
         if not self.requested_token_txs and not self.requested_tx_receipt:
-            self.network.trigger_callback('on_token')
+            util.trigger_callback('on_token', self.wallet)
 
     async def _update_delegation_info(self, addr):
         try:
@@ -471,7 +471,7 @@ class Synchronizer(SynchronizerBase):
             if dele and staker == dele.staker and fee == dele.fee:
                 return
             self.wallet.db.set_delegation(Delegation(addr=addr, staker=staker, fee=fee))
-            self.network.trigger_callback('on_delegation')
+            util.trigger_callback('on_delegation', self.wallet)
         except CancelledError:
             pass
         except BaseException as e:
