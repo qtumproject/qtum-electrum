@@ -112,7 +112,7 @@ class DelegationList(MyTreeView):
     def place_text_on_clipboard(self, text: str, *, title: str = None) -> None:
         if is_address(text):
             try:
-                self.wallet.check_address(text)
+                self.parent.wallet.check_address_for_corruption(text)
             except InternalAddressCorruption as e:
                 self.parent.show_error(str(e))
                 raise

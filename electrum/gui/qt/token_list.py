@@ -120,12 +120,11 @@ class TokenBalanceList(MyTreeView):
     def place_text_on_clipboard(self, text):
         if is_address(text):
             try:
-                self.wallet = self.parent.wallet
-                self.wallet.check_address(text)
+                self.parent.wallet.check_address_for_corruption(text)
             except InternalAddressCorruption as e:
                 self.parent.show_error(str(e))
                 raise
-        self.parent.app.clipboard().setText(text)
+        super().place_text_on_clipboard(text)
 
 
 class TokenHistoryColumns(IntEnum):
