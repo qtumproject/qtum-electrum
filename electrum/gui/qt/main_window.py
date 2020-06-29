@@ -3364,6 +3364,14 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         return self.create_list_tab(l)
 
     def delegation_dialog(self, dele=None, mode='add'):
+        if isinstance(self.wallet.keystore, TrezorKeyStore):
+            self.show_message('Trezor does not support staking delegation for now')
+            return
+
+        if self.network.get_server_height() < constants.net.OFFLINE_STAKE_HEIGHT:
+            self.show_message('Offline staking not activated')
+            return
+
         d = DelegationDialog(self, dele, mode)
         d.show()
 

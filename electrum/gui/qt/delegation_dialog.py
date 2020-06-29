@@ -11,7 +11,6 @@ from .amountedit import AmountEdit
 from electrum.bitcoin import b58_address_to_hash160, hash160_to_b58_address, is_hash160, Delegation, bfh, bh2u
 from electrum import constants
 from electrum.i18n import _
-from electrum.plugins.trezor.trezor import TrezorKeyStore
 from electrum.bitcoin import Delegation
 
 
@@ -27,11 +26,6 @@ class DelegationLayout(QGridLayout):
         self.dialog = dialog
         self.dele = dele
         self.mode = mode
-
-        if isinstance(self.dialog.parent().wallet.keystore, TrezorKeyStore):
-            self.dialog.show_message('Trezor does not support staking delegation for now')
-            self.dialog.reject()
-            return
 
         if dele and dele.addr:
             self.addresses = [dele.addr]

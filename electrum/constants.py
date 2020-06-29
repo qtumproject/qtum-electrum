@@ -85,6 +85,7 @@ class QtumMainnet(AbstractNet):
 
     QIP5_FORK_HEIGHT = 466600
     QIP9_FORK_HEIGHT = 466600
+    OFFLINE_STAKE_HEIGHT = 680000
 
     LN_REALM_BYTE = 0
     LN_DNS_SEEDS = []
@@ -139,6 +140,7 @@ class QtumTestnet(AbstractNet):
 
     QIP5_FORK_HEIGHT = 446320
     QIP9_FORK_HEIGHT = 446320
+    OFFLINE_STAKE_HEIGHT = 625000
 
     LN_REALM_BYTE = 0
     LN_DNS_SEEDS = []
