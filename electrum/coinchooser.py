@@ -475,6 +475,9 @@ class CoinChooserPrivacy(CoinChooserRandom):
 
 class CoinChooserQtum(CoinChooserPrivacy):
 
+    def __init__(self):
+        super().__init__(enable_output_value_rounding=False)
+
     def make_tx(self, *, coins: Sequence[PartialTxInput], inputs: List[PartialTxInput],
                 outputs: List[PartialTxOutput], change_addrs: Sequence[str],
                 fee_estimator_vb: Callable, dust_threshold: int, gas_fee=0, sender=None):
