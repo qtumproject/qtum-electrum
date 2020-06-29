@@ -3307,6 +3307,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         return splitter
 
     def token_add_dialog(self):
+        if isinstance(self.wallet.keystore, TrezorKeyStore):
+            self.show_message('Trezor does not support QRC20 Token for now')
+            return
         d = TokenAddDialog(self)
         d.show()
 

@@ -12,7 +12,6 @@ from .amountedit import AmountEdit
 from electrum.bitcoin import is_b58_address, b58_address_to_hash160, bh2u, is_hash160, Token
 from electrum import constants
 from electrum.i18n import _
-from electrum.plugins.trezor.trezor import TrezorKeyStore
 
 
 class TokenAddLayout(QGridLayout):
@@ -26,12 +25,6 @@ class TokenAddLayout(QGridLayout):
         self.setColumnStretch(3, 1)
         self.callback = callback
         self.dialog = dialog
-
-        if isinstance(self.dialog.parent().wallet.keystore, TrezorKeyStore):
-            self.dialog.show_message('Trezor does not support QRC20 Token for now')
-            self.dialog.reject()
-            return
-
         self.addresses = self.dialog.parent().wallet.get_addresses_sort_by_balance()
 
         addr_type, __ = b58_address_to_hash160(self.addresses[0])
