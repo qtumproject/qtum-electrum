@@ -32,10 +32,12 @@ from concurrent.futures import CancelledError
 
 from aiorpcx import TaskGroup, run_in_thread, RPCError
 
+from . import util
 from .transaction import Transaction, PartialTransaction
-from .util import bh2u, make_aiohttp_session, NetworkJobOnDefaultServer, bfh
+from .util import bh2u, make_aiohttp_session, NetworkJobOnDefaultServer, random_shuffled_copy
 from .bitcoin import (address_to_scripthash, is_address, b58_address_to_hash160, hash160_to_b58_address,
-                      hash160_to_p2pkh, TOKEN_TRANSFER_TOPIC, Delegation, DELEGATION_CONTRACT, ADD_DELEGATION_TOPIC)
+                      hash160_to_p2pkh, TOKEN_TRANSFER_TOPIC, Delegation, DELEGATION_CONTRACT,
+                      ADD_DELEGATION_TOPIC)
 from .network import UntrustedServerReturnedError
 from .logging import Logger
 from .interface import GracefulDisconnect
@@ -268,6 +270,9 @@ class Synchronizer(SynchronizerBase):
         hashes = set(map(lambda item: item['tx_hash'], result))
         hist = list(map(lambda item: (item['tx_hash'], item['height']), result))
         # tx_fees
+        for item in result:
+            if item['height'] in (-1, 0) and 'fee' not in item:
+                raise Exception("server response to get_history contains unconfirmed tx without fee")
         tx_fees = [(item['tx_hash'], item.get('fee')) for item in result]
         tx_fees = dict(filter(lambda x:x[1] is not None, tx_fees))
         # Check that txids are unique
@@ -398,7 +403,7 @@ class Synchronizer(SynchronizerBase):
         self.wallet.receive_tx_callback(tx_hash, tx, tx_height)
         self.logger.info(f"received tx {tx_hash} height: {tx_height} bytes: {len(raw_tx)}")
         # callbacks
-        self.wallet.network.trigger_callback('new_transaction', self.wallet, tx)
+        util.trigger_callback('new_transaction', self.wallet, tx)
 
     async def _get_transaction_receipt(self, tx_hash, *, allow_server_not_finding_tx=False):
         self._token_requests_sent += 1
@@ -487,7 +492,7 @@ class Synchronizer(SynchronizerBase):
             if history == ['*']: continue
             await self._request_missing_txs(history, allow_server_not_finding_tx=True)
         # add addresses to bootstrap
-        for addr in self.wallet.get_addresses():
+        for addr in random_shuffled_copy(self.wallet.get_addresses()):
             await self._add_address(addr)
 
         # request tokens and missing token txns
@@ -512,7 +517,7 @@ class Synchronizer(SynchronizerBase):
                 if up_to_date:
                     self._reset_request_counters()
                 self.wallet.set_up_to_date(up_to_date)
-                self.wallet.network.trigger_callback('wallet_updated', self.wallet)
+                util.trigger_callback('wallet_updated', self.wallet)
 
 
 class Notifier(SynchronizerBase):
@@ -522,7 +527,7 @@ class Notifier(SynchronizerBase):
     def __init__(self, network):
         SynchronizerBase.__init__(self, network)
         self.watched_addresses = defaultdict(list)  # type: Dict[str, List[str]]
-        self.start_watching_queue = asyncio.Queue()
+        self._start_watching_queue = asyncio.Queue()  # type: asyncio.Queue[Tuple[str, str]]
 
     async def main(self):
         # resend existing subscriptions if we were restarted
@@ -530,11 +535,20 @@ class Notifier(SynchronizerBase):
             await self._add_address(addr)
         # main loop
         while True:
-            addr, url = await self.start_watching_queue.get()
+            addr, url = await self._start_watching_queue.get()
             self.watched_addresses[addr].append(url)
             await self._add_address(addr)
 
+    async def start_watching_addr(self, addr: str, url: str):
+        await self._start_watching_queue.put((addr, url))
+
+    async def stop_watching_addr(self, addr: str):
+        self.watched_addresses.pop(addr, None)
+        # TODO blockchain.scripthash.unsubscribe
+
     async def _on_address_status(self, addr, status):
+        if addr not in self.watched_addresses:
+            return
         self.logger.info(f'new status for addr {addr}')
         headers = {'content-type': 'application/json'}
         data = {'address': addr, 'status': status}

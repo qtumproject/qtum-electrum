@@ -16,12 +16,14 @@ home = 'C:\\electrum\\'
 
 # see https://github.com/pyinstaller/pyinstaller/issues/2005
 hiddenimports = []
+hiddenimports += collect_submodules('pkg_resources')  # workaround for https://github.com/pypa/setuptools/issues/1963
 hiddenimports += collect_submodules('trezorlib')
 hiddenimports += collect_submodules('safetlib')
 hiddenimports += collect_submodules('btchip')
 hiddenimports += collect_submodules('keepkeylib')
 hiddenimports += collect_submodules('websocket')
 hiddenimports += collect_submodules('ckcc')
+hiddenimports += collect_submodules('bitbox02')
 hiddenimports += ['PyQt5.QtPrintSupport']  # needed by Revealer
 
 
@@ -35,6 +37,7 @@ binaries += [('C:/tmp/libusb-1.0.dll', '.')]
 
 datas = [
     (home+'electrum/*.json', 'electrum'),
+    (home+'electrum/lnwire/*.csv', 'electrum/lnwire'),
     (home+'electrum/wordlist/english.txt', 'electrum/wordlist'),
     (home+'electrum/locale', 'electrum/locale'),
     (home+'electrum/plugins', 'electrum/plugins'),
@@ -46,8 +49,7 @@ datas += collect_data_files('safetlib')
 datas += collect_data_files('btchip')
 datas += collect_data_files('keepkeylib')
 datas += collect_data_files('ckcc')
-datas += collect_data_files('jsonrpcserver')
-datas += collect_data_files('jsonrpcclient')
+datas += collect_data_files('bitbox02')
 
 # We don't put these files in to actually include them in the script but to make the Analysis method scan them for imports
 a = Analysis([home+'run_electrum',

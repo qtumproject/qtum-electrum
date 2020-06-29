@@ -16,14 +16,14 @@ from electrum import ecc
 from electrum.i18n import _
 from electrum.util import make_aiohttp_session
 from electrum.logging import Logger
+from electrum.network import Network
 
 
 class UpdateCheck(QDialog, Logger):
     url = "https://api.github.com/repos/qtumproject/qtum-electrum/releases/latest"
     download_url = "https://github.com/qtumproject/qtum-electrum/releases/latest"
 
-    def __init__(self, main_window, latest_version=None):
-        self.main_window = main_window
+    def __init__(self, *, latest_version=None):
         QDialog.__init__(self)
         self.setWindowTitle('Qtum Electrum - ' + _('Update Check'))
         self.content = QVBoxLayout()
@@ -50,7 +50,7 @@ class UpdateCheck(QDialog, Logger):
 
         self.update_view(latest_version)
 
-        self.update_check_thread = UpdateCheckThread(self.main_window)
+        self.update_check_thread = UpdateCheckThread()
         self.update_check_thread.checked.connect(self.on_version_retrieved)
         self.update_check_thread.failed.connect(self.on_retrieval_failed)
         self.update_check_thread.start()
@@ -94,10 +94,10 @@ class UpdateCheckThread(QThread, Logger):
     checked = pyqtSignal(object)
     failed = pyqtSignal(object)
 
-    def __init__(self, main_window):
+    def __init__(self):
         QThread.__init__(self)
         Logger.__init__(self)
-        self.main_window = main_window
+        self.network = Network.get_instance()
 
     @property
     async def get_update_info(self):
@@ -111,12 +111,11 @@ class UpdateCheckThread(QThread, Logger):
                 return StrictVersion(version_num.strip())
 
     def run(self):
-        network = self.main_window.network
-        if not network:
+        if not self.network:
             self.failed.emit()
             return
         try:
-            update_info = asyncio.run_coroutine_threadsafe(self.get_update_info, network.asyncio_loop).result()
+            update_info = asyncio.run_coroutine_threadsafe(self.get_update_info, self.network.asyncio_loop).result()
         except Exception as e:
             self.logger.info(f"got exception: '{repr(e)}'")
             self.failed.emit(repr(e))
