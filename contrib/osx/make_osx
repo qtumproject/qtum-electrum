@@ -139,8 +139,7 @@ DoCodeSignMaybe "CalinsQRReader.app" "${d}/build/Release/CalinsQRReader.app"
 
 
 info "Installing requirements..."
-python3 -m pip install --no-dependencies -Ir ./contrib/deterministic-build/requirements.txt --user || \
-python3 -m pip install -Ir ./contrib/deterministic-build/requirements-eth.txt --user \
+python3 -m pip install --no-dependencies -Ir ./contrib/deterministic-build/requirements.txt --user \
     || fail "Could not install requirements"
 
 info "Installing hardware wallet requirements..."
@@ -151,6 +150,9 @@ info "Installing dependencies specific to binaries..."
 python3 -m pip install --no-dependencies -Ir ./contrib/deterministic-build/requirements-binaries.txt --user \
     || fail "Could not install dependencies specific to binaries"
 
+info "Installing eth requirements..."
+python3 -m pip install -Ir ./contrib/deterministic-build/requirements-eth.txt --user \
+    || fail "Could not install eth requirements"
 
 info "Building $PACKAGE..."
 python3 -m pip install --no-dependencies --user . > /dev/null || fail "Could not build $PACKAGE"
