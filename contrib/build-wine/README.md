@@ -8,6 +8,12 @@ This assumes an Ubuntu (x86_64) host, but it should not be too hard to adapt to 
 similar system. The docker commands should be executed in the project's root
 folder.
 
+0. clone code without `--recursive`
+    
+    ```
+    $ git clone https://github.com/qtumproject/qtum-electrum.git 
+    ```
+
 1. Install Docker
 
     ```
@@ -20,6 +26,7 @@ folder.
 2. Build image
 
     ```
+    $ cd qtum-electrum
     $ sudo docker build -t qtum-electrum-wine-builder-img contrib/build-wine
     ```
 

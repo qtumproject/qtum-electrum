@@ -12,6 +12,11 @@ We currently only build a single AppImage, for x86_64 architecture.
 Help to adapt these scripts to build for (some flavor of) ARM would be welcome,
 see [issue #5159](https://github.com/spesmilo/electrum/issues/5159).
 
+0. clone code without `--recursive`
+    
+    ```
+    $ git clone https://github.com/qtumproject/qtum-electrum.git 
+    ```
 
 1. Install Docker
 
@@ -25,6 +30,7 @@ see [issue #5159](https://github.com/spesmilo/electrum/issues/5159).
 2. Build image
 
     ```
+    $ cd qtum-electrum
     $ sudo docker build -t qtum-electrum-appimage-builder-img contrib/build-linux/appimage
     ```
 
