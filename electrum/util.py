@@ -781,15 +781,11 @@ def time_difference(distance_in_time, include_seconds):
 mainnet_block_explorers = {
     'qtum.info': ('https://qtum.info/',
                   {'tx': 'tx/', 'addr': 'address/', 'contract': 'contract/'}),
-    'explorer.qtum.org': ('https://explorer.qtum.org/',
-                          {'tx': 'tx/', 'addr': 'address/', 'contract': 'contract/'})
 }
 
 testnet_block_explorers = {
     'qtum.info': ('https://testnet.qtum.info/',
                   {'tx': 'tx/', 'addr': 'address/', 'contract': 'contract/'}),
-    'explorer.qtum.org': ('https://testnet.qtum.org/',
-                          {'tx': 'tx/', 'addr': 'address/', 'contract': 'contract/'}),
 }
 
 def block_explorer_info():
