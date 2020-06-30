@@ -3379,6 +3379,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         d.show()
 
     def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog, broadcast_done=None, preview=False, password=None):
+        addr_type, __ = b58_address_to_hash160(sender)
+        if not addr_type == constants.net.ADDRTYPE_P2PKH:
+            dialog.show_message(_('only P2PKH address can call contract'))
+            return
+
         coins = self.get_coins()
         try:
             tx = self.wallet.make_unsigned_transaction(coins=coins,
