@@ -21,6 +21,34 @@ Qt interface, install the Qt dependencies::
 
     sudo apt-get install python3-pyqt5
 
+For elliptic curve operations, `libsecp256k1`_ is a required dependency::
+
+    sudo apt-get install libsecp256k1-0
+
+Alternatively, when running from a cloned repository, a script is provided to build
+libsecp256k1 yourself::
+
+    sudo apt-get install automake libtool
+    ./contrib/make_libsecp256k1.sh
+
+Due to the need for fast symmetric ciphers, either one of `pycryptodomex`_
+or `cryptography`_ is required. Install from your package manager
+(or from pip)::
+
+    sudo apt-get install python3-cryptography
+
+
+If you would like hardware wallet support, see `this`_.
+
+.. _libsecp256k1: https://github.com/bitcoin-core/secp256k1
+.. _pycryptodomex: https://github.com/Legrandin/pycryptodome
+.. _cryptography: https://github.com/pyca/cryptography
+.. _this: https://github.com/spesmilo/electrum-docs/blob/master/hardware-linux.rst
+
+
+Running from tar.gz
+-------------------
+
 If you downloaded the official package (tar.gz), you can run
 Electrum from its root directory without installing it on your
 system; all the python dependencies are included in the 'packages'
@@ -30,22 +58,17 @@ directory. To run Electrum from its root directory, just do::
 
 You can also install Electrum on your system, by running this command(qtum-electrum may hava a conflict with bitcoin electrum)::
 
-    sudo apt-get install python3-setuptools
-    python3 -m pip install .[fast]
+    sudo apt-get install python3-setuptools python3-pip
+    python3 -m pip install --user
 
 This will download and install the Python dependencies used by
 Electrum instead of using the 'packages' directory.
-The 'fast' extra contains some optional dependencies that we think
-are often useful but they are not strictly needed.
-
-If you cloned the git repository, you need to compile extra files
-before you can run Electrum. Read the next section, "Development
-Version".
+It will also place an executable named :code:`electrum` in :code:`~/.local/bin`,
+so make sure that is on your :code:`PATH` variable.
 
 
-
-Development version
-===================
+Development version (git clone)
+-------------------------------
 
 Check out the code from GitHub::
 
@@ -56,13 +79,8 @@ Check out the code from GitHub::
 Run install (this should install dependencies)::
 
     python3 -m pip install -r ./contrib/requirements/requirements-eth.txt
-    python3 -m pip install .[fast]
+    python3 -m pip install --user -e .
 
-
-Compile the protobuf description file::
-
-    sudo apt-get install protobuf-compiler
-    protoc --proto_path=electrum --python_out=electrum electrum/paymentrequest.proto
 
 Create translations (optional)::
 
@@ -70,6 +88,9 @@ Create translations (optional)::
     ./contrib/make_locale
 
 
+Finally, to start Electrum::
+
+    ./run_electrum
 
 
 Creating Binaries
@@ -78,7 +99,7 @@ Creating Binaries
 Linux (tarball)
 ---------------
 
-See :code:`contrib/build-linux/README.md`.
+See :code:`contrib/build-linux/sdist/README.md`.
 
 
 Linux (AppImage)
