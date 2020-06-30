@@ -103,7 +103,7 @@ class UpdateCheckThread(QThread, Logger):
     async def get_update_info(self):
         # note: Use long timeout here as it is not critical that we get a response fast,
         #       and it's bad not to get an update notification just because we did not wait enough.
-        async with make_aiohttp_session(proxy=self.main_window.network.proxy, timeout=120) as session:
+        async with make_aiohttp_session(proxy=self.network.proxy, timeout=120) as session:
             async with session.get(UpdateCheck.url) as result:
                 version_dict = await result.json(content_type=None)
                 version_num = version_dict.get("tag_name", '')
