@@ -145,8 +145,8 @@ class DelegationLayout(QGridLayout):
                 staker = bh2u(staker)
 
             fee = int(self.fee_e.text())
-            if fee < 0 or fee > 99:
-                raise Exception('fee should between 0 and 99')
+            if fee < 0 or fee > 100:
+                raise Exception('fee should between 0 and 100')
 
             addr = self.addresses[self.address_combo.currentIndex()]
             if not addr:
