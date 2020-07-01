@@ -3355,11 +3355,17 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         pod = self.wallet.sign_message(addr, staker, password)
         args = [staker.lower(), fee, pod]
         self.sendto_smart_contract(DELEGATION_CONTRACT, DELEGATE_ABI[1], args,
-                                   gas_limit, gas_price, 0, addr, dialog, False, password)
+                                   gas_limit, gas_price, 0, addr, dialog, False, password, tx_desc="add delegation")
 
     def call_remove_delegation(self, addr, gas_limit, gas_price, dialog):
+        if self.wallet.has_keystore_encryption():
+            password = self.password_dialog(_("Enter your password to proceed"))
+            if not password:
+                return
+        else:
+            password = None
         self.sendto_smart_contract(DELEGATION_CONTRACT, DELEGATE_ABI[0], [],
-                                   gas_limit, gas_price, 0, addr, dialog, False)
+                                   gas_limit, gas_price, 0, addr, dialog, False, password, tx_desc="remove delegation")
 
     def create_delegations_tab(self):
         from .delegation_list import DelegationList
@@ -3500,12 +3506,13 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             self.logger.exception('')
             dialog.show_message(f'{e} {result}')
 
-    def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog, preview, password=None):
+    def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog, preview, password=None, tx_desc=None):
         try:
             abi_encoded = eth_abi_encode(abi, args)
             script = contract_script(gas_limit, gas_price, abi_encoded, address, opcodes.OP_CALL)
             outputs = [PartialTxOutput(scriptpubkey=script, value=amount)]
-            tx_desc = 'contract sendto {}'.format(self.wallet.db.smart_contracts[address][0])
+            if tx_desc is None:
+                tx_desc = 'contract sendto {}'.format(self.wallet.db.smart_contracts.get(address, [address, ])[0])
             self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog, None, preview, password)
         except (BaseException,) as e:
             self.logger.exception('')
