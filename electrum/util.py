@@ -793,7 +793,6 @@ def block_explorer_info():
     return mainnet_block_explorers if not constants.net.TESTNET else testnet_block_explorers
 
 def block_explorer(config: 'SimpleConfig') -> str:
-    from . import constants
     default_ = 'qtum.info'
     be_key = config.get('block_explorer', default_)
     be = block_explorer_info().get(be_key)
