@@ -768,6 +768,12 @@ class Blockchain(Logger):
             bitsBase >>= 8
         return bitsN << 24 | bitsBase
 
+    @with_lock
+    def get_chainwork(self, height=None) -> int:
+        if height is None:
+            height = max(0, self.height())
+        return height
+
     def can_connect(self, header: dict, check_height: bool=True) -> bool:
         if not header:
             return False
