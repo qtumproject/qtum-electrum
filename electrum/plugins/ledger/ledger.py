@@ -516,6 +516,7 @@ class Ledger_KeyStore(Hardware_KeyStore):
             self.handler.show_error(_('Cancelled by user'))
             return
         except BTChipException as e:
+            self.logger.error(f"BTChipException {e}")
             if e.sw in (0x6985, 0x6d00):  # cancelled by user
                 return
             elif e.sw == 0x6982:
