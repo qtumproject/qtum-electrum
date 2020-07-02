@@ -3355,7 +3355,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         pod = self.wallet.sign_message(addr, staker, password)
         args = [staker.lower(), fee, pod]
         self.sendto_smart_contract(DELEGATION_CONTRACT, DELEGATE_ABI[1], args,
-                                   gas_limit, gas_price, 0, addr, dialog, False, password, tx_desc="add delegation")
+                                   gas_limit, gas_price, 0, addr, dialog, False, password, tx_desc="update delegation")
 
     def call_remove_delegation(self, addr, gas_limit, gas_price, dialog):
         if self.wallet.has_keystore_encryption():
