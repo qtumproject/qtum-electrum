@@ -180,6 +180,7 @@ class QtumRegtest(QtumTestnet):
 
     QIP5_FORK_HEIGHT = 0
     QIP9_FORK_HEIGHT = 0
+    OFFLINE_STAKE_HEIGHT = 1
 
 
 # don't import net directly, import the module instead (so that net is singleton)
