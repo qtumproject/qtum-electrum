@@ -29,7 +29,6 @@ import threading
 import os
 import traceback
 import json
-import shutil
 import weakref
 import csv
 from decimal import Decimal
@@ -42,7 +41,6 @@ from typing import Optional, TYPE_CHECKING, Sequence, List, Union
 import eth_abi
 
 from PyQt5.QtGui import QPixmap, QKeySequence, QIcon, QCursor, QFont
-from PyQt5.QtGui import QPixmap, QKeySequence, QIcon, QCursor, QFont
 from PyQt5.QtCore import Qt, QRect, QStringListModel, QSize, pyqtSignal
 from PyQt5.QtWidgets import (QMessageBox, QComboBox, QSystemTrayIcon, QTabWidget,
                              QMenuBar, QFileDialog, QCheckBox, QLabel,
@@ -53,11 +51,9 @@ from PyQt5.QtWidgets import (QMessageBox, QComboBox, QSystemTrayIcon, QTabWidget
                              QMenu, QAction)
 
 import electrum
-from electrum import (keystore, simple_config, ecc, constants, util, bitcoin, commands,
-                      coinchooser, paymentrequest)
 from electrum.bitcoin import COIN, is_address, TYPE_ADDRESS, b58_address_to_hash160, Token, opcodes, \
     TYPE_SCRIPT, is_hash160, hash_160, eth_abi_encode, Delegation, DELEGATE_ABI, DELEGATION_CONTRACT
-from electrum import (keystore, ecc, constants, util, bitcoin, commands,
+from electrum import (simple_config, keystore, ecc, constants, util, bitcoin, commands,
                       paymentrequest)
 from electrum.plugin import run_hook, BasePlugin
 from electrum.i18n import _
