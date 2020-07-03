@@ -805,7 +805,7 @@ class Network(Logger, NetworkRetryManager[ServerAddr]):
         b = blockchain.get_best_chain()
         filename = b.path()
         url = constants.net.HEADERS_URL
-        if (os.path.exists(filename) and os.path.getsize(filename) > 1024*1024) or not url:
+        if (os.path.exists(filename) and os.path.getsize(filename) > 50*1024*1024) or not url:
             return
         self.downloading_headers = True
 

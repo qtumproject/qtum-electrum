@@ -130,7 +130,7 @@ class QtumTestnet(AbstractNet):
     CHECKPOINTS = read_json('checkpoints_testnet.json', {})
     BIP44_COIN_TYPE = 1
     SLIP_COIN_TYPE = 1
-    HEADERS_URL = None
+    HEADERS_URL = 'https://s.qtum.site/electrum_testnet_headers'
 
     POS_NO_RETARGET = False
 
