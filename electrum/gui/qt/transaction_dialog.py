@@ -394,7 +394,7 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
     def update(self):
         if not self.finalized:
             self.update_fee_fields()
-            self.finalize_button.setEnabled(self.tx is not None)
+            self.finalize_button.setEnabled(self.can_finalize())
         if self.tx is None:
             return
         self.update_io()
@@ -660,6 +660,9 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
     def set_title(self):
         self.setWindowTitle(_("Create transaction") if not self.finalized else _("Transaction"))
 
+    def can_finalize(self) -> bool:
+        return False
+
     def on_finalize(self):
         pass  # overridden in subclass
 
@@ -689,7 +692,8 @@ class PreviewTxDialog(BaseTxDialog, TxEditor):
         TxEditor.__init__(self, window=window, make_tx=make_tx, is_sweep=bool(external_keypairs))
         BaseTxDialog.__init__(self, parent=window, desc='', prompt_if_unsaved=False,
                               finalized=False, external_keypairs=external_keypairs)
-        BlockingWaitingDialog(window, _("Preparing transaction..."), self.update_tx)
+        BlockingWaitingDialog(window, _("Preparing transaction..."),
+                              lambda: self.update_tx(fallback_to_zero_fee=True))
         self.update()
 
     def create_fee_controls(self):
@@ -724,9 +728,9 @@ class PreviewTxDialog(BaseTxDialog, TxEditor):
                     _('Also, when batching RBF transactions, BIP 125 imposes a lower bound on the fee.'))
             self.show_message(title=_('Fee rounding'), msg=text)
 
-        self.feerounding_icon = QPushButton(read_QIcon('info.png'), '')
-        self.feerounding_icon.setFixedWidth(round(2.2 * char_width_in_lineedit()))
-        self.feerounding_icon.setFlat(True)
+        self.feerounding_icon = QToolButton()
+        self.feerounding_icon.setIcon(read_QIcon('info.png'))
+        self.feerounding_icon.setAutoRaise(True)
         self.feerounding_icon.clicked.connect(feerounding_onclick)
         self.feerounding_icon.setVisible(False)
 
@@ -862,9 +866,14 @@ class PreviewTxDialog(BaseTxDialog, TxEditor):
         self.feerounding_icon.setToolTip(self.feerounding_text)
         self.feerounding_icon.setVisible(abs(feerounding) >= 1)
 
+    def can_finalize(self):
+        return (self.tx is not None
+                and not self.not_enough_funds)
+
     def on_finalize(self):
-        if not self.tx:
+        if not self.can_finalize():
             return
+        assert self.tx
         self.finalized = True
         self.tx.set_rbf(self.rbf_cb.isChecked())
         self.tx.locktime = self.locktime_e.get_locktime()
