@@ -6,9 +6,9 @@ __author__ = 'CodeFace'
 """
 from enum import IntEnum
 
-from PyQt5.QtGui import *
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import QAbstractItemView, QMenu, QTreeWidgetItem
+from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from PyQt5.QtCore import QPersistentModelIndex, Qt
+from PyQt5.QtWidgets import QAbstractItemView, QMenu
 
 from electrum.i18n import _
 from electrum.util import block_explorer_URL
@@ -51,7 +51,6 @@ class SmartContractList(MyTreeView):
             menu.addAction(_("Add contract"), lambda: self.parent.contract_add_dialog())
             menu.addAction(_("Create contract"), lambda: self.parent.contract_create_dialog())
         elif not multi_select:
-            name = self.model().itemFromIndex(self.selected_in_column(self.Columns.NAME)[0]).text()
             address = self.model().itemFromIndex(self.selected_in_column(self.Columns.ADDRESS)[0]).text()
             idx = self.indexAt(position)
             if not idx.isValid():

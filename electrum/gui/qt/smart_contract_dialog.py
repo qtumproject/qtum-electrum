@@ -5,9 +5,10 @@
 __author__ = 'CodeFace'
 """
 import json
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
+from PyQt5.QtCore import QRegExp
+from PyQt5.QtWidgets import (QVBoxLayout, QLabel, QPushButton, QDialog, QGridLayout, QComboBox, QLineEdit,
+                             QWidget, QHBoxLayout)
+from PyQt5.QtGui import QRegExpValidator, QIntValidator
 
 from .util import ButtonsLineEdit, Buttons, ButtonsTextEdit, CancelButton, MessageBoxMixin, EnterButton, ColorScheme
 from electrum.i18n import _

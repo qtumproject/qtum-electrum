@@ -6,17 +6,16 @@ __author__ = 'CodeFace'
 
 from enum import IntEnum
 
-from PyQt5.QtCore import Qt, QPersistentModelIndex, QModelIndex, QPoint
+from PyQt5.QtCore import Qt, QPersistentModelIndex, QPoint
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QFont
-from PyQt5.QtWidgets import QAbstractItemView, QComboBox, QLabel, QMenu
+from PyQt5.QtWidgets import QAbstractItemView, QMenu
 
 from electrum.i18n import _
 from electrum.util import profiler
-from electrum.plugin import run_hook
 from electrum.bitcoin import is_address
 from electrum.wallet import InternalAddressCorruption
 
-from .util import MyTreeView, MONOSPACE_FONT, ColorScheme
+from .util import MyTreeView, MONOSPACE_FONT
 
 
 class DelegationList(MyTreeView):

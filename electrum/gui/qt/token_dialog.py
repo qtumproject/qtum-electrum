@@ -4,9 +4,7 @@
 """
 __author__ = 'CodeFace'
 """
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
+from PyQt5.QtWidgets import QGridLayout, QLabel, QPushButton, QComboBox, QDialog, QLineEdit, QHBoxLayout, QWidget
 from .util import ButtonsLineEdit, Buttons, CancelButton, MessageBoxMixin
 from .amountedit import AmountEdit
 from electrum.bitcoin import is_b58_address, b58_address_to_hash160, bh2u, is_hash160, Token

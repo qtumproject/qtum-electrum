@@ -93,7 +93,6 @@ class TokenBalanceList(MyTreeView):
         if not selected:
             menu.addAction(_("Add Token"), lambda: self.parent.token_add_dialog())
         elif not multi_select:
-            name = self.model().itemFromIndex(self.selected_in_column(self.Columns.NAME)[0]).text()
             bind_addr = self.model().itemFromIndex(self.selected_in_column(self.Columns.BIND_ADDRESS)[0]).text()
             contract_addr = self.model().itemFromIndex(self.selected_in_column(self.Columns.NAME)[0]).data(
                 Qt.UserRole)
@@ -103,7 +102,6 @@ class TokenBalanceList(MyTreeView):
             if not idx.isValid():
                 return
             col = idx.column()
-            item = self.model().itemFromIndex(idx)
             column_title = self.model().horizontalHeaderItem(col).text()
             copy_text = self.model().itemFromIndex(idx).text()
             if col == self.Columns.BALANCE:
@@ -365,7 +363,6 @@ class TokenHistoryList(MyTreeView):
         if not tx:
             return
         tx_URL = block_explorer_URL(self.config, tx=tx_hash)
-        token = self.wallet.db.get_token(tx_item['token_key'])
         menu = QMenu()
         if column is TokenHistoryColumns.AMOUNT:
             column_data = column_data.strip()

@@ -3,15 +3,14 @@
 """
 __author__ = 'CodeFace'
 """
-from PyQt5.QtCore import *
-from PyQt5.QtWidgets import *
-from PyQt5.QtGui import *
+import sys
+import traceback
+from PyQt5.QtWidgets import QGridLayout, QLabel, QComboBox, QLineEdit, QWidget, QHBoxLayout, QPushButton, QDialog
 from .util import ButtonsLineEdit, Buttons, CancelButton, MessageBoxMixin
 from .amountedit import AmountEdit
 from electrum.bitcoin import b58_address_to_hash160, hash160_to_b58_address, is_hash160, Delegation, bfh, bh2u
 from electrum import constants
 from electrum.i18n import _
-from electrum.bitcoin import Delegation
 
 
 class DelegationLayout(QGridLayout):
@@ -31,8 +30,9 @@ class DelegationLayout(QGridLayout):
             self.addresses = [dele.addr]
         else:
             self.addresses = ['']
+            delegations = self.dialog.parent().wallet.db.list_delegations()
             for addr in self.dialog.parent().wallet.get_addresses_sort_by_balance():
-                if addr in self.dialog.parent().wallet.db.list_delegations():
+                if addr in delegations:
                     continue
                 addr_type, __ = b58_address_to_hash160(addr)
                 if addr_type == constants.net.ADDRTYPE_P2PKH:
@@ -120,12 +120,10 @@ class DelegationLayout(QGridLayout):
         if len(addr) > 0:
             try:
                 r = self.dialog.parent().network.run_from_another_thread(self.dialog.parent().network.request_delegation_info(addr))
-                if r:
-                    if r[0] != '0x0000000000000000000000000000000000000000':
-                        staker = hash160_to_b58_address(bfh(r[0][2:]), constants.net.ADDRTYPE_P2PKH)
-                        self.dele = Delegation(addr=addr, staker=staker, fee=r[1])
-            except BaseException as e:
-                import traceback, sys
+                if r and r[0] != '0x0000000000000000000000000000000000000000':
+                    staker = hash160_to_b58_address(bfh(r[0][2:]), constants.net.ADDRTYPE_P2PKH)
+                    self.dele = Delegation(addr=addr, staker=staker, fee=r[1])
+            except BaseException:
                 traceback.print_exc(file=sys.stderr)
                 # self.dialog.show_message(str(e))
         self.update()
@@ -170,7 +168,6 @@ class DelegationLayout(QGridLayout):
             self.dialog.reject()
 
         except (BaseException,) as e:
-            import traceback, sys
             traceback.print_exc(file=sys.stderr)
             self.dialog.show_message(str(e))
 

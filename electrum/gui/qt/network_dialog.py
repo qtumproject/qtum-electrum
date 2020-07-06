@@ -32,10 +32,9 @@ from PyQt5.QtCore import Qt, pyqtSignal, QThread
 from PyQt5.QtWidgets import (QTreeWidget, QTreeWidgetItem, QMenu, QGridLayout, QComboBox,
                              QLineEdit, QDialog, QVBoxLayout, QHeaderView, QCheckBox,
                              QTabWidget, QWidget, QLabel)
-from PyQt5.QtGui import QFontMetrics
 
 from electrum.i18n import _
-from electrum import constants, blockchain, util
+from electrum import blockchain, util
 from electrum.interface import ServerAddr, PREFERRED_NETWORK_PROTOCOL
 from electrum.network import Network
 from electrum.logging import get_logger
