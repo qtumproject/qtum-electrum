@@ -12,7 +12,7 @@ DIST_DIR="dist"
 BUILDDIR=/tmp/qtum-electrum-build
 PACKAGE="Qtum Electrum"
 VERSION=`git describe --tags --dirty --always`
-DMG_NAME="${DIST_DIR}/Qtum-electrum-osx-${VERSION}.dmg"
+DMG_NAME="${DIST_DIR}/Qtum-electrum-${VERSION}.dmg"
 TEMP_DMG_NAME="$BUILDDIR/qtum-electrum.dmg"
 LIBSECP_VERSION="b408c6a8b287003d1ade5709e6f7bc3c7f1d5be7"
 
