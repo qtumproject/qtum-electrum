@@ -37,7 +37,7 @@ from .transaction import Transaction, PartialTransaction
 from .util import bh2u, make_aiohttp_session, NetworkJobOnDefaultServer, random_shuffled_copy, bfh
 from .bitcoin import (address_to_scripthash, is_address, b58_address_to_hash160, hash160_to_b58_address,
                       hash160_to_p2pkh, TOKEN_TRANSFER_TOPIC, Delegation, DELEGATION_CONTRACT,
-                      ADD_DELEGATION_TOPIC)
+                      ADD_DELEGATION_TOPIC, is_b58_address)
 from .network import UntrustedServerReturnedError
 from .logging import Logger
 from .interface import GracefulDisconnect
@@ -158,6 +158,8 @@ class SynchronizerBase(NetworkJobOnDefaultServer):
             self.requested_addrs.remove(addr)
 
         async def subscribe_to_delegation(addr):
+            if not is_b58_address(addr):
+                return
             self._delegation_requests_sent += 1
             try:
                 await self.session.subscribe('blockchain.contract.event.subscribe',
