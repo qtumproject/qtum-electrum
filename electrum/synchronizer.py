@@ -34,7 +34,7 @@ from aiorpcx import TaskGroup, run_in_thread, RPCError
 
 from . import util
 from .transaction import Transaction, PartialTransaction
-from .util import bh2u, make_aiohttp_session, NetworkJobOnDefaultServer, random_shuffled_copy, bfh
+from .util import make_aiohttp_session, NetworkJobOnDefaultServer, random_shuffled_copy, bfh
 from .bitcoin import (address_to_scripthash, is_address, b58_address_to_hash160, hash160_to_b58_address,
                       hash160_to_p2pkh, TOKEN_TRANSFER_TOPIC, Delegation, DELEGATION_CONTRACT,
                       ADD_DELEGATION_TOPIC, is_p2pkh_address)
@@ -58,7 +58,7 @@ def history_status(h):
     status = ''
     for tx_hash, height in h:
         status += tx_hash + ':%d:' % height
-    return bh2u(hashlib.sha256(status.encode('ascii')).digest())
+    return hashlib.sha256(status.encode('ascii')).digest().hex()
 
 
 def token_history_status(h):
@@ -66,7 +66,7 @@ def token_history_status(h):
         return None
     status = ':'.join(['{}:{:d}:{:d}'.format(tx_hash, height, log_index)
                        for tx_hash, height, log_index in h])
-    return bh2u(hashlib.sha256(status.encode('ascii')).digest())
+    return hashlib.sha256(status.encode('ascii')).digest().hex()
 
 
 class SynchronizerBase(NetworkJobOnDefaultServer):
@@ -163,7 +163,7 @@ class SynchronizerBase(NetworkJobOnDefaultServer):
             self._delegation_requests_sent += 1
             try:
                 await self.session.subscribe('blockchain.contract.event.subscribe',
-                                             [bh2u(b58_address_to_hash160(addr)[1]), DELEGATION_CONTRACT,
+                                             [b58_address_to_hash160(addr)[1].hex(), DELEGATION_CONTRACT,
                                               ADD_DELEGATION_TOPIC],
                                              self.delegation_status_queue)
             except RPCError as e:
@@ -183,7 +183,7 @@ class SynchronizerBase(NetworkJobOnDefaultServer):
             self._token_requests_sent += 1
             try:
                 await self.session.subscribe('blockchain.contract.event.subscribe',
-                                             [bh2u(b58_address_to_hash160(bind_addr)[1]), contract_addr, TOKEN_TRANSFER_TOPIC],
+                                             [b58_address_to_hash160(bind_addr)[1].hex(), contract_addr, TOKEN_TRANSFER_TOPIC],
                                              self.token_status_queue)
             except RPCError as e:
                 if e.message == 'history too large':  # no unique error code

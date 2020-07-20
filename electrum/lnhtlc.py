@@ -2,7 +2,7 @@ from copy import deepcopy
 from typing import Optional, Sequence, Tuple, List, Dict, TYPE_CHECKING, Set
 
 from .lnutil import SENT, RECEIVED, LOCAL, REMOTE, HTLCOwner, UpdateAddHtlc, Direction, FeeUpdate
-from .util import bh2u, bfh
+from .util import bfh
 
 if TYPE_CHECKING:
     from .json_db import StoredDict

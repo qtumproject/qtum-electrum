@@ -14,7 +14,6 @@ from .util import ButtonsLineEdit, Buttons, ButtonsTextEdit, CancelButton, Messa
 from electrum.i18n import _
 from electrum.plugin import run_hook
 from electrum.bitcoin import is_address, b58_address_to_hash160, is_hash160
-from electrum.util import bh2u
 from electrum.logging import get_logger
 
 
@@ -270,7 +269,7 @@ class ContractFuncLayout(QGridLayout):
                 addr = args[index]
                 if is_address(addr):
                     __, hash160 = b58_address_to_hash160(addr)
-                    addr = bh2u(hash160)
+                    addr = hash160.hex()
                 if not is_hash160(addr):
                     raise ParseArgsException('invalid input:{}'.format(args[index]))
                 args[index] = addr.lower()
@@ -418,7 +417,7 @@ class ContractCreateLayout(QVBoxLayout):
                 addr = args[index]
                 if is_address(addr):
                     __, hash160 = b58_address_to_hash160(addr)
-                    addr = bh2u(hash160)
+                    addr = hash160.hex()
                 if not is_hash160(addr):
                     raise ParseArgsException('invalid input:{}'.format(args[index]))
                 args[index] = addr.lower()

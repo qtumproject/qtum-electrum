@@ -39,7 +39,6 @@ from electrum.bip32 import BIP32Node
 from electrum.plugin import BasePlugin, hook
 from electrum.i18n import _
 from electrum.wallet import Multisig_Wallet
-from electrum.util import bh2u, bfh
 
 from electrum.gui.qt.transaction_dialog import show_transaction, TxDialog
 from electrum.gui.qt.util import WaitingDialog
@@ -145,7 +144,7 @@ class Plugin(BasePlugin):
         for key, keystore in wallet.keystores.items():
             xpub = keystore.get_master_public_key()  # type: str
             pubkey = BIP32Node.from_xkey(xpub).eckey.get_public_key_bytes(compressed=True)
-            _hash = bh2u(crypto.sha256d(pubkey))
+            _hash = crypto.sha256d(pubkey).hex()
             if not keystore.is_watching_only():
                 self.keys.append((key, _hash, window))
             else:

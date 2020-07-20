@@ -13,7 +13,7 @@ from electrum.i18n import _
 from electrum.keystore import Hardware_KeyStore
 from electrum.transaction import Transaction, PartialTransaction, PartialTxInput, PartialTxOutput
 from electrum.wallet import Standard_Wallet
-from electrum.util import bfh, bh2u, versiontuple, UserFacingException
+from electrum.util import bfh, versiontuple, UserFacingException
 from electrum.base_wizard import ScriptTypeNotSupported
 from electrum.logging import get_logger
 

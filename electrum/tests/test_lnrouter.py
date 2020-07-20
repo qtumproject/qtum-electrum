@@ -3,7 +3,7 @@ import tempfile
 import shutil
 import asyncio
 
-from electrum.util import bh2u, bfh, create_and_start_event_loop
+from electrum.util import bfh, create_and_start_event_loop
 from electrum.lnonion import (OnionHopsDataSingle, new_onion_packet,
                               process_onion_packet, _decode_onion_error, decode_onion_error,
                               OnionFailureCode, OnionPacket)

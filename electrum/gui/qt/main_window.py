@@ -59,7 +59,7 @@ from electrum.plugin import run_hook, BasePlugin
 from electrum.i18n import _
 from electrum.util import (format_time,
                            UserCancelled, profiler,
-                           bh2u, bfh, InvalidPassword,
+                           bfh, InvalidPassword,
                            UserFacingException,
                            get_new_wallet_name, send_exception_to_crash_reporter,
                            InvalidBitcoinURI, maybe_extract_bolt11_invoice, NotEnoughFunds,
@@ -1900,7 +1900,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             lnaddr = lndecode(invoice, expected_hrp=constants.net.SEGWIT_HRP)
         except Exception as e:
             raise LnDecodeException(e) from e
-        pubkey = bh2u(lnaddr.pubkey.serialize())
+        pubkey = lnaddr.pubkey.serialize().hex()
         for k,v in lnaddr.tags:
             if k == 'd':
                 description = v
@@ -3534,7 +3534,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             if is_opcreate_script(tx.outputs()[0].scriptpubkey):
                 reversed_txid = binascii.a2b_hex(tx.txid())[::-1]
                 output_index = b'\x00\x00\x00\x00'
-                contract_addr = bh2u(hash_160(reversed_txid + output_index))
+                contract_addr = hash_160(reversed_txid + output_index).hex()
                 self.set_smart_contract(name, contract_addr, abi)
         try:
             abi_encoded = ''

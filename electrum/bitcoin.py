@@ -206,7 +206,7 @@ class opcodes(IntEnum):
 
 
 def rev_hex(s: str) -> str:
-    return bh2u(bfh(s)[::-1])
+    return bfh(s)[::-1].hex()
 
 
 def int_to_hex(i: int, length: int = 1) -> str:
@@ -247,7 +247,7 @@ def script_num_to_hex(i: int) -> str:
     elif neg:
         result[-1] |= 0x80
 
-    return bh2u(result)
+    return result.hex()
 
 
 def var_int(i: int) -> str:
@@ -297,17 +297,17 @@ def push_script(data: str) -> str:
     if data_len == 0 or data_len == 1 and data[0] == 0:
         return opcodes.OP_0.hex()
     elif data_len == 1 and data[0] <= 16:
-        return bh2u(bytes([opcodes.OP_1 - 1 + data[0]]))
+        return bytes([opcodes.OP_1 - 1 + data[0]]).hex()
     elif data_len == 1 and data[0] == 0x81:
         return opcodes.OP_1NEGATE.hex()
 
-    return _op_push(data_len) + bh2u(data)
+    return _op_push(data_len) + data.hex()
 
 
 def push_data(data: str) -> str:
     data = bfh(data)
     data_len = len(data)
-    return _op_push(data_len) + bh2u(data)
+    return _op_push(data_len) + data.hex()
 
 
 def add_number_to_script(i: int) -> bytes:
@@ -344,7 +344,7 @@ def dust_threshold(network: 'Network' = None) -> int:
 
 
 def hash_encode(x: bytes) -> str:
-    return bh2u(x[::-1])
+    return x[::-1].hex()
 
 
 def hash_decode(x: str) -> bytes:
@@ -398,12 +398,12 @@ def script_to_p2wsh(script: str, *, net=None) -> str:
 
 
 def p2wpkh_nested_script(pubkey: str) -> str:
-    pkh = bh2u(hash_160(bfh(pubkey)))
+    pkh = hash_160(bfh(pubkey)).hex()
     return '00' + push_script(pkh)
 
 
 def p2wsh_nested_script(witness_script: str) -> str:
-    wsh = bh2u(sha256(bfh(witness_script)))
+    wsh = sha256(bfh(witness_script)).hex()
     return '00' + push_script(wsh)
 
 
@@ -450,12 +450,12 @@ def address_to_script(addr: str, *, net=None) -> str:
     if witprog is not None:
         if not (0 <= witver <= 16):
             raise BitcoinException(f'impossible witness version: {witver}')
-        script = bh2u(add_number_to_script(witver))
-        script += push_script(bh2u(bytes(witprog)))
+        script = add_number_to_script(witver).hex()
+        script += push_script(bytes(witprog).hex())
         return script
     addrtype, hash_160_ = b58_address_to_hash160(addr)
     if addrtype == net.ADDRTYPE_P2PKH:
-        script = pubkeyhash_to_p2pkh_script(bh2u(hash_160_))
+        script = pubkeyhash_to_p2pkh_script(hash_160_.hex())
     elif addrtype == net.ADDRTYPE_P2SH:
         script = opcodes.OP_HASH160.hex()
         script += push_script(bh2u(hash_160_))
@@ -824,7 +824,7 @@ def eth_abi_encode(abi, args):
         result = function_abi_to_4byte_selector(abi) + encode_abi(types, args)
     else:
         result = encode_abi(types, args)
-    return bh2u(result)
+    return result.hex()
 
 
 def eth_output_decode(abi, result):

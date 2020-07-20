@@ -54,7 +54,7 @@ from .util import (NotEnoughFunds, UserCancelled, profiler,
                    format_satoshis, format_fee_satoshis, NoDynamicFeeEstimates,
                    WalletFileException, BitcoinException, MultipleSpendMaxTxOutputs,
                    InvalidPassword, format_time, timestamp_to_datetime, Satoshis,
-                   Fiat, bfh, bh2u, TxMinedInfo, quantize_feerate, create_bip21_uri, OrderedDictWithIndex)
+                   Fiat, bfh, TxMinedInfo, quantize_feerate, create_bip21_uri, OrderedDictWithIndex)
 from .util import get_backup_dir
 from .simple_config import SimpleConfig
 from .bitcoin import (COIN, TYPE_ADDRESS, TYPE_PUBKEY, is_address, address_to_script, serialize_privkey,
@@ -68,7 +68,8 @@ from .storage import StorageEncryptionVersion, WalletStorage
 from .wallet_db import WalletDB
 from . import transaction, bitcoin, coinchooser, paymentrequest, ecc, bip32
 from .transaction import (Transaction, TxInput, UnknownTxinType, TxOutput,
-                          PartialTransaction, PartialTxInput, PartialTxOutput, TxOutpoint)
+                          PartialTransaction, PartialTxInput, PartialTxOutput, TxOutpoint,
+                          is_opsender_script, h160_from_opsender_script)
 from .plugin import run_hook
 from .address_synchronizer import (AddressSynchronizer, TX_HEIGHT_LOCAL,
                                    TX_HEIGHT_UNCONF_PARENT, TX_HEIGHT_UNCONFIRMED, TX_HEIGHT_FUTURE)
@@ -720,7 +721,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
             amount_sat=amount,
             outputs=outputs,
             message=message,
-            id=bh2u(sha256(repr(outputs))[0:16]),
+            id=sha256(repr(outputs))[0:16].hex(),
             time=timestamp,
             exp=exp,
             bip70=None,
@@ -1829,7 +1830,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
         #      note that they use incompatible "id"
         amount_sat = amount_sat or 0
         timestamp = int(time.time())
-        _id = bh2u(sha256d(address + "%d"%timestamp))[0:10]
+        _id = sha256d(address + "%d"%timestamp).hex()[0:10]
         expiration = expiration or 0
         return OnchainInvoice(
             type=PR_TYPE_ONCHAIN,
@@ -1851,7 +1852,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
         paymentrequest.sign_request_with_alias(pr, alias, alias_privkey)
         req.bip70 = pr.raw.hex()
         req['name'] = pr.pki_data
-        req['sig'] = bh2u(pr.signature)
+        req['sig'] = pr.signature.hex()
         self.receive_requests[key] = req
 
     def add_payment_request(self, req: Invoice):
@@ -2104,7 +2105,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
 
                         # check user bind address
                         __, hash160b = b58_address_to_hash160(bind_addr)
-                        hash160 = bh2u(hash160b).zfill(64)
+                        hash160 = hash160b.hex().zfill(64)
                         if hash160 not in topics:
                             self.logger.info("address mismatch")
                             continue

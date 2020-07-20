@@ -8,7 +8,7 @@ import traceback
 from PyQt5.QtWidgets import QGridLayout, QLabel, QComboBox, QLineEdit, QWidget, QHBoxLayout, QPushButton, QDialog
 from .util import ButtonsLineEdit, Buttons, CancelButton, MessageBoxMixin
 from .amountedit import AmountEdit
-from electrum.bitcoin import b58_address_to_hash160, hash160_to_b58_address, is_hash160, Delegation, bfh, bh2u
+from electrum.bitcoin import b58_address_to_hash160, hash160_to_b58_address, is_hash160, Delegation, bfh
 from electrum import constants
 from electrum.i18n import _
 
@@ -140,7 +140,7 @@ class DelegationLayout(QGridLayout):
                 addr_type, staker = b58_address_to_hash160(staker)
                 if addr_type != constants.net.ADDRTYPE_P2PKH:
                     raise Exception('wrong staker address')
-                staker = bh2u(staker)
+                staker = staker.hex()
 
             fee = int(self.fee_e.text())
             if fee < 0 or fee > 100:
