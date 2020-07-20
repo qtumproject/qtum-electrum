@@ -33,7 +33,7 @@ from abc import ABC, abstractmethod
 
 from . import bitcoin, ecc, constants, bip32
 from .bitcoin import deserialize_privkey, serialize_privkey
-from .transaction import Transaction, PartialTransaction, PartialTxInput, PartialTxOutput, TxInput
+from .transaction import Transaction, PartialTransaction, PartialTxInput, PartialTxOutput, TxInput, is_opsender_script
 from .bip32 import (convert_bip32_path_to_list_of_uint32, BIP32_PRIME,
                     is_xpub, is_xprv, BIP32Node, normalize_bip32_derivation,
                     convert_bip32_intpath_to_strpath, is_xkey_consistent_with_key_origin_info)
@@ -41,7 +41,7 @@ from .ecc import string_to_number
 from .crypto import (pw_decode, pw_encode, sha256, sha256d, PW_HASH_VERSION_LATEST,
                      SUPPORTED_PW_HASH_VERSIONS, UnsupportedPasswordHashVersion, hash_160)
 from .util import (InvalidPassword, WalletFileException,
-                   BitcoinException, bh2u, bfh, inv_dict, is_hex_str)
+                   BitcoinException, bfh, inv_dict, is_hex_str)
 from .mnemonic import Mnemonic, Wordlist, seed_type, is_seed
 from .plugin import run_hook
 from .logging import Logger
@@ -80,6 +80,8 @@ class KeyStore(Logger, ABC):
         keypairs = {}
         for txin in tx.inputs():
             keypairs.update(self._get_txin_derivations(txin))
+        for txout in tx.outputs():
+            keypairs.update(self._get_opsender_derivations(txout))
         return keypairs
 
     def _get_txin_derivations(self, txin: 'PartialTxInput') -> Dict[str, Union[Sequence[int], str]]:
@@ -95,6 +97,19 @@ class KeyStore(Logger, ABC):
                 continue
             keypairs[pubkey.hex()] = derivation
         return keypairs
+
+    def _get_opsender_derivations(self, txout: 'PartialTxOutput') -> Dict[str, Union[Sequence[int], str]]:
+        is_opsender, decoded = is_opsender_script(txout.scriptpubkey)
+        if not is_opsender or decoded[3][1]:
+            return {}
+        if not txout.opsender_pubkey:
+            raise Exception("txout.opsender_pubkey not set")
+        derivation = self.get_pubkey_derivation(txout.opsender_pubkey, txout)
+        if not derivation:
+            return {}
+        return {
+            txout.opsender_pubkey.hex(): derivation
+        }
 
     def can_sign(self, tx: 'Transaction', *, ignore_watching_only=False) -> bool:
         """Returns whether this keystore could sign *something* in this tx."""

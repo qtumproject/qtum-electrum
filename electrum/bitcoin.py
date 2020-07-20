@@ -198,6 +198,7 @@ class opcodes(IntEnum):
     OP_CREATE = 0xc1
     OP_CALL = 0xc2
     OP_SPEND = 0xc3
+    OP_SENDER = 0xc4
 
     OP_INVALIDOPCODE = 0xff
 

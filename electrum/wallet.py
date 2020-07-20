@@ -1252,7 +1252,9 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
             tx = PartialTransaction.from_io(list(coins), list(outputs))
 
         # sender sort to make sure sender txi the first place
-        tx.sender_sort(sender)
+        op_sender = any([is_opsender_script(out.scriptpubkey)[0] for out in outputs])
+        if not op_sender and sender:
+            tx.legacy_sender_sort(sender)
         # Timelock tx to current height.
         tx.locktime = get_locktime_for_new_transaction(self.network)
 
@@ -1570,6 +1572,15 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
         return tx
 
     def add_output_info(self, txout: PartialTxOutput, *, only_der_suffix: bool = True) -> None:
+        opsender_h160 = h160_from_opsender_script(txout.scriptpubkey)
+        if opsender_h160:
+            sender_addr = hash160_to_p2pkh(opsender_h160)
+            if self.is_mine(sender_addr):
+                pubkey_deriv_info = self.get_public_keys_with_deriv_info(sender_addr)
+                txout.opsender_pubkey = list(pubkey_deriv_info.keys())[0]
+                self._add_txinout_derivation_info(txout, sender_addr, only_der_suffix=only_der_suffix)
+            return
+
         address = txout.address
         if not self.is_mine(address):
             is_mine = self._learn_derivation_path_for_address_from_txinout(txout, address)
@@ -1581,6 +1592,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
         if isinstance(self, Multisig_Wallet):
             txout.num_sig = self.m
         self._add_txinout_derivation_info(txout, address, only_der_suffix=only_der_suffix)
+
         if txout.redeem_script is None:
             try:
                 redeem_script_hex = self.get_redeem_script(address)
