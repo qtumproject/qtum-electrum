@@ -3359,12 +3359,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         """
         :param staker: hash160 str
         """
+        password = None
         if self.wallet.has_keystore_encryption():
             password = self.password_dialog(_("Enter your password to proceed"))
-            if not password:
-                return
-        else:
-            password = None
+            if not password: return
 
         pod = self.wallet.sign_message(addr, staker, password)
         args = [staker.lower(), fee, pod]
@@ -3372,12 +3370,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
                                    gas_limit, gas_price, 0, addr, dialog, False, password, tx_desc="update delegation")
 
     def call_remove_delegation(self, addr, gas_limit, gas_price, dialog):
+        password = None
         if self.wallet.has_keystore_encryption():
             password = self.password_dialog(_("Enter your password to proceed"))
-            if not password:
-                return
-        else:
-            password = None
+            if not password: return
+
         self.sendto_smart_contract(DELEGATION_CONTRACT, DELEGATE_ABI[0], [],
                                    gas_limit, gas_price, 0, addr, dialog, False, password, tx_desc="remove delegation")
 

@@ -23,19 +23,17 @@
 # CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import binascii
-import hashlib
 from typing import List, Tuple, TYPE_CHECKING, Optional, Union, NamedTuple
 from eth_abi import encode_abi, decode_abi
 from eth_utils import function_abi_to_4byte_selector
 import enum
 from enum import IntEnum, Enum
 
-from .util import bfh, bh2u, BitcoinException, assert_bytes, to_bytes, inv_dict
-from . import version
+from .util import bfh, BitcoinException, assert_bytes, to_bytes, inv_dict
 from . import segwit_addr
 from . import constants
 from . import ecc
-from .crypto import sha256d, sha256, hash_160, hmac_oneshot
+from .crypto import sha256d, sha256, hash_160
 
 if TYPE_CHECKING:
     from .network import Network
@@ -459,7 +457,7 @@ def address_to_script(addr: str, *, net=None) -> str:
         script = pubkeyhash_to_p2pkh_script(hash_160_.hex())
     elif addrtype == net.ADDRTYPE_P2SH:
         script = opcodes.OP_HASH160.hex()
-        script += push_script(bh2u(hash_160_))
+        script += push_script(hash_160_.hex())
         script += opcodes.OP_EQUAL.hex()
     else:
         raise BitcoinException(f'unknown address type: {addrtype}')
@@ -506,7 +504,7 @@ def address_to_scripthash(addr: str) -> str:
 
 def script_to_scripthash(script: str) -> str:
     h = sha256(bfh(script))[0:32]
-    return bh2u(bytes(reversed(h)))
+    return bytes(reversed(h)).hex()
 
 
 def public_key_to_p2pk_script(pubkey: str) -> str:
@@ -612,7 +610,7 @@ def DecodeBase58Check(psz: Union[bytes, str]) -> bytes:
     csum_found = vchRet[-4:]
     csum_calculated = sha256d(payload)[0:4]
     if csum_calculated != csum_found:
-        raise InvalidChecksum(f'calculated {bh2u(csum_calculated)}, found {bh2u(csum_found)}')
+        raise InvalidChecksum(f'calculated {csum_calculated.hex()}, found {csum_found.hex()}')
     else:
         return payload
 

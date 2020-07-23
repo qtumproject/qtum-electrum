@@ -31,7 +31,7 @@ from . import util
 from .bitcoin import hash_encode, int_to_hex, rev_hex, var_int
 from .crypto import sha256d
 from . import constants
-from .util import bfh, bh2u, unpack_uint16_from, unpack_int32_from, unpack_uint32_from, unpack_int64_from, unpack_uint64_from
+from .util import bfh, unpack_uint16_from, unpack_int32_from, unpack_uint32_from, unpack_int64_from, unpack_uint64_from
 from .simple_config import SimpleConfig
 from .logging import get_logger, Logger
 
