@@ -99,8 +99,7 @@ class KeyStore(Logger, ABC):
         return keypairs
 
     def _get_opsender_derivations(self, txout: 'PartialTxOutput') -> Dict[str, Union[Sequence[int], str]]:
-        is_opsender, decoded = is_opsender_script(txout.scriptpubkey)
-        if not is_opsender or decoded[3][1]:
+        if txout.is_complete():
             return {}
         if not txout.opsender_pubkey:
             raise Exception("txout.opsender_pubkey not set")

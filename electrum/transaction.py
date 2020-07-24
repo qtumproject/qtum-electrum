@@ -1549,6 +1549,12 @@ class PartialTxOutput(TxOutput, PSBTSection):
         self.bip32_paths.update(other_txout.bip32_paths)
         self._unknown.update(other_txout._unknown)
 
+    def is_complete(self) -> bool:
+        is_opsender, decoded = is_opsender_script(self.scriptpubkey)
+        if not is_opsender:
+            return True
+        return bool(decoded[3][1])
+
 
 class PartialTransaction(Transaction):
 
