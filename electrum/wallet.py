@@ -1991,7 +1991,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
     def _update_password_for_keystore(self, old_pw: Optional[str], new_pw: Optional[str]) -> None:
         pass
 
-    def sign_message(self, address, message, password):
+    def sign_message(self, address: str, message: str, password):
         index = self.get_address_index(address)
         return self.keystore.sign_message(index, message, password)
 

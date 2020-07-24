@@ -805,28 +805,25 @@ class Delegation(NamedTuple):
     fee: int
 
 
-def eth_abi_encode(abi, args):
+def eth_abi_encode(func: dict, args: list) -> str:
     """
-    >> abi = {"constant":True,"inputs":[{"name":"","type":"address"}],
+    >> func = {"constant":True,"inputs":[{"name":"","type":"address"}],
 "name":"balanceOf","outputs":[{"name":"","type":"uint256"}],"payable":False,"stateMutability":"view","type":"function"}
     >> eth_abi_encode(abi, ['9d3d4cc1986d81f9109f2b091b7732e7d9bcf63b'])
     >> '70a082310000000000000000000000009d3d4cc1986d81f9109f2b091b7732e7d9bcf63b'
     ## address must be lower case
-    :param abi: dict
-    :param args: list
-    :return: str
     """
-    if not abi:
+    if not func:
         return "00"
-    types = list([inp['type'] for inp in abi.get('inputs', [])])
-    if abi.get('name'):
-        result = function_abi_to_4byte_selector(abi) + encode_abi(types, args)
+    types = list([inp['type'] for inp in func.get('inputs', [])])
+    if func.get('name'):
+        result = function_abi_to_4byte_selector(func) + encode_abi(types, args)
     else:
         result = encode_abi(types, args)
     return result.hex()
 
 
-def eth_output_decode(abi, result):
+def eth_output_decode(abi: dict, result):
     types = list([x['type'] for x in abi.get('outputs', [])])
     try:
         if isinstance(result, dict):

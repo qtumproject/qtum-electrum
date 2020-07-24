@@ -2076,7 +2076,7 @@ def contract_encode_number(n):
     return bytes(bchr(len(r)) + r)
 
 
-def contract_script(gas_limit, gas_price, datahex, contract_addr, opcode, op_sender=None) -> bytes:
+def contract_script(gas_limit: int, gas_price: int, datahex: str, contract_addr: str, opcode: opcodes, op_sender=None) -> bytes:
     """
     :param op_sender: base58 str
     """
@@ -2101,9 +2101,9 @@ def contract_script(gas_limit, gas_price, datahex, contract_addr, opcode, op_sen
     return bfh(script)
 
 
-def is_opcall_script(_bytes) -> bool:
+def is_opcall_script(script: bytes) -> bool:
     try:
-        decoded = [x for x in script_GetOp(_bytes)]
+        decoded = [x for x in script_GetOp(script)]
     except MalformedBitcoinScript:
         return False
     return len(decoded) == 6 \
@@ -2112,9 +2112,9 @@ def is_opcall_script(_bytes) -> bool:
            and decoded[-1][0] == opcodes.OP_CALL
 
 
-def is_opcreate_script(_bytes) -> bool:
+def is_opcreate_script(script: bytes) -> bool:
     try:
-        decoded = [x for x in script_GetOp(_bytes)]
+        decoded = [x for x in script_GetOp(script)]
     except MalformedBitcoinScript:
         return False
     return len(decoded) == 5 \

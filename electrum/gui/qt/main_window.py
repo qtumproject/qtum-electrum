@@ -3334,7 +3334,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         d = TokenSendDialog(self, token)
         d.show()
 
-    def do_token_pay(self, token: 'Token', pay_to, amount, gas_limit, gas_price, dialog, preview=False):
+    def do_token_pay(self, token: 'Token', pay_to: str, amount: int, gas_limit: int, gas_price: int, dialog, preview=False):
         try:
             datahex = 'a9059cbb{}{:064x}'.format(pay_to.zfill(64), amount)
             op_sender = token.bind_addr if self.use_opsender() else None
@@ -3355,7 +3355,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.wallet.delete_delegation(addr)
         self.delegation_list.update()
 
-    def call_add_delegation(self, addr, staker, fee, gas_limit, gas_price, dialog):
+    def call_add_delegation(self, addr: str, staker: str, fee: int, gas_limit: int, gas_price: int, dialog):
         """
         :param staker: hash160 str
         """
@@ -3363,13 +3363,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         if self.wallet.has_keystore_encryption():
             password = self.password_dialog(_("Enter your password to proceed"))
             if not password: return
-
         pod = self.wallet.sign_message(addr, staker, password)
         args = [staker.lower(), fee, pod]
         self.sendto_smart_contract(DELEGATION_CONTRACT, DELEGATE_ABI[1], args,
                                    gas_limit, gas_price, 0, addr, dialog, False, password, tx_desc="update delegation")
 
-    def call_remove_delegation(self, addr, gas_limit, gas_price, dialog):
+    def call_remove_delegation(self, addr: str, gas_limit: int, gas_price: int, dialog):
         password = None
         if self.wallet.has_keystore_encryption():
             password = self.password_dialog(_("Enter your password to proceed"))
@@ -3383,7 +3382,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.delegation_list = l = DelegationList(self)
         return self.create_list_tab(l)
 
-    def delegation_dialog(self, dele=None, mode='add'):
+    def delegation_dialog(self, dele: 'Delegation' = None, mode='add'):
         if isinstance(self.wallet.keystore, TrezorKeyStore):
             self.show_message('Trezor does not support staking delegation for now')
             return
@@ -3395,7 +3394,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         d = DelegationDialog(self, dele, mode)
         d.show()
 
-    def _smart_contract_broadcast(self, outputs, desc, gas_fee, sender, dialog, broadcast_done=None, preview=False, password=None):
+    def _smart_contract_broadcast(self, outputs: list, desc: str, gas_fee: int, sender: str, dialog, broadcast_done=None, preview=False, password=None):
         addr_type, __ = b58_address_to_hash160(sender)
         if not addr_type == constants.net.ADDRTYPE_P2PKH:
             dialog.show_message(_('only P2PKH address can call contract'))
@@ -3488,15 +3487,15 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.smart_contract_list.update()
         return True
 
-    def call_smart_contract(self, address, abi, args, sender, dialog):
-        data = eth_abi_encode(abi, args)
+    def call_smart_contract(self, address: str, func: dict, args: list, sender: str, dialog):
+        data = eth_abi_encode(func, args)
         try:
             result = self.network.run_from_another_thread(self.network.call_contract(address, data, sender))
         except BaseException as e:
             self.logger.exception('')
             dialog.show_message(str(e))
             return
-        types = list([x['type'] for x in abi.get('outputs', [])])
+        types = list([x['type'] for x in func.get('outputs', [])])
         try:
             if isinstance(result, dict):
                 output = eth_abi.decode_abi(types, binascii.a2b_hex(result['executionResult']['output']))
@@ -3517,9 +3516,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             self.logger.exception('')
             dialog.show_message(f'{e} {result}')
 
-    def sendto_smart_contract(self, address, abi, args, gas_limit, gas_price, amount, sender, dialog, preview, password=None, tx_desc=None):
+    def sendto_smart_contract(self, address: str, func: dict, args: list,
+                              gas_limit: int, gas_price: int, amount: int, sender: str,
+                              dialog, preview, password=None, tx_desc=None):
         try:
-            abi_encoded = eth_abi_encode(abi, args)
+            abi_encoded = eth_abi_encode(func, args)
             op_sender = sender if self.use_opsender() else None
             script = contract_script(gas_limit, gas_price, abi_encoded, address, opcodes.OP_CALL, op_sender)
             outputs = [PartialTxOutput(scriptpubkey=script, value=amount)]
@@ -3530,7 +3531,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             self.logger.exception('')
             dialog.show_message(str(e))
 
-    def create_smart_contract(self, name, bytecode, abi, constructor, args, gas_limit, gas_price, sender, dialog, preview):
+    def create_smart_contract(self, name: str, bytecode: str, abi: list, constructor: dict,
+                              args: list, gas_limit: int, gas_price: int, sender: str, dialog, preview):
 
         def broadcast_done(tx):
             if is_opcreate_script(tx.outputs()[0].scriptpubkey):
@@ -3559,7 +3561,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         d = ContractEditDialog(self)
         d.show()
 
-    def contract_edit_dialog(self, address):
+    def contract_edit_dialog(self, address: str):
         name, interface = self.wallet.db.smart_contracts[address]
         contract = {
             'name': name,
@@ -3569,7 +3571,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         d = ContractEditDialog(self, contract)
         d.show()
 
-    def contract_func_dialog(self, address):
+    def contract_func_dialog(self, address: str):
         name, interface = self.wallet.db.smart_contracts[address]
         contract = {
             'name': name,
