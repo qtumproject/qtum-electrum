@@ -2681,8 +2681,10 @@ class Mobile_Wallet(Imported_Wallet):
 
     wallet_type = 'mobile'
 
-    def __init__(self, storage: WalletStorage, *, config: SimpleConfig):
-        Imported_Wallet.__init__(self, storage, config=config)
+    def __init__(self, db: 'WalletDB', storage: WalletStorage, *, config: SimpleConfig):
+        if not hasattr(db, 'imported_addresses'):
+            db.imported_addresses = {}
+        Imported_Wallet.__init__(self, db, storage, config=config)
         self.use_change = False
         self.gap_limit = 10
 
@@ -2697,15 +2699,15 @@ class Mobile_Wallet(Imported_Wallet):
         addr_count = len(self.get_addresses())
         for i in range(0, self.gap_limit - addr_count):
             secret, compressed = self.keystore.derive_privkey([0, addr_count + i], None)
-            keys.append(serialize_privkey(secret, compressed, 'p2pkh', True))
+            keys.append(serialize_privkey(secret, compressed, 'p2pkh', internal_use=True))
         self.import_private_keys(keys, None, write_to_disk=False)
 
 
 class Qt_Core_Wallet(Simple_Deterministic_Wallet):
     wallet_type = 'qtcore'
 
-    def __init__(self, storage: WalletStorage, *, config: SimpleConfig):
-        Simple_Deterministic_Wallet.__init__(self, storage, config=config)
+    def __init__(self, db: 'WalletDB', storage: WalletStorage, *, config: SimpleConfig):
+        Simple_Deterministic_Wallet.__init__(self, db, storage, config=config)
         self.gap_limit = 100
         self.gap_limit_for_change = 0
         self.use_change = False
