@@ -226,11 +226,10 @@ def read_blockchains(config: 'SimpleConfig'):
                        prev_hash=prev_hash)
         # consistency checks
         h = b.read_header(b.forkpoint)
-        if first_hash != hash_header(h):
-            delete_chain(filename, "incorrect first hash for chain")
-            return
-        if not b.parent.can_connect(h, check_height=False):
-            delete_chain(filename, "cannot connect chain to parent")
+        if first_hash != hash_header(h) or not b.parent.can_connect(h, check_height=False):
+            if b.conn:
+                b.conn.close()
+            delete_chain(filename, "invalid fork")
             return
         chain_id = b.get_id()
         assert first_hash == chain_id, (first_hash, chain_id)
