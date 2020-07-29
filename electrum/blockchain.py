@@ -197,7 +197,11 @@ def read_blockchains(config: 'SimpleConfig'):
 
     def delete_chain(filename, reason):
         _logger.info(f"[blockchain] deleting chain {filename}: {reason}")
-        os.unlink(os.path.join(fdir, filename))
+        path = os.path.join(fdir, filename)
+        try:
+            os.unlink(path)
+        except BaseException as e:
+            _logger.error(f"failed delete {path} {e}")
 
     def instantiate_chain(filename):
         __, forkpoint, prev_hash, first_hash = filename.split('_')
