@@ -943,7 +943,7 @@ class AddressSynchronizer(Logger):
         with self.delegation_lock:
             self.db.set_delegation(dele)
 
-    def delete_delegation(self, key):
+    def delete_delegation(self, address):
         with self.delegation_lock:
-            if key in self.db.list_delegations():
-                self.db.delete_delegation(key)
+            if address in self.db.list_delegations():
+                self.db.delete_delegation(address)

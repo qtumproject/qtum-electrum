@@ -2372,6 +2372,7 @@ class Imported_Wallet(Simple_Wallet):
             else:
                 self.keystore.delete_imported_key(pubkey)
                 self.save_keystore()
+        self.delete_delegation(address)
         self.save_db()
 
     def is_mine(self, address) -> bool:
