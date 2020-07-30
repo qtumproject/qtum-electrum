@@ -1493,6 +1493,10 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
     def _add_input_sig_info(self, txin: PartialTxInput, address: str, *, only_der_suffix: bool = True) -> None:
         pass
 
+    @abstractmethod
+    def _add_output_sig_info(self, txout: PartialTxOutput, address: str) -> None:
+        pass
+
     def _add_txinout_derivation_info(self, txinout: Union[PartialTxInput, PartialTxOutput],
                                      address: str, *, only_der_suffix: bool = True) -> None:
         pass  # implemented by subclasses
@@ -1576,8 +1580,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
         if opsender_h160:
             sender_addr = hash160_to_p2pkh(opsender_h160)
             if self.is_mine(sender_addr):
-                pubkey_deriv_info = self.get_public_keys_with_deriv_info(sender_addr)
-                txout.opsender_pubkey = list(pubkey_deriv_info.keys())[0]
+                self._add_output_sig_info(txout, sender_addr)
                 self._add_txinout_derivation_info(txout, sender_addr, only_der_suffix=only_der_suffix)
             return
 
@@ -2432,6 +2435,11 @@ class Imported_Wallet(Simple_Wallet):
             raise Exception(f'Unexpected script type: {txin.script_type}. '
                             f'Imported wallets are not implemented to handle this.')
 
+    def _add_output_sig_info(self, txout, address):
+        if not self.is_mine(address):
+            return
+        txout.opsender_pubkey = bfh(self.get_public_key(address))
+
     def pubkeys_to_address(self, pubkeys):
         pubkey = pubkeys[0]
         for addr in self.db.get_imported_addresses():  # FIXME slow...
@@ -2546,6 +2554,10 @@ class Deterministic_Wallet(Abstract_Wallet):
 
     def _add_input_sig_info(self, txin, address, *, only_der_suffix=True):
         self._add_txinout_derivation_info(txin, address, only_der_suffix=only_der_suffix)
+
+    def _add_output_sig_info(self, txout, address):
+        pubkey_deriv_info = self.get_public_keys_with_deriv_info(address)
+        txout.opsender_pubkey = list(pubkey_deriv_info.keys())[0]
 
     def _add_txinout_derivation_info(self, txinout, address, *, only_der_suffix=True):
         if not self.is_mine(address):

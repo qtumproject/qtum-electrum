@@ -612,7 +612,7 @@ class Mobile_KeyStore(BIP32_KeyStore):
     def can_import(self):
         return False
 
-    def derive_pubkey(self, for_change, n):
+    def derive_pubkey(self, for_change, n) -> bytes:
         master_xprv = self.get_master_private_key(None)
         node = BIP32Node.from_xkey(master_xprv).subkey_at_private_derivation([n+BIP32_PRIME])
         return self.get_pubkey_from_xpub(node.to_xpub(), ())
@@ -678,7 +678,7 @@ class Qt_Core_Keystore(BIP32_KeyStore):
         d['ext_master_xprv'] = self.ext_master_xprv
         return d
 
-    def derive_pubkey(self, for_change, n):
+    def derive_pubkey(self, for_change, n) -> bytes:
         master_xprv = self.get_master_private_key(None)
         node = BIP32Node.from_xkey(master_xprv).subkey_at_private_derivation([n + BIP32_PRIME])
         return self.get_pubkey_from_xpub(node.to_xpub(), ())
