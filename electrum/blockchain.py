@@ -192,7 +192,7 @@ def read_blockchains(config: 'SimpleConfig'):
     fdir = os.path.join(util.get_headers_dir(config), 'forks')
     util.make_dir(fdir)
     # files are named as: fork2_{forkpoint}_{prev_hash}_{first_hash}
-    l = filter(lambda x: x.startswith('fork2_') and '.' not in x, os.listdir(fdir))
+    l = filter(lambda x: x.startswith('fork2_') and '.' not in x and len(x.split('_')) == 4, os.listdir(fdir))
     l = sorted(l, key=lambda x: int(x.split('_')[1]))  # sort by forkpoint
 
     def delete_chain(filename, reason):
