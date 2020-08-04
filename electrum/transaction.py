@@ -46,7 +46,7 @@ from .bitcoin import (TYPE_ADDRESS, TYPE_SCRIPT, push_data, hash_160,
                       var_int, TOTAL_COIN_SUPPLY_LIMIT_IN_BTC, COIN,
                       int_to_hex, push_script, b58_address_to_hash160,
                       opcodes, add_number_to_script, script_num_to_hex,
-                      base_decode, is_segwit_script_type, pubkeyhash_to_p2pkh_script)
+                      base_decode, is_segwit_script_type, pubkeyhash_to_p2pkh_script, public_key_to_p2pkh)
 from .crypto import sha256d
 from .logging import get_logger
 
@@ -421,6 +421,7 @@ SCRIPTPUBKEY_TEMPLATE_P2PKH = [opcodes.OP_DUP, opcodes.OP_HASH160,
                                opcodes.OP_EQUALVERIFY, opcodes.OP_CHECKSIG]
 SCRIPTPUBKEY_TEMPLATE_P2SH = [opcodes.OP_HASH160, OPPushDataGeneric(lambda x: x == 20), opcodes.OP_EQUAL]
 SCRIPTPUBKEY_TEMPLATE_WITNESS_V0 = [opcodes.OP_0, OPPushDataGeneric(lambda x: x in (20, 32))]
+SCRIPTPUBKEY_TEMPLATE_P2PK = [OPPushDataGeneric(lambda x: x in (33, 65)), opcodes.OP_CHECKSIG]
 
 
 def match_script_against_template(script, template) -> bool:
@@ -470,6 +471,10 @@ def get_address_from_output_script(_bytes: bytes, *, net=None) -> Optional[str]:
         if match_script_against_template(decoded, match):
             return hash_to_segwit_addr(decoded[1][1], witver=witver, net=net)
 
+    # p2pk
+    if match_script_against_template(decoded, SCRIPTPUBKEY_TEMPLATE_P2PK):
+        return public_key_to_p2pkh(decoded[0][1], net=net)
+
     return None
 
 
@@ -487,7 +492,7 @@ def construct_witness(items: Sequence[Union[str, int, bytes]]) -> str:
     witness = var_int(len(items))
     for item in items:
         if type(item) is int:
-            item = bitcoin.script_num_to_hex(item)
+            item = script_num_to_hex(item)
         elif isinstance(item, (bytes, bytearray)):
             item = item.hex()
         witness += bitcoin.witness_push(item)
