@@ -158,7 +158,7 @@ class TxOutput:
             'scriptpubkey': self.scriptpubkey.hex(),
             'address': self.address,
             'value_sats': self.value,
-            'constake': self.is_coinstake(),
+            'coinstake': self.is_coinstake(),
         }
         return d
 
