@@ -1524,6 +1524,9 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
         # set script_type first, as later checks might rely on it:
         txin.script_type = self.get_txin_type(address)
         self._add_input_utxo_info(txin, address)
+        if txin.script_type == 'p2pkh' and txin.utxo.outputs()[txin.prevout.out_idx].is_p2pk():
+            txin.script_type = 'p2pk'
+
         txin.num_sig = self.m if isinstance(self, Multisig_Wallet) else 1
         if txin.redeem_script is None:
             try:
@@ -2427,7 +2430,7 @@ class Imported_Wallet(Simple_Wallet):
             return
         if txin.script_type in ('unknown', 'address'):
             return
-        elif txin.script_type in ('p2pkh', 'p2wpkh', 'p2wpkh-p2sh'):
+        elif txin.script_type in ('p2pkh', 'p2wpkh', 'p2wpkh-p2sh', 'p2pk'):
             pubkey = self.get_public_key(address)
             if not pubkey:
                 return

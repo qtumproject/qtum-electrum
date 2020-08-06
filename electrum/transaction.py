@@ -165,6 +165,13 @@ class TxOutput:
     def is_coinstake(self):
         return not self.value and not self.scriptpubkey
 
+    def is_p2pk(self) -> bool:
+        try:
+            decoded = [x for x in script_GetOp(self.scriptpubkey)]
+        except MalformedBitcoinScript:
+            return False
+        return  match_script_against_template(decoded, SCRIPTPUBKEY_TEMPLATE_P2PK)
+
 
 class BIP143SharedTxDigestFields(NamedTuple):
     hashPrevouts: str
