@@ -991,7 +991,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         elif self.network.is_connected():
             server_height = self.network.get_server_height()
             server_lag = self.network.get_local_height() - server_height
-            fork_str = "_fork" if len(self.network.get_blockchains())>1 else ""
+            fork_str = "_fork" if len(self.network.get_blockchains()) > 1 else ""
             # Server height can be 0 after switching to a new server
             # until we get a headers subscription request response.
             # Display the synchronizing message in that case.
@@ -1003,6 +1003,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             elif server_lag > 1:
                 text = _("Server is lagging ({} blocks)").format(server_lag)
                 icon = read_QIcon("status_lagging%s.png"%fork_str)
+            elif server_lag < (-1):
+                text = _("Synchronizing headers...")
+                icon = read_QIcon("status_waiting.png")
             else:
                 c, u, x = self.wallet.get_balance()
                 text =  _("Balance" ) + ": %s "%(self.format_amount_and_units(c))

@@ -1169,6 +1169,7 @@ class Network(Logger, NetworkRetryManager[ServerAddr]):
         async def main():
             self.logger.info("starting taskgroup.")
             try:
+                await self._init_headers_file()
                 # note: if a task finishes with CancelledError, that
                 # will NOT raise, and the group will keep the other tasks running
                 async with taskgroup as group:
