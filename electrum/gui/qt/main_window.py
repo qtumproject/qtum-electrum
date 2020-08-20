@@ -3293,7 +3293,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.close()
 
     def use_opsender(self) -> bool:
-        return constants.net.USE_OPSENDER and self.network.get_server_height() > constants.net.QIP5_FORK_HEIGHT
+        return self.network.get_server_height() > constants.net.QIP5_FORK_HEIGHT
 
     def set_token(self, token: 'Token'):
         self.wallet.add_token(token)

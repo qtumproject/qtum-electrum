@@ -7,11 +7,11 @@ from typing import Optional, Tuple
 from electrum import ecc
 from electrum import bip32
 from electrum.crypto import hash_160
-from electrum.bitcoin import int_to_hex, var_int, is_segwit_script_type
+from electrum.bitcoin import int_to_hex, var_int, is_segwit_script_type, push_data
 from electrum.bip32 import BIP32Node, convert_bip32_intpath_to_strpath
 from electrum.i18n import _
 from electrum.keystore import Hardware_KeyStore
-from electrum.transaction import Transaction, PartialTransaction, PartialTxInput, PartialTxOutput
+from electrum.transaction import Transaction, PartialTransaction, PartialTxInput, PartialTxOutput, is_opsender_script, update_opsender_sig
 from electrum.wallet import Standard_Wallet
 from electrum.util import bfh, versiontuple, UserFacingException
 from electrum.base_wizard import ScriptTypeNotSupported
@@ -36,6 +36,12 @@ try:
     BTCHIP_DEBUG = False
 except ImportError:
     BTCHIP = False
+
+if BTCHIP:
+    try:
+        from btchip import QTUM_OPSENDER_SUPPORT
+    except ImportError:
+        raise Exception("Please uninstall btchip-python and install btchip-qtum OR use a clean virtualenv")
 
 MSG_NEEDS_FW_UPDATE_GENERIC = _('Firmware version too old. Please update at') + \
                       ' https://www.ledgerwallet.com'
@@ -291,6 +297,186 @@ class Ledger_KeyStore(Hardware_KeyStore):
     def decrypt_message(self, pubkey, message, password):
         raise UserFacingException(_('Encryption and decryption are currently not supported for {}').format(self.device))
 
+    def sign_transaction_sender(self, tx, password):
+        if tx.is_complete():
+            return True
+
+        found = False
+        for i, txout in enumerate(tx.outputs()):
+            is_opsender, decoded = is_opsender_script(txout.scriptpubkey)
+            if is_opsender:
+                found = True
+                break
+        if not found:
+            return True
+
+        inputs = []
+        inputsPaths = []
+        chipInputs = []
+        redeemScripts = []
+        changePath = ""
+        output = None
+        p2shTransaction = False
+        segwitTransaction = False
+        pin = ""
+        client_ledger = self.get_client() # prompt for the PIN before displaying the dialog if necessary
+        client_electrum = self.get_client_electrum()
+        assert client_electrum
+
+        # Fetch inputs of the transaction to sign
+        for txin in tx.inputs():
+            if txin.is_coinbase_input():
+                self.give_error("Coinbase not supported")     # should never happen
+
+            if txin.script_type in ['p2sh']:
+                p2shTransaction = True
+
+            if txin.script_type in ['p2wpkh-p2sh', 'p2wsh-p2sh']:
+                if not client_electrum.supports_segwit():
+                    self.give_error(MSG_NEEDS_FW_UPDATE_SEGWIT)
+                segwitTransaction = True
+
+            if txin.script_type in ['p2wpkh', 'p2wsh']:
+                if not client_electrum.supports_native_segwit():
+                    self.give_error(MSG_NEEDS_FW_UPDATE_SEGWIT)
+                segwitTransaction = True
+
+            my_pubkey, full_path = self.find_my_pubkey_in_txinout(txin)
+            if not full_path:
+                self.give_error("No matching pubkey for sign_transaction")  # should never happen
+            full_path = convert_bip32_intpath_to_strpath(full_path)[2:]
+
+            redeemScript = Transaction.get_preimage_script(txin)
+            txin_prev_tx = txin.utxo
+            if txin_prev_tx is None and not Transaction.is_segwit_input(txin):
+                raise UserFacingException(_('Missing previous tx for legacy input.'))
+            txin_prev_tx_raw = txin_prev_tx.serialize() if txin_prev_tx else None
+            inputs.append([txin_prev_tx_raw,
+                           txin.prevout.out_idx,
+                           redeemScript,
+                           txin.prevout.txid.hex(),
+                           my_pubkey,
+                           txin.nsequence,
+                           txin.value_sats()])
+            inputsPaths.append(full_path)
+
+        # Sanity check
+        if p2shTransaction:
+            for txin in tx.inputs():
+                if txin.script_type != 'p2sh':
+                    self.give_error("P2SH / regular input mixed in same transaction not supported") # should never happen
+
+        txOutput = var_int(len(tx.outputs()))
+        for o in tx.outputs():
+            txOutput += int_to_hex(o.value, 8)
+            script = o.scriptpubkey.hex()
+            txOutput += var_int(len(script)//2)
+            txOutput += script
+        txOutput = bfh(txOutput)
+
+        if not client_electrum.supports_multi_output():
+            if len(tx.outputs()) > 2:
+                self.give_error("Transaction with more than 2 outputs not supported")
+
+        if not p2shTransaction:
+            has_change = False
+            any_output_on_change_branch = is_any_tx_output_on_change_branch(tx)
+            for txout in tx.outputs():
+                if txout.is_mine and len(tx.outputs()) > 1 \
+                        and not has_change:
+                    # prioritise hiding outputs on the 'change' branch from user
+                    # because no more than one change address allowed
+                    if txout.is_change == any_output_on_change_branch:
+                        my_pubkey, changePath = self.find_my_pubkey_in_txinout(txout)
+                        assert changePath
+                        changePath = convert_bip32_intpath_to_strpath(changePath)[2:]
+                        has_change = True
+                    else:
+                        output = txout.address
+                else:
+                    output = txout.address
+
+        self.handler.show_message(_("Confirm Transaction on your Ledger device..."))
+        try:
+            # Get trusted inputs from the original transactions
+            for utxo in inputs:
+                sequence = int_to_hex(utxo[5], 4)
+                if segwitTransaction and not client_electrum.supports_segwit_trustedInputs():
+                    tmp = bfh(utxo[3])[::-1]
+                    tmp += bfh(int_to_hex(utxo[1], 4))
+                    tmp += bfh(int_to_hex(utxo[6], 8))  # txin['value']
+                    chipInputs.append({'value' : tmp, 'witness' : True, 'sequence' : sequence})
+                    redeemScripts.append(bfh(utxo[2]))
+                elif (not p2shTransaction) or client_electrum.supports_multi_output():
+                    txtmp = bitcoinTransaction(bfh(utxo[0]))
+                    trustedInput = client_ledger.getTrustedInput(txtmp, utxo[1])
+                    trustedInput['sequence'] = sequence
+                    if segwitTransaction:
+                        trustedInput['witness'] = True
+                    chipInputs.append(trustedInput)
+                    if p2shTransaction or segwitTransaction:
+                        redeemScripts.append(bfh(utxo[2]))
+                    else:
+                        redeemScripts.append(txtmp.outputs[utxo[1]].script)
+                else:
+                    tmp = bfh(utxo[3])[::-1]
+                    tmp += bfh(int_to_hex(utxo[1], 4))
+                    chipInputs.append({'value' : tmp, 'sequence' : sequence})
+                    redeemScripts.append(bfh(utxo[2]))
+
+            # Send all inputs
+            inputIndex = 0
+            rawTx = tx.serialize_to_network()
+            client_ledger.enableAlternate2fa(False)
+            client_ledger.startUntrustedTransaction(True, inputIndex, chipInputs, redeemScripts[inputIndex],
+                                                    version=tx.version, qtumOpSender=True)
+
+            # Send all outputs
+            outputData = client_ledger.finalizeInput(b'', 0, 0, changePath, bfh(rawTx))
+            outputData['outputData'] = txOutput
+            if outputData['confirmationNeeded']:
+                outputData['address'] = output
+                self.handler.finished()
+                pin = self.handler.get_auth( outputData ) # does the authenticate dialog and returns pin
+                if not pin:
+                    raise UserWarning()
+                self.handler.show_message(_("Confirmed. Signing Transaction Output..."))
+
+            # Sign the op_sender output
+            for i, txout in enumerate(tx.outputs()):
+                is_opsender, decoded = is_opsender_script(txout.scriptpubkey)
+                if is_opsender and not decoded[3][1]:
+                    sender_pubkey = txout.opsender_pubkey.hex()
+                    sender_path = list(self.get_pubkey_derivation(txout.opsender_pubkey, txout))
+                    sender_path = self.get_derivation_prefix()[2:] + '/'+ convert_bip32_intpath_to_strpath(sender_path)[2:]
+                    if not sender_path:
+                        self.give_error("No matching pubkey for sign_transaction_sender")  # should never happen
+                    outputSignature = client_ledger.untrustedHashSign(sender_path, pin, lockTime=tx.locktime)
+                    sig = bfh(push_data((outputSignature + b'\x01').hex()))
+                    sig += bfh(push_data(sender_pubkey))
+                    sig = bfh(int_to_hex(len(sig))) + sig
+                    script = update_opsender_sig(txout.scriptpubkey, sig)
+                    tx._outputs[i].scriptpubkey = script
+
+        except UserWarning:
+            self.handler.show_error(_('Cancelled by user'))
+            return False
+        except BTChipException as e:
+            self.logger.error(f"BTChipException {e}")
+            if e.sw in (0x6985, 0x6d00):  # cancelled by user
+                return False
+            elif e.sw == 0x6982:
+                raise  # pin lock. decorator will catch it
+            else:
+                self.logger.exception('')
+                self.give_error(e, True)
+        except BaseException as e:
+            self.logger.exception('')
+            self.give_error(e, True)
+        finally:
+            self.handler.finished()
+        return True
+
     @test_pin_unlocked
     @set_and_unset_signing
     def sign_message(self, sequence, message, password):
@@ -341,6 +527,9 @@ class Ledger_KeyStore(Hardware_KeyStore):
     @set_and_unset_signing
     def sign_transaction(self, tx, password):
         if tx.is_complete():
+            return
+
+        if not self.sign_transaction_sender(tx, password):
             return
         inputs = []
         inputsPaths = []
