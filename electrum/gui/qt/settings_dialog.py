@@ -327,6 +327,15 @@ Use this if you want your local watchtower to keep running after you close your 
         outrounding_cb.stateChanged.connect(on_outrounding)
         tx_widgets.append((outrounding_cb, None))
 
+        def on_opsender(x):
+            self.config.set_key('enable_opsender', bool(x))
+        enable_opsender = bool(self.config.get('enable_opsender', True))
+        opsender_cb = QCheckBox(_('Enable OP_SENDER'))
+        opsender_cb.setToolTip(_('Enable QIP-5 OP_SENDER'))
+        opsender_cb.setChecked(enable_opsender)
+        opsender_cb.stateChanged.connect(on_opsender)
+        tx_widgets.append((opsender_cb, None))
+
         block_explorers = sorted(util.block_explorer_info().keys())
         msg = _('Choose which online block explorer to use for functions that open a web browser')
         block_ex_label = HelpLabel(_('Online Block Explorer') + ':', msg)
