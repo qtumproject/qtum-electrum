@@ -6,6 +6,7 @@ from typing import Optional, Tuple
 
 from electrum import ecc
 from electrum import bip32
+from electrum import constants
 from electrum.crypto import hash_160
 from electrum.bitcoin import int_to_hex, var_int, is_segwit_script_type, push_data
 from electrum.bip32 import BIP32Node, convert_bip32_intpath_to_strpath
@@ -702,7 +703,7 @@ class LedgerPlugin(HW_PluginBase):
         device_id = device_info.device.id_
         client = self.scan_and_create_client_for_device(device_id=device_id, wizard=wizard)
         wizard.run_task_without_blocking_gui(
-            task=lambda: client.get_xpub("m/44'/88'/0'", 'standard'))  # TODO replace by direct derivation once Nano S > 1.1
+            task=lambda: client.get_xpub(f"m/44'/{constants.net.BIP44_COIN_TYPE}'/0'", 'standard'))  # TODO replace by direct derivation once Nano S > 1.1
         return client
 
     def get_xpub(self, device_id, derivation, xtype, wizard):

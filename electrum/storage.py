@@ -35,10 +35,11 @@ from .util import profiler, InvalidPassword, WalletFileException, bfh, standardi
 
 from .wallet_db import WalletDB
 from .logging import Logger
+from . import constants
 
 
 def get_derivation_used_for_hw_device_encryption():
-    return ("m/44'/88'"
+    return (f"m/44'/{constants.net.BIP44_COIN_TYPE}'"
             "/4541509'"      # ascii 'ELE'  as decimal ("BIP43 purpose")
             "/1112098098'")  # ascii 'BIE2' as decimal
 
