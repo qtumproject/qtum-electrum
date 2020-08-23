@@ -328,11 +328,11 @@ Use this if you want your local watchtower to keep running after you close your 
         tx_widgets.append((outrounding_cb, None))
 
         def on_opsender(x):
-            self.config.set_key('enable_opsender', bool(x))
-        enable_opsender = bool(self.config.get('enable_opsender', True))
-        opsender_cb = QCheckBox(_('Enable OP_SENDER'))
-        opsender_cb.setToolTip(_('Enable QIP-5 OP_SENDER'))
-        opsender_cb.setChecked(enable_opsender)
+            self.config.set_key('disable_opsender', bool(x))
+        disable_opsender = bool(self.config.get('disable_opsender', False))
+        opsender_cb = QCheckBox(_('Disable OP_SENDER'))
+        opsender_cb.setToolTip(_("Don't use op_sender at any time"))
+        opsender_cb.setChecked(disable_opsender)
         opsender_cb.stateChanged.connect(on_opsender)
         tx_widgets.append((opsender_cb, None))
 
