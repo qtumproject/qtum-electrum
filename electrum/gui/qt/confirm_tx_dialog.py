@@ -120,15 +120,15 @@ class TxEditor:
             return True
 
 
-
-
 class ConfirmTxDialog(TxEditor, WindowModalDialog):
     # set fee and return password (after pw check)
 
-    def __init__(self, *, window: 'ElectrumWindow', make_tx, output_value: Union[int, str], is_sweep: bool):
+    def __init__(self, *, window: 'ElectrumWindow', make_tx, output_value: Union[int, str],
+                 is_sweep: bool, gas_fee: int = 0):
 
         TxEditor.__init__(self, window=window, make_tx=make_tx, output_value=output_value, is_sweep=is_sweep)
         WindowModalDialog.__init__(self, window, _("Confirm Transaction"))
+        self.gas_fee = gas_fee
         vbox = QVBoxLayout()
         self.setLayout(vbox)
         grid = QGridLayout()
@@ -144,27 +144,31 @@ class ConfirmTxDialog(TxEditor, WindowModalDialog):
         grid.addWidget(HelpLabel(_("Mining fee") + ": ", msg), 1, 0)
         grid.addWidget(self.fee_label, 1, 1)
 
+        self.gas_label = QLabel(self.main_window.format_amount_and_units(self.gas_fee))
+        grid.addWidget(HelpLabel(_("Gas fee") + ": ", msg), 2, 0)
+        grid.addWidget(self.gas_label, 2, 1)
+
         self.extra_fee_label = QLabel(_("Additional fees") + ": ")
         self.extra_fee_label.setVisible(False)
         self.extra_fee_value = QLabel('')
         self.extra_fee_value.setVisible(False)
-        grid.addWidget(self.extra_fee_label, 2, 0)
-        grid.addWidget(self.extra_fee_value, 2, 1)
+        grid.addWidget(self.extra_fee_label, 3, 0)
+        grid.addWidget(self.extra_fee_value, 3, 1)
 
         self.fee_slider = FeeSlider(self, self.config, self.fee_slider_callback)
         self.fee_combo = FeeComboBox(self.fee_slider)
-        grid.addWidget(HelpLabel(_("Fee rate") + ": ", self.fee_combo.help_msg), 5, 0)
-        grid.addWidget(self.fee_slider, 5, 1)
-        grid.addWidget(self.fee_combo, 5, 2)
+        grid.addWidget(HelpLabel(_("Fee rate") + ": ", self.fee_combo.help_msg), 6, 0)
+        grid.addWidget(self.fee_slider, 6, 1)
+        grid.addWidget(self.fee_combo, 6, 2)
 
         self.message_label = QLabel(self.default_message())
-        grid.addWidget(self.message_label, 6, 0, 1, -1)
+        grid.addWidget(self.message_label, 7, 0, 1, -1)
         self.pw_label = QLabel(_('Password'))
         self.pw_label.setVisible(self.password_required)
         self.pw = PasswordLineEdit()
         self.pw.setVisible(self.password_required)
-        grid.addWidget(self.pw_label, 8, 0)
-        grid.addWidget(self.pw, 8, 1, 1, -1)
+        grid.addWidget(self.pw_label, 9, 0)
+        grid.addWidget(self.pw, 9, 1, 1, -1)
         self.preview_button = QPushButton(_('Advanced'))
         self.preview_button.clicked.connect(self.on_preview)
         grid.addWidget(self.preview_button, 0, 2)
@@ -241,7 +245,7 @@ class ConfirmTxDialog(TxEditor, WindowModalDialog):
         if not tx:
             return
 
-        fee = tx.get_fee()
+        fee = tx.get_fee() - self.gas_fee
         self.fee_label.setText(self.main_window.format_amount_and_units(fee))
         x_fee = run_hook('get_tx_extra_fee', self.wallet, tx)
         if x_fee:
@@ -259,7 +263,7 @@ class ConfirmTxDialog(TxEditor, WindowModalDialog):
                 _("Try to raise your transaction fee, or use a server with a lower relay fee.")
             ])
             self.toggle_send_button(False, message=msg)
-        elif fee_ratio >= FEE_RATIO_HIGH_WARNING:
+        elif fee_ratio >= FEE_RATIO_HIGH_WARNING and self.gas_fee == 0:
             self.toggle_send_button(True,
                                     message=_('Warning') + ': ' + _("The fee for this transaction seems unusually high.")
                                             + f'\n({fee_ratio*100:.2f}% of amount)')

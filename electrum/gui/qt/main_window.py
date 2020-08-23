@@ -1710,7 +1710,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
                             window=self)
         d.show()
 
-    def broadcast_or_show(self, tx: Transaction):
+    def broadcast_or_show(self, tx: Transaction, * , broadcast_done=None):
         if not tx.is_complete():
             self.show_transaction(tx)
             return
@@ -1719,6 +1719,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             self.show_transaction(tx)
             return
         self.broadcast_transaction(tx)
+        if broadcast_done:
+            broadcast_done()
 
     @protected
     def sign_tx(self, tx, *, callback, external_keypairs, password):
@@ -3369,16 +3371,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         pod = self.wallet.sign_message(addr, staker, password)
         args = [staker.lower(), fee, pod]
         self.sendto_smart_contract(DELEGATION_CONTRACT, DELEGATE_ABI[1], args,
-                                   gas_limit, gas_price, 0, addr, dialog, False, password, tx_desc="update delegation")
+                                   gas_limit, gas_price, 0, addr, dialog, False, tx_desc="update delegation")
 
     def call_remove_delegation(self, addr: str, gas_limit: int, gas_price: int, dialog):
-        password = None
-        if self.wallet.has_keystore_encryption():
-            password = self.password_dialog(_("Enter your password to proceed"))
-            if not password: return
-
         self.sendto_smart_contract(DELEGATION_CONTRACT, DELEGATE_ABI[0], [],
-                                   gas_limit, gas_price, 0, addr, dialog, False, password, tx_desc="remove delegation")
+                                   gas_limit, gas_price, 0, addr, dialog, False, tx_desc="remove delegation")
 
     def create_delegations_tab(self):
         from .delegation_list import DelegationList
@@ -3397,76 +3394,53 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         d = DelegationDialog(self, dele, mode)
         d.show()
 
-    def _smart_contract_broadcast(self, outputs: list, desc: str, gas_fee: int, sender: str, dialog, broadcast_done=None, preview=False, password=None):
+    def _smart_contract_broadcast(self, outputs: list, desc: str, gas_fee: int, sender: str, dialog,
+                                  broadcast_done=None, preview=False):
         addr_type, __ = b58_address_to_hash160(sender)
         if not addr_type == constants.net.ADDRTYPE_P2PKH:
             dialog.show_message(_('only P2PKH address can call contract'))
             return
 
         coins = self.get_coins()
-        try:
-            tx = self.wallet.make_unsigned_transaction(coins=coins,
+
+        make_tx = lambda fee_est: self.wallet.make_unsigned_transaction(coins=coins,
                                                        outputs=outputs,
                                                        fee=None,
                                                        change_addr=sender,
                                                        gas_fee=gas_fee,
                                                        sender=sender,
                                                        is_sweep=False)
-        except NotEnoughFunds:
-            dialog.show_message(_("Insufficient funds"))
-            return
-        except BaseException as e:
-            traceback.print_exc(file=sys.stdout)
-            dialog.show_message(str(e))
-            return
-        if preview:
-            self.show_transaction(tx)
+        output_values = [x.value for x in outputs]
+        if output_values.count('!') > 1:
+            self.show_error(_("More than one output set to spend max"))
             return
 
-        fee = tx.get_fee()
+        output_value = '!' if '!' in output_values else sum(output_values)
+        d = ConfirmTxDialog(window=self, make_tx=make_tx, output_value=output_value, is_sweep=False, gas_fee=gas_fee)
+        if d.not_enough_funds:
+            # Check if we had enough funds excluding fees,
+            # if so, still provide opportunity to set lower fees.
+            if not d.have_enough_funds_assuming_zero_fees():
+                self.show_message(_('Not Enough Funds'))
+                return
 
-        if fee < self.wallet.relayfee() * tx.estimated_size() / 1000:
-            dialog.show_message(
-                _("This transaction requires a higher fee, or it will not be propagated by the network"))
+        # shortcut to advanced preview (after "enough funds" check!)
+        if preview or self.config.get('advanced_preview'):
+            self.preview_tx_dialog(make_tx=make_tx)
             return
 
-        # confirmation dialog
-        msg = [
-            _(desc),
-            _("Mining fee") + ": " + self.format_amount_and_units(fee - gas_fee),
-            _("Gas fee") + ": " + self.format_amount_and_units(gas_fee),
-        ]
-
-        confirm_rate = simple_config.FEERATE_WARNING_HIGH_FEE
-        if fee - gas_fee > confirm_rate * tx.estimated_size() / 1000:
-            msg.append(_('Warning') + ': ' + _("The fee for this transaction seems unusually high."))
-
-        if not password:
-            if self.wallet.has_keystore_encryption():
-                msg.append("")
-                msg.append(_("Enter your password to proceed"))
-                password = self.password_dialog('\n'.join(msg))
-                if not password:
-                    return
-            else:
-                msg.append(_('Proceed?'))
-                password = None
-                if not self.question('\n'.join(msg)):
-                    return
-
-        def sign_done(success):
-            if success:
-                if not tx.is_complete():
-                    self.show_transaction(tx)
-                    self.do_clear()
-                else:
-                    self.broadcast_transaction(tx)
-                    if broadcast_done:
-                        broadcast_done(tx)
+        cancelled, is_send, password, tx = d.run()
+        if cancelled:
+            return
+        if is_send:
+            def sign_done(success):
+                if success:
+                    self.broadcast_or_show(tx, broadcast_done=broadcast_done)
                     if desc is not None:
                         self.wallet.set_label(tx.txid(), desc)
-
-        self.sign_tx_with_password(tx, callback=sign_done, password=password)
+            self.sign_tx_with_password(tx, callback=sign_done, password=password)
+        else:
+            self.preview_tx_dialog(make_tx=make_tx)
 
     def create_smart_contract_tab(self):
         from .smart_contract_list import SmartContractList
@@ -3521,7 +3495,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
 
     def sendto_smart_contract(self, address: str, func: dict, args: list,
                               gas_limit: int, gas_price: int, amount: int, sender: str,
-                              dialog, preview, password=None, tx_desc=None):
+                              dialog, preview, tx_desc=None):
         try:
             abi_encoded = eth_abi_encode(func, args)
             op_sender = sender if self.use_opsender() else None
@@ -3529,7 +3503,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             outputs = [PartialTxOutput(scriptpubkey=script, value=amount)]
             if tx_desc is None:
                 tx_desc = 'contract sendto {}'.format(self.wallet.db.smart_contracts.get(address, [address, ])[0])
-            self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog, None, preview, password)
+            self._smart_contract_broadcast(outputs, tx_desc, gas_limit * gas_price, sender, dialog, None, preview)
         except (BaseException,) as e:
             self.logger.exception('')
             dialog.show_message(str(e))
