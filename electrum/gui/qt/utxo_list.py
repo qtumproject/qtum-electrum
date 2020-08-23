@@ -73,7 +73,7 @@ class UTXOList(MyTreeView):
 
     def update(self):
         # not calling maybe_defer_update() as it interferes with coincontrol status bar
-        utxos = self.wallet.get_utxos()
+        utxos = self.wallet.get_utxos(mature_only=True)
         self._maybe_reset_spend_list(utxos)
         self._utxo_dict = {}
         self.model().clear()
