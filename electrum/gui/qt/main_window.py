@@ -3294,9 +3294,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.showing_cert_mismatch_error = False
         self.close()
 
-    def use_opsender(self) -> bool:
-        return (not self.config.get("disable_opsender", False)) and \
-               self.network.get_server_height() > constants.net.QIP5_FORK_HEIGHT
+    def disable_opsender(self) -> bool:
+        return self.config.get("disable_opsender", False) or \
+               self.network.get_server_height() <= constants.net.QIP5_FORK_HEIGHT
 
     def set_token(self, token: 'Token'):
         self.wallet.add_token(token)
@@ -3343,7 +3343,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
     def do_token_pay(self, token: 'Token', pay_to: str, amount: int, gas_limit: int, gas_price: int, dialog, preview=False):
         try:
             datahex = 'a9059cbb{}{:064x}'.format(pay_to.zfill(64), amount)
-            op_sender = token.bind_addr if self.use_opsender() else None
+            op_sender = None if self.disable_opsender() else token.bind_addr
             script = contract_script(gas_limit, gas_price, datahex, token.contract_addr, opcodes.OP_CALL, op_sender)
             outputs = [PartialTxOutput(scriptpubkey=script, value=0)]
             tx_desc = _('Pay out {} {}').format(amount / (10 ** token.decimals), token.symbol)
@@ -3499,7 +3499,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
                               dialog, preview, tx_desc=None):
         try:
             abi_encoded = eth_abi_encode(func, args)
-            op_sender = sender if self.use_opsender() else None
+            op_sender = None if self.disable_opsender() else sender
             script = contract_script(gas_limit, gas_price, abi_encoded, address, opcodes.OP_CALL, op_sender)
             outputs = [PartialTxOutput(scriptpubkey=script, value=amount)]
             if tx_desc is None:
@@ -3522,7 +3522,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             abi_encoded = ''
             if constructor:
                 abi_encoded = eth_abi_encode(constructor, args)
-            op_sender = sender if self.use_opsender() else None
+            op_sender = None if self.disable_opsender() else sender
             script = contract_script(gas_limit, gas_price, bytecode + abi_encoded, None, opcodes.OP_CREATE, op_sender)
             outputs = [PartialTxOutput(scriptpubkey=script, value=0)]
             self._smart_contract_broadcast(outputs, 'create contract {}'.format(name), gas_limit * gas_price,
