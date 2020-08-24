@@ -1339,7 +1339,7 @@ class Network(Logger, NetworkRetryManager[ServerAddr]):
         __, hash160 = b58_address_to_hash160(bind_addr)
         hash160 = hash160.hex()
         datahex = '70a08231{}'.format(hash160.zfill(64))
-        return await self.interface.session.send_request('blockchain.contract.call', [contract_addr, datahex, '', 'int'])
+        return await self.interface.session.send_request('blockchain.contract.call', [contract_addr, datahex, '', 'int'], timeout=5)
 
     async def request_token_history(self, bind_addr, contract_addr):
         __, hash160 = b58_address_to_hash160(bind_addr)
