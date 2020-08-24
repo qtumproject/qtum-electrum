@@ -1,3 +1,4 @@
+import os
 from struct import pack, unpack
 import hashlib
 import sys
@@ -27,7 +28,7 @@ _logger = get_logger(__name__)
 
 try:
     import hid
-    from btchip.btchipComm import HIDDongleHIDAPI, DongleWait
+    from btchip.btchipComm import HIDDongleHIDAPI, DongleWait, DongleServer
     from btchip.btchip import btchip
     from btchip.btchipUtils import compress_public_key,format_transaction, get_regular_input_script, get_p2sh_input_script
     from btchip.bitcoinTransaction import bitcoinTransaction
@@ -684,6 +685,8 @@ class LedgerPlugin(HW_PluginBase):
                 ledger = True
             else:
                 return None  # non-compatible interface of a Nano S or Blue
+        if (os.getenv("LEDGER_PROXY_ADDRESS") is not None) and (os.getenv("LEDGER_PROXY_PORT") is not None):
+            return DongleServer(os.getenv("LEDGER_PROXY_ADDRESS"), int(os.getenv("LEDGER_PROXY_PORT")), BTCHIP_DEBUG)
         with self.device_manager().hid_lock:
             dev = hid.device()
             dev.open_path(device.path)

@@ -688,6 +688,12 @@ class DeviceMgr(ThreadJob):
         # First see what's connected that we know about
         devices = self._scan_devices_with_hid()
 
+        if (os.getenv("LEDGER_PROXY_ADDRESS") is not None) and (os.getenv("LEDGER_PROXY_PORT") is not None):
+            devices.append(
+                Device(path=b'0002:0003:00', interface_number=0, id_='000100', product_key=(11415, 1), usage_page=0,
+                       transport_ui_string='hid'))
+            self.logger.debug("ledger devices:", devices)
+
         # Let plugin handlers enumerate devices we don't know about
         with self.lock:
             enumerate_funcs = list(self._enumerate_func)
