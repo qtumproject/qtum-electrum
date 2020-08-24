@@ -37,7 +37,7 @@ from .transaction import Transaction, PartialTransaction
 from .util import make_aiohttp_session, NetworkJobOnDefaultServer, random_shuffled_copy, bfh
 from .bitcoin import (address_to_scripthash, is_address, b58_address_to_hash160, hash160_to_b58_address,
                       hash160_to_p2pkh, TOKEN_TRANSFER_TOPIC, Delegation, DELEGATION_CONTRACT,
-                      ADD_DELEGATION_TOPIC, is_p2pkh_address)
+                      ADD_DELEGATION_TOPIC, RM_DELEGATION_TOPIC, is_p2pkh_address)
 from .network import UntrustedServerReturnedError
 from .logging import Logger
 from .interface import GracefulDisconnect
@@ -160,17 +160,21 @@ class SynchronizerBase(NetworkJobOnDefaultServer):
         async def subscribe_to_delegation(addr):
             if not is_p2pkh_address(addr):
                 return
-            self._delegation_requests_sent += 1
+            self._delegation_requests_sent += 2
             try:
                 await self.session.subscribe('blockchain.contract.event.subscribe',
                                              [b58_address_to_hash160(addr)[1].hex(), DELEGATION_CONTRACT,
                                               ADD_DELEGATION_TOPIC],
                                              self.delegation_status_queue)
+                await self.session.subscribe('blockchain.contract.event.subscribe',
+                                             [b58_address_to_hash160(addr)[1].hex(), DELEGATION_CONTRACT,
+                                              RM_DELEGATION_TOPIC],
+                                             self.delegation_status_queue)
             except RPCError as e:
                 if e.message == 'history too large':  # no unique error code
                     raise GracefulDisconnect(e, log_level=logging.ERROR) from e
                 raise
-            self._delegation_requests_answered += 1
+            self._delegation_requests_answered += 2
 
         while True:
             addr = await self.add_queue.get()
@@ -462,14 +466,14 @@ class Synchronizer(SynchronizerBase):
         try:
             r = await self.network.request_delegation_info(addr)
             if r[0] == '0x0000000000000000000000000000000000000000':
-                staker = ''
+                self.wallet.delete_delegation(addr)
             else:
                 staker = hash160_to_b58_address(bfh(r[0][2:]), constants.net.ADDRTYPE_P2PKH)
-            fee = r[1]
-            dele = self.wallet.db.get_delegation(addr)
-            if dele and staker == dele.staker and fee == dele.fee:
-                return
-            self.wallet.db.set_delegation(Delegation(addr=addr, staker=staker, fee=fee))
+                fee = r[1]
+                dele = self.wallet.db.get_delegation(addr)
+                if dele and staker == dele.staker and fee == dele.fee:
+                    return
+                self.wallet.db.set_delegation(Delegation(addr=addr, staker=staker, fee=fee))
             util.trigger_callback('on_delegation', self.wallet)
         except CancelledError:
             pass
