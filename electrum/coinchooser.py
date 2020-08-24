@@ -340,7 +340,7 @@ class CoinChooserBase(Logger):
 
     def choose_buckets(self, buckets: List[Bucket],
                        sufficient_funds: Callable,
-                       penalty_func: Callable[[List[Bucket]], ScoredCandidate], sender=None) -> ScoredCandidate:
+                       penalty_func: Callable[[List[Bucket]], ScoredCandidate]) -> ScoredCandidate:
         raise NotImplemented('To be subclassed')
 
 
@@ -423,7 +423,7 @@ class CoinChooserRandom(CoinChooserBase):
         candidates = [(already_selected_buckets + c) for c in candidates]
         return [strip_unneeded(c, sufficient_funds) for c in candidates]
 
-    def choose_buckets(self, buckets, sufficient_funds, penalty_func, sender=None):
+    def choose_buckets(self, buckets, sufficient_funds, penalty_func):
         candidates = self.bucket_candidates_prefer_confirmed(buckets, sufficient_funds)
         scored_candidates = [penalty_func(cand) for cand in candidates]
         winner = min(scored_candidates, key=lambda x: x.penalty)
