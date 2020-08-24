@@ -404,7 +404,10 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
         tx_details = self.wallet.get_tx_info(self.tx)
         tx_mined_status = tx_details.tx_mined_status
         exp_n = tx_details.mempool_depth_bytes
+        gas_fee = self.tx.gas_fee()
         amount, fee = tx_details.amount, tx_details.fee
+        if fee:
+            fee -= gas_fee
         size = self.tx.estimated_size()
         txid = self.tx.txid()
         lnworker_history = self.wallet.lnworker.get_onchain_history() if self.wallet.lnworker else {}
@@ -471,8 +474,11 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
             self.amount_label.setText(amount_str)
         else:
             self.amount_label.hide()
+
+        self.gas_label.setText(f"Gas Fee: {format_amount(gas_fee)} {base_unit}")
+
         size_str = _("Size:") + ' %d bytes'% size
-        fee_str = _("Fee") + ': %s' % (format_amount(fee) + ' ' + base_unit if fee is not None else _('unknown'))
+        fee_str = _("Mining Fee") + ': %s' % (format_amount(fee) + ' ' + base_unit if fee is not None else _('unknown'))
         if fee is not None:
             fee_rate = fee/size*1000
             fee_str += '  ( %s ) ' % self.main_window.format_fee_rate(fee_rate)
@@ -643,6 +649,11 @@ class BaseTxDialog(QDialog, MessageBoxMixin):
         self.block_height_label = TxDetailLabel()
         vbox_right.addWidget(self.block_height_label)
         vbox_right.addStretch(1)
+
+        self.gas_label = TxDetailLabel()
+        vbox_right.addWidget(self.gas_label)
+        vbox_right.addStretch(1)
+
         hbox_stats.addLayout(vbox_right, 50)
 
         vbox.addLayout(hbox_stats)

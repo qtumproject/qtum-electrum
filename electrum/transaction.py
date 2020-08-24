@@ -170,7 +170,24 @@ class TxOutput:
             decoded = [x for x in script_GetOp(self.scriptpubkey)]
         except MalformedBitcoinScript:
             return False
-        return  match_script_against_template(decoded, SCRIPTPUBKEY_TEMPLATE_P2PK)
+        return match_script_against_template(decoded, SCRIPTPUBKEY_TEMPLATE_P2PK)
+
+    def gas_fee(self) -> int:
+        scriptpubkey = self.scriptpubkey
+        decoded = decode_opsender_script(scriptpubkey)
+        if decoded:
+            scriptpubkey = scriptpubkey[decoded[3][2]:]
+        decoded = decode_opcall_script(scriptpubkey)
+        if decoded:
+            gas_limit = int.from_bytes(decoded[1][1], byteorder='little')
+            gas_price = int.from_bytes(decoded[2][1], byteorder='little')
+            return gas_limit * gas_price
+        decoded = decode_opcreate_script(scriptpubkey)
+        if decoded:
+            gas_limit = int.from_bytes(decoded[1][1], byteorder='little')
+            gas_price = int.from_bytes(decoded[2][1], byteorder='little')
+            return gas_limit * gas_price
+        return 0
 
 
 class BIP143SharedTxDigestFields(NamedTuple):
@@ -1006,6 +1023,9 @@ class Transaction:
         else:
             _logger.info(f'sender {self._inputs}')
             raise Exception('sender - sender address not in inputs')
+
+    def gas_fee(self) -> int:
+        return sum([o.gas_fee() for o in self.outputs()])
 
 
 def convert_raw_tx_to_hex(raw: Union[str, bytes]) -> str:
