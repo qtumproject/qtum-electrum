@@ -69,7 +69,7 @@ from .wallet_db import WalletDB
 from . import transaction, bitcoin, coinchooser, paymentrequest, ecc, bip32
 from .transaction import (Transaction, TxInput, UnknownTxinType, TxOutput,
                           PartialTransaction, PartialTxInput, PartialTxOutput, TxOutpoint,
-                          is_opsender_script, h160_from_opsender_script)
+                          decode_opsender_script, h160_from_opsender_script)
 from .plugin import run_hook
 from .address_synchronizer import (AddressSynchronizer, TX_HEIGHT_LOCAL,
                                    TX_HEIGHT_UNCONF_PARENT, TX_HEIGHT_UNCONFIRMED, TX_HEIGHT_FUTURE)
@@ -1252,7 +1252,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
             tx = PartialTransaction.from_io(list(coins), list(outputs))
 
         # sender sort to make sure sender txi the first place
-        op_sender = any([is_opsender_script(out.scriptpubkey)[0] for out in outputs])
+        op_sender = any([decode_opsender_script(out.scriptpubkey) is not None for out in outputs])
         if not op_sender and sender:
             tx.legacy_sender_sort(sender)
         # Timelock tx to current height.

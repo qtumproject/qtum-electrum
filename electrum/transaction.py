@@ -919,7 +919,7 @@ class Transaction:
         else:
             size = len(self._cached_network_ser) // 2  # ASCII hex string
             for out in self.outputs():
-                if out.scriptpubkey and is_opsender_script(out.scriptpubkey)[0]:
+                if out.scriptpubkey and decode_opsender_script(out.scriptpubkey) is not None:
                     size += 107
             return size
 
@@ -1569,7 +1569,7 @@ class PartialTxOutput(TxOutput, PSBTSection):
             wr(key_type, val, key=key)
 
     def combine_with_other_txout(self, other_txout: 'TxOutput') -> None:
-        if is_opsender_script(self.scriptpubkey)[0]:
+        if decode_opsender_script(self.scriptpubkey) is not None:
             self.scriptpubkey = other_txout.scriptpubkey
         else:
             assert self.scriptpubkey == other_txout.scriptpubkey
@@ -1583,8 +1583,8 @@ class PartialTxOutput(TxOutput, PSBTSection):
         self._unknown.update(other_txout._unknown)
 
     def is_complete(self) -> bool:
-        is_opsender, decoded = is_opsender_script(self.scriptpubkey)
-        if not is_opsender:
+        decoded = decode_opsender_script(self.scriptpubkey)
+        if decoded is None:
             return True
         return bool(decoded[3][1])
 
@@ -1868,8 +1868,8 @@ class PartialTransaction(Transaction):
     def sign(self, keypairs: dict) -> None:
         # sign op_sender
         for i, txout in enumerate(self.outputs()):
-            is_opsender, decoded = is_opsender_script(txout.scriptpubkey)
-            if is_opsender and not decoded[3][1]:
+            decoded = decode_opsender_script(txout.scriptpubkey)
+            if (decoded is not None) and (not decoded[3][1]):
                 h160 = decoded[1][1]
                 found = False
                 for pubkey, (priv, compressed) in keypairs.items():
@@ -2141,42 +2141,47 @@ def contract_script(gas_limit: int, gas_price: int, datahex: str,
     return bfh(script)
 
 
-def is_opcall_script(script: bytes) -> bool:
+def decode_opcall_script(script: bytes) -> Optional[list]:
     try:
         decoded = [x for x in script_GetOp(script)]
     except MalformedBitcoinScript:
-        return False
-    return len(decoded) == 6 \
+        return None
+    if len(decoded) == 6 \
            and decoded[0] == (1, b'\x04', 2) \
            and decoded[-2][0] == 0x14 \
-           and decoded[-1][0] == opcodes.OP_CALL
+           and decoded[-1][0] == opcodes.OP_CALL:
+        return decoded
+    return None
 
 
-def is_opcreate_script(script: bytes) -> bool:
+def decode_opcreate_script(script: bytes) -> Optional[list]:
     try:
         decoded = [x for x in script_GetOp(script)]
     except MalformedBitcoinScript:
-        return False
-    return len(decoded) == 5 \
+        return None
+    if len(decoded) == 5 \
            and decoded[0] == (1, b'\x04', 2) \
-           and decoded[-1][0] == opcodes.OP_CREATE
+           and decoded[-1][0] == opcodes.OP_CREATE:
+        return decoded
+    return None
 
 
-def is_opsender_script(script: bytes) -> (bool, list):
+def decode_opsender_script(script: bytes) -> Optional[list]:
     try:
         decoded = [x for x in script_GetOp(script)]
     except MalformedBitcoinScript:
-        return False, []
-    is_opsender = len(decoded) == 10 \
+        return None
+    if len(decoded) == 10 \
                   and decoded[0] == (1, b'\x01', 2) \
                   and decoded[1][0] == 0x14 \
-                  and decoded[3][0] == opcodes.OP_SENDER
-    return is_opsender, decoded
+                  and decoded[3][0] == opcodes.OP_SENDER:
+        return decoded
+    return None
 
 
 def update_opsender_sig(script: bytes, sig: bytes) -> bytes:
-    is_opsender, decoded = is_opsender_script(script)
-    if not is_opsender:
+    decoded = decode_opsender_script(script)
+    if decoded is None:
         return script
     result = script[0:decoded[1][2]]
     result += bfh(push_data(sig.hex()))
@@ -2185,7 +2190,7 @@ def update_opsender_sig(script: bytes, sig: bytes) -> bytes:
 
 
 def h160_from_opsender_script(script: bytes) -> Optional[bytes]:
-    is_opsender, decoded = is_opsender_script(script)
-    if not is_opsender:
+    decoded = decode_opsender_script(script)
+    if decoded is None:
         return None
     return decoded[1][1]

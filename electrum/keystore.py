@@ -33,7 +33,7 @@ from abc import ABC, abstractmethod
 
 from . import bitcoin, ecc, constants, bip32
 from .bitcoin import deserialize_privkey, serialize_privkey
-from .transaction import Transaction, PartialTransaction, PartialTxInput, PartialTxOutput, TxInput, is_opsender_script
+from .transaction import Transaction, PartialTransaction, PartialTxInput, PartialTxOutput, TxInput
 from .bip32 import (convert_bip32_path_to_list_of_uint32, BIP32_PRIME,
                     is_xpub, is_xprv, BIP32Node, normalize_bip32_derivation,
                     convert_bip32_intpath_to_strpath, is_xkey_consistent_with_key_origin_info)

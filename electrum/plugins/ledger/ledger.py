@@ -13,7 +13,7 @@ from electrum.bitcoin import int_to_hex, var_int, is_segwit_script_type, push_da
 from electrum.bip32 import BIP32Node, convert_bip32_intpath_to_strpath
 from electrum.i18n import _
 from electrum.keystore import Hardware_KeyStore
-from electrum.transaction import Transaction, PartialTransaction, PartialTxInput, PartialTxOutput, is_opsender_script, update_opsender_sig
+from electrum.transaction import Transaction, PartialTransaction, PartialTxInput, PartialTxOutput, decode_opsender_script, update_opsender_sig
 from electrum.wallet import Standard_Wallet
 from electrum.util import bfh, versiontuple, UserFacingException
 from electrum.base_wizard import ScriptTypeNotSupported
@@ -366,8 +366,8 @@ class Ledger_KeyStore(Hardware_KeyStore):
         assert client_electrum
 
         for i, txout in enumerate(tx.outputs()):
-            is_opsender, decoded = is_opsender_script(txout.scriptpubkey)
-            if is_opsender:
+            decoded = decode_opsender_script(txout.scriptpubkey)
+            if decoded is not None:
                 opsenderTransaction = True
                 break
 
@@ -504,8 +504,8 @@ class Ledger_KeyStore(Hardware_KeyStore):
 
                 # Sign the op_sender output
                 for i, txout in enumerate(tx.outputs()):
-                    is_opsender, decoded = is_opsender_script(txout.scriptpubkey)
-                    if is_opsender and not decoded[3][1]:
+                    decoded = decode_opsender_script(txout.scriptpubkey)
+                    if (decoded is not None) and (not decoded[3][1]):
                         sender_pubkey = txout.opsender_pubkey.hex()
                         sender_path = list(self.get_pubkey_derivation(txout.opsender_pubkey, txout))
                         sender_path = self.get_derivation_prefix()[2:] + '/' + convert_bip32_intpath_to_strpath(

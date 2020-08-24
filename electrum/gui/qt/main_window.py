@@ -68,7 +68,7 @@ from electrum.invoices import PR_TYPE_ONCHAIN, PR_TYPE_LN, PR_DEFAULT_EXPIRATION
 from electrum.invoices import PR_PAID, PR_FAILED, pr_expiration_values, LNInvoice, OnchainInvoice
 from electrum.transaction import (Transaction, PartialTxInput,
                                   PartialTransaction, PartialTxOutput)
-from electrum.transaction import contract_script, is_opcall_script, is_opcreate_script, TxOutput
+from electrum.transaction import contract_script, decode_opcreate_script, TxOutput
 from electrum.address_synchronizer import AddTransactionException
 from electrum.wallet import (Multisig_Wallet, CannotBumpFee, Abstract_Wallet,
                              sweep_preparations, InternalAddressCorruption)
@@ -3513,7 +3513,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
                               args: list, gas_limit: int, gas_price: int, sender: str, dialog, preview):
 
         def broadcast_done(tx):
-            if is_opcreate_script(tx.outputs()[0].scriptpubkey):
+            if decode_opcreate_script(tx.outputs()[0].scriptpubkey) is not None:
                 reversed_txid = binascii.a2b_hex(tx.txid())[::-1]
                 output_index = b'\x00\x00\x00\x00'
                 contract_addr = hash_160(reversed_txid + output_index).hex()

@@ -28,7 +28,7 @@ from typing import NamedTuple, List, Callable, Sequence, Union, Dict, Tuple
 from decimal import Decimal
 
 from .bitcoin import sha256, COIN, is_address
-from .transaction import Transaction, TxOutput, PartialTransaction, PartialTxInput, PartialTxOutput, is_opsender_script
+from .transaction import Transaction, TxOutput, PartialTransaction, PartialTxInput, PartialTxOutput, decode_opsender_script
 from .util import NotEnoughFunds
 from .logging import Logger
 
@@ -482,7 +482,7 @@ class CoinChooserQtum(CoinChooserPrivacy):
                 outputs: List[PartialTxOutput], change_addrs: Sequence[str],
                 fee_estimator_vb: Callable, dust_threshold: int, gas_fee=0, sender=None):
         coins = list(coins)
-        op_sender = any([is_opsender_script(out.scriptpubkey)[0] for out in outputs])
+        op_sender = any([decode_opsender_script(out.scriptpubkey) is not None for out in outputs])
         if not op_sender and sender:
             found = False
             for index, coin in enumerate(coins):
