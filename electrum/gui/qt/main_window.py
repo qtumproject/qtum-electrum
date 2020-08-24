@@ -3295,7 +3295,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.close()
 
     def disable_opsender(self) -> bool:
-        return self.config.get("disable_opsender", False) or \
+        return self.config.get("disable_opsender", True) or \
                self.network.get_server_height() <= constants.net.QIP5_FORK_HEIGHT
 
     def set_token(self, token: 'Token'):

@@ -329,7 +329,7 @@ Use this if you want your local watchtower to keep running after you close your 
 
         def on_opsender(x):
             self.config.set_key('disable_opsender', bool(x))
-        disable_opsender = bool(self.config.get('disable_opsender', False))
+        disable_opsender = bool(self.config.get('disable_opsender', True))
         opsender_cb = QCheckBox(_('Disable OP_SENDER'))
         opsender_cb.setToolTip(_("Don't use op_sender at any time"))
         opsender_cb.setChecked(disable_opsender)
