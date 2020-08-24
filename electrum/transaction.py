@@ -2115,7 +2115,8 @@ def contract_encode_number(n):
     return bytes(bchr(len(r)) + r)
 
 
-def contract_script(gas_limit: int, gas_price: int, datahex: str, contract_addr: str, opcode: opcodes, op_sender=None) -> bytes:
+def contract_script(gas_limit: int, gas_price: int, datahex: str,
+                    contract_addr: Optional[str], opcode: opcodes, op_sender: str = None) -> bytes:
     """
     :param op_sender: base58 str
     """
