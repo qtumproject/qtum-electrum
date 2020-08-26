@@ -325,7 +325,6 @@ class WaitingDialog(WindowModalDialog):
         self.thread.stop()
 
     def update(self, msg):
-        print(msg)
         self.message_label.setText(msg)
 
 
