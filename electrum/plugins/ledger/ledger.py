@@ -49,10 +49,13 @@ MSG_NEEDS_FW_UPDATE_GENERIC = _('Firmware version too old. Please update at') + 
                       ' https://www.ledgerwallet.com'
 MSG_NEEDS_FW_UPDATE_SEGWIT = _('Firmware version (or "Qtum" app) too old for Segwit support. Please update at') + \
                       ' https://www.ledgerwallet.com'
+MSG_NEEDS_FW_UPDATE_OPSENDER = _('Firmware version (or "Qtum" app) too old for OpSender support. Please update at') + \
+                      ' https://www.ledgerwallet.com'
 MULTI_OUTPUT_SUPPORT = '1.1.4'
 SEGWIT_SUPPORT = '1.1.10'
 SEGWIT_SUPPORT_SPECIAL = '1.0.4'
 SEGWIT_TRUSTEDINPUTS = '1.4.0'
+OP_SENDER_SUPPORT = '1.4.7'
 
 
 def test_pin_unlocked(func):
@@ -188,6 +191,9 @@ class Ledger_Client(HardwareClientBase):
     def supports_segwit_trustedInputs(self):
         return self.segwitTrustedInputs
 
+    def supports_op_sender(self):
+        return self.opSenderSupported
+
     def perform_hw1_preflight(self):
         try:
             firmwareInfo = self.dongleObject.getFirmwareVersion()
@@ -196,6 +202,7 @@ class Ledger_Client(HardwareClientBase):
             self.nativeSegwitSupported = versiontuple(firmware) >= versiontuple(SEGWIT_SUPPORT)
             self.segwitSupported = self.nativeSegwitSupported or (firmwareInfo['specialVersion'] == 0x20 and versiontuple(firmware) >= versiontuple(SEGWIT_SUPPORT_SPECIAL))
             self.segwitTrustedInputs = versiontuple(firmware) >= versiontuple(SEGWIT_TRUSTEDINPUTS)
+            self.opSenderSupported = versiontuple(firmware) >= versiontuple(OP_SENDER_SUPPORT)
 
             if not checkFirmware(firmwareInfo):
                 self.close()
@@ -370,6 +377,9 @@ class Ledger_KeyStore(Hardware_KeyStore):
             if decoded is not None:
                 opsenderTransaction = True
                 break
+        if opsenderTransaction and not client_electrum.supports_op_sender():
+            self.give_error(MSG_NEEDS_FW_UPDATE_OPSENDER)
+            return
 
         # Fetch inputs of the transaction to sign
         for txin in tx.inputs():
