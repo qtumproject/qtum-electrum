@@ -1720,7 +1720,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             return
         self.broadcast_transaction(tx)
         if broadcast_done:
-            broadcast_done()
+            broadcast_done(tx)
 
     @protected
     def sign_tx(self, tx, *, callback, external_keypairs, password):
