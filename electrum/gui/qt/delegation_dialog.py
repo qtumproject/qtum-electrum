@@ -93,7 +93,7 @@ class DelegationLayout(QGridLayout):
         self.staker_e.setText('')
         self.fee_e.setText('')
 
-        dele_exist = self.dele and self.dele.staker and self.dele.fee
+        dele_exist = self.dele and self.dele.staker
         if dele_exist:
             self.staker_e.setText(self.dele.staker)
             self.fee_e.setText(str(self.dele.fee))

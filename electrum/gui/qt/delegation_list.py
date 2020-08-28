@@ -60,7 +60,7 @@ class DelegationList(MyTreeView):
             c, u, x = self.wallet.get_addr_balance(addr)
             balance = c + u + x
             balance_text = self.parent.format_amount(balance, whitespaces=True)
-            fee_text = f'{dele.fee}%' if dele.fee > 0 else ''
+            fee_text = f'{dele.fee}%'
             labels = [dele.addr, dele.staker, fee_text, balance_text]
             item = [QStandardItem(e) for e in labels]
             item[self.Columns.ADDRESS].setData(dele.addr, Qt.UserRole)
