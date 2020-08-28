@@ -120,12 +120,17 @@ class ContractFuncLayout(QGridLayout):
         self.setColumnStretch(3, 1)
         self.dialog = dialog
         self.contract = contract
-        self.senders = self.dialog.parent().wallet.get_spendable_addresses()
+
+        main_window = self.dialog.parent()
+        if main_window.disable_opsender():
+            self.senders = main_window.wallet.get_spendable_addresses()
+        else:
+            self.senders = main_window.wallet.get_addresses()
 
         address_lb = QLabel(_("Address:"))
         self.address_e = ButtonsLineEdit()
 
-        qr_show = lambda: dialog.parent().show_qrcode(str(self.address_e.text()), 'Address', parent=dialog)
+        qr_show = lambda: main_window.show_qrcode(str(self.address_e.text()), 'Address', parent=dialog)
         qr_icon = "qrcode_white.png" if ColorScheme.dark_scheme else "qrcode.png"
         self.address_e.addButton(qr_icon, qr_show, _("Show as QR code"))
         self.address_e.setText(self.contract['address'])
@@ -338,7 +343,11 @@ class ContractCreateLayout(QVBoxLayout):
     def __init__(self, dialog):
         QVBoxLayout.__init__(self)
         self.dialog = dialog
-        self.senders = self.dialog.parent().wallet.get_spendable_addresses()
+        main_window = self.dialog.parent()
+        if main_window.disable_opsender():
+            self.senders = main_window.wallet.get_spendable_addresses()
+        else:
+            self.senders = main_window.wallet.get_addresses()
         self.constructor = {}
         self.abi = []
 
