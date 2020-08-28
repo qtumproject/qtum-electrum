@@ -2191,7 +2191,12 @@ def decode_opsender_script(script: bytes) -> Optional[list]:
         decoded = [x for x in script_GetOp(script)]
     except MalformedBitcoinScript:
         return None
-    if len(decoded) == 10 \
+
+    is_opcall = decoded[-1][0] == opcodes.OP_CALL
+    is_opcreate = decoded[-1][0] == opcodes.OP_CREATE
+    num_elements = len(decoded)
+
+    if ((is_opcall and num_elements == 10) or (is_opcreate and num_elements == 9)) \
                   and decoded[0] == (1, b'\x01', 2) \
                   and decoded[1][0] == 0x14 \
                   and decoded[3][0] == opcodes.OP_SENDER:
@@ -2202,6 +2207,7 @@ def decode_opsender_script(script: bytes) -> Optional[list]:
 def update_opsender_sig(script: bytes, sig: bytes) -> bytes:
     decoded = decode_opsender_script(script)
     if decoded is None:
+        _logger.debug("update_opsender_sig failed, input script is not valid op_sender script")
         return script
     result = script[0:decoded[1][2]]
     result += bfh(push_data(sig.hex()))
