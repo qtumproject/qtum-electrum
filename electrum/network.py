@@ -804,7 +804,7 @@ class Network(Logger, NetworkRetryManager[ServerAddr]):
         b = blockchain.get_best_chain()
         filename = b.path()
         url = constants.net.HEADERS_URL
-        if (os.path.exists(filename) and os.path.getsize(filename) > 50*1024*1024) or not url:
+        if (os.path.exists(filename) and os.path.getsize(filename) > 100*1024*1024) or not url:
             return
         self.downloading_headers = True
 
@@ -1164,12 +1164,12 @@ class Network(Logger, NetworkRetryManager[ServerAddr]):
         self._clear_addr_retry_times()
         self._set_proxy(deserialize_proxy(self.config.get('proxy')))
         self._maybe_set_oneserver()
-        await self.taskgroup.spawn(self._run_new_interface(self.default_server))
 
         async def main():
             self.logger.info("starting taskgroup.")
             try:
                 await self._init_headers_file()
+                await self.taskgroup.spawn(self._run_new_interface(self.default_server))
                 # note: if a task finishes with CancelledError, that
                 # will NOT raise, and the group will keep the other tasks running
                 async with taskgroup as group:
