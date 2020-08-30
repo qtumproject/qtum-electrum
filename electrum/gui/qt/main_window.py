@@ -3414,10 +3414,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             return
 
         coins = self.get_coins()
-
         make_tx = lambda fee_est: self.wallet.make_unsigned_transaction(coins=coins,
                                                        outputs=outputs,
-                                                       fee=None,
+                                                       fee=fee_est,
                                                        change_addr=sender,
                                                        gas_fee=gas_fee,
                                                        sender=sender,
@@ -3444,6 +3443,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         cancelled, is_send, password, tx = d.run()
         if cancelled:
             return
+
+        if tx is None:
+            self.show_message(_('transaction is None'))
+            return
+
         if is_send:
             def sign_done(success):
                 if success:

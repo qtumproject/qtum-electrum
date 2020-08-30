@@ -43,6 +43,8 @@ from .fee_slider import FeeSlider, FeeComboBox
 if TYPE_CHECKING:
     from .main_window import ElectrumWindow
 
+from electrum.logging import get_logger
+_logger = get_logger(__name__)
 
 
 class TxEditor:
@@ -86,25 +88,31 @@ class TxEditor:
             self.tx = self.make_tx(fee_estimator)
             self.not_enough_funds = False
             self.no_dynfee_estimates = False
-        except NotEnoughFunds:
+        except NotEnoughFunds as e:
             self.not_enough_funds = True
             self.tx = None
+            _logger.error(f"make_tx failed {e}")
             if fallback_to_zero_fee:
                 try:
                     self.tx = self.make_tx(0)
-                except BaseException:
+                except BaseException as e:
+                    _logger.error(f"make_tx(0) failed {e}")
                     return
             else:
                 return
-        except NoDynamicFeeEstimates:
+        except NoDynamicFeeEstimates as e:
             self.no_dynfee_estimates = True
             self.tx = None
+            _logger.error(f"make_tx failed {e}")
             try:
                 self.tx = self.make_tx(0)
-            except BaseException:
+            except BaseException as e:
+                _logger.error(f"make_tx(0) failed {e}")
+                self.main_window.show_error(f"{e}")
                 return
         except InternalAddressCorruption as e:
             self.tx = None
+            _logger.error(f"make_tx failed {e}")
             self.main_window.show_error(str(e))
             raise
         use_rbf = bool(self.config.get('use_rbf', True))
