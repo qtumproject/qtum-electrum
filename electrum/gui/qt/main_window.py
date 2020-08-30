@@ -1719,6 +1719,9 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         d.show()
 
     def broadcast_or_show(self, tx: Transaction, * , broadcast_done=None):
+        if tx is None:
+            self.show_error("tx is None")
+            return
         if not tx.is_complete():
             self.show_transaction(tx)
             return
