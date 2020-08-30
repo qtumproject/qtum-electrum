@@ -828,6 +828,9 @@ class Network(Logger, NetworkRetryManager[ServerAddr]):
 
         tmp_file.close()
         if success:
+            with b.lock:
+                if b.conn:
+                    b.conn.close()
             os.remove(filename)
             os.rename(tmp_filename, filename)
             util.ensure_sparse_file(filename)
