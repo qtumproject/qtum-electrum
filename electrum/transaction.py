@@ -2213,7 +2213,7 @@ def decode_opsender_script(script: bytes) -> Optional[list]:
 def update_opsender_sig(script: bytes, sig: bytes) -> bytes:
     decoded = decode_opsender_script(script)
     if decoded is None:
-        _logger.debug("update_opsender_sig failed, input script is not valid op_sender script")
+        _logger.debug("input script does not match op_sender, will not update")
         return script
     result = script[0:decoded[1][2]]
     result += bfh(push_data(sig.hex()))
