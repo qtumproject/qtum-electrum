@@ -492,7 +492,7 @@ class CoinChooserQtum(CoinChooserPrivacy):
                     found = True
                     break
             if not found:
-                raise BaseException("sender has no utxo")
+                raise BaseException("sender has no UTXOs, maybe you should enable OP_SENDER")
         return super().make_tx(
             coins=coins,
             inputs=inputs,
