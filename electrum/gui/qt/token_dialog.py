@@ -55,7 +55,9 @@ class TokenAddLayout(QGridLayout):
     def save_input(self):
         try:
             contract_addr = self.contract_addr_e.text()
-            bind_addr = self.addresses[self.address_combo.currentIndex()]
+            bind_addr = self.address_combo.currentText()
+            if bind_addr not in self.addresses:
+                raise Exception('invalid bind address')
             if not is_hash160(contract_addr):
                 raise Exception('invalid contrace address:{}'.format(contract_addr))
             self.callback(contract_addr, bind_addr)

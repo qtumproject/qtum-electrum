@@ -138,18 +138,21 @@ class DelegationLayout(QGridLayout):
         try:
             staker = self.staker_e.text()
             if not is_hash160(staker):
-                addr_type, staker = b58_address_to_hash160(staker)
+                try:
+                    addr_type, staker = b58_address_to_hash160(staker)
+                except BaseException:
+                    raise Exception('invalid staker address')
                 if addr_type != constants.net.ADDRTYPE_P2PKH:
-                    raise Exception('wrong staker address')
+                    raise Exception('invalid staker address')
                 staker = staker.hex()
 
             fee = int(self.fee_e.text())
             if fee < 0 or fee > 100:
                 raise Exception('fee should between 0 and 100')
 
-            addr = self.addresses[self.address_combo.currentIndex()]
-            if not addr:
-                raise Exception('please select a address')
+            addr = self.address_combo.currentText()
+            if len(addr) == 0 or addr not in self.addresses:
+                raise Exception('invalid address')
 
             gas_limit, gas_price = self.parse_values()
             if gas_limit < 2250000:

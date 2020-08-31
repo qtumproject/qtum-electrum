@@ -258,7 +258,9 @@ class ContractFuncLayout(QGridLayout):
 
     def parse_args(self):
         if len(self.senders) > 0:
-            sender = self.senders[self.sender_combo.currentIndex()]
+            sender = self.sender_combo.currentText()
+            if sender not in self.senders:
+                raise ParseArgsException('invalid sender address')
         else:
             sender = ''
         args = json.loads('[{}]'.format(self.args_e.text()))
