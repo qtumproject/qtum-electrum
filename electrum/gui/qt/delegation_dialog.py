@@ -156,6 +156,9 @@ class DelegationLayout(QGridLayout):
             if len(addr) == 0 or addr not in self.addresses:
                 raise Exception('invalid address')
 
+            if addr == staker:
+                raise Exception('cannot delegate to self')
+
             gas_limit, gas_price = self.parse_values()
             if gas_limit < 2250000:
                 raise Exception('a minimum of 2,250,000 gas_limit is required')
