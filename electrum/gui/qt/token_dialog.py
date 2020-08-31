@@ -39,6 +39,7 @@ class TokenAddLayout(QGridLayout):
         address_lb = QLabel(_("My Address:"))
         self.address_combo = QComboBox()
         self.address_combo.setMinimumWidth(300)
+        self.address_combo.setEditable(True)
         self.address_combo.addItems(self.addresses)
         self.addWidget(address_lb, 2, 0)
         self.addWidget(self.address_combo, 2, 1, 1, -1)

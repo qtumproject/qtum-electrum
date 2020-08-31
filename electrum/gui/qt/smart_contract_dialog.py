@@ -200,6 +200,7 @@ class ContractFuncLayout(QGridLayout):
         buttons = QHBoxLayout()
         self.sender_combo = QComboBox()
         self.sender_combo.setMinimumWidth(400)
+        self.sender_combo.setEditable(True)
         self.sender_combo.addItems(self.senders)
         buttons.addWidget(self.sender_combo)
         buttons.addStretch(1)

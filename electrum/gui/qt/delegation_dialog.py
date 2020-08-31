@@ -41,6 +41,7 @@ class DelegationLayout(QGridLayout):
         address_lb = QLabel(_("Address:"))
         self.address_combo = QComboBox()
         self.address_combo.setMinimumWidth(300)
+        self.address_combo.setEditable(True)
         self.address_combo.addItems(self.addresses)
         self.addWidget(address_lb, 1, 0)
         self.addWidget(self.address_combo, 1, 1, 1, -1)
