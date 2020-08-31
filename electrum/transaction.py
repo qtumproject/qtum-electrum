@@ -2196,9 +2196,11 @@ def decode_opsender_script(script: bytes) -> Optional[list]:
     except MalformedBitcoinScript:
         return None
 
+    num_elements = len(decoded)
+    if num_elements == 0:
+        return None
     is_opcall = decoded[-1][0] == opcodes.OP_CALL
     is_opcreate = decoded[-1][0] == opcodes.OP_CREATE
-    num_elements = len(decoded)
 
     if ((is_opcall and num_elements == 10) or (is_opcreate and num_elements == 9)) \
                   and decoded[0] == (1, b'\x01', 2) \
