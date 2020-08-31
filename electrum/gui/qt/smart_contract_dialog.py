@@ -258,7 +258,7 @@ class ContractFuncLayout(QGridLayout):
 
     def parse_args(self):
         if len(self.senders) > 0:
-            sender = self.sender_combo.currentText()
+            sender = self.sender_combo.currentText().strip()
             if sender not in self.senders:
                 raise ParseArgsException('invalid sender address')
         else:
@@ -394,6 +394,7 @@ class ContractCreateLayout(QVBoxLayout):
         self.sender_combo = QComboBox()
         self.sender_combo.setMinimumWidth(300)
         self.sender_combo.addItems(self.senders)
+        self.sender_combo.setEditable(True)
         optional_layout.addWidget(gas_limit_lb)
         optional_layout.addWidget(self.gas_limit_e)
         optional_layout.addStretch(1)
@@ -413,9 +414,9 @@ class ContractCreateLayout(QVBoxLayout):
         self.addLayout(Buttons(*[self.cancel_btn, self.preview_btn, self.create_btn]))
 
     def parse_args(self):
-        sender = None
-        if len(self.senders) > 0:
-            sender = self.senders[self.sender_combo.currentIndex()]
+        sender = self.sender_combo.currentText().strip()
+        if sender not in self.senders:
+            raise ParseArgsException("invalid sender")
         if not sender:
             raise ParseArgsException('no sender selected')
         args = json.loads('[{}]'.format(self.args_e.text()))

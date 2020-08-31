@@ -54,8 +54,8 @@ class TokenAddLayout(QGridLayout):
 
     def save_input(self):
         try:
-            contract_addr = self.contract_addr_e.text()
-            bind_addr = self.address_combo.currentText()
+            contract_addr = self.contract_addr_e.text().strip()
+            bind_addr = self.address_combo.currentText().strip()
             if bind_addr not in self.addresses:
                 raise Exception('invalid bind address')
             if not is_hash160(contract_addr):
@@ -257,7 +257,7 @@ class TokenSendLayout(QGridLayout):
             raise e
         if self.token.balance < amount:
             raise Exception(_('token not enough'))
-        address_to = self.address_to_e.text().rstrip().lstrip()
+        address_to = self.address_to_e.text().strip()
         if is_b58_address(address_to):
             addr_type, hash160 = b58_address_to_hash160(address_to)
             if addr_type == constants.net.ADDRTYPE_P2PKH:

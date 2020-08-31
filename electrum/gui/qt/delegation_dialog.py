@@ -138,7 +138,7 @@ class DelegationLayout(QGridLayout):
 
     def do(self):
         try:
-            staker = self.staker_e.text()
+            staker = self.staker_e.text().strip()
             if not is_hash160(staker):
                 try:
                     addr_type, staker = b58_address_to_hash160(staker)
@@ -148,11 +148,11 @@ class DelegationLayout(QGridLayout):
                     raise Exception('invalid staker address')
                 staker = staker.hex()
 
-            fee = int(self.fee_e.text())
+            fee = int(self.fee_e.text().strip())
             if fee < 0 or fee > 100:
                 raise Exception('fee should between 0 and 100')
 
-            addr = self.address_combo.currentText()
+            addr = self.address_combo.currentText().strip()
             try:
                 addr_type, self_h160 = b58_address_to_hash160(addr)
             except BaseException:
@@ -171,7 +171,7 @@ class DelegationLayout(QGridLayout):
             if self.mode == 'add' and dele_exist:
                 self.dialog.parent().set_delegation(self.dele)
             elif self.mode in ['edit', 'add']:
-                if dele_exist and self.staker_e.text() == self.dele.staker and fee == self.dele.fee:
+                if dele_exist and self.staker_e.text().strip() == self.dele.staker and fee == self.dele.fee:
                     return
                 self.dialog.parent().call_add_delegation(addr, staker, fee, gas_limit, gas_price, self.dialog)
             elif self.mode == 'undelegate':
