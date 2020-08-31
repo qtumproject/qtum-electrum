@@ -153,10 +153,13 @@ class DelegationLayout(QGridLayout):
                 raise Exception('fee should between 0 and 100')
 
             addr = self.address_combo.currentText()
-            if len(addr) == 0 or addr not in self.addresses:
+            try:
+                addr_type, self_h160 = b58_address_to_hash160(addr)
+            except BaseException:
                 raise Exception('invalid address')
-
-            if addr == staker:
+            if len(addr) == 0 or addr not in self.addresses or addr_type != constants.net.ADDRTYPE_P2PKH:
+                raise Exception('invalid address')
+            if staker == self_h160.hex():
                 raise Exception('cannot delegate to self')
 
             gas_limit, gas_price = self.parse_values()
