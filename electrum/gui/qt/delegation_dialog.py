@@ -26,8 +26,10 @@ class DelegationLayout(QGridLayout):
         self.dele = dele
         self.mode = mode
 
+        address_combo_editable = True
         if dele and dele.addr:
             self.addresses = [dele.addr]
+            address_combo_editable = False
         else:
             self.addresses = ['']
             delegations = self.dialog.parent().wallet.db.list_delegations()
@@ -41,7 +43,7 @@ class DelegationLayout(QGridLayout):
         address_lb = QLabel(_("Address:"))
         self.address_combo = QComboBox()
         self.address_combo.setMinimumWidth(300)
-        self.address_combo.setEditable(True)
+        self.address_combo.setEditable(address_combo_editable)
         self.address_combo.addItems(self.addresses)
         self.addWidget(address_lb, 1, 0)
         self.addWidget(self.address_combo, 1, 1, 1, -1)
