@@ -344,8 +344,13 @@ class BlockingWaitingDialog(WindowModalDialog):
         vbox.addWidget(self.message_label)
         self.show()
         QCoreApplication.processEvents()
-        task()
-        self.accept()
+        try:
+            task()
+        except BaseException as e:
+            self.reject()
+            raise e
+        else:
+            self.accept()
 
 
 def line_dialog(parent, title, label, ok_label, default=None):
