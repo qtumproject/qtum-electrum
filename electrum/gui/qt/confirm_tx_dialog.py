@@ -115,6 +115,9 @@ class TxEditor:
             _logger.error(f"make_tx failed {e}")
             self.main_window.show_error(str(e))
             raise
+        except BaseException as e:
+            _logger.error(f"make_tx failed: {e}")
+            raise
         use_rbf = bool(self.config.get('use_rbf', True))
         if use_rbf:
             self.tx.set_rbf(True)
