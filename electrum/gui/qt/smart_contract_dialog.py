@@ -263,7 +263,11 @@ class ContractFuncLayout(QGridLayout):
                 raise ParseArgsException('invalid sender address')
         else:
             sender = ''
-        args = json.loads('[{}]'.format(self.args_e.text()))
+        args_str = f'[{self.args_e.text()}]'.replace("\n", "")
+        try:
+            args = json.loads(args_str)
+        except BaseException as e:
+            raise ParseArgsException(f"json decode error {e} for {args_str}")
         abi_index = self.abi_signatures[self.abi_combo.currentIndex()][0]
         if abi_index == -1:
             return None, [], sender
