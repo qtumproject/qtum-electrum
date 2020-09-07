@@ -3510,6 +3510,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         types = list([x['type'] for x in func.get('outputs', [])])
         try:
             if isinstance(result, dict):
+                except_msg = result.get('executionResult', {}).get('exceptedMessage', '')
+                if len(except_msg) > 1:
+                    dialog.show_message(f"exceptedMessage: {except_msg}")
+                    return
                 output = eth_abi.decode_abi(types, binascii.a2b_hex(result['executionResult']['output']))
             else:
                 output = eth_abi.decode_abi(types, binascii.a2b_hex(result))
