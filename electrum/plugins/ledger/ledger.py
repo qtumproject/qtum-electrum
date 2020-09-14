@@ -4,6 +4,7 @@ import hashlib
 import sys
 import traceback
 from typing import Optional, Tuple
+from collections import defaultdict
 
 from electrum import ecc
 from electrum import bip32
@@ -451,15 +452,19 @@ class Ledger_KeyStore(Hardware_KeyStore):
         # Output "change" detection
         # - only one output and one change is authorized (for hw.1 and nano)
         # - at most one output can bypass confirmation (~change) (for all)
+        # mark only one output as change
         if not p2shTransaction:
             has_change = False
+            addr_record = defaultdict(lambda: 0)
+            for txout in tx.outputs():
+                addr_record[txout.address] += 1
             any_output_on_change_branch = is_any_tx_output_on_change_branch(tx)
             for txout in tx.outputs():
                 if txout.is_mine and len(tx.outputs()) > 1 \
                         and not has_change:
                     # prioritise hiding outputs on the 'change' branch from user
                     # because no more than one change address allowed
-                    if txout.is_change == any_output_on_change_branch:
+                    if txout.is_change == any_output_on_change_branch and addr_record[txout.address] == 1:
                         my_pubkey, changePath = self.find_my_pubkey_in_txinout(txout)
                         assert changePath
                         changePath = convert_bip32_intpath_to_strpath(changePath)[2:]
