@@ -288,6 +288,7 @@ def custom_message_box(*, icon, parent, title, text, buttons=QMessageBox.Ok,
         d.setTextFormat(Qt.PlainText)
     if checkbox is not None:
         d.setCheckBox(checkbox)
+    d.setStyleSheet("QLabel{max-height: 150px;}")
     return d.exec_()
 
 
