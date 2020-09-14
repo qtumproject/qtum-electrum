@@ -1543,6 +1543,7 @@ class PartialTxOutput(TxOutput, PSBTSection):
             'bip32_paths': {pubkey.hex(): (xfp.hex(), bip32.convert_bip32_intpath_to_strpath(path))
                             for pubkey, (xfp, path) in self.bip32_paths.items()},
             'unknown_psbt_fields': {key.hex(): val.hex() for key, val in self._unknown.items()},
+            'is_change': self.is_change
         })
         return d
 
