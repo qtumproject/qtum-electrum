@@ -73,3 +73,8 @@ provide these env vars to the `make_osx` script:
     APPLE_ID_USER="me@email.com" \
     APPLE_ID_PASSWORD="1234" \
     ./contrib/osx/make_osx
+
+
+#### Clean Environment
+    
+    rm -rf $HOME/Library/Python/3.7/lib/python/site-packages/

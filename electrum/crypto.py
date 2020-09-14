@@ -42,16 +42,6 @@ except:
 else:
     HAS_PYAES = True
 
-HAS_CRYPTODOME = False
-try:
-    from Cryptodome.Cipher import ChaCha20_Poly1305 as CD_ChaCha20_Poly1305
-    from Cryptodome.Cipher import ChaCha20 as CD_ChaCha20
-    from Cryptodome.Cipher import AES as CD_AES
-except:
-    pass
-else:
-    HAS_CRYPTODOME = True
-
 HAS_CRYPTOGRAPHY = False
 try:
     import cryptography
@@ -66,6 +56,15 @@ except:
 else:
     HAS_CRYPTOGRAPHY = True
 
+HAS_CRYPTODOME = False
+try:
+    from Cryptodome.Cipher import ChaCha20_Poly1305 as CD_ChaCha20_Poly1305
+    from Cryptodome.Cipher import ChaCha20 as CD_ChaCha20
+    from Cryptodome.Cipher import AES as CD_AES
+except:
+    pass
+else:
+    HAS_CRYPTODOME = True
 
 if not (HAS_CRYPTODOME or HAS_CRYPTOGRAPHY):
     sys.exit(f"Error: at least one of ('pycryptodomex', 'cryptography') needs to be installed.")
