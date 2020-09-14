@@ -104,6 +104,7 @@ from .transaction_dialog import PreviewTxDialog
 from .token_dialog import TokenAddDialog, TokenInfoDialog, TokenSendDialog
 from .smart_contract_dialog import ContractCreateDialog, ContractEditDialog, ContractFuncDialog
 from .delegation_dialog import DelegationDialog
+from electrum.coinchooser import SenderNoUTXOException
 
 if TYPE_CHECKING:
     from . import ElectrumGui
@@ -3446,7 +3447,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             return
 
         output_value = '!' if '!' in output_values else sum(output_values)
-        d = ConfirmTxDialog(window=self, make_tx=make_tx, output_value=output_value, is_sweep=False, gas_fee=gas_fee)
+        try:
+            d = ConfirmTxDialog(window=self, make_tx=make_tx, output_value=output_value, is_sweep=False, gas_fee=gas_fee)
+        except SenderNoUTXOException as e:
+            self.show_error(str(e))
+            return
         if d.not_enough_funds:
             # Check if we had enough funds excluding fees,
             # if so, still provide opportunity to set lower fees.

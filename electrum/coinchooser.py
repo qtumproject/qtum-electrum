@@ -87,6 +87,10 @@ class ScoredCandidate(NamedTuple):
     buckets: List[Bucket]
 
 
+class SenderNoUTXOException(Exception):
+    pass
+
+
 def strip_unneeded(bkts: List[Bucket], sufficient_funds) -> List[Bucket]:
     '''Remove buckets that are unnecessary in achieving the spend amount'''
     if sufficient_funds([], bucket_value_sum=0):
@@ -492,7 +496,7 @@ class CoinChooserQtum(CoinChooserPrivacy):
                     found = True
                     break
             if not found:
-                raise BaseException("sender has no UTXOs, maybe you should enable OP_SENDER")
+                raise SenderNoUTXOException("sender has no UTXOs, maybe you should enable OP_SENDER")
         return super().make_tx(
             coins=coins,
             inputs=inputs,
