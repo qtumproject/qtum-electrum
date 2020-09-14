@@ -223,6 +223,7 @@ class PayToEdit(CompletionTextEdit, ScanQRTextEdit, Logger):
         self.setMinimumHeight(h)
         self.setMaximumHeight(h)
         self.verticalScrollBar().hide()
+        self.updateGeometry()
 
     def qr_input(self):
         data = super(PayToEdit,self).qr_input()
