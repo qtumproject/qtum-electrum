@@ -29,7 +29,9 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Dict, Optional, Set, Tuple, NamedTuple, Sequence, List
 
 from . import bitcoin, util
-from .bitcoin import COINBASE_MATURITY, TYPE_ADDRESS, TYPE_PUBKEY
+from .bitcoin import COINBASE_MATURITY
+from .bitcoin import TYPE_ADDRESS, TYPE_PUBKEY
+from .util import profiler, bfh, TxMinedInfo, UnrelatedTransactionException
 from .util import profiler, bfh, TxMinedInfo
 from .transaction import Transaction, TxOutput, TxInput, PartialTxInput, TxOutpoint, PartialTransaction
 from .synchronizer import Synchronizer
@@ -48,14 +50,6 @@ TX_HEIGHT_FUTURE = -3
 TX_HEIGHT_LOCAL = -2
 TX_HEIGHT_UNCONF_PARENT = -1
 TX_HEIGHT_UNCONFIRMED = 0
-
-class AddTransactionException(Exception):
-    pass
-
-
-class UnrelatedTransactionException(AddTransactionException):
-    def __str__(self):
-        return _("Transaction is unrelated to this wallet.")
 
 
 class HistoryItem(NamedTuple):
