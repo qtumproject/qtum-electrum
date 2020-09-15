@@ -1,19 +1,8 @@
 toolz==0.10.0 \
     --hash=sha256:08fdd5ef7c96480ad11c12d472de21acd32359996f69a5259299b540feba4560
-six==1.15.0 \
-    --hash=sha256:30639c035cdb23534cd4aa2dd52c3bf48f06e5f4a941509c8bafd8ce11080259 \
-    --hash=sha256:8b74bedcbbbaca38ff6d7491d76f2b06b3592611af620f8426e82dddb04a5ced
-parsimonious==0.8.1 \
-    --hash=sha256:3add338892d580e0cb3b1a39e4a1b427ff9f687858fdd61097053742391a9f6b
-eth-typing==2.2.2 \
-    --hash=sha256:1140c7592321dbf10d6663c46f7e43eb0e6410b011b03f14b3df3eb1f76aa9bb \
-    --hash=sha256:97ba0f83da7cf1d3668f6ed54983f21168076c552762bf5e06d4a20921877f3f
-eth-hash-qtum==0.2.0 \
-    --hash=sha256:8b5c607c74702f56cb4ed26721cc06a91972fa21c2973d0f21b69ba3872533b2 \
-    --hash=sha256:589ab8b0fcb96a6637f4d4968da7ccd9dde6a9f3867a059f42b636175d3ad2f5
-eth-utils-qtum==1.9.5.1 \
-    --hash=sha256:4da1d94a39e03f7eef0518f3471af0afebd34397ef0c8b59370d915b895c3e40 \
-    --hash=sha256:102fb5e12815b507ada6ab9d41a9b12c20fa05808068e48fa82f4d33c2dcaa10
-eth-abi-qtum==2.1.1 \
-    --hash=sha256:1e79a49d4f483296c9466eeb2f1d313628e4c947363451a2fdea8cd715fe6bef \
-    --hash=sha256:2b80dc2139b179eed2967fc6de627204821abd9a8c1ce101a0580c95ae6f0be7
+https://github.com/icodeface/eth-hash/archive/master.zip \
+    --hash=sha256:1db3fd94b87dbbf92a1307fecc54e310880c359959de5b27d94972d3780f9e8f
+https://github.com/icodeface/eth-utils/archive/master.zip \
+    --hash=sha256:da133a726b11a67b38955937fd4781dbadac43071c4d9a345840670b71edced7
+https://github.com/icodeface/eth-abi/archive/master.zip \
+    --hash=sha256:8d8bff7c546506fe2465f2c9620446bb5425b284c8492e2a3506d9b21f5528a9

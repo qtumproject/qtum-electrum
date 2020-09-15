@@ -9,6 +9,3 @@ aiohttp_socks>=0.3
 certifi
 bitstring
 attrs>=19.2.0
-eth-hash-qtum==0.2.0
-eth-utils-qtum==1.9.5.1
-eth-abi-qtum==2.1.1
