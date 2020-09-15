@@ -22,8 +22,6 @@ if sys.version_info[:3] < _min_python_version_tuple:
 with open('contrib/requirements/requirements.txt') as f:
     requirements = f.read().splitlines()
 
-requirements += ['eth-hash', 'eth-utils', 'eth-abi']
-
 with open('contrib/requirements/requirements-hw.txt') as f:
     requirements_hw = f.read().splitlines()
 
