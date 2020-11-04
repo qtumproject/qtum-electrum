@@ -804,12 +804,12 @@ class WalletDB(JsonDB):
         return list(d.items())
 
     @locked
-    def get_txo_addr(self, tx_hash: str, address: str) -> Iterable[Tuple[int, int, bool]]:
-        """Returns an iterable of (output_index, value, is_coinbase)."""
+    def get_txo_addr(self, tx_hash: str, address: str) -> Dict[int, Tuple[int, bool]]:
+        """Returns a dict: output_index -> (value, is_coinbase)."""
         assert isinstance(tx_hash, str)
         assert isinstance(address, str)
         d = self.txo.get(tx_hash, {}).get(address, {})
-        return [(int(n), v, cb) for (n, (v, cb)) in d.items()]
+        return {int(n): (v, cb) for (n, (v, cb)) in d.items()}
 
     @modifier
     def add_txi_addr(self, tx_hash: str, addr: str, ser: str, v: int) -> None:
@@ -1061,7 +1061,7 @@ class WalletDB(JsonDB):
         self.tx_fees.pop(txid, None)
 
     @locked
-    def get_dict(self, name):
+    def get_dict(self, name) -> dict:
         # Warning: interacts un-intuitively with 'put': certain parts
         # of 'data' will have pointers saved as separate variables.
         if name not in self.data:

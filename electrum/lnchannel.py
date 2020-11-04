@@ -145,7 +145,7 @@ class AbstractChannel(Logger, ABC):
     config: Dict[HTLCOwner, Union[LocalConfig, RemoteConfig]]
     _sweep_info: Dict[str, Dict[str, 'SweepInfo']]
     lnworker: Optional['LNWallet']
-    sweep_address: str
+    _fallback_sweep_address: str
     channel_id: bytes
     funding_outpoint: Outpoint
     node_id: bytes
@@ -307,6 +307,20 @@ class AbstractChannel(Logger, ABC):
         if self.get_state() == ChannelState.CLOSED and not keep_watching:
             self.set_state(ChannelState.REDEEMED)
 
+    @property
+    def sweep_address(self) -> str:
+        # TODO: in case of unilateral close with pending HTLCs, this address will be reused
+        addr = None
+        if self.is_static_remotekey_enabled():
+            our_payment_pubkey = self.config[LOCAL].payment_basepoint.pubkey
+            addr = make_commitment_output_to_remote_address(our_payment_pubkey)
+        if addr is None:
+            addr = self._fallback_sweep_address
+        assert addr
+        if self.lnworker:
+            assert self.lnworker.wallet.is_mine(addr)
+        return addr
+
     @abstractmethod
     def is_initiator(self) -> bool:
         pass
@@ -367,6 +381,10 @@ class AbstractChannel(Logger, ABC):
         """
         pass
 
+    @abstractmethod
+    def is_static_remotekey_enabled(self) -> bool:
+        pass
+
 
 class ChannelBackup(AbstractChannel):
     """
@@ -383,7 +401,7 @@ class ChannelBackup(AbstractChannel):
         Logger.__init__(self)
         self.cb = cb
         self._sweep_info = {}
-        self.sweep_address = sweep_address
+        self._fallback_sweep_address = sweep_address
         self.storage = {} # dummy storage
         self._state = ChannelState.OPENING
         self.config = {}
@@ -485,7 +503,7 @@ class Channel(AbstractChannel):
         self.name = name
         Logger.__init__(self)
         self.lnworker = lnworker
-        self.sweep_address = sweep_address
+        self._fallback_sweep_address = sweep_address
         self.storage = state
         self.db_lock = self.storage.db.lock if self.storage.db else threading.RLock()
         self.config = {}
@@ -979,14 +997,22 @@ class Channel(AbstractChannel):
                 self.lnworker.payment_sent(self, htlc.payment_hash)
             failed = self.hm.failed_in_ctn(new_ctn)
             for htlc in failed:
-                error_bytes, failure_message = self._receive_fail_reasons.pop(htlc.htlc_id)
+                try:
+                    error_bytes, failure_message = self._receive_fail_reasons.pop(htlc.htlc_id)
+                except KeyError:
+                    error_bytes, failure_message = None, None
                 # if we are forwarding, save error message to disk
                 if self.lnworker.get_payment_info(htlc.payment_hash) is None:
                     self.save_fail_htlc_reason(htlc.htlc_id, error_bytes, failure_message)
                 else:
                     self.lnworker.payment_failed(self, htlc.payment_hash, error_bytes, failure_message)
 
-    def save_fail_htlc_reason(self, htlc_id, error_bytes, failure_message):
+    def save_fail_htlc_reason(
+            self,
+            htlc_id: int,
+            error_bytes: Optional[bytes],
+            failure_message: Optional['OnionRoutingFailureMessage'],
+    ):
         error_hex = error_bytes.hex() if error_bytes else None
         failure_hex = failure_message.to_bytes().hex() if failure_message else None
         self.hm.log['fail_htlc_reasons'][htlc_id] = (error_hex, failure_hex)

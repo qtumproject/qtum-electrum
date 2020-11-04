@@ -391,7 +391,7 @@ class Synchronizer(SynchronizerBase):
         self._requests_sent += 1
         try:
             raw_tx = await self.interface.get_transaction(tx_hash)
-        except UntrustedServerReturnedError as e:
+        except RPCError as e:
             # most likely, "No such mempool or blockchain transaction"
             if allow_server_not_finding_tx:
                 self.requested_tx.pop(tx_hash)
