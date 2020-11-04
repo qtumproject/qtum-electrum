@@ -778,6 +778,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         tools_menu.addAction(_("Local &Watchtower"), self.gui_object.show_watchtower_dialog).setEnabled(bool(self.network and self.network.local_watchtower))
         tools_menu.addAction(_("&Plugins"), self.plugins_dialog)
         tools_menu.addSeparator()
+        tools_menu.addAction(_("&Sign POD"), self.sign_pod)
         tools_menu.addAction(_("&Sign/verify message"), self.sign_verify_message)
         tools_menu.addAction(_("&Encrypt/decrypt message"), self.encrypt_message)
         tools_menu.addSeparator()
@@ -2552,7 +2553,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
 
     @protected
     def do_sign(self, address, message, signature, password):
-        address  = address.text().strip()
+        address = address.text().strip()
         message = message.toPlainText().strip()
         if not bitcoin.is_address(address):
             self.show_message(_('Invalid Qtum address.'))
@@ -2634,6 +2635,52 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         hbox.addWidget(b)
         layout.addLayout(hbox, 4, 1)
         d.exec_()
+
+    def sign_pod(self, address=''):
+        d = WindowModalDialog(self, _('Sign POD'))
+        d.setMaximumSize(410, 60)
+        layout = QGridLayout(d)
+
+        address_e = QLineEdit()
+        address_e.setText(address)
+        layout.addWidget(QLabel(_('Address')), 1, 0)
+        layout.addWidget(address_e, 1, 1)
+
+        staker_e = QLineEdit()
+        layout.addWidget(QLabel(_('Staker')), 2, 0)
+        layout.addWidget(staker_e, 2, 1)
+
+        pod_e = QTextEdit()
+        pod_e.setAcceptRichText(False)
+        layout.addWidget(QLabel(_('POD')), 3, 0)
+        layout.addWidget(pod_e, 3, 1)
+
+        hbox = QHBoxLayout()
+
+        b = QPushButton(_("Sign"))
+        b.clicked.connect(lambda: self.do_sign_pod(address_e, staker_e, pod_e))
+        hbox.addWidget(b)
+
+        b = QPushButton(_("Close"))
+        b.clicked.connect(d.accept)
+        hbox.addWidget(b)
+        layout.addLayout(hbox, 4, 1)
+        d.exec_()
+
+    def do_sign_pod(self, address_e, staker_e, pod_e):
+        staker = staker_e.text().strip()
+        if not is_hash160(staker):
+            try:
+                addr_type, staker = b58_address_to_hash160(staker)
+            except BaseException:
+                raise Exception('invalid staker address')
+            if addr_type != constants.net.ADDRTYPE_P2PKH:
+                raise Exception('invalid staker address')
+            staker = staker.hex()
+        message_e = QTextEdit()
+        message_e.setText(staker)
+        self.do_sign(address_e, message_e, pod_e)
+
 
     @protected
     def do_decrypt(self, message_e, pubkey_e, encrypted_e, password):
@@ -3392,7 +3439,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.wallet.delete_delegation(addr)
         self.delegation_list.update()
 
-    def call_add_delegation(self, addr: str, staker: str, fee: int, gas_limit: int, gas_price: int, dialog):
+    def call_add_delegation(self, addr: str, staker: str, fee: int, gas_limit: int, gas_price: int, dialog, pod: Optional[bytes]):
         """
         :param staker: hash160 str
         """
@@ -3400,7 +3447,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         if self.wallet.has_keystore_encryption():
             password = self.password_dialog(_("Enter your password to proceed"))
             if not password: return
-        pod = self.wallet.sign_message(addr, staker, password)
+        if not pod:
+            pod = self.wallet.sign_message(addr, staker, password)
+        if len(pod) != 65:
+            raise Exception("incorrect POD length")
         args = [staker.lower(), fee, pod]
         self.sendto_smart_contract(DELEGATION_CONTRACT, DELEGATE_ABI[1], args,
                                    gas_limit, gas_price, 0, addr, dialog, False, tx_desc="update delegation")

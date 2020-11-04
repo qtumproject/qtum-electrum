@@ -805,6 +805,7 @@ class Delegation(NamedTuple):
     addr: str
     staker: str     # base58 address
     fee: int
+    pod: str
 
 
 def eth_abi_encode(func: dict, args: list) -> str:

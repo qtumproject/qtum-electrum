@@ -2008,7 +2008,10 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
     def _update_password_for_keystore(self, old_pw: Optional[str], new_pw: Optional[str]) -> None:
         pass
 
-    def sign_message(self, address: str, message: str, password):
+    def sign_message(self, address: str, message: str, password) -> Optional[bytes]:
+        if self.is_watching_only():
+            _logger.info("return None when sign_message on a watch-only wallet")
+            return None
         index = self.get_address_index(address)
         return self.keystore.sign_message(index, message, password)
 

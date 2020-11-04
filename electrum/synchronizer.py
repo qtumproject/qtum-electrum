@@ -29,6 +29,7 @@ from typing import Dict, List, TYPE_CHECKING, Tuple
 from collections import defaultdict
 import logging
 from concurrent.futures import CancelledError
+import base64
 
 from aiorpcx import TaskGroup, run_in_thread, RPCError
 
@@ -471,9 +472,10 @@ class Synchronizer(SynchronizerBase):
                 staker = hash160_to_b58_address(bfh(r[0][2:]), constants.net.ADDRTYPE_P2PKH)
                 fee = r[1]
                 dele = self.wallet.db.get_delegation(addr)
+                pod = base64.b64encode(r[3]).decode('ascii')
                 if dele and staker == dele.staker and fee == dele.fee:
                     return
-                self.wallet.db.set_delegation(Delegation(addr=addr, staker=staker, fee=fee))
+                self.wallet.db.set_delegation(Delegation(addr=addr, staker=staker, fee=fee, pod=pod))
             util.trigger_callback('on_delegation', self.wallet)
         except CancelledError:
             pass

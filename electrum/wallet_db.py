@@ -1259,7 +1259,7 @@ class WalletDB(JsonDB):
 
     @modifier
     def set_delegation(self, dele: Delegation):
-        self.delegations[dele.addr] = [dele.staker, dele.fee]
+        self.delegations[dele.addr] = [dele.staker, dele.fee, dele.pod]
 
     @modifier
     def delete_delegation(self, addr: str):
@@ -1268,9 +1268,10 @@ class WalletDB(JsonDB):
     @locked
     def get_delegation(self, addr: str) -> Optional[Delegation]:
         dele = self.delegations.get(addr, [])
-        if len(dele) != 2:
+        if len(dele) != 3:
+            self.delete_delegation(addr)
             return None
-        return Delegation(addr=addr, staker=dele[0], fee=dele[1])
+        return Delegation(addr=addr, staker=dele[0], fee=dele[1], pod=dele[2])
 
     @locked
     def list_delegations(self) -> Sequence[str]:
