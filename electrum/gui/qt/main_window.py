@@ -2625,7 +2625,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
 
     def sign_pod(self, address=''):
         d = WindowModalDialog(self, _('Sign POD'))
-        d.setMaximumSize(410, 60)
+        d.setMinimumSize(450, 300)
         layout = QGridLayout(d)
 
         address_e = QLineEdit()
