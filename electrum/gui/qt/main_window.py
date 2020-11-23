@@ -78,7 +78,7 @@ from electrum.network import Network, TxBroadcastError, BestEffortRequestFailed,
 from electrum.exchange_rate import FxThread
 from electrum.simple_config import SimpleConfig
 from electrum.logging import Logger
-from electrum.lnutil import ln_dummy_address
+from electrum.lnutil import ln_dummy_address, extract_nodeid, ConnStringFormatError
 from electrum.lnaddr import lndecode, LnDecodeException
 from electrum.plugins.trezor.trezor import TrezorKeyStore
 
@@ -95,7 +95,7 @@ from .util import (read_QIcon, ColorScheme, text_dialog, icon_path, WaitingDialo
                    import_meta_gui, export_meta_gui,
                    filename_field, address_field, char_width_in_lineedit, webopen,
                    TRANSACTION_FILE_EXTENSION_FILTER_ANY, MONOSPACE_FONT)
-from .util import ButtonsTextEdit
+from .util import ButtonsTextEdit, ButtonsLineEdit
 from .installwizard import WIF_HELP_TEXT
 from .history_list import HistoryList, HistoryModel
 from .update_checker import UpdateCheck, UpdateCheckThread
@@ -1158,7 +1158,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
 
         self.clear_invoice_button = QPushButton(_('Clear'))
         self.clear_invoice_button.clicked.connect(self.clear_receive_tab)
-        self.create_invoice_button = QPushButton(_('Request'))
+        self.create_invoice_button = QPushButton(_('New Address'))
         self.create_invoice_button.setIcon(read_QIcon("qtum.png"))
         self.create_invoice_button.setToolTip('Create on-chain request')
         self.create_invoice_button.clicked.connect(lambda: self.create_invoice(False))
@@ -1167,7 +1167,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         buttons.addWidget(self.clear_invoice_button)
         buttons.addWidget(self.create_invoice_button)
         if self.wallet.has_lightning():
-            self.create_invoice_button.setText(_('On-chain'))
+            self.create_invoice_button.setText(_('New Address'))
             self.create_lightning_invoice_button = QPushButton(_('Lightning'))
             self.create_lightning_invoice_button.setToolTip('Create lightning request')
             self.create_lightning_invoice_button.setIcon(read_QIcon("lightning.png"))
@@ -1275,6 +1275,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         message = self.receive_message_e.text()
         expiry = self.config.get('request_expiry', PR_DEFAULT_EXPIRATION_WHEN_CREATING)
         if is_lightning:
+            if not self.wallet.lnworker.channels:
+                self.show_error(_("You need to open a Lightning channel first."))
+                return
+            # TODO maybe show a warning if amount exceeds lnworker.num_sats_can_receive (as in kivy)
             key = self.wallet.lnworker.add_request(amount, message, expiry)
         else:
             key = self.create_bitcoin_request(amount, message, expiry)
@@ -1482,8 +1486,13 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             is_sweep=False)
 
         try:
-            tx = make_tx(None)
-        except (NotEnoughFunds, NoDynamicFeeEstimates, MultipleSpendMaxTxOutputs) as e:
+            try:
+                tx = make_tx(None)
+            except (NotEnoughFunds, NoDynamicFeeEstimates) as e:
+                # Check if we had enough funds excluding fees,
+                # if so, still provide opportunity to set lower fees.
+                tx = make_tx(0)
+        except (MultipleSpendMaxTxOutputs, NotEnoughFunds) as e:
             self.max_button.setChecked(False)
             self.show_error(str(e))
             return
@@ -1820,6 +1829,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         return make_tx
 
     def open_channel(self, connect_str, funding_sat, push_amt):
+        try:
+            extract_nodeid(connect_str)
+        except ConnStringFormatError as e:
+            self.main_window.show_error(str(e))
+            return
         # use ConfirmTxDialog
         # we need to know the fee before we broadcast, because the txid is required
         make_tx = self.mktx_for_open_channel(funding_sat)
@@ -2143,7 +2157,11 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         grid.addWidget(QLabel(_("Description") + ':'), 2, 0)
         grid.addWidget(QLabel(invoice.message), 2, 1)
         grid.addWidget(QLabel(_("Hash") + ':'), 3, 0)
-        grid.addWidget(QLabel(lnaddr.paymenthash.hex()), 3, 1)
+        payhash_e = ButtonsLineEdit(lnaddr.paymenthash.hex())
+        payhash_e.addCopyButton(self.app)
+        payhash_e.setReadOnly(True)
+        vbox.addWidget(payhash_e)
+        grid.addWidget(payhash_e, 3, 1)
         if invoice.exp:
             grid.addWidget(QLabel(_("Expires") + ':'), 4, 0)
             grid.addWidget(QLabel(format_time(invoice.time + invoice.exp)), 4, 1)
@@ -2269,19 +2287,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         # display colorful lightning icon to signal connection
         self.lightning_button.setIcon(read_QIcon("lightning.png"))
 
-        cur, total = self.network.lngossip.get_sync_progress_estimate()
+        cur, total, progress_percent = self.network.lngossip.get_sync_progress_estimate()
         # self.logger.debug(f"updating lngossip sync progress estimate: cur={cur}, total={total}")
-        progress_percent = 0
         progress_str = "??%"
-        if cur is not None and total is not None and total > 0:
-            # note: Progress is rescaled such that 95% is considered "done".
-            #       "Real" progress can stay around 98-99% for a long time, which
-            #       might needlessly worry users.
-            progress_percent = (1.0 / 0.95 * cur / total) * 100
-            progress_percent = min(progress_percent, 100)
-            progress_percent = round(progress_percent)
+        if progress_percent is not None:
             progress_str = f"{progress_percent}%"
-        if progress_percent >= 100:
+        if progress_percent and progress_percent >= 100:
             self.lightning_button.setMaximumWidth(25)
             self.lightning_button.setText('')
             self.lightning_button.setToolTip(_("The Lightning Network graph is fully synced."))
@@ -2395,6 +2406,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         grid.addWidget(QLabel(_('Lightning') + ':'), 5, 0)
         if self.wallet.can_have_lightning():
             grid.addWidget(QLabel(_('Enabled')), 5, 1)
+            local_nodeid = QLabel(self.wallet.lnworker.node_keypair.pubkey.hex())
+            local_nodeid.setTextInteractionFlags(Qt.TextSelectableByMouse)
+            grid.addWidget(QLabel(_('Lightning Node ID:')), 6, 0)
+            grid.addWidget(local_nodeid, 6, 1, 1, 3)
         else:
             grid.addWidget(QLabel(_("Not available for this wallet.")), 5, 1)
             grid.addWidget(HelpButton(_("Lightning is currently restricted to HD wallets with p2wpkh addresses.")), 5, 2)

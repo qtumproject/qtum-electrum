@@ -963,7 +963,7 @@ class LnFeatures(IntFlag):
     _ln_feature_contexts[OPTION_SUPPORT_LARGE_CHANNEL_OPT] = (LNFC.INIT | LNFC.NODE_ANN | LNFC.CHAN_ANN_ALWAYS_EVEN)
     _ln_feature_contexts[OPTION_SUPPORT_LARGE_CHANNEL_REQ] = (LNFC.INIT | LNFC.NODE_ANN | LNFC.CHAN_ANN_ALWAYS_EVEN)
 
-    def validate_transitive_dependecies(self) -> bool:
+    def validate_transitive_dependencies(self) -> bool:
         # for all even bit set, set corresponding odd bit:
         features = self  # copy
         flags = list_enabled_bits(features)
@@ -1087,7 +1087,7 @@ def validate_features(features: int) -> None:
     for fbit in enabled_features:
         if (1 << fbit) & LN_FEATURES_IMPLEMENTED == 0 and fbit % 2 == 0:
             raise UnknownEvenFeatureBits(fbit)
-    if not features.validate_transitive_dependecies():
+    if not features.validate_transitive_dependencies():
         raise IncompatibleOrInsaneFeatures(f"not all transitive dependencies are set. "
                                            f"features={features}")
 
@@ -1203,7 +1203,8 @@ def extract_nodeid(connect_contents: str) -> Tuple[bytes, str]:
         raise ConnStringFormatError(_('At least a hostname must be supplied after the at symbol.'))
     try:
         node_id = bfh(nodeid_hex)
-        assert len(node_id) == 33, len(node_id)
+        if len(node_id) != 33:
+            raise Exception()
     except:
         raise ConnStringFormatError(_('Invalid node ID, must be 33 bytes and hexadecimal'))
     return node_id, rest
