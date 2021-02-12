@@ -454,13 +454,16 @@ class BaseWizard(Logger):
             ]
 
             if self.plugin is not None and self.plugin.name in ["trezor", "safe_t"]:
-                choices += [
-                    ('standard', 'legacy (p2pkh) (trezor/safe_t web wallet compatiable)',
+                choices = [
+                    ('standard', 'legacy (p2pkh) (recommend)',
                      bip44_derivation(0, bip43_purpose=44, coin=constants.net.SLIP_COIN_TYPE)),
-                    ('p2wpkh-p2sh', 'p2sh-segwit (p2wpkh-p2sh) (trezor/safe_t web wallet compatiable)',
+                    ('p2wpkh-p2sh', 'p2sh-segwit (p2wpkh-p2sh) (recommend)',
                      bip44_derivation(0, bip43_purpose=49, coin=constants.net.SLIP_COIN_TYPE)),
-                    ('p2wpkh', 'native segwit (p2wpkh) (trezor/safe_t web wallet compatiable)',
+                    ('p2wpkh', 'native segwit (p2wpkh) (recommend)',
                      bip44_derivation(0, bip43_purpose=84, coin=constants.net.SLIP_COIN_TYPE)),
+                    ('standard',    'legacy (p2pkh) (old)',            bip44_derivation(0, bip43_purpose=44)),
+                    ('p2wpkh-p2sh', 'p2sh-segwit (p2wpkh-p2sh) (old)', bip44_derivation(0, bip43_purpose=49)),
+                    ('p2wpkh',      'native segwit (p2wpkh) (old)',    bip44_derivation(0, bip43_purpose=84)),
                 ]
 
         while True:
