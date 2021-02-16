@@ -5,11 +5,15 @@ ENV LC_ALL=C.UTF-8 LANG=C.UTF-8
 RUN dpkg --add-architecture i386 && \
     apt-get update -q && \
     apt-get install -qy \
-        wget=1.19.4-1ubuntu2.2 \
-        gnupg2=2.2.4-1ubuntu1.3 \
-        dirmngr=2.2.4-1ubuntu1.3 \
-        python3-software-properties=0.96.24.32.1 \
-        software-properties-common=0.96.24.32.1
+        wget=1.20.3-1ubuntu1 \
+        gnupg2=2.2.19-3ubuntu2.1 \
+        dirmngr=2.2.19-3ubuntu2.1 \
+        python3-software-properties=0.98.9.2 \
+        software-properties-common=0.98.9.2 \
+        && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get autoremove -y && \
+    apt-get clean
 
 RUN apt-get update -q && \
         apt-get install -qy \
