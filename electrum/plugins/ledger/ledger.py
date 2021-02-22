@@ -604,14 +604,13 @@ class Ledger_KeyStore(Hardware_KeyStore):
             self.handler.show_error(_('Cancelled by user'))
             return
         except BTChipException as e:
-            self.logger.error(f"BTChipException {e}")
-            if e.sw in (0x6985, 0x6d00):  # cancelled by user
+            if e.sw in (0x6985, ):  # cancelled by user
                 return
             elif e.sw == 0x6982:
                 raise  # pin lock. decorator will catch it
             else:
                 self.logger.exception('')
-                self.give_error(e, True)
+                self.give_error(f'Sign failed {e}', True)
         except BaseException as e:
             self.logger.exception('')
             self.give_error(e, True)
