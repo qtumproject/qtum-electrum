@@ -1240,8 +1240,10 @@ class OrderedDictWithIndex(OrderedDict):
         return self._key_to_pos[key]
 
     def value_from_pos(self, pos):
-        key = self._pos_to_key[pos]
-        return self[key]
+        key = self._pos_to_key.get(pos, None)
+        if key is None:
+            return None
+        return self.get(key, None)
 
     def popitem(self, *args, **kwargs):
         ret = super().popitem(*args, **kwargs)

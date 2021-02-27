@@ -163,6 +163,8 @@ class TokenHistoryModel(QAbstractItemModel, Logger):
         assert index.isValid()
         col = index.column()
         tx_item = self.transactions.value_from_pos(index.row())
+        if not tx_item:
+            return QVariant()
         tx_hash = tx_item['txid']
         conf = tx_item['confirmations']
         txpos = tx_item['txpos_in_block'] or 0
