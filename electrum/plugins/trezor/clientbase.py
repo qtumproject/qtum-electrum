@@ -12,7 +12,7 @@ from electrum.plugins.hw_wallet.plugin import OutdatedHwFirmwareException, Hardw
 
 from trezorlib.client import TrezorClient, PASSPHRASE_ON_DEVICE
 from trezorlib.exceptions import TrezorFailure, Cancelled, OutdatedFirmwareError
-from trezorlib.messages import WordRequestType, FailureType, RecoveryDeviceType, ButtonRequestType
+from trezorlib.messages import WordRequestType, FailureType, RecoveryDeviceType, ButtonRequestType, SafetyCheckLevel
 import trezorlib.btc
 import trezorlib.device
 
@@ -166,6 +166,11 @@ class TrezorClientBase(HardwareClientBase, Logger):
     def change_homescreen(self, homescreen):
         with self.run_flow(_("Confirm on your {} device to change your home screen")):
             trezorlib.device.apply_settings(self.client, homescreen=homescreen)
+
+    @runs_in_hwd_thread
+    def set_safety_checks(self, safety_checks: SafetyCheckLevel):
+        with self.run_flow(_("Confirm the new safety checks on your {} device")):
+            trezorlib.device.apply_settings(self.client, safety_checks=safety_checks)
 
     @runs_in_hwd_thread
     def set_pin(self, remove):

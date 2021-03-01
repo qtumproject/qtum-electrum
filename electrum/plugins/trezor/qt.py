@@ -17,7 +17,7 @@ from ..hw_wallet.qt import QtHandlerBase, QtPluginBase
 from ..hw_wallet.plugin import only_hook_if_libraries_available
 from .trezor import (TrezorPlugin, TIM_NEW, TIM_RECOVER, TrezorInitSettings,
                      PASSPHRASE_ON_DEVICE, Capability, BackupType, RecoveryDeviceType)
-
+from trezorlib.messages import SafetyCheckLevel
 
 PASSPHRASE_HELP_SHORT =_(
     "Passphrases allow you to access new wallets, each "
@@ -578,6 +578,12 @@ class SettingsDialog(WindowModalDialog):
         def clear_pin():
             invoke_client('set_pin', remove=True)
 
+        def strict_safety_check():
+            invoke_client('set_safety_checks', SafetyCheckLevel.Strict)
+
+        def prompt_safety_check():
+            invoke_client('set_safety_checks', SafetyCheckLevel.Prompt)
+
         def wipe_device():
             wallet = window.wallet
             if wallet and sum(wallet.get_balance()):
@@ -661,6 +667,15 @@ class SettingsDialog(WindowModalDialog):
         pin_msg.setStyleSheet("color: red")
         settings_glayout.addWidget(pin_msg, 3, 1, 1, -1)
 
+        safety_check_label = QLabel(_("Safety Check Level"))
+        strict_safety_check_button = QPushButton("strict")
+        strict_safety_check_button.clicked.connect(strict_safety_check)
+        prompt_safety_check_button = QPushButton("prompt")
+        prompt_safety_check_button.clicked.connect(prompt_safety_check)
+        settings_glayout.addWidget(safety_check_label, 4, 0)
+        settings_glayout.addWidget(strict_safety_check_button, 4, 1)
+        settings_glayout.addWidget(prompt_safety_check_button, 4, 2)
+
         # Settings tab - Homescreen
         homescreen_label = QLabel(_("Homescreen"))
         homescreen_change_button = QPushButton(_("Change..."))
@@ -679,10 +694,10 @@ class SettingsDialog(WindowModalDialog):
                                   "choose a {} x {} monochrome black and "
                                   "white image.").format(hs_cols, hs_rows))
         homescreen_msg.setWordWrap(True)
-        settings_glayout.addWidget(homescreen_label, 4, 0)
-        settings_glayout.addWidget(homescreen_change_button, 4, 1)
-        settings_glayout.addWidget(homescreen_clear_button, 4, 2)
-        settings_glayout.addWidget(homescreen_msg, 5, 1, 1, -1)
+        settings_glayout.addWidget(homescreen_label, 5, 0)
+        settings_glayout.addWidget(homescreen_change_button, 5, 1)
+        settings_glayout.addWidget(homescreen_clear_button, 5, 2)
+        settings_glayout.addWidget(homescreen_msg, 6, 1, 1, -1)
 
         # Settings tab - Session Timeout
         timeout_label = QLabel(_("Session Timeout"))
@@ -703,10 +718,10 @@ class SettingsDialog(WindowModalDialog):
         slider_moved()
         timeout_slider.valueChanged.connect(slider_moved)
         timeout_slider.sliderReleased.connect(slider_released)
-        settings_glayout.addWidget(timeout_label, 6, 0)
-        settings_glayout.addWidget(timeout_slider, 6, 1, 1, 3)
-        settings_glayout.addWidget(timeout_minutes, 6, 4)
-        settings_glayout.addWidget(timeout_msg, 7, 1, 1, -1)
+        settings_glayout.addWidget(timeout_label, 7, 0)
+        settings_glayout.addWidget(timeout_slider, 7, 1, 1, 3)
+        settings_glayout.addWidget(timeout_minutes, 7, 4)
+        settings_glayout.addWidget(timeout_msg, 8, 1, 1, -1)
         settings_layout.addLayout(settings_glayout)
         settings_layout.addStretch(1)
 
