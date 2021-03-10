@@ -239,6 +239,12 @@ def is_old_seed(seed: str) -> bool:
     return is_hex or (uses_electrum_words and (len(words) == 12 or len(words) == 24))
 
 
+def is_hardware_seed(seed: str) -> bool:
+    seed = normalize_text(seed)
+    words = seed.split()
+    return len(words) == 24
+
+
 def seed_type(x: str) -> str:
     if is_old_seed(x):
         return 'old'
@@ -246,6 +252,8 @@ def seed_type(x: str) -> str:
         return 'standard'
     elif is_new_seed(x, version.SEED_PREFIX_SW):
         return 'segwit'
+    elif is_hardware_seed(x):
+        return 'standard'
     # elif is_new_seed(x, version.SEED_PREFIX_2FA):
     #     return '2fa'
     # elif is_new_seed(x, version.SEED_PREFIX_2FA_SW):
