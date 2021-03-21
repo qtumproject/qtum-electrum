@@ -42,9 +42,13 @@ POW_BLOCK_COUNT = 5000
 CHUNK_SIZE = 1024
 BASIC_HEADER_SIZE = 180  # not include sig
 MAX_TARGET = 0x00000000FFFF0000000000000000000000000000000000000000000000000000
+
 POW_TARGET_TIMESPAN = 16 * 60  # bitcoin is 14 * 24 * 60 * 60
 POW_TARGET_TIMESPAN_V2 = 4000
+POW_TARGET_TIMESPAN_RBT = 1000
+
 POW_TARGET_TIMESPACE = 2 * 64  # bitcoin is 10 * 60
+POW_TARGET_TIMESPACE_RBT = 32
 
 
 class MissingHeader(Exception):
@@ -693,10 +697,15 @@ class Blockchain(Logger):
         if is_pos:
             if height < net.QIP9_FORK_HEIGHT:
                 return net.POS_LIMIT
-            return net.QIP9_POS_LIMIT
+            elif height < net.REDUCE_BLOCK_TIME_HEIGHT:
+                return net.QIP9_POS_LIMIT
+            return net.RBT_POS_LIMIT
         return net.POW_LIMIT
 
     def get_target(self, height: int, is_pos: bool, prev_header=None, pprev_header=None) -> int:
+        """
+        https://github.com/qtumproject/qtum/blob/master/src/pow.cpp CalculateNextWorkRequired
+        """
         net = constants.net
 
         # only for mainnet
@@ -734,11 +743,18 @@ class Blockchain(Logger):
             nInterval = POW_TARGET_TIMESPAN // POW_TARGET_TIMESPACE
             new_target *= ((nInterval - 1) * POW_TARGET_TIMESPACE + nActualSpace + nActualSpace)
             new_target //= ((nInterval + 1) * POW_TARGET_TIMESPACE)
-        else:
+        elif height < net.REDUCE_BLOCK_TIME_HEIGHT:
             nActualSpace = min(nActualSpace, POW_TARGET_TIMESPACE * 20)
             nInterval = POW_TARGET_TIMESPAN_V2 // POW_TARGET_TIMESPACE
             t1 = int(2 * (nActualSpace - POW_TARGET_TIMESPACE) / 16)
             t2 = (nInterval + 1) * POW_TARGET_TIMESPACE // 16
+            new_target *= math.exp(t1 / t2)
+            new_target = int(new_target)
+        else:
+            nActualSpace = min(nActualSpace, POW_TARGET_TIMESPACE_RBT * 20)
+            nInterval = POW_TARGET_TIMESPAN_RBT // POW_TARGET_TIMESPACE_RBT
+            t1 = int(2 * (nActualSpace - POW_TARGET_TIMESPACE_RBT) / 4)
+            t2 = (nInterval + 1) * POW_TARGET_TIMESPACE_RBT // 4
             new_target *= math.exp(t1 / t2)
             new_target = int(new_target)
 

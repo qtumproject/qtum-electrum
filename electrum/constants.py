@@ -83,10 +83,12 @@ class QtumMainnet(AbstractNet):
     POW_LIMIT = 0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
     POS_LIMIT = 0x00000000ffffffffffffffffffffffffffffffffffffffffffffffffffffffff
     QIP9_POS_LIMIT = 0x0000000000001fffffffffffffffffffffffffffffffffffffffffffffffffff
+    RBT_POS_LIMIT = 0x0000000000003fffffffffffffffffffffffffffffffffffffffffffffffffff
 
     QIP5_FORK_HEIGHT = 466600
     QIP9_FORK_HEIGHT = 466600
     OFFLINE_STAKE_HEIGHT = 680000
+    REDUCE_BLOCK_TIME_HEIGHT = 845000
 
     LN_REALM_BYTE = 0
     LN_DNS_SEEDS = []
@@ -138,10 +140,12 @@ class QtumTestnet(AbstractNet):
     POW_LIMIT = 0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
     POS_LIMIT = 0x0000ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
     QIP9_POS_LIMIT = 0x0000000000001fffffffffffffffffffffffffffffffffffffffffffffffffff
+    RBT_POS_LIMIT = 0x0000000000003fffffffffffffffffffffffffffffffffffffffffffffffffff
 
     QIP5_FORK_HEIGHT = 446320
     QIP9_FORK_HEIGHT = 446320
     OFFLINE_STAKE_HEIGHT = 625000
+    REDUCE_BLOCK_TIME_HEIGHT = 806600
 
     LN_REALM_BYTE = 0
     LN_DNS_SEEDS = []
@@ -182,6 +186,7 @@ class QtumRegtest(QtumTestnet):
     QIP5_FORK_HEIGHT = 0
     QIP9_FORK_HEIGHT = 0
     OFFLINE_STAKE_HEIGHT = 1
+    REDUCE_BLOCK_TIME_HEIGHT = 0
 
 
 # don't import net directly, import the module instead (so that net is singleton)
