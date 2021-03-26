@@ -28,8 +28,7 @@ import itertools
 from collections import defaultdict
 from typing import TYPE_CHECKING, Dict, Optional, Set, Tuple, NamedTuple, Sequence, List
 
-from . import bitcoin, util
-from .bitcoin import COINBASE_MATURITY
+from . import bitcoin, util, constants
 from .bitcoin import TYPE_ADDRESS, TYPE_PUBKEY
 from .util import profiler, bfh, TxMinedInfo, UnrelatedTransactionException
 from .util import profiler, bfh, TxMinedInfo
@@ -813,10 +812,11 @@ class AddressSynchronizer(Logger):
         received, sent = self.get_addr_io(address)
         c = u = x = 0
         mempool_height = self.get_local_height() + 1  # height of next block
+        net = constants.net
         for txo, (tx_height, v, is_cb) in received.items():
             if txo in excluded_coins:
                 continue
-            if is_cb and tx_height + COINBASE_MATURITY > mempool_height:
+            if is_cb and tx_height + net.coinbase_maturity(mempool_height) > mempool_height:
                 x += v
             elif tx_height > 0:
                 c += v
@@ -846,6 +846,7 @@ class AddressSynchronizer(Logger):
         if excluded_addresses:
             domain = set(domain) - set(excluded_addresses)
         mempool_height = self.get_local_height() + 1  # height of next block
+        net = constants.net
         for addr in domain:
             utxos = self.get_addr_utxo(addr)
             for utxo in utxos.values():
@@ -854,7 +855,7 @@ class AddressSynchronizer(Logger):
                 if nonlocal_only and utxo.block_height == TX_HEIGHT_LOCAL:
                     continue
                 if (mature_only and utxo.is_coinbase_output()
-                        and utxo.block_height + COINBASE_MATURITY > mempool_height):
+                        and utxo.block_height + net.coinbase_maturity(mempool_height) > mempool_height):
                     continue
                 coins.append(utxo)
                 continue

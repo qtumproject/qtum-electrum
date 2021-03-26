@@ -59,7 +59,7 @@ from .util import (NotEnoughFunds, UserCancelled, profiler,
 from .util import get_backup_dir
 from .simple_config import SimpleConfig
 from .bitcoin import (COIN, TYPE_ADDRESS, TYPE_PUBKEY, is_address, address_to_script, serialize_privkey,
-                      is_minikey, relayfee, dust_threshold, COINBASE_MATURITY, RECOMMEND_CONFIRMATIONS,
+                      is_minikey, relayfee, dust_threshold, RECOMMEND_CONFIRMATIONS,
                       TOKEN_TRANSFER_TOPIC, b58_address_to_hash160, hash160_to_p2pkh)
 from .crypto import sha256d
 from . import keystore
@@ -67,7 +67,7 @@ from .keystore import load_keystore, Hardware_KeyStore, KeyStore, Mobile_KeyStor
 from .util import multisig_type
 from .storage import StorageEncryptionVersion, WalletStorage
 from .wallet_db import WalletDB
-from . import transaction, bitcoin, coinchooser, paymentrequest, ecc, bip32
+from . import transaction, bitcoin, coinchooser, paymentrequest, ecc, bip32, constants
 from .transaction import (Transaction, TxInput, UnknownTxinType, TxOutput,
                           PartialTransaction, PartialTxInput, PartialTxOutput, TxOutpoint,
                           decode_opsender_script, h160_from_opsender_script)
@@ -1054,6 +1054,8 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
             return copy.copy(self._labels)
 
     def get_tx_status(self, tx_hash, tx_mined_info: TxMinedInfo):
+        mempool_height = self.get_local_height() + 1  # height of next block
+        net = constants.net
         extra = []
         height = tx_mined_info.height
         conf = tx_mined_info.conf
@@ -1081,11 +1083,11 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
                 size = tx.estimated_size()
                 fee_per_byte = fee / size
                 extra.append(format_fee_satoshis(fee_per_byte) + ' sat/b')
-            if fee is not None and height in (TX_HEIGHT_UNCONF_PARENT, TX_HEIGHT_UNCONFIRMED) \
-               and self.config.has_fee_mempool():
-                exp_n = self.config.fee_to_depth(fee_per_byte)
-                if exp_n is not None:
-                    extra.append('%.2f MB'%(exp_n/1000000))
+                if height in (TX_HEIGHT_UNCONF_PARENT, TX_HEIGHT_UNCONFIRMED) \
+                   and self.config.has_fee_mempool():
+                    exp_n = self.config.fee_to_depth(fee_per_byte)
+                    if exp_n is not None:
+                        extra.append('%.2f MB'%(exp_n/1000000))
             if height == TX_HEIGHT_LOCAL:
                 status = 3
             elif height == TX_HEIGHT_UNCONF_PARENT:
@@ -1095,7 +1097,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
             else:
                 status = 2  # not SPV verified
         elif is_staked:
-            status = 3 + max(min(conf // (COINBASE_MATURITY // RECOMMEND_CONFIRMATIONS), RECOMMEND_CONFIRMATIONS), 1)
+            status = 3 + max(min(conf // (net.coinbase_maturity(mempool_height) // RECOMMEND_CONFIRMATIONS), RECOMMEND_CONFIRMATIONS), 1)
         else:
             status = 3 + min(conf, RECOMMEND_CONFIRMATIONS)
         time_str = format_time(timestamp) if timestamp else _("unknown")

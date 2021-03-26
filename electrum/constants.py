@@ -50,6 +50,7 @@ class AbstractNet:
     BLOCK_HEIGHT_FIRST_LIGHTNING_CHANNELS = 0
     CHECKPOINTS = {}
     GENESIS = ""
+    REDUCE_BLOCK_TIME_HEIGHT = 0
 
     @classmethod
     def max_checkpoint(cls) -> int:
@@ -59,6 +60,10 @@ class AbstractNet:
     @classmethod
     def rev_genesis_bytes(cls) -> bytes:
         return bytes.fromhex(bitcoin.rev_hex(cls.GENESIS))
+
+    @classmethod
+    def coinbase_maturity(cls, height: int):
+        return 500 if height < cls.REDUCE_BLOCK_TIME_HEIGHT else 2000
 
 
 class QtumMainnet(AbstractNet):
