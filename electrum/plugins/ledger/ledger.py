@@ -10,11 +10,11 @@ from electrum import ecc
 from electrum import bip32
 from electrum import constants
 from electrum.crypto import hash_160
-from electrum.bitcoin import int_to_hex, var_int, is_segwit_script_type, push_data
+from electrum.bitcoin import int_to_hex, var_int, is_segwit_script_type, push_data, is_b58_address
 from electrum.bip32 import BIP32Node, convert_bip32_intpath_to_strpath
 from electrum.i18n import _
 from electrum.keystore import Hardware_KeyStore
-from electrum.transaction import Transaction, PartialTransaction, PartialTxInput, PartialTxOutput, decode_opsender_script, update_opsender_sig
+from electrum.transaction import Transaction, decode_opsender_script, update_opsender_sig
 from electrum.wallet import Standard_Wallet
 from electrum.util import bfh, versiontuple, UserFacingException
 from electrum.base_wizard import ScriptTypeNotSupported
@@ -22,7 +22,7 @@ from electrum.logging import get_logger
 from electrum.plugin import runs_in_hwd_thread, Device
 
 from ..hw_wallet import HW_PluginBase, HardwareClientBase
-from ..hw_wallet.plugin import is_any_tx_output_on_change_branch, validate_op_return_output, LibraryFoundButUnusable
+from ..hw_wallet.plugin import is_any_tx_output_on_change_branch, LibraryFoundButUnusable
 
 
 _logger = get_logger(__name__)
@@ -434,6 +434,10 @@ class Ledger_KeyStore(Hardware_KeyStore):
         if not client_electrum.supports_multi_output():
             if len(tx.outputs()) > 2:
                 self.give_error("Transaction with more than 2 outputs not supported")
+
+        for txout in tx.outputs():
+            if client_electrum.is_hw1() and txout.address and not is_b58_address(txout.address):
+                self.give_error(_("This {} device can only send to base58 addresses.").format(self.device))
 
         # don't restrict tx output
         # for txout in tx.outputs():
