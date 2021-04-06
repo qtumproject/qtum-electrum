@@ -2498,7 +2498,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             self.show_error(repr(e))
             return
         from .seed_dialog import SeedDialog
-        d = SeedDialog(self, seed, passphrase)
+        d = SeedDialog(self, seed, passphrase, config=self.config)
         d.exec_()
 
     def show_qrcode(self, data, title = _("QR code"), parent=None, *,
