@@ -1009,8 +1009,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
                 icon = read_QIcon("status_waiting.png")
             else:
                 text = _("Not connected")
-
-        self.tray.setToolTip("%s (%s)" % (text, self.wallet.basename()))
+        if self.tray:
+            self.tray.setToolTip("%s (%s)" % (text, self.wallet.basename()))
         self.balance_label.setText(text)
         if self.status_button:
             self.status_button.setIcon(icon)
@@ -3141,6 +3141,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         if self._update_check_thread:
             self._update_check_thread.exit()
             self._update_check_thread.wait()
+        if self.tray:
+            self.tray = None
         self.gui_object.timer.timeout.disconnect(self.timer_actions)
         self.gui_object.close_window(self)
 
