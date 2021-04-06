@@ -202,7 +202,7 @@ class TokenHistoryModel(QAbstractItemModel, Logger):
             elif col == TokenHistoryColumns.STATUS and role == Qt.ToolTipRole:
                 return QVariant(str(conf) + _(" confirmation" + ("s" if conf != 1 else "")))
             elif col > TokenHistoryColumns.BIND_ADDRESS and role == Qt.TextAlignmentRole:
-                return QVariant(Qt.AlignRight | Qt.AlignVCenter)
+                return QVariant(int(Qt.AlignRight | Qt.AlignVCenter))
             elif col != TokenHistoryColumns.STATUS and role == Qt.FontRole:
                 return QVariant(QFont(MONOSPACE_FONT))
             elif col in (TokenHistoryColumns.TOKEN, TokenHistoryColumns.AMOUNT) \
@@ -299,7 +299,7 @@ class TokenHistoryModel(QAbstractItemModel, Logger):
         extra_flags = Qt.NoItemFlags # type: Qt.ItemFlag
         if idx.column() in self.view.editable_columns:
             extra_flags |= Qt.ItemIsEditable
-        return super().flags(idx) | extra_flags
+        return super().flags(idx) | int(extra_flags)
 
     @staticmethod
     def tx_mined_info_from_tx_item(tx_item):
