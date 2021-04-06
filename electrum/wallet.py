@@ -1591,7 +1591,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
         return tx_new
 
     @abstractmethod
-    def _add_input_sig_info(self, txin: PartialTxInput, address: str, *, only_der_suffix: bool = True) -> None:
+    def _add_input_sig_info(self, txin: PartialTxInput, address: str, *, only_der_suffix: bool) -> None:
         pass
 
     @abstractmethod
@@ -1599,7 +1599,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
         pass
 
     def _add_txinout_derivation_info(self, txinout: Union[PartialTxInput, PartialTxOutput],
-                                     address: str, *, only_der_suffix: bool = True) -> None:
+                                     address: str, *, only_der_suffix: bool) -> None:
         pass  # implemented by subclasses
 
     def _add_input_utxo_info(self, txin: PartialTxInput, address: str) -> None:
@@ -1616,7 +1616,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
         """
         return False  # implemented by subclasses
 
-    def add_input_info(self, txin: PartialTxInput, *, only_der_suffix: bool = True) -> None:
+    def add_input_info(self, txin: PartialTxInput, *, only_der_suffix: bool = False) -> None:
         address = self.get_txin_address(txin)
         if not self.is_mine(address):
             is_mine = self._learn_derivation_path_for_address_from_txinout(txin, address)
@@ -1679,7 +1679,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
                 tx = Transaction(raw_tx)
         return tx
 
-    def add_output_info(self, txout: PartialTxOutput, *, only_der_suffix: bool = True) -> None:
+    def add_output_info(self, txout: PartialTxOutput, *, only_der_suffix: bool = False) -> None:
         opsender_h160 = h160_from_opsender_script(txout.scriptpubkey)
         if opsender_h160:
             sender_addr = hash160_to_p2pkh(opsender_h160)
@@ -1721,7 +1721,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
         # add info to a temporary tx copy; including xpubs
         # and full derivation paths as hw keystores might want them
         tmp_tx = copy.deepcopy(tx)
-        tmp_tx.add_info_from_wallet(self, include_xpubs_and_full_paths=True)
+        tmp_tx.add_info_from_wallet(self, include_xpubs=True)
         # sign. start with ready keystores.
         for k in sorted(self.get_keystores(), key=lambda ks: ks.ready_to_sign(), reverse=True):
             try:
@@ -1732,7 +1732,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
         # remove sensitive info; then copy back details from temporary tx
         tmp_tx.remove_xpubs_and_bip32_paths()
         tx.combine_with_other_psbt(tmp_tx)
-        tx.add_info_from_wallet(self, include_xpubs_and_full_paths=False)
+        tx.add_info_from_wallet(self, include_xpubs=False)
         return tx
 
     def try_detecting_internal_addresses_corruption(self) -> None:
@@ -2528,12 +2528,12 @@ class Imported_Wallet(Simple_Wallet):
     def get_txin_type(self, address):
         return self.db.get_imported_address(address).get('type', 'address')
 
-    def _add_input_sig_info(self, txin, address, *, only_der_suffix=True):
+    def _add_input_sig_info(self, txin, address, *, only_der_suffix):
         if not self.is_mine(address):
             return
         if txin.script_type in ('unknown', 'address'):
             return
-        elif txin.script_type in ('p2pkh', 'p2wpkh', 'p2wpkh-p2sh', 'p2pk'):
+        elif txin.script_type in ('p2pkh', 'p2wpkh', 'p2wpkh-p2sh'):
             pubkey = self.get_public_key(address)
             if not pubkey:
                 return
@@ -2667,14 +2667,14 @@ class Deterministic_Wallet(Abstract_Wallet):
         return {k.derive_pubkey(*der_suffix): (k, der_suffix)
                 for k in self.get_keystores()}
 
-    def _add_input_sig_info(self, txin, address, *, only_der_suffix=True):
+    def _add_input_sig_info(self, txin, address, *, only_der_suffix):
         self._add_txinout_derivation_info(txin, address, only_der_suffix=only_der_suffix)
 
     def _add_output_sig_info(self, txout, address):
         pubkey_deriv_info = self.get_public_keys_with_deriv_info(address)
         txout.opsender_pubkey = list(pubkey_deriv_info.keys())[0]
 
-    def _add_txinout_derivation_info(self, txinout, address, *, only_der_suffix=True):
+    def _add_txinout_derivation_info(self, txinout, address, *, only_der_suffix):
         if not self.is_mine(address):
             return
         pubkey_deriv_info = self.get_public_keys_with_deriv_info(address)
