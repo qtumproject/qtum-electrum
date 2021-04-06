@@ -343,14 +343,19 @@ class BlockingWaitingDialog(WindowModalDialog):
         self.message_label = QLabel(message)
         vbox = QVBoxLayout(self)
         vbox.addWidget(self.message_label)
+        # show popup
         self.show()
+        # refresh GUI; needed for popup to appear and for message_label to get drawn
         QCoreApplication.processEvents()
+        QCoreApplication.processEvents()
+        # block and run given task
         try:
             task()
         except BaseException as e:
             self.reject()
             raise e
         else:
+            # close popup
             self.accept()
 
 
