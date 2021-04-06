@@ -5,8 +5,9 @@ import copy
 from PyQt5.QtCore import Qt, pyqtSignal
 from PyQt5.QtWidgets import QPushButton, QLabel, QVBoxLayout, QWidget, QGridLayout
 
-from electrum.gui.qt.util import WindowModalDialog, CloseButton, get_parent_main_window, Buttons
+from electrum.gui.qt.util import WindowModalDialog, CloseButton, Buttons, getOpenFileName, getSaveFileName
 from electrum.gui.qt.transaction_dialog import TxDialog
+from electrum.gui.qt.main_window import ElectrumWindow
 
 from electrum.i18n import _
 from electrum.plugin import hook
@@ -63,8 +64,13 @@ class Plugin(ColdcardPlugin, QtPluginBase):
 
         basename = wallet.basename().rsplit('.', 1)[0]        # trim .json
         name = f'{basename}-cc-export.txt'.replace(' ', '-')
-        fileName = main_window.getSaveFileName(_("Select where to save the setup file"),
-                                                        name, "*.txt")
+        fileName = getSaveFileName(
+            parent=main_window,
+            title=_("Select where to save the setup file"),
+            filename=name,
+            filter="*.txt",
+            config=self.config,
+        )
         if fileName:
             with open(fileName, "wt") as f:
                 ColdcardPlugin.export_ms_wallet(wallet, f, basename)
@@ -92,7 +98,7 @@ class Coldcard_Handler(QtHandlerBase):
 
 class CKCCSettingsDialog(WindowModalDialog):
 
-    def __init__(self, window, plugin, keystore):
+    def __init__(self, window: ElectrumWindow, plugin, keystore):
         title = _("{} Settings").format(plugin.device)
         super(CKCCSettingsDialog, self).__init__(window, title)
         self.setMaximumWidth(540)
@@ -104,6 +110,8 @@ class CKCCSettingsDialog(WindowModalDialog):
         #handler = keystore.handler
         self.thread = thread = keystore.thread
         self.keystore = keystore
+        assert isinstance(window, ElectrumWindow), f"{type(window)}"
+        self.window = window
 
         def connect_and_doit():
             # Attempt connection to device, or raise.
@@ -188,10 +196,14 @@ class CKCCSettingsDialog(WindowModalDialog):
 
     def start_upgrade(self, client):
         # ask for a filename (must have already downloaded it)
-        mw = get_parent_main_window(self)
         dev = client.dev
 
-        fileName = mw.getOpenFileName("Select upgraded firmware file", "*.dfu")
+        fileName = getOpenFileName(
+            parent=self,
+            title="Select upgraded firmware file",
+            filter="*.dfu",
+            config=self.window.config,
+        )
         if not fileName:
             return
 
