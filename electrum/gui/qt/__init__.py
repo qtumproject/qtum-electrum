@@ -88,6 +88,10 @@ class QNetworkUpdatedSignalObject(QObject):
 
 class ElectrumGui(Logger):
 
+    network_dialog: Optional['NetworkDialog']
+    lightning_dialog: Optional['LightningDialog']
+    watchtower_dialog: Optional['WatchtowerDialog']
+
     @profiler
     def __init__(self, config: 'SimpleConfig', daemon: 'Daemon', plugins: 'Plugins'):
         set_language(config.get('language', get_default_language()))
@@ -111,6 +115,7 @@ class ElectrumGui(Logger):
         self.app = QElectrumApplication(sys.argv)
         self.app.installEventFilter(self.efilter)
         self.app.setWindowIcon(read_QIcon("electrum.png"))
+        self._cleaned_up = False
         # timer
         self.timer = QTimer(self.app)
         self.timer.setSingleShot(False)
@@ -192,15 +197,40 @@ class ElectrumGui(Logger):
                 for w in self.windows:
                     w.hide()
 
-    def close(self):
-        for window in self.windows:
+    def _cleanup_before_exit(self):
+        if self._cleaned_up:
+            return
+        self._cleaned_up = True
+        self.app.new_window_signal.disconnect()
+        self.efilter = None
+        # If there are still some open windows, try to clean them up.
+        for window in list(self.windows):
             window.close()
+            window.clean_up()
         if self.network_dialog:
             self.network_dialog.close()
+            self.network_dialog.clean_up()
+            self.network_dialog = None
+        self.network_updated_signal_obj = None
         if self.lightning_dialog:
             self.lightning_dialog.close()
+            self.lightning_dialog = None
         if self.watchtower_dialog:
             self.watchtower_dialog.close()
+            self.watchtower_dialog = None
+        # Shut down the timer cleanly
+        self.timer.stop()
+        self.timer = None
+        # clipboard persistence. see http://www.mail-archive.com/pyqt@riverbankcomputing.com/msg17328.html
+        event = QtCore.QEvent(QtCore.QEvent.Clipboard)
+        self.app.sendEvent(self.app.clipboard(), event)
+        if self.tray:
+            self.tray.hide()
+            self.tray.deleteLater()
+            self.tray = None
+
+    def close(self):
+        self._cleanup_before_exit()
         self.app.quit()
 
     def new_window(self, path, uri=None):
@@ -225,8 +255,10 @@ class ElectrumGui(Logger):
             self.network_dialog.show()
             self.network_dialog.raise_()
             return
-        self.network_dialog = NetworkDialog(self.daemon.network, self.config,
-                                self.network_updated_signal_obj)
+        self.network_dialog = NetworkDialog(
+            network=self.daemon.network,
+            config=self.config,
+            network_updated_signal_obj=self.network_updated_signal_obj)
         self.network_dialog.show()
 
     def _create_window_for_wallet(self, wallet):
@@ -331,7 +363,7 @@ class ElectrumGui(Logger):
 
     def close_window(self, window: ElectrumWindow):
         if window in self.windows:
-           self.windows.remove(window)
+            self.windows.remove(window)
         self.build_tray_menu()
         # save wallet path of last open window
         if not self.windows:
@@ -379,12 +411,7 @@ class ElectrumGui(Logger):
         self.app.lastWindowClosed.connect(quit_after_last_window)
 
         def clean_up():
-            # Shut down the timer cleanly
-            self.timer.stop()
-            # clipboard persistence. see http://www.mail-archive.com/pyqt@riverbankcomputing.com/msg17328.html
-            event = QtCore.QEvent(QtCore.QEvent.Clipboard)
-            self.app.sendEvent(self.app.clipboard(), event)
-            self.tray.hide()
+            self._cleanup_before_exit()
         self.app.aboutToQuit.connect(clean_up)
 
         # main loop
