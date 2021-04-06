@@ -200,6 +200,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.pluginsdialog = None
         self.showing_cert_mismatch_error = False
         self.tl_windows = []
+        self.pending_invoice = None
         Logger.__init__(self)
 
         self.tx_notification_queue = queue.Queue()
@@ -1557,12 +1558,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         msg = _("Pay lightning invoice?") + '\n\n' + _("This will send {}?").format(self.format_amount_and_units(amount_sat))
         if not self.question(msg):
             return
-        attempts = LN_NUM_PAYMENT_ATTEMPTS
+        self.save_pending_invoice()
         def task():
-            self.wallet.lnworker.pay(invoice, amount_msat=amount_msat, attempts=attempts)
-        self.do_clear()
+            coro = self.wallet.lnworker.pay_invoice(invoice, amount_msat=amount_msat, attempts=LN_NUM_PAYMENT_ATTEMPTS)
+            fut = asyncio.run_coroutine_threadsafe(coro, self.network.asyncio_loop)
+            return fut.result()
         self.wallet.thread.add(task)
-        self.invoice_list.update()
 
     def on_request_status(self, wallet, key, status):
         if wallet != self.wallet:
@@ -1627,21 +1628,24 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
                 URI=self.payto_URI)
 
     def do_save_invoice(self):
-        invoice = self.read_invoice()
-        if not invoice:
+        self.pending_invoice = self.read_invoice()
+        if not self.pending_invoice:
             return
-        self.wallet.save_invoice(invoice)
+        self.save_pending_invoice()
+
+    def save_pending_invoice(self):
+        if not self.pending_invoice:
+            return
         self.do_clear()
+        self.wallet.save_invoice(self.pending_invoice)
         self.invoice_list.update()
+        self.pending_invoice = None
 
     def do_pay(self):
-        invoice = self.read_invoice()
-        if not invoice:
+        self.pending_invoice = self.read_invoice()
+        if not self.pending_invoice:
             return
-        self.wallet.save_invoice(invoice)
-        self.invoice_list.update()
-        self.do_clear()
-        self.do_pay_invoice(invoice)
+        self.do_pay_invoice(self.pending_invoice)
 
     def pay_multiple_invoices(self, invoices):
         outputs = []
@@ -1673,9 +1677,10 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         """
         return self.utxo_list.get_spend_list()
 
-    def pay_onchain_dialog(self, inputs: Sequence[PartialTxInput],
-                           outputs: List[PartialTxOutput], *,
-                           external_keypairs=None) -> None:
+    def pay_onchain_dialog(
+            self, inputs: Sequence[PartialTxInput],
+            outputs: List[PartialTxOutput], *,
+            external_keypairs=None) -> None:
         # trustedcoin requires this
         if run_hook('abort_send', self):
             return
@@ -1691,32 +1696,40 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             return
 
         output_value = '!' if '!' in output_values else sum(output_values)
-        d = ConfirmTxDialog(window=self, make_tx=make_tx, output_value=output_value, is_sweep=is_sweep)
-        if d.not_enough_funds:
+        conf_dlg = ConfirmTxDialog(window=self, make_tx=make_tx, output_value=output_value, is_sweep=is_sweep)
+        if conf_dlg.not_enough_funds:
             # Check if we had enough funds excluding fees,
             # if so, still provide opportunity to set lower fees.
-            if not d.have_enough_funds_assuming_zero_fees():
-                self.show_message(_('Not Enough Funds'))
+            if not conf_dlg.have_enough_funds_assuming_zero_fees():
+                text = self.get_text_not_enough_funds_mentioning_frozen()
+                self.show_message(text)
                 return
 
         # shortcut to advanced preview (after "enough funds" check!)
         if self.config.get('advanced_preview'):
-            self.preview_tx_dialog(make_tx=make_tx,
-                                   external_keypairs=external_keypairs)
+            preview_dlg = PreviewTxDialog(
+                window=self,
+                make_tx=make_tx,
+                external_keypairs=external_keypairs)
+            preview_dlg.show()
             return
 
-        cancelled, is_send, password, tx = d.run()
+        cancelled, is_send, password, tx = conf_dlg.run()
         if cancelled:
             return
         if is_send:
+            self.save_pending_invoice()
             def sign_done(success):
                 if success:
                     self.broadcast_or_show(tx)
             self.sign_tx_with_password(tx, callback=sign_done, password=password,
                                        external_keypairs=external_keypairs)
         else:
-            self.preview_tx_dialog(make_tx=make_tx,
-                                   external_keypairs=external_keypairs)
+            preview_dlg = PreviewTxDialog(
+                window=self,
+                make_tx=make_tx,
+                external_keypairs=external_keypairs)
+            preview_dlg.show()
 
     def preview_tx_dialog(self, *, make_tx, external_keypairs=None):
         d = PreviewTxDialog(make_tx=make_tx, external_keypairs=external_keypairs,
