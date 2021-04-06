@@ -2184,9 +2184,12 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             'lnutil': lnutil,
         })
 
-        c = commands.Commands(config=self.config,
-                              network=self.network,
-                              callback=lambda: self.console.set_json(True))
+        c = commands.Commands(
+            config=self.config,
+            daemon=self.gui_object.daemon,
+            network=self.network,
+            callback=lambda: self.console.set_json(True))
+
         methods = {}
         def mkfunc(f, method):
             return lambda *args, **kwargs: f(method,
