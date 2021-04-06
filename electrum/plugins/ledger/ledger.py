@@ -38,7 +38,9 @@ try:
     from btchip.btchipException import BTChipException
     BTCHIP = True
     BTCHIP_DEBUG = False
-except ImportError:
+except ImportError as e:
+    if not (isinstance(e, ModuleNotFoundError) and e.name == 'btchip'):
+        _logger.exception('error importing ledger plugin deps')
     BTCHIP = False
 
 if BTCHIP:
