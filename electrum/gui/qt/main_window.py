@@ -41,7 +41,7 @@ from typing import Optional, TYPE_CHECKING, Sequence, List, Union
 import eth_abi
 
 from PyQt5.QtGui import QPixmap, QKeySequence, QIcon, QCursor, QFont
-from PyQt5.QtCore import Qt, QRect, QStringListModel, QSize, pyqtSignal
+from PyQt5.QtCore import Qt, QRect, QStringListModel, QSize, pyqtSignal, QPoint
 from PyQt5.QtWidgets import (QMessageBox, QComboBox, QSystemTrayIcon, QTabWidget,
                              QMenuBar, QFileDialog, QCheckBox, QLabel,
                              QVBoxLayout, QGridLayout, QLineEdit,
@@ -1478,6 +1478,18 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         amount_after_all_fees = amount - x_fee_amount
         self.amount_e.setAmount(amount_after_all_fees)
 
+        # show tooltip explaining max amount
+        mining_fee = tx.get_fee()
+        mining_fee_str = self.format_amount_and_units(mining_fee)
+        msg = _("Mining fee: {} (can be adjusted on next screen)").format(mining_fee_str)
+        if x_fee_amount:
+            twofactor_fee_str = self.format_amount_and_units(x_fee_amount)
+            msg += "\n" + _("2fa fee: {} (for the next batch of transactions)").format(twofactor_fee_str)
+        frozen_bal = self.get_frozen_balance_str()
+        if frozen_bal:
+            msg += "\n" + _("Some coins are frozen: {} (can be unfrozen in the Addresses or in the Coins tab)").format(frozen_bal)
+        QToolTip.showText(self.max_button.mapToGlobal(QPoint(0, 0)), msg)
+
     def get_contact_payto(self, key):
         _type, label = self.contacts.get(key)
         return label + '  <' + key + '>' if _type == 'address' else key
@@ -1676,6 +1688,21 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
               while an empty sequence means the user specifically selected that.
         """
         return self.utxo_list.get_spend_list()
+
+    def get_text_not_enough_funds_mentioning_frozen(self) -> str:
+        text = _("Not enough funds")
+        frozen_str = self.get_frozen_balance_str()
+        if frozen_str:
+            text += " ({} {})".format(
+                frozen_str, _("are frozen")
+            )
+        return text
+
+    def get_frozen_balance_str(self) -> Optional[str]:
+        frozen_bal = sum(self.wallet.get_frozen_balance())
+        if not frozen_bal:
+            return None
+        return self.format_amount_and_units(frozen_bal)
 
     def pay_onchain_dialog(
             self, inputs: Sequence[PartialTxInput],
