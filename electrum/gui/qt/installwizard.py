@@ -497,8 +497,8 @@ class InstallWizard(QDialog, MessageBoxMixin, BaseWizard):
             if self.opt_ext:
                 options.append('ext')
             message = _('Please enter your seed phrase in order to restore your wallet.')
-            # if self.opt_bip39:
-            #     options.append('bip39')
+            if self.opt_bip39:
+                options.append('bip39')
         title = _('Enter Seed')
 
         return self.seed_input(title, message, test, options)
