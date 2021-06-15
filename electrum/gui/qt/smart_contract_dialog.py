@@ -239,12 +239,12 @@ class ContractFuncLayout(QGridLayout):
             state_mutability = abi.get('stateMutability')
             if not state_mutability:
                 self.dialog.show_message('stateMutability not found in ABI')
-            elif state_mutability == 'view':
+            elif state_mutability in ['view', 'pure']:
                 show_call()
             elif state_mutability in ['nonpayable', 'payable']:
                 show_sendto(state_mutability == 'payable')
             else:
-                self.dialog.show_message('unknown stateMutability', state_mutability)
+                self.dialog.show_message(f'unknown stateMutability {state_mutability}')
 
     def parse_values(self):
         def parse_edit_value(edit, times=10 ** 8):
