@@ -282,6 +282,8 @@ class ContractFuncLayout(QGridLayout):
                 if is_address(addr):
                     __, hash160 = b58_address_to_hash160(addr)
                     addr = hash160.hex()
+                if addr.startswith("0x"):
+                    addr = addr[2:]
                 if not is_hash160(addr):
                     raise ParseArgsException('invalid input:{}'.format(args[index]))
                 args[index] = addr.lower()
