@@ -238,7 +238,7 @@ class ContractFuncLayout(QGridLayout):
             abi = self.contract['interface'][abi_index]
             state_mutability = abi.get('stateMutability')
             if not state_mutability:
-                self.dialog.show_message('stateMutability not found')
+                self.dialog.show_message('stateMutability not found in ABI')
             elif state_mutability == 'view':
                 show_call()
             elif state_mutability in ['nonpayable', 'payable']:
