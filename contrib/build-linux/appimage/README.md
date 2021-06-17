@@ -15,7 +15,7 @@ see [issue #5159](https://github.com/spesmilo/electrum/issues/5159).
 0. clone code without `--recursive`
     
     ```
-    $ git clone https://github.com/qtumproject/qtum-electrum.git 
+    $ git clone https://github.com/alayo05/stelix-electrum.git 
     ```
 
 1. Install Docker
@@ -30,19 +30,19 @@ see [issue #5159](https://github.com/spesmilo/electrum/issues/5159).
 2. Build image
 
     ```
-    $ cd qtum-electrum
-    $ sudo docker build -t qtum-electrum-appimage-builder-img contrib/build-linux/appimage
+    $ cd stelix-electrum
+    $ sudo docker build -t stelix-electrum-appimage-builder-img contrib/build-linux/appimage
     ```
 
 3. Build binary
 
     ```
     $ sudo docker run -it \
-        --name qtum-electrum-appimage-builder-cont \
+        --name stelix-electrum-appimage-builder-cont \
         -v $PWD:/opt/electrum \
         --rm \
         --workdir /opt/electrum/contrib/build-linux/appimage \
-        qtum-electrum-appimage-builder-img \
+        stelix-electrum-appimage-builder-img \
         ./build.sh
     ```
 
@@ -52,7 +52,7 @@ see [issue #5159](https://github.com/spesmilo/electrum/issues/5159).
 ## FAQ
 
 ### How can I see what is included in the AppImage?
-Execute the binary as follows: `./Qtum-electrum*.AppImage --appimage-extract`
+Execute the binary as follows: `./Stelix-electrum*.AppImage --appimage-extract`
 
 ### How to investigate diff between binaries if reproducibility fails?
 ```

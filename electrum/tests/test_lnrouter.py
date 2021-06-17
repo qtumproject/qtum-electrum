@@ -8,7 +8,7 @@ from electrum.lnonion import (OnionHopsDataSingle, new_onion_packet,
                               process_onion_packet, _decode_onion_error, decode_onion_error,
                               OnionFailureCode, OnionPacket)
 from electrum import bitcoin, lnrouter
-from electrum.constants import QtumTestnet
+from electrum.constants import StelixTestnet
 from electrum.simple_config import SimpleConfig
 from electrum.lnrouter import PathEdge
 
@@ -43,47 +43,47 @@ class Test_LNRouter(TestCaseForTestnet):
         cdb.add_channel_announcement({'node_id_1': b'\x02bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'node_id_2': b'\x02cccccccccccccccccccccccccccccccc',
                                      'bitcoin_key_1': b'\x02bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'bitcoin_key_2': b'\x02cccccccccccccccccccccccccccccccc',
                                      'short_channel_id': bfh('0000000000000001'),
-                                     'chain_hash': QtumTestnet.rev_genesis_bytes(),
+                                     'chain_hash': StelixTestnet.rev_genesis_bytes(),
                                      'len': 0, 'features': b''}, trusted=True)
         self.assertEqual(cdb.num_channels, 1)
         cdb.add_channel_announcement({'node_id_1': b'\x02bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'node_id_2': b'\x02eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
                                      'bitcoin_key_1': b'\x02bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', 'bitcoin_key_2': b'\x02eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
                                      'short_channel_id': bfh('0000000000000002'),
-                                     'chain_hash': QtumTestnet.rev_genesis_bytes(),
+                                     'chain_hash': StelixTestnet.rev_genesis_bytes(),
                                      'len': 0, 'features': b''}, trusted=True)
         cdb.add_channel_announcement({'node_id_1': b'\x02aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'node_id_2': b'\x02bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
                                      'bitcoin_key_1': b'\x02aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'bitcoin_key_2': b'\x02bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb',
                                      'short_channel_id': bfh('0000000000000003'),
-                                     'chain_hash': QtumTestnet.rev_genesis_bytes(),
+                                     'chain_hash': StelixTestnet.rev_genesis_bytes(),
                                      'len': b'\x00\x00', 'features': b''}, trusted=True)
         cdb.add_channel_announcement({'node_id_1': b'\x02cccccccccccccccccccccccccccccccc', 'node_id_2': b'\x02dddddddddddddddddddddddddddddddd',
                                      'bitcoin_key_1': b'\x02cccccccccccccccccccccccccccccccc', 'bitcoin_key_2': b'\x02dddddddddddddddddddddddddddddddd',
                                      'short_channel_id': bfh('0000000000000004'),
-                                     'chain_hash': QtumTestnet.rev_genesis_bytes(),
+                                     'chain_hash': StelixTestnet.rev_genesis_bytes(),
                                      'len': b'\x00\x00', 'features': b''}, trusted=True)
         cdb.add_channel_announcement({'node_id_1': b'\x02dddddddddddddddddddddddddddddddd', 'node_id_2': b'\x02eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
                                      'bitcoin_key_1': b'\x02dddddddddddddddddddddddddddddddd', 'bitcoin_key_2': b'\x02eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee',
                                      'short_channel_id': bfh('0000000000000005'),
-                                     'chain_hash': QtumTestnet.rev_genesis_bytes(),
+                                     'chain_hash': StelixTestnet.rev_genesis_bytes(),
                                      'len': b'\x00\x00', 'features': b''}, trusted=True)
         cdb.add_channel_announcement({'node_id_1': b'\x02aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'node_id_2': b'\x02dddddddddddddddddddddddddddddddd',
                                      'bitcoin_key_1': b'\x02aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', 'bitcoin_key_2': b'\x02dddddddddddddddddddddddddddddddd',
                                      'short_channel_id': bfh('0000000000000006'),
-                                     'chain_hash': QtumTestnet.rev_genesis_bytes(),
+                                     'chain_hash': StelixTestnet.rev_genesis_bytes(),
                                      'len': b'\x00\x00', 'features': b''}, trusted=True)
         o = lambda i: i.to_bytes(8, "big")
-        cdb.add_channel_update({'short_channel_id': bfh('0000000000000001'), 'message_flags': b'\x00', 'channel_flags': b'\x00', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': QtumTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
-        cdb.add_channel_update({'short_channel_id': bfh('0000000000000001'), 'message_flags': b'\x00', 'channel_flags': b'\x01', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': QtumTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
-        cdb.add_channel_update({'short_channel_id': bfh('0000000000000002'), 'message_flags': b'\x00', 'channel_flags': b'\x00', 'cltv_expiry_delta': o(99), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': QtumTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
-        cdb.add_channel_update({'short_channel_id': bfh('0000000000000002'), 'message_flags': b'\x00', 'channel_flags': b'\x01', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': QtumTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
-        cdb.add_channel_update({'short_channel_id': bfh('0000000000000003'), 'message_flags': b'\x00', 'channel_flags': b'\x01', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': QtumTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
-        cdb.add_channel_update({'short_channel_id': bfh('0000000000000003'), 'message_flags': b'\x00', 'channel_flags': b'\x00', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': QtumTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
-        cdb.add_channel_update({'short_channel_id': bfh('0000000000000004'), 'message_flags': b'\x00', 'channel_flags': b'\x01', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': QtumTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
-        cdb.add_channel_update({'short_channel_id': bfh('0000000000000004'), 'message_flags': b'\x00', 'channel_flags': b'\x00', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': QtumTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
-        cdb.add_channel_update({'short_channel_id': bfh('0000000000000005'), 'message_flags': b'\x00', 'channel_flags': b'\x01', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': QtumTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
-        cdb.add_channel_update({'short_channel_id': bfh('0000000000000005'), 'message_flags': b'\x00', 'channel_flags': b'\x00', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(999), 'chain_hash': QtumTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
-        cdb.add_channel_update({'short_channel_id': bfh('0000000000000006'), 'message_flags': b'\x00', 'channel_flags': b'\x00', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(99999999), 'chain_hash': QtumTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
-        cdb.add_channel_update({'short_channel_id': bfh('0000000000000006'), 'message_flags': b'\x00', 'channel_flags': b'\x01', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': QtumTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
+        cdb.add_channel_update({'short_channel_id': bfh('0000000000000001'), 'message_flags': b'\x00', 'channel_flags': b'\x00', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': StelixTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
+        cdb.add_channel_update({'short_channel_id': bfh('0000000000000001'), 'message_flags': b'\x00', 'channel_flags': b'\x01', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': StelixTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
+        cdb.add_channel_update({'short_channel_id': bfh('0000000000000002'), 'message_flags': b'\x00', 'channel_flags': b'\x00', 'cltv_expiry_delta': o(99), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': StelixTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
+        cdb.add_channel_update({'short_channel_id': bfh('0000000000000002'), 'message_flags': b'\x00', 'channel_flags': b'\x01', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': StelixTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
+        cdb.add_channel_update({'short_channel_id': bfh('0000000000000003'), 'message_flags': b'\x00', 'channel_flags': b'\x01', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': StelixTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
+        cdb.add_channel_update({'short_channel_id': bfh('0000000000000003'), 'message_flags': b'\x00', 'channel_flags': b'\x00', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': StelixTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
+        cdb.add_channel_update({'short_channel_id': bfh('0000000000000004'), 'message_flags': b'\x00', 'channel_flags': b'\x01', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': StelixTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
+        cdb.add_channel_update({'short_channel_id': bfh('0000000000000004'), 'message_flags': b'\x00', 'channel_flags': b'\x00', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': StelixTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
+        cdb.add_channel_update({'short_channel_id': bfh('0000000000000005'), 'message_flags': b'\x00', 'channel_flags': b'\x01', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': StelixTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
+        cdb.add_channel_update({'short_channel_id': bfh('0000000000000005'), 'message_flags': b'\x00', 'channel_flags': b'\x00', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(999), 'chain_hash': StelixTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
+        cdb.add_channel_update({'short_channel_id': bfh('0000000000000006'), 'message_flags': b'\x00', 'channel_flags': b'\x00', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(99999999), 'chain_hash': StelixTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
+        cdb.add_channel_update({'short_channel_id': bfh('0000000000000006'), 'message_flags': b'\x00', 'channel_flags': b'\x01', 'cltv_expiry_delta': o(10), 'htlc_minimum_msat': o(250), 'fee_base_msat': o(100), 'fee_proportional_millionths': o(150), 'chain_hash': StelixTestnet.rev_genesis_bytes(), 'timestamp': b'\x00\x00\x00\x00'})
         path = path_finder.find_path_for_payment(b'\x02aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa', b'\x02eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', 100000)
         self.assertEqual([PathEdge(node_id=b'\x02bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb', short_channel_id=bfh('0000000000000003')),
                           PathEdge(node_id=b'\x02eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', short_channel_id=bfh('0000000000000002')),

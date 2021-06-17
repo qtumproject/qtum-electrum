@@ -1412,7 +1412,7 @@ class LNWallet(LNWorker):
 
     def current_feerate_per_kw(self):
         from .simple_config import FEE_LN_ETA_TARGET, FEERATE_FALLBACK_STATIC_FEE, FEERATE_REGTEST_HARDCODED
-        if constants.net is constants.QtumRegtest:
+        if constants.net is constants.StelixRegtest:
             return FEERATE_REGTEST_HARDCODED // 4
         feerate_per_kvbyte = self.network.config.eta_target_to_fee(FEE_LN_ETA_TARGET)
         if feerate_per_kvbyte is None:

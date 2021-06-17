@@ -67,7 +67,7 @@ extras_require['fast'] = extras_require['crypto']
 
 
 setup(
-    name="Qtum Electrum",
+    name="Stelix Electrum",
     version=version.ELECTRUM_VERSION,
     python_requires='>={}'.format(MIN_PYTHON_VERSION),
     install_requires=requirements,
@@ -94,10 +94,10 @@ setup(
     },
     scripts=['electrum/electrum'],
     data_files=data_files,
-    description="Lightweight Qtum Wallet",
-    author="CodeFace",
-    author_email="codeface@qtum.info",
+    description="Lightweight Stelix Wallet",
+    author="Alayo05",
+    author_email="alayo05@gmail.com",
     license="MIT Licence",
-    url="https://qtum.org",
-    long_description="""Lightweight Qtum Wallet""",
+    url="https://stelixnetwork.com",
+    long_description="""Lightweight Stelix Wallet""",
 )

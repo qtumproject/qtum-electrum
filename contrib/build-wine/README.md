@@ -11,7 +11,7 @@ folder.
 0. clone code without `--recursive`
     
     ```
-    $ git clone https://github.com/qtumproject/qtum-electrum.git 
+    $ git clone https://github.com/alayo05/stelix-electrum.git 
     ```
 
 1. Install Docker
@@ -42,7 +42,7 @@ folder.
         sudo rm -rf $FRESH_CLONE && \
         mkdir -p $FRESH_CLONE && \
         cd $FRESH_CLONE  && \
-        git clone https://github.com/qtumproject/qtum-electrum.git && \
+        git clone https://github.com/alayo05/stelix-electrum.git && \
         cd qtum-electrum
     ```
 

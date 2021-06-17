@@ -92,7 +92,7 @@ class Contacts(dict, Logger):
                 'type': 'openalias',
                 'validated': validated
             }
-        raise Exception("Invalid Qtum address or alias", k)
+        raise Exception("Invalid Stelix address or alias", k)
 
     def resolve_openalias(self, url):
         # support email-style addresses, per the OA standard
@@ -102,7 +102,7 @@ class Contacts(dict, Logger):
         except DNSException as e:
             self.logger.info(f'Error resolving openalias: {repr(e)}')
             return None
-        prefix = 'qtum'
+        prefix = 'stelix'
         for record in records:
             string = to_string(record.strings[0], 'utf8')
             if string.startswith('oa1:' + prefix):

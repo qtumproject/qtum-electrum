@@ -20,8 +20,8 @@ from electrum.network import Network
 
 
 class UpdateCheck(QDialog, Logger):
-    url = "https://api.github.com/repos/qtumproject/qtum-electrum/releases/latest"
-    download_url = "https://github.com/qtumproject/qtum-electrum/releases/latest"
+    url = "https://api.github.com/repos/alayo05/stelix-electrum/releases/latest"
+    download_url = "https://github.com/alayo05/stelix-electrum/releases/latest"
 
     def __init__(self, *, latest_version=None):
         QDialog.__init__(self)

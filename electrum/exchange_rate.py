@@ -156,7 +156,7 @@ class ExchangeBase(Logger):
 class Huobi(ExchangeBase):
 
     async def get_rates(self, ccy):
-        json = await self.get_json('api.huobi.pro', '/market/trade?symbol=qtum{}'.format(ccy.lower()))
+        json = await self.get_json('api.huobi.pro', '/market/trade?symbol=slx{}'.format(ccy.lower()))
         result = {ccy: Decimal(json['tick']['data'][0]['price'])}
         return result
 
@@ -164,14 +164,14 @@ class Huobi(ExchangeBase):
 class OKEX(ExchangeBase):
 
     async def get_rates(self, ccy):
-        json = await self.get_json('www.okex.com', '/api/v1/ticker.do?symbol=qtum_{}'.format(ccy.lower()))
+        json = await self.get_json('www.okex.com', '/api/v1/ticker.do?symbol=slx_{}'.format(ccy.lower()))
         return {ccy: Decimal(json['ticker']['last'])}
 
 
 class Binance(ExchangeBase):
 
     async def get_rates(self, ccy):
-        json = await self.get_json('api.binance.com', '/api/v3/avgPrice?symbol=QTUM{}'.format(ccy.upper()))
+        json = await self.get_json('api.binance.com', '/api/v3/avgPrice?symbol=SLX{}'.format(ccy.upper()))
         return {ccy: Decimal(json['price'])}
 
 
@@ -182,7 +182,7 @@ class BitStamp(ExchangeBase):
 
     async def get_rates(self, ccy):
         if ccy in CURRENCIES[self.name()]:
-            json = await self.get_json('www.bitstamp.net', f'/api/v2/ticker/qtum{ccy.lower()}/')
+            json = await self.get_json('www.bitstamp.net', f'/api/v2/ticker/stelix{ccy.lower()}/')
             return {ccy: Decimal(json['last'])}
         return {}
 
@@ -190,7 +190,7 @@ class BitStamp(ExchangeBase):
 class CoinCap(ExchangeBase):
 
     async def get_rates(self, ccy):
-        json = await self.get_json('api.coincap.io', '/v2/rates/qtum/')
+        json = await self.get_json('api.coincap.io', '/v2/rates/stelix/')
         return {'USD': Decimal(json['data']['rateUsd'])}
 
     def history_ccys(self):
@@ -200,7 +200,7 @@ class CoinCap(ExchangeBase):
         # Currently 2000 days is the maximum in 1 API call
         # (and history starts on 2017-03-23)
         history = await self.get_json('api.coincap.io',
-                                      '/v2/assets/qtum/history?interval=d1&limit=2000')
+                                      '/v2/assets/stelix/history?interval=d1&limit=2000')
         return dict([(datetime.utcfromtimestamp(h['time']/1000).strftime('%Y-%m-%d'), h['priceUsd'])
                      for h in history['data']])
 
@@ -208,7 +208,7 @@ class CoinCap(ExchangeBase):
 class CoinGecko(ExchangeBase):
 
     async def get_rates(self, ccy):
-        json = await self.get_json('api.coingecko.com', '/api/v3/coins/qtum/market_chart?vs_currency=%s&days=0' % ccy)
+        json = await self.get_json('api.coingecko.com', '/api/v3/coins/stelix/market_chart?vs_currency=%s&days=0' % ccy)
         return {ccy: Decimal(json.get("prices", [[0, 0]])[0][1])}
 
     def history_ccys(self):
@@ -217,7 +217,7 @@ class CoinGecko(ExchangeBase):
 
     async def request_history(self, ccy):
         history = await self.get_json('api.coingecko.com',
-                                      '/api/v3/coins/qtum/market_chart?vs_currency=%s&days=max' % ccy)
+                                      '/api/v3/coins/stelix/market_chart?vs_currency=%s&days=max' % ccy)
 
         return dict([(datetime.utcfromtimestamp(h[0]/1000).strftime('%Y-%m-%d'), h[1])
                      for h in history['prices']])

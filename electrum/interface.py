@@ -851,7 +851,7 @@ class Interface(Logger):
 
     @classmethod
     def client_name(cls) -> str:
-        return f'qtum_electrum/{version.ELECTRUM_VERSION}'
+        return f'stelix_electrum/{version.ELECTRUM_VERSION}'
 
     def is_tor(self):
         return self.host.endswith('.onion')

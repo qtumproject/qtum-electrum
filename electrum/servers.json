@@ -1,47 +1,47 @@
 {
-  "s1.qtum.info": {
+  "s1.stelix.info": {
     "pruning": "-",
     "t": "50001",
     "s": "50002",
     "version": "1.4"
   },
-  "s3.qtum.info": {
+  "s3.stelix.info": {
     "pruning": "-",
     "t": "50001",
     "s": "50002",
     "version": "1.4"
   },
-  "s4.qtum.info": {
+  "s4.stelix.info": {
     "pruning": "-",
     "t": "50001",
     "s": "50002",
     "version": "1.4"
   },
-  "s5.qtum.info": {
+  "s5.stelix.info": {
     "pruning": "-",
     "t": "50001",
     "s": "50002",
     "version": "1.4"
   },
-  "s7.qtum.info": {
+  "s7.stelix.info": {
     "pruning": "-",
     "t": "50001",
     "s": "50002",
     "version": "1.4"
   },
-  "s8.qtum.info": {
+  "s8.stelix.info": {
     "pruning": "-",
     "t": "50001",
     "s": "50002",
     "version": "1.4"
   },
-  "s9.qtum.info": {
+  "s9.stelix.info": {
     "pruning": "-",
     "t": "50001",
     "s": "50002",
     "version": "1.4"
   },
-  "s10.qtum.info": {
+  "s10.stelix.info": {
     "pruning": "-",
     "t": "50001",
     "s": "50002",

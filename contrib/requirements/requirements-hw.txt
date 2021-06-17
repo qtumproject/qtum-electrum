@@ -2,6 +2,6 @@ hidapi
 trezor[hidapi]>=0.12.0
 safet>=0.1.5
 keepkey>=6.3.1
-btchip-qtum==0.1.30.1
+btchip-stelix==0.1.30.1
 ckcc-protocol>=0.7.7
 bitbox02>=5.2.0

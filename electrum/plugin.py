@@ -576,9 +576,9 @@ class DeviceMgr(ThreadJob):
         # or it is not pairable
         raise DeviceUnpairableError(
             _('Electrum cannot pair with your {}.\n\n'
-              'Before you request QTUMs to be sent to addresses in this '
+              'Before you request SLXs to be sent to addresses in this '
               'wallet, ensure you can pair with your device, or that you have '
-              'its seed (and passphrase, if any).  Otherwise all QTUMs you '
+              'its seed (and passphrase, if any).  Otherwise all SLXs you '
               'receive will be unspendable.').format(plugin.device))
 
     def unpaired_device_infos(self, handler: Optional['HardwareHandlerBase'], plugin: 'HW_PluginBase',

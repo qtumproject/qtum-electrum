@@ -142,9 +142,9 @@ class SwapManager(Logger):
             if swap.is_reverse and swap.prepay_hash is not None:
                 self.prepayments[swap.prepay_hash] = bytes.fromhex(k)
         # api url
-        if constants.net == constants.QtumMainnet:
+        if constants.net == constants.StelixMainnet:
             self.api_url = API_URL_MAINNET
-        elif constants.net == constants.QtumTestnet:
+        elif constants.net == constants.StelixTestnet:
             self.api_url = API_URL_TESTNET
         else:
             self.api_url = API_URL_REGTEST

@@ -305,7 +305,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
 
         # If the option hasn't been set yet
         if config.get('check_updates') is None:
-            choice = self.question(title="Qtum Electrum - " + _("Enable update check"),
+            choice = self.question(title="Stelix Electrum - " + _("Enable update check"),
                                    msg=_("For security reasons we advise that you always use the latest version of Electrum.") + " " +
                                        _("Would you like to be notified when there is a newer version of Electrum available?"))
             config.set_key('check_updates', bool(choice), save=True)
@@ -316,7 +316,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             # to prevent GC from getting in our way.
             def on_version_received(v):
                 if UpdateCheck.is_newer(v):
-                    self.update_check_button.setText(_("Update to Qtum Electrum {} is available").format(v))
+                    self.update_check_button.setText(_("Update to Stelix Electrum {} is available").format(v))
                     self.update_check_button.clicked.connect(lambda: self.show_update_check(v))
                     self.update_check_button.show()
             self._update_check_thread = UpdateCheckThread()
@@ -562,7 +562,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
             self.setGeometry(100, 100, 840, 400)
 
     def watching_only_changed(self):
-        name = "Qtum Electrum Testnet" if constants.net.TESTNET else "Qtum Electrum"
+        name = "Stelix Electrum Testnet" if constants.net.TESTNET else "Stelix Electrum"
         title = '%s %s  -  %s' % (name, ELECTRUM_VERSION,
                                         self.wallet.basename())
         extra = [self.wallet.db.get('wallet_type', '?')]
@@ -579,8 +579,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         if self.wallet.is_watching_only():
             msg = ' '.join([
                 _("This wallet is watching-only."),
-                _("This means you will not be able to spend QTUMs with it."),
-                _("Make sure you own the seed phrase or the private keys, before you request QTUMs to be sent to this wallet.")
+                _("This means you will not be able to spend SLXs with it."),
+                _("Make sure you own the seed phrase or the private keys, before you request SLXs to be sent to this wallet.")
             ])
             self.show_warning(msg, title=_('Watch-only wallet'))
 
@@ -597,7 +597,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         msg = ''.join([
             _("You are in testnet mode."), ' ',
             _("Testnet coins are worthless."), '\n',
-            _("Testnet is separate from the main Qtum network. It is used for testing.")
+            _("Testnet is separate from the main Stelix network. It is used for testing.")
         ])
         cb = QCheckBox(_("Don't show this again."))
         cb_checked = False
@@ -803,7 +803,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         help_menu = menubar.addMenu(_("&Help"))
         help_menu.addAction(_("&About"), self.show_about)
         help_menu.addAction(_("&Check for updates"), self.show_update_check)
-        help_menu.addAction(_("&Official website"), lambda: webopen("https://github.com/qtumproject/qtum-electrum/"))
+        help_menu.addAction(_("&Official website"), lambda: webopen("https://github.com/alayo05/stelix-electrum"))
         help_menu.addSeparator()
         help_menu.addAction(_("&Documentation"), lambda: webopen("http://docs.electrum.org/")).setShortcut(QKeySequence.HelpContents)
         help_menu.addAction(_("&Report Bug"), self.show_report_bug)
@@ -816,7 +816,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         d = self.network.get_donation_address()
         if d:
             host = self.network.get_parameters().server.host
-            self.pay_to_URI('qtum:%s?message=donation for %s'%(d, host))
+            self.pay_to_URI('stelix:%s?message=donation for %s'%(d, host))
         else:
             self.show_error(_('No donation address for this server'))
 

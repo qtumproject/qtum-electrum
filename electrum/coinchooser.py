@@ -481,7 +481,7 @@ class CoinChooserPrivacy(CoinChooserRandom):
         return penalty
 
 
-class CoinChooserQtum(CoinChooserPrivacy):
+class CoinChooserStelix(CoinChooserPrivacy):
 
     def __init__(self):
         super().__init__(enable_output_value_rounding=False)

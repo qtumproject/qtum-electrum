@@ -4,7 +4,7 @@ base58==2.1.0 \
 bitbox02==5.3.0 \
     --hash=sha256:797e6904d431f6d2ef711f169e7ce8fffc125cc8c5b3efb8187fd451f45635e1 \
     --hash=sha256:fe0e8aeb9b32fd7d76bb3e9838895973a74dfd532a8fb8ac174a1a60214aee26
-btchip-qtum==0.1.30.1 \
+btchip-stelix==0.1.30.1 \
     --hash=sha256:14595f19696c99f3d797aad5c44b8e4b777dbc8144910dd3ce93c535af21822a
 certifi==2020.12.5 \
     --hash=sha256:1a4995114262bffbc2413b159f2a1a480c969de6e6eb13ee966d470af86af59c \

@@ -1,7 +1,7 @@
-Qtum Electrum - Lightweight Qtum client
+Stelix Electrum - Lightweight Stelix client
 =======================================
 
-Qtum Electrum is a lightweight Qtum wallet forked from `Electrum <https://github.com/spesmilo/electrum>`_.
+Stelix Electrum is a lightweight Stelix wallet forked from `Electrum <https://github.com/qtumproject/qtum-electrum>`_.
 
 ::
 
@@ -56,7 +56,7 @@ directory. To run Electrum from its root directory, just do::
 
     ./run_electrum
 
-You can also install Electrum on your system, by running this command(qtum-electrum may hava a conflict with bitcoin electrum)::
+You can also install Electrum on your system, by running this command(stelix-electrum may hava a conflict with bitcoin electrum)::
 
     sudo apt-get install python3-setuptools python3-pip
     python3 -m pip install --user
@@ -72,8 +72,8 @@ Development version (git clone)
 
 Check out the code from GitHub::
 
-    git clone https://github.com/qtumproject/qtum-electrum.git
-    cd qtum-electrum
+    git clone https://github.com/alayo05/stelix-electrum.git
+    cd stelix-electrum
     git submodule update --init
 
 Run install (this should install dependencies)::

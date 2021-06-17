@@ -1,11 +1,11 @@
 {
-  "s2.qtum.info": {
+  "s2.stelix.info": {
     "pruning": "-",
     "t": "51001",
     "s": "51002",
     "version": "1.4"
   },
-  "s6.qtum.info": {
+  "s6.stelix.info": {
     "pruning": "-",
     "t": "51001",
     "s": "51002",

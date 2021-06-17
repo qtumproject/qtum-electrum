@@ -40,8 +40,8 @@ def read_json(filename, default):
     return r
 
 
-GIT_REPO_URL = "https://github.com/qtumproject/qtum-electrum/"
-GIT_REPO_ISSUES_URL = "https://github.com/qtumproject/qtum-electrum/issues"
+GIT_REPO_URL = "https://github.com/alayo05/stelix-electrum"
+GIT_REPO_ISSUES_URL = "https://github.com/alayo05/stelix-electrum/issues"
 BIP39_WALLET_FORMATS = read_json('bip39_wallet_formats.json', [])
 
 
@@ -66,7 +66,7 @@ class AbstractNet:
         return 500 if height < cls.REDUCE_BLOCK_TIME_HEIGHT else 2000
 
 
-class QtumMainnet(AbstractNet):
+class StelixMainnet(AbstractNet):
 
     TESTNET = False
     WIF_PREFIX = 0x80
@@ -81,7 +81,7 @@ class QtumMainnet(AbstractNet):
     DEFAULT_SERVERS = read_json('servers.json', {})
     CHECKPOINTS = read_json('checkpoints.json', {})
     BLOCK_HEIGHT_FIRST_LIGHTNING_CHANNELS = 0
-    HEADERS_URL = 'https://s.qtum.site/electrum_headers'
+    HEADERS_URL = 'https://s.stelix.site/electrum_headers'
 
     POS_NO_RETARGET = False
 
@@ -99,7 +99,7 @@ class QtumMainnet(AbstractNet):
     LN_DNS_SEEDS = []
 
     # for the 88 and 2301 coin type issue, see https://github.com/satoshilabs/slips/pull/196
-    # Qtum official uses 88 as coin type
+    # Stelix official uses 88 as coin type
     BIP44_COIN_TYPE = 88
     SLIP_COIN_TYPE = 2301
 
@@ -122,7 +122,7 @@ class QtumMainnet(AbstractNet):
     XPUB_HEADERS_INV = inv_dict(XPUB_HEADERS)
 
 
-class QtumTestnet(AbstractNet):
+class StelixTestnet(AbstractNet):
 
     TESTNET = True
     WIF_PREFIX = 0xef
@@ -138,7 +138,7 @@ class QtumTestnet(AbstractNet):
     CHECKPOINTS = read_json('checkpoints_testnet.json', {})
     BIP44_COIN_TYPE = 1
     SLIP_COIN_TYPE = 1
-    HEADERS_URL = 'https://s.qtum.site/electrum_testnet_headers'
+    HEADERS_URL = 'https://s.stelix.site/electrum_testnet_headers'
 
     POS_NO_RETARGET = False
 
@@ -174,7 +174,7 @@ class QtumTestnet(AbstractNet):
     XPUB_HEADERS_INV = inv_dict(XPUB_HEADERS)
 
 
-class QtumRegtest(QtumTestnet):
+class StelixRegtest(StelixTestnet):
 
     SEGWIT_HRP = "qcrt"
     GENESIS = "665ed5b402ac0b44efc37d8926332994363e8a7278b7ee9a58fb972efadae943"
@@ -195,19 +195,19 @@ class QtumRegtest(QtumTestnet):
 
 
 # don't import net directly, import the module instead (so that net is singleton)
-net = QtumMainnet
+net = StelixMainnet
 
 
 def set_mainnet():
     global net
-    net = QtumMainnet
+    net = StelixMainnet
 
 
 def set_testnet():
     global net
-    net = QtumTestnet
+    net = StelixTestnet
 
 
 def set_regtest():
     global net
-    net = QtumRegtest
+    net = StelixRegtest
