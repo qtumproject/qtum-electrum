@@ -2536,7 +2536,7 @@ class Imported_Wallet(Simple_Wallet):
             return
         if txin.script_type in ('unknown', 'address'):
             return
-        elif txin.script_type in ('p2pkh', 'p2wpkh', 'p2wpkh-p2sh'):
+        elif txin.script_type in ('p2pkh', 'p2wpkh', 'p2wpkh-p2sh', 'p2pk'):
             pubkey = self.get_public_key(address)
             if not pubkey:
                 return
