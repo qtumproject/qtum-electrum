@@ -2,6 +2,8 @@
 
 NAME_ROOT=Qtum-electrum
 
+export PYTHONDONTWRITEBYTECODE=1  # don't create __pycache__/ folders with .pyc files
+
 # These settings probably don't need any change
 export WINEPREFIX=/opt/wine64
 export WINEDEBUG=-all
@@ -37,21 +39,27 @@ for i in ./*; do
 done
 popd
 
-find -exec touch -d '2000-11-11T11:11:11+00:00' {} +
+find -exec touch -h -d '2000-11-11T11:11:11+00:00' {} +
 popd
 
 
 # Install frozen dependencies
-$PYTHON -m pip install --no-dependencies --no-warn-script-location -r "$CONTRIB"/deterministic-build/requirements.txt
+$WINE_PYTHON -m pip install --no-build-isolation --no-dependencies --no-warn-script-location \
+    --cache-dir "$WINE_PIP_CACHE_DIR" -r "$CONTRIB"/deterministic-build/requirements.txt
 
-$PYTHON -m pip install --no-dependencies --no-warn-script-location -r "$CONTRIB"/deterministic-build/requirements-hw.txt
+$WINE_PYTHON -m pip install --no-build-isolation --no-dependencies --no-warn-script-location \
+    --cache-dir "$WINE_PIP_CACHE_DIR" -r "$CONTRIB"/deterministic-build/requirements-binaries.txt
 
-$PYTHON -m pip install --no-warn-script-location -r "$CONTRIB"/deterministic-build/requirements-eth.txt
+$WINE_PYTHON -m pip install --no-build-isolation --no-dependencies --no-warn-script-location \
+    --cache-dir "$WINE_PIP_CACHE_DIR" -r "$CONTRIB"/deterministic-build/requirements-hw.txt
+
+$WINE_PYTHON -m pip install --no-warn-script-location -r "$CONTRIB"/deterministic-build/requirements-eth.txt
+
 
 pushd $WINEPREFIX/drive_c/electrum
 # see https://github.com/pypa/pip/issues/2195 -- pip makes a copy of the entire directory
 info "Pip installing Electrum. This might take a long time if the project folder is large."
-$PYTHON -m pip install --no-dependencies --no-warn-script-location .
+$WINE_PYTHON -m pip install --no-build-isolation --no-dependencies --no-warn-script-location .
 popd
 
 
@@ -59,11 +67,11 @@ rm -rf dist/
 
 # build standalone and portable versions
 info "Running pyinstaller..."
-wine "$PYHOME/scripts/pyinstaller.exe" --noconfirm --ascii --clean --name $NAME_ROOT-$VERSION -w deterministic.spec
+wine "$WINE_PYHOME/scripts/pyinstaller.exe" --noconfirm --ascii --clean --name $NAME_ROOT-$VERSION -w deterministic.spec
 
 # set timestamps in dist, in order to make the installer reproducible
 pushd dist
-find -exec touch -d '2000-11-11T11:11:11+00:00' {} +
+find -exec touch -h -d '2000-11-11T11:11:11+00:00' {} +
 popd
 
 info "building NSIS installer"
