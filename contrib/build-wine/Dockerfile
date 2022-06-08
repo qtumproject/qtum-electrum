@@ -1,6 +1,7 @@
-FROM ubuntu:18.04@sha256:b58746c8a89938b8c9f5b77de3b8cf1fe78210c696ab03a1442e235eea65d84f
+FROM ubuntu:20.04@sha256:c95a8e48bf88e9849f3e0f723d9f49fa12c5a00cfc6e60d2bc99d87555295e4c
 
 ENV LC_ALL=C.UTF-8 LANG=C.UTF-8
+ENV DEBIAN_FRONTEND=noninteractive
 
 RUN dpkg --add-architecture i386 && \
     apt-get update -q && \
@@ -16,18 +17,22 @@ RUN dpkg --add-architecture i386 && \
     apt-get clean
 
 RUN apt-get update -q && \
-        apt-get install -qy \
-        git=1:2.17.1-1ubuntu0.7 \
-        p7zip-full=16.02+dfsg-6 \
-        make=4.1-9.1ubuntu1 \
-        mingw-w64=5.0.3-1 \
-        mingw-w64-tools=5.0.3-1 \
-        win-iconv-mingw-w64-dev=0.0.8-2 \
+    apt-get install -qy \
+        git=1:2.25.1-1ubuntu3 \
+        p7zip-full=16.02+dfsg-7build1 \
+        make=4.2.1-1.2 \
+        mingw-w64=7.0.0-2 \
+        mingw-w64-tools=7.0.0-2 \
+        win-iconv-mingw-w64-dev=0.0.8-3 \
         autotools-dev=20180224.1 \
-        autoconf=2.69-11 \
-        autopoint=0.19.8.1-6ubuntu0.3 \
-        libtool=2.4.6-2 \
-        gettext=0.19.8.1-6
+        autoconf=2.69-11.1 \
+        autopoint=0.19.8.1-10build1 \
+        libtool=2.4.6-14 \
+        gettext=0.19.8.1-10build1 \
+        && \
+    rm -rf /var/lib/apt/lists/* && \
+    apt-get autoremove -y && \
+    apt-get clean
 
 RUN wget -nc https://dl.winehq.org/wine-builds/Release.key && \
         echo "c51bcb8cc4a12abfbd7c7660eaf90f49674d15e222c262f27e6c96429111b822 Release.key" | sha256sum -c - && \
@@ -40,11 +45,26 @@ RUN wget -nc https://dl.winehq.org/wine-builds/Release.key && \
     apt-add-repository https://dl.winehq.org/wine-builds/ubuntu/ && \
     apt-get update -q && \
     apt-get install -qy \
-        wine-stable-amd64:amd64=6.0.0~focal-1 \
-        wine-stable-i386:i386=6.0.0~focal-1 \
-        wine-stable:amd64=6.0.0~focal-1 \
-        winehq-stable:amd64=6.0.0~focal-1 \
+        wine-stable-amd64:amd64=7.0.0.0~focal-1 \
+        wine-stable-i386:i386=7.0.0.0~focal-1 \
+        wine-stable:amd64=7.0.0.0~focal-1 \
+        winehq-stable:amd64=7.0.0.0~focal-1 \
         && \
     rm -rf /var/lib/apt/lists/* && \
     apt-get autoremove -y && \
     apt-get clean
+
+# create new user to avoid using root; but with sudo access and no password for convenience.
+ENV USER="user"
+ENV HOME_DIR="/home/${USER}"
+ENV WORK_DIR="${HOME_DIR}/wspace" \
+    PATH="${HOME_DIR}/.local/bin:${PATH}"
+RUN useradd --create-home --shell /bin/bash ${USER}
+RUN usermod -append --groups sudo ${USER}
+RUN echo "%sudo ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+WORKDIR ${WORK_DIR}
+RUN chown --recursive ${USER} ${WORK_DIR}
+RUN chown ${USER} /opt
+USER ${USER}
+
+RUN mkdir --parents "/opt/wine64/drive_c/electrum"

@@ -26,8 +26,8 @@ folder.
 2. Build image
 
     ```
-    $ cd qtum-electrum
-    $ sudo docker build -t qtum-electrum-wine-builder-img contrib/build-wine
+    $ cd qtum-electrum/contrib/build-wine
+    $ ./build.sh
     ```
 
     Note: see [this](https://stackoverflow.com/a/40516974/7499128) if having dns problems
