@@ -577,10 +577,11 @@ class LNWallet(LNWorker):
             tg_coro = self.taskgroup.spawn(coro)
             asyncio.run_coroutine_threadsafe(tg_coro, self.network.asyncio_loop)
 
-    def stop(self):
+    async def stop(self):
         super().stop()
-        self.lnwatcher.stop()
-        self.lnwatcher = None
+        if self.lnwatcher:
+            await self.lnwatcher.stop()
+            self.lnwatcher = None
 
     def peer_closed(self, peer):
         for chan in self.channels_for_peer(peer.pubkey).values():

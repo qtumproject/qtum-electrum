@@ -197,7 +197,7 @@ class SwapDialog(WindowModalDialog):
         if not self.network:
             self.window.show_error(_("You are offline."))
             return
-        self.window.run_coroutine_from_thread(self.swap_manager.get_pairs(), lambda x: self.update())
+        self.window.run_coroutine_from_thread(self.swap_manager.get_pairs(), 'Swapping funds', lambda x: self.update())
         if not self.exec_():
             return
         if self.is_reverse:
@@ -206,7 +206,7 @@ class SwapDialog(WindowModalDialog):
             if lightning_amount is None or onchain_amount is None:
                 return
             coro = self.swap_manager.reverse_swap(lightning_amount, onchain_amount + self.swap_manager.get_claim_fee())
-            self.window.run_coroutine_from_thread(coro)
+            self.window.run_coroutine_from_thread(coro, 'Swapping funds')
         else:
             lightning_amount = self.recv_amount_e.get_amount()
             onchain_amount = self.send_amount_e.get_amount()
@@ -236,7 +236,7 @@ class SwapDialog(WindowModalDialog):
         tx = self.tx
         assert tx
         coro = self.swap_manager.normal_swap(lightning_amount, onchain_amount, password, tx=tx)
-        self.window.run_coroutine_from_thread(coro)
+        self.window.run_coroutine_from_thread(coro, 'Swapping funds')
 
     def get_description(self):
         onchain_funds = "onchain funds"

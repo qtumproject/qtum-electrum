@@ -204,6 +204,7 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.pending_invoice = None
         Logger.__init__(self)
 
+        self._coroutines_scheduled = {}  # type: Dict[concurrent.futures.Future, str]
         self.tx_notification_queue = queue.Queue()
         self.tx_notification_last_time = 0
 
@@ -328,17 +329,26 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         Exception_Hook.maybe_setup(config=self.config,
                                    wallet=self.wallet)
 
-    def run_coroutine_from_thread(self, coro, on_result=None):
-        def task():
+    def run_coroutine_from_thread(self, coro, name, on_result=None):
+        if self._cleaned_up:
+            self.logger.warning(f"stopping or already stopped but run_coroutine_from_thread was called.")
+            return
+        async def wrapper():
             try:
-                f = asyncio.run_coroutine_threadsafe(coro, self.network.asyncio_loop)
-                r = f.result()
-                if on_result:
-                    on_result(r)
+                res = await coro
             except Exception as e:
                 self.logger.exception("exception in coro scheduled via window.wallet")
-                self.show_error_signal.emit(str(e))
-        self.wallet.thread.add(task)
+                self.show_error_signal.emit(repr(e))
+            else:
+                if on_result:
+                    on_result(res)
+            finally:
+                self._coroutines_scheduled.pop(fut)
+                self.need_update.set()
+
+        fut = asyncio.run_coroutine_threadsafe(wrapper(), self.network.asyncio_loop)
+        self._coroutines_scheduled[fut] = name
+        self.need_update.set()
 
     def on_fx_history(self):
         self.history_model.refresh('fx_history')
@@ -3179,6 +3189,8 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         if self.wallet.thread:
             self.wallet.thread.stop()
             self.wallet.thread = None
+        for fut in self._coroutines_scheduled.keys():
+            fut.cancel()
         util.unregister_callback(self.on_network)
         self.config.set_key("is_maximized", self.isMaximized())
         if not self.isMaximized():
@@ -3189,7 +3201,6 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         if self.qr_window:
             self.qr_window.close()
         self.close_wallet()
-
         if self._update_check_thread:
             self._update_check_thread.exit()
             self._update_check_thread.wait()

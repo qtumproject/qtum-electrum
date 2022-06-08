@@ -38,7 +38,7 @@ import json
 
 import aiohttp
 from aiohttp import web, client_exceptions
-from aiorpcx import TaskGroup
+from aiorpcx import TaskGroup, ignore_after
 
 from . import util
 from .network import Network
@@ -52,6 +52,7 @@ from .commands import known_commands, Commands
 from .simple_config import SimpleConfig
 from .exchange_rate import FxThread
 from .logging import get_logger, Logger
+from . import GuiImportError
 
 
 _logger = get_logger(__name__)
@@ -120,6 +121,10 @@ def request(config: SimpleConfig, endpoint, args=(), timeout=60):
 def get_rpc_credentials(config: SimpleConfig) -> Tuple[str, str]:
     rpc_user = config.get('rpcuser', None)
     rpc_password = config.get('rpcpassword', None)
+    if rpc_user == '':
+        rpc_user = None
+    if rpc_password == '':
+        rpc_password = None
     if rpc_user is None or rpc_password is None:
         rpc_user = 'user'
         bits = 128
@@ -130,8 +135,6 @@ def get_rpc_credentials(config: SimpleConfig) -> Tuple[str, str]:
         rpc_password = to_string(pw_b64, 'ascii')
         config.set_key('rpcuser', rpc_user)
         config.set_key('rpcpassword', rpc_password, save=True)
-    elif rpc_password == '':
-        _logger.warning('RPC authentication is disabled.')
     return rpc_user, rpc_password
 
 
@@ -405,13 +408,13 @@ class PayServer(Logger):
 class Daemon(Logger):
 
     network: Optional[Network]
+    gui_object: Optional['gui.BaseElectrumGui']
 
     @profiler
     def __init__(self, config: SimpleConfig, fd=None, *, listen_jsonrpc=True):
         Logger.__init__(self)
-        self.running = False
-        self.running_lock = threading.Lock()
         self.config = config
+        self.listen_jsonrpc = listen_jsonrpc
         if fd is None and listen_jsonrpc:
             fd = get_file_descriptor(config)
             if fd is None:
@@ -450,6 +453,9 @@ class Daemon(Logger):
             # prepare lightning functionality, also load channel db early
             self.network.init_channel_db()
 
+        self._stop_entered = False
+        self._stopping_soon_or_errored = threading.Event()
+        self._stopped_event = threading.Event()
         self.taskgroup = TaskGroup()
         asyncio.run_coroutine_threadsafe(self._run(jobs=daemon_jobs), self.asyncio_loop)
 
@@ -462,12 +468,13 @@ class Daemon(Logger):
             async with self.taskgroup as group:
                 [await group.spawn(job) for job in jobs]
                 await group.spawn(asyncio.Event().wait)  # run forever (until cancel)
-        except asyncio.CancelledError:
-            raise
         except Exception as e:
-            self.logger.exception("taskgroup died.")
+            self.logger.exception(f"taskgroup died. {e}")
         finally:
             self.logger.info("taskgroup stopped.")
+            # note: we could just "await self.stop()", but in that case GUI users would
+            #       not see the exception (especially if the GUI did not start yet).
+            self._stopping_soon_or_errored.set()
 
     def load_wallet(self, path, password, *, manual_upgrades=True) -> Optional[Abstract_Wallet]:
         path = standardize_path(path)
@@ -516,62 +523,72 @@ class Daemon(Logger):
 
     def stop_wallet(self, path: str) -> bool:
         """Returns True iff a wallet was found."""
+        # note: this must not be called from the event loop. # TODO raise if so
+        fut = asyncio.run_coroutine_threadsafe(self._stop_wallet(path), self.asyncio_loop)
+        return fut.result()
+
+    async def _stop_wallet(self, path: str) -> bool:
+        """Returns True iff a wallet was found."""
         path = standardize_path(path)
         wallet = self._wallets.pop(path, None)
         if not wallet:
             return False
-        wallet.stop()
+        await wallet.stop()
         return True
 
     def run_daemon(self):
-        self.running = True
         try:
-            while self.is_running():
-                time.sleep(0.1)
+            self._stopping_soon_or_errored.wait()
         except KeyboardInterrupt:
-            self.running = False
-        self.on_stop()
+            asyncio.run_coroutine_threadsafe(self.stop(), self.asyncio_loop).result()
+        self._stopped_event.wait()
 
-    def is_running(self):
-        with self.running_lock:
-            return self.running and not self.taskgroup.closed()
-
-    def stop(self):
-        with self.running_lock:
-            self.running = False
-
-    def on_stop(self):
-        if self.gui_object:
-            self.gui_object.stop()
-        # stop network/wallets
-        for k, wallet in self._wallets.items():
-            wallet.stop()
-        if self.network:
-            self.logger.info("shutting down network")
-            self.network.stop()
-        self.logger.info("stopping taskgroup")
-        fut = asyncio.run_coroutine_threadsafe(self.taskgroup.cancel_remaining(), self.asyncio_loop)
+    async def stop(self):
+        if self._stop_entered:
+            return
+        self._stop_entered = True
+        self._stopping_soon_or_errored.set()
+        self.logger.info("stop() entered. initiating shutdown")
         try:
-            fut.result(timeout=2)
-        except (concurrent.futures.TimeoutError, concurrent.futures.CancelledError, asyncio.CancelledError):
-            pass
-        self.logger.info("removing lockfile")
-        remove_lockfile(get_lockfile(self.config))
-        self.logger.info("stopped")
+            if self.gui_object:
+                self.gui_object.stop()
+            self.logger.info("stopping all wallets")
+            async with TaskGroup() as group:
+                for k, wallet in self._wallets.items():
+                    await group.spawn(wallet.stop())
+            self.logger.info("stopping network and taskgroup")
+            async with ignore_after(2):
+                async with TaskGroup() as group:
+                    if self.network:
+                        await group.spawn(self.network.stop(full_shutdown=True))
+                    await group.spawn(self.taskgroup.cancel_remaining())
+        finally:
+            if self.listen_jsonrpc:
+                self.logger.info("removing lockfile")
+                remove_lockfile(get_lockfile(self.config))
+            self.logger.info("stopped")
+            self._stopped_event.set()
 
     def run_gui(self, config, plugins):
-        threading.current_thread().setName('GUI')
+        threading.current_thread().name = 'GUI'
         gui_name = config.get('gui', 'qt')
         if gui_name in ['lite', 'classic']:
             gui_name = 'qt'
         self.logger.info(f'launching GUI: {gui_name}')
         try:
-            gui = __import__('electrum.gui.' + gui_name, fromlist=['electrum'])
-            self.gui_object = gui.ElectrumGui(config, self, plugins)
-            self.gui_object.main()
+            try:
+                gui = __import__('electrum.gui.' + gui_name, fromlist=['electrum'])
+            except GuiImportError as e:
+                sys.exit(str(e))
+            self.gui_object = gui.ElectrumGui(config=config, daemon=self, plugins=plugins)
+            if not self._stop_entered:
+                self.gui_object.main()
+            else:
+                # If daemon.stop() was called before gui_object got created, stop gui now.
+                self.gui_object.stop()
         except BaseException as e:
             self.logger.error(f'GUI raised exception: {repr(e)}. shutting down.')
             raise
         finally:
             # app will exit now
-            self.on_stop()
+            asyncio.run_coroutine_threadsafe(self.stop(), self.asyncio_loop).result()

@@ -607,7 +607,7 @@ class Network(Logger, NetworkRetryManager[ServerAddr]):
             self.auto_connect = net_params.auto_connect
             if self.proxy != proxy or self.oneserver != net_params.oneserver:
                 # Restart the network defaulting to the given server
-                await self._stop()
+                await self.stop()
                 self.default_server = server
                 await self._start()
             elif self.default_server != server:
@@ -1199,7 +1199,7 @@ class Network(Logger, NetworkRetryManager[ServerAddr]):
         asyncio.run_coroutine_threadsafe(self._start(), self.asyncio_loop)
 
     @log_exceptions
-    async def _stop(self, full_shutdown=False):
+    async def stop(self, full_shutdown=False):
         self.logger.info("stopping network")
         try:
             await asyncio.wait_for(self.taskgroup.cancel_remaining(), timeout=2)
@@ -1211,13 +1211,6 @@ class Network(Logger, NetworkRetryManager[ServerAddr]):
         self._connecting.clear()
         if not full_shutdown:
             util.trigger_callback('network_updated')
-
-    def stop(self):
-        assert self._loop_thread != threading.current_thread(), 'must not be called from network thread'
-        fut = asyncio.run_coroutine_threadsafe(self._stop(full_shutdown=True), self.asyncio_loop)
-        try:
-            fut.result(timeout=2)
-        except (concurrent.futures.TimeoutError, concurrent.futures.CancelledError): pass
 
     async def _ensure_there_is_a_main_interface(self):
         if self.is_connected():

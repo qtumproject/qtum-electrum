@@ -30,12 +30,15 @@ import traceback
 import threading
 from typing import Optional, TYPE_CHECKING, List
 
+from electrum import GuiImportError
 
 try:
     import PyQt5
     import PyQt5.QtGui
 except Exception:
-    sys.exit("Error: Could not import PyQt5 on Linux systems, you may try 'sudo apt-get install python3-pyqt5'")
+    raise GuiImportError(
+        "Error: Could not import PyQt5 on Linux systems, "
+        "you may try 'sudo apt-get install python3-pyqt5'") from e
 
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtWidgets import (QApplication, QSystemTrayIcon, QWidget, QMenu,
@@ -59,6 +62,7 @@ from electrum.util import (UserCancelled, profiler,
 from electrum.wallet import Wallet, Abstract_Wallet
 from electrum.wallet_db import WalletDB
 from electrum.logging import Logger
+from electrum.gui import BaseElectrumGui
 
 from .installwizard import InstallWizard, WalletAlreadyOpenInMemory
 from .util import get_default_language, read_QIcon, ColorScheme, custom_message_box, MessageBoxMixin
@@ -82,28 +86,35 @@ class OpenFileEventFilter(QObject):
     def eventFilter(self, obj, event):
         if event.type() == QtCore.QEvent.FileOpen:
             if len(self.windows) >= 1:
-                self.windows[0].pay_to_URI(event.url().toEncoded())
+                self.windows[0].pay_to_URI(event.url().toString())
                 return True
         return False
 
 
 class QElectrumApplication(QApplication):
     new_window_signal = pyqtSignal(str, object)
+    quit_signal = pyqtSignal()
+    refresh_tabs_signal = pyqtSignal()
+    refresh_amount_edits_signal = pyqtSignal()
+    update_status_signal = pyqtSignal()
+    update_fiat_signal = pyqtSignal()
+    alias_received_signal = pyqtSignal()
 
 
 class QNetworkUpdatedSignalObject(QObject):
     network_updated_signal = pyqtSignal(str, object)
 
 
-class ElectrumGui(Logger):
+class ElectrumGui(BaseElectrumGui, Logger):
 
     network_dialog: Optional['NetworkDialog']
     lightning_dialog: Optional['LightningDialog']
     watchtower_dialog: Optional['WatchtowerDialog']
 
     @profiler
-    def __init__(self, config: 'SimpleConfig', daemon: 'Daemon', plugins: 'Plugins'):
+    def __init__(self, *, config: 'SimpleConfig', daemon: 'Daemon', plugins: 'Plugins'):
         set_language(config.get('language', get_default_language()))
+        BaseElectrumGui.__init__(self, config=config, daemon=daemon, plugins=plugins)
         Logger.__init__(self)
         self.logger.info(f"Qt GUI starting up... Qt={QtCore.QT_VERSION_STR}, PyQt={QtCore.PYQT_VERSION_STR}")
         # Uncomment this call to verify objects are being properly
@@ -116,9 +127,6 @@ class ElectrumGui(Logger):
         if hasattr(QGuiApplication, 'setDesktopFileName'):
             QGuiApplication.setDesktopFileName('electrum.desktop')
         self.gui_thread = threading.current_thread()
-        self.config = config
-        self.daemon = daemon
-        self.plugins = plugins
         self.windows = []  # type: List[ElectrumWindow]
         self.efilter = OpenFileEventFilter(self.windows)
         self.app = QElectrumApplication(sys.argv)
@@ -136,12 +144,15 @@ class ElectrumGui(Logger):
         self.network_updated_signal_obj = QNetworkUpdatedSignalObject()
         self._num_wizards_in_progress = 0
         self._num_wizards_lock = threading.Lock()
-        # init tray
         self.dark_icon = self.config.get("dark_icon", False)
         self.tray = None
         self._init_tray()
         self.app.new_window_signal.connect(self.start_new_window)
-        self.set_dark_theme_if_needed()
+        self.app.quit_signal.connect(self.app.quit, Qt.QueuedConnection)
+        # maybe set dark theme
+        self._default_qtstylesheet = self.app.styleSheet()
+        self.reload_app_stylesheet()
+
         run_hook('init_qt', self)
 
     def _init_tray(self):
@@ -151,7 +162,16 @@ class ElectrumGui(Logger):
         self.build_tray_menu()
         self.tray.show()
 
-    def set_dark_theme_if_needed(self):
+    def reload_app_stylesheet(self):
+        """Set the Qt stylesheet and custom colors according to the user-selected
+        light/dark theme.
+        TODO this can ~almost be used to change the theme at runtime (without app restart),
+             except for util.ColorScheme... widgets already created with colors set using
+             ColorSchemeItem.as_stylesheet() and similar will not get recolored.
+             See e.g.
+             - in Coins tab, the color for "frozen" UTXOs, or
+             - in TxDialog, the receiving/change address colors
+        """
         use_dark_theme = self.config.get('qt_gui_color_theme', 'default') == 'dark'
         if use_dark_theme:
             try:
@@ -160,6 +180,8 @@ class ElectrumGui(Logger):
             except BaseException as e:
                 use_dark_theme = False
                 self.logger.warning(f'Error setting dark theme: {repr(e)}')
+        else:
+            self.app.setStyleSheet(self._default_qtstylesheet)
         # Apply any necessary stylesheet patches
         patch_qt_stylesheet(use_dark_theme=use_dark_theme)
         # Even if we ourselves don't set the dark theme,
@@ -306,34 +328,39 @@ class ElectrumGui(Logger):
         return wrapper
 
     @count_wizards_in_progress
-    def start_new_window(self, path, uri, *, app_is_starting=False):
+    def start_new_window(
+            self,
+            path,
+            uri: Optional[str],
+            *,
+            app_is_starting: bool = False,
+            force_wizard: bool = False,
+    ) -> Optional[ElectrumWindow]:
         '''Raises the window for the wallet if it is open.  Otherwise
         opens the wallet and creates a new window for it'''
         wallet = None
-        try:
-            wallet = self.daemon.load_wallet(path, None)
-        except Exception as e:
-            self.logger.exception('')
-            custom_message_box(icon=QMessageBox.Warning,
-                               parent=None,
-                               title=_('Error'),
-                               text=_('Cannot load wallet') + ' (1):\n' + repr(e))
-            # if app is starting, still let wizard to appear
-            if not app_is_starting:
-                return
-        if not wallet:
+        # Try to open with daemon first. If this succeeds, there won't be a wizard at all
+        # (the wallet main window will appear directly).
+        if not force_wizard:
             try:
-                wallet = self._start_wizard_to_select_or_create_wallet(path)
-            except (WalletFileException, BitcoinException) as e:
+                wallet = self.daemon.load_wallet(path, None)
+            except Exception as e:
                 self.logger.exception('')
                 custom_message_box(icon=QMessageBox.Warning,
                                    parent=None,
                                    title=_('Error'),
-                                   text=_('Cannot load wallet') + ' (2):\n' + repr(e))
-        if not wallet:
-            return
-        # create or raise window
+                                   text=_('Cannot load wallet') + ' (1):\n' + repr(e))
+                # if app is starting, still let wizard appear
+                if not app_is_starting:
+                    return
+        # Open a wizard window. This lets the user e.g. enter a password, or select
+        # a different wallet.
         try:
+            if not wallet:
+                wallet = self._start_wizard_to_select_or_create_wallet(path)
+            if not wallet:
+                return
+            # create or raise window
             for window in self.windows:
                 if window.wallet.storage.path == wallet.storage.path:
                     break
@@ -344,11 +371,21 @@ class ElectrumGui(Logger):
             custom_message_box(icon=QMessageBox.Warning,
                                parent=None,
                                title=_('Error'),
-                               text=_('Cannot create window for wallet') + ':\n' + repr(e))
+                               text=_('Cannot load wallet') + '(2) :\n' + repr(e))
             if app_is_starting:
-                wallet_dir = os.path.dirname(path)
-                path = os.path.join(wallet_dir, get_new_wallet_name(wallet_dir))
-                self.start_new_window(path, uri)
+                # If we raise in this context, there are no more fallbacks, we will shut down.
+                # Worst case scenario, we might have gotten here without user interaction,
+                # in which case, if we raise now without user interaction, the same sequence of
+                # events is likely to repeat when the user restarts the process.
+                # So we play it safe: clear path, clear uri, force a wizard to appear.
+                try:
+                    wallet_dir = os.path.dirname(path)
+                    filename = get_new_wallet_name(wallet_dir)
+                except OSError:
+                    path = self.config.get_fallback_wallet_path()
+                else:
+                    path = os.path.join(wallet_dir, filename)
+                self.start_new_window(path, uri=None, force_wizard=True)
             return
         if uri:
             window.pay_to_URI(uri)
@@ -421,12 +458,28 @@ class ElectrumGui(Logger):
         # start wizard to select/create wallet
         self.timer.start()
         path = self.config.get_wallet_path(use_gui_last_wallet=True)
-        if not self.start_new_window(path, self.config.get('url'), app_is_starting=True):
-            return
+        try:
+            if not self.start_new_window(path, self.config.get('url'), app_is_starting=True):
+                return
+        except Exception as e:
+            self.logger.error(f"error loading wallet (or creating window for it): {e}")
+            # Let Qt event loop start properly so that crash reporter window can appear.
+            # We will shutdown when the user closes that window, via lastWindowClosed signal.
         # main loop
+        self.logger.info("starting Qt main loop")
         self.app.exec_()
-        # on some platforms the exec_ call may not return, so use clean_up()
+        # on some platforms the exec_ call may not return, so use _cleanup_before_exit
 
     def stop(self):
         self.logger.info('closing GUI')
-        self.app.quit()
+        self.app.quit_signal.emit()
+
+    @classmethod
+    def version_info(cls):
+        ret = {
+            "qt.version": QtCore.QT_VERSION_STR,
+            "pyqt.version": QtCore.PYQT_VERSION_STR,
+        }
+        if hasattr(PyQt5, "__path__"):
+            ret["pyqt.path"] = ", ".join(PyQt5.__path__ or [])
+        return ret
