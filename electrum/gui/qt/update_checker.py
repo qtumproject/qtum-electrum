@@ -4,7 +4,7 @@
 
 import asyncio
 import base64
-from distutils.version import StrictVersion
+from packaging.version import parse as parse_version
 
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 from PyQt5.QtWidgets import (QWidget, QVBoxLayout, QLabel, QProgressBar,
@@ -72,7 +72,7 @@ class UpdateCheck(QDialog, Logger):
 
     @staticmethod
     def is_newer(latest_version):
-        return latest_version > StrictVersion(version.ELECTRUM_VERSION)
+        return latest_version > parse_version(version.ELECTRUM_VERSION)
 
     def update_view(self, latest_version=None):
         if latest_version:
@@ -108,7 +108,7 @@ class UpdateCheckThread(QThread, Logger):
                 version_dict = await result.json(content_type=None)
                 version_num = version_dict.get("tag_name", '')
                 if version_num.startswith('v') : version_num = version_num[1:]
-                return StrictVersion(version_num.strip())
+                return parse_version(version_num.strip())
 
     def run(self):
         if not self.network:
