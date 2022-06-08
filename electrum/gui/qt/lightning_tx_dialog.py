@@ -65,7 +65,7 @@ class LightningTxDialog(WindowModalDialog):
 
         vbox.addWidget(QLabel(_("Payment hash") + ":"))
         self.hash_e = ButtonsLineEdit(self.payment_hash)
-        self.hash_e.addCopyButton(self.parent.app)
+        self.hash_e.addCopyButton()
         self.hash_e.addButton(qr_icon,
                               self.show_qr(self.hash_e, _("Payment hash")),
                               _("Show QR Code"))
@@ -75,7 +75,7 @@ class LightningTxDialog(WindowModalDialog):
 
         vbox.addWidget(QLabel(_("Preimage") + ":"))
         self.preimage_e = ButtonsLineEdit(self.preimage)
-        self.preimage_e.addCopyButton(self.parent.app)
+        self.preimage_e.addCopyButton()
         self.preimage_e.addButton(qr_icon,
                                   self.show_qr(self.preimage_e, _("Preimage")),
                                   _("Show QR Code"))

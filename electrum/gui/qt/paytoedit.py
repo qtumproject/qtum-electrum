@@ -67,13 +67,25 @@ class PayToEdit(CompletionTextEdit, ScanQRTextEdit, Logger):
         self.win = win
         self.amount_edit = win.amount_e
         self.setFont(QFont(MONOSPACE_FONT))
-        self.document().contentsChanged.connect(self.update_size)
-        self.heightMin = 0
-        self.heightMax = 150
+        document = self.document()
+        document.contentsChanged.connect(self.update_size)
+
+        fontMetrics = QFontMetrics(document.defaultFont())
+        self.fontSpacing = fontMetrics.lineSpacing()
+
+        margins = self.contentsMargins()
+        documentMargin = document.documentMargin()
+        self.verticalMargins = margins.top() + margins.bottom()
+        self.verticalMargins += self.frameWidth() * 2
+        self.verticalMargins += documentMargin * 2
+
+        self.heightMin = self.fontSpacing + self.verticalMargins
+        self.heightMax = (self.fontSpacing * 10) + self.verticalMargins
+
         self.c = None
         self.textChanged.connect(self.check_text)
         self.outputs = []  # type: List[PartialTxOutput]
-        self.errors = []  # type: Sequence[PayToLineError]
+        self.errors = []  # type: List[PayToLineError]
         self.is_pr = False
         self.is_alias = False
         self.update_size()
@@ -84,8 +96,7 @@ class PayToEdit(CompletionTextEdit, ScanQRTextEdit, Logger):
     def setFrozen(self, b):
         self.setReadOnly(b)
         self.setStyleSheet(frozen_style if b else normal_style)
-        for button in self.buttons:
-            button.setHidden(b)
+        self.overlay_widget.setHidden(b)
 
     def setGreen(self):
         self.setStyleSheet(util.ColorScheme.GREEN.as_stylesheet(True))
@@ -127,10 +138,16 @@ class PayToEdit(CompletionTextEdit, ScanQRTextEdit, Logger):
         return script
 
     def parse_amount(self, x):
-        if x.strip() == '!':
-            return '!'
+        x = x.strip()
+        if not x:
+            raise Exception("Amount is empty")
+        if parse_max_spend(x):
+            return x
         p = pow(10, self.amount_edit.decimal_point())
-        return int(p * Decimal(x.strip()))
+        try:
+            return int(p * Decimal(x))
+        except decimal.InvalidOperation:
+            raise Exception("Invalid amount")
 
     def parse_address(self, line):
         r = line.strip()
@@ -145,15 +162,17 @@ class PayToEdit(CompletionTextEdit, ScanQRTextEdit, Logger):
             return
         # filter out empty lines
         lines = [i for i in self.lines() if i]
-        outputs = []  # type: List[PartialTxOutput]
-        total = 0
+
         self.payto_scriptpubkey = None
         self.lightning_invoice = None
+        self.outputs = []
+
         if len(lines) == 1:
             data = lines[0]
             if data.startswith("qtum:"):
                 self.win.pay_to_URI(data)
                 return
+            # try LN invoice
             bolt11_invoice = maybe_extract_bolt11_invoice(data)
             if bolt11_invoice is not None:
                 try:
@@ -167,22 +186,30 @@ class PayToEdit(CompletionTextEdit, ScanQRTextEdit, Logger):
                 self.payto_scriptpubkey = self.parse_output(data)
             except Exception as e:
                 self.errors.append(PayToLineError(line_content=data, exc=e))
-            if self.payto_scriptpubkey:
+            else:
                 self.win.set_onchain(True)
                 self.win.lock_amount(False)
-            return
+                return
+        else:
+            # there are multiple lines
+            self._parse_as_multiline(lines, raise_errors=False)
 
-        # there are multiple lines
+    def _parse_as_multiline(self, lines, *, raise_errors: bool):
+        outputs = []  # type: List[PartialTxOutput]
+        total = 0
         is_max = False
         for i, line in enumerate(lines):
             try:
                 output = self.parse_address_and_amount(line)
             except Exception as e:
-                self.errors.append(PayToLineError(
-                    idx=i, line_content=line.strip(), exc=e, is_multiline=True))
-                continue
+                if raise_errors:
+                    raise
+                else:
+                    self.errors.append(PayToLineError(
+                        idx=i, line_content=line.strip(), exc=e, is_multiline=True))
+                    continue
             outputs.append(output)
-            if output.value == '!':
+            if parse_max_spend(output.value):
                 is_max = True
             else:
                 total += output.value
@@ -205,12 +232,14 @@ class PayToEdit(CompletionTextEdit, ScanQRTextEdit, Logger):
     def get_destination_scriptpubkey(self) -> Optional[bytes]:
         return self.payto_scriptpubkey
 
-    def get_outputs(self, is_max):
+    def get_outputs(self, is_max: bool) -> List[PartialTxOutput]:
         if self.payto_scriptpubkey:
             if is_max:
                 amount = '!'
             else:
                 amount = self.amount_edit.get_amount()
+                if amount is None:
+                    return []
             self.outputs = [PartialTxOutput(scriptpubkey=self.payto_scriptpubkey, value=amount)]
 
         return self.outputs[:]
@@ -226,20 +255,21 @@ class PayToEdit(CompletionTextEdit, ScanQRTextEdit, Logger):
         self.update_size()
 
     def update_size(self):
-        lineHeight = QFontMetrics(self.document().defaultFont()).height()
-        docHeight = self.document().size().height()
-        h = round(docHeight * lineHeight + 11)
-        h = min(max(h, self.heightMin), self.heightMax)
-        self.setMinimumHeight(h)
-        self.setMaximumHeight(h)
-        self.verticalScrollBar().hide()
-        self.updateGeometry()
+        docLineCount = self.document().lineCount()
+        if self.cursorRect().right() + 1 >= self.overlay_widget.pos().x():
+            # Add a line if we are under the overlay widget
+            docLineCount += 1
+        docHeight = docLineCount * self.fontSpacing
 
-    def qr_input(self):
-        data = super(PayToEdit,self).qr_input()
-        if data.startswith("qtum:"):
-            self.win.pay_to_URI(data)
-            # TODO: update fee
+        h = docHeight + self.verticalMargins
+        h = min(max(h, self.heightMin), self.heightMax)
+        self.setMinimumHeight(int(h))
+        self.setMaximumHeight(int(h))
+
+        self.verticalScrollBar().setHidden(docHeight + self.verticalMargins < self.heightMax)
+
+        # The scrollbar visibility can have changed so we update the overlay position here
+        self._updateOverlayPos()
 
     def resolve(self):
         self.is_alias = False

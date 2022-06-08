@@ -55,7 +55,7 @@ class SettingsDialog(WindowModalDialog):
         self.need_restart = False
         self.fx = self.window.fx
         self.wallet = self.window.wallet
-        
+
         vbox = QVBoxLayout()
         tabs = QTabWidget()
         gui_widgets = []
@@ -207,15 +207,16 @@ Use this if you want your local watchtower to keep running after you close your 
 
         system_cameras = qrscanner._find_system_cameras()
         qr_combo = QComboBox()
-        qr_combo.addItem("Default","default")
-        for camera, device in system_cameras.items():
-            qr_combo.addItem(camera, device)
-        #combo.addItem("Manually specify a device", config.get("video_device"))
+        qr_combo.addItem("Default", "default")
+        msg = (_("For scanning QR codes.") + "\n"
+               + _("Install the zbar package to enable this."))
+        qr_label = HelpLabel(_('Video Device') + ':', msg)
+        from .qrreader import find_system_cameras
+        system_cameras = find_system_cameras()
+        for cam_desc, cam_path in system_cameras.items():
+            qr_combo.addItem(cam_desc, cam_path)
         index = qr_combo.findData(self.config.get("video_device"))
         qr_combo.setCurrentIndex(index)
-        msg = _("Install the zbar package to enable this.")
-        qr_label = HelpLabel(_('Video Device') + ':', msg)
-        qr_combo.setEnabled(qrscanner.libzbar is not None)
         on_video_device = lambda x: self.config.set_key("video_device", qr_combo.itemData(x), True)
         qr_combo.currentIndexChanged.connect(on_video_device)
         gui_widgets.append((qr_label, qr_combo))
@@ -474,7 +475,7 @@ Use this if you want your local watchtower to keep running after you close your 
         vbox.addStretch(1)
         vbox.addLayout(Buttons(CloseButton(self)))
         self.setLayout(vbox)
-        
+
     def set_alias_color(self):
         if not self.config.get('alias'):
             self.alias_e.setStyleSheet("")

@@ -12,7 +12,7 @@ import subprocess
 from setuptools import setup, find_packages
 from setuptools.command.install import install
 
-MIN_PYTHON_VERSION = "3.6.1"
+MIN_PYTHON_VERSION = "3.8.0"
 _min_python_version_tuple = tuple(map(int, (MIN_PYTHON_VERSION.split("."))))
 
 
@@ -72,12 +72,9 @@ setup(
     python_requires='>={}'.format(MIN_PYTHON_VERSION),
     install_requires=requirements,
     extras_require=extras_require,
-    packages=[
-        'electrum',
-        'electrum.gui',
-        'electrum.gui.qt',
-        'electrum.plugins',
-    ] + [('electrum.plugins.'+pkg) for pkg in find_packages('electrum/plugins')],
+    packages=(['electrum', ]
+              + [('electrum.'+pkg) for pkg in
+                 find_packages('electrum', exclude=["tests", "gui.kivy", "gui.kivy.*"])]),
     package_dir={
         'electrum': 'electrum'
     },

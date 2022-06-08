@@ -33,14 +33,23 @@ from typing import Optional, TYPE_CHECKING, List
 
 try:
     import PyQt5
+    import PyQt5.QtGui
 except Exception:
     sys.exit("Error: Could not import PyQt5 on Linux systems, you may try 'sudo apt-get install python3-pyqt5'")
 
 from PyQt5.QtGui import QGuiApplication
 from PyQt5.QtWidgets import (QApplication, QSystemTrayIcon, QWidget, QMenu,
                              QMessageBox)
-from PyQt5.QtCore import QObject, pyqtSignal, QTimer
+from PyQt5.QtCore import QObject, pyqtSignal, QTimer, Qt
 import PyQt5.QtCore as QtCore
+
+try:
+    # Preload QtMultimedia at app start, if available.
+    # We use QtMultimedia on some platforms for camera-handling, and
+    # lazy-loading it later led to some crashes. Maybe due to bugs in PyQt5. (see #7725)
+    from PyQt5.QtMultimedia import QCameraInfo; del QCameraInfo
+except ImportError as e:
+    pass  # failure is ok; it is an optional dependency.
 
 from electrum.i18n import _, set_language
 from electrum.plugin import run_hook
@@ -52,7 +61,7 @@ from electrum.wallet_db import WalletDB
 from electrum.logging import Logger
 
 from .installwizard import InstallWizard, WalletAlreadyOpenInMemory
-from .util import get_default_language, read_QIcon, ColorScheme, custom_message_box
+from .util import get_default_language, read_QIcon, ColorScheme, custom_message_box, MessageBoxMixin
 from .main_window import ElectrumWindow
 from .network_dialog import NetworkDialog
 from .stylesheet_patcher import patch_qt_stylesheet

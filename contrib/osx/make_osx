@@ -201,14 +201,6 @@ brew install autoconf automake libtool
 "$CONTRIB"/make_libsecp256k1.sh || fail "Could not build libsecp"
 cp "$PROJECT_ROOT"/electrum/libsecp256k1.0.dylib contrib/osx
 
-info "Building CalinsQRReader..."
-d=contrib/osx/CalinsQRReader
-pushd "$d"
-rm -fr build
-# prefer building using xcode ourselves. otherwise fallback to prebuilt binary
-xcodebuild || cp -r prebuilt_qr build || fail "Could not build CalinsQRReader"
-popd
-
 info "Installing requirements..."
 python3 -m pip install --no-build-isolation --no-dependencies --no-warn-script-location -Ir ./contrib/deterministic-build/requirements.txt \
     || fail "Could not install requirements"
