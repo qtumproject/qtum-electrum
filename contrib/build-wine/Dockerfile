@@ -54,3 +54,4 @@ RUN wget -nc https://dl.winehq.org/wine-builds/Release.key && \
     apt-get autoremove -y && \
     apt-get clean
 
+RUN mkdir --parents "/opt/wine64/drive_c/electrum"
