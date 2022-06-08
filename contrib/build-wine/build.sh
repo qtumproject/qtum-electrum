@@ -28,6 +28,7 @@ docker build \
 
 info "building binary..."
 docker run -it \
+    --privileged \
     --name qtum-electrum-wine-builder-cont \
     -v "$PROJECT_ROOT_OR_FRESHCLONE_ROOT":/opt/wine64/drive_c/electrum \
     --rm \
