@@ -32,8 +32,8 @@ pycryptodomex==3.9.7 \
 toolz==0.10.0 \
     --hash=sha256:08fdd5ef7c96480ad11c12d472de21acd32359996f69a5259299b540feba4560
 https://github.com/icodeface/eth-hash/archive/master.zip \
-    --hash=sha256:1db3fd94b87dbbf92a1307fecc54e310880c359959de5b27d94972d3780f9e8f
+    --hash=sha256:e1d310018e2b327272611ebe06b1a101c5fa817f9d890bdbd7adfdbc862cdfaf
 https://github.com/icodeface/eth-utils/archive/master.zip \
-    --hash=sha256:da133a726b11a67b38955937fd4781dbadac43071c4d9a345840670b71edced7
+    --hash=sha256:b9da8987695cdd4d251121ef8754bc626ec4b92962b1d78fb8d2ac4e41d4aef2
 https://github.com/icodeface/eth-abi/archive/master.zip \
-    --hash=sha256:8d8bff7c546506fe2465f2c9620446bb5425b284c8492e2a3506d9b21f5528a9
+    --hash=sha256:1cf87ce883f746381ee94f2c6e179b23556b5e0bfa3ba0cf756b3799ee4aa6e2

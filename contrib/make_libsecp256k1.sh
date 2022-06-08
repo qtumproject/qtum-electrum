@@ -14,7 +14,7 @@
 # sudo apt-get install gcc-multilib g++-multilib
 # $ AUTOCONF_FLAGS="--host=i686-linux-gnu CFLAGS=-m32 CXXFLAGS=-m32 LDFLAGS=-m32" ./contrib/make_libsecp256k1.sh
 
-LIBSECP_VERSION="dbd41db16a0e91b2566820898a3ab2d7dad4fe00"
+LIBSECP_VERSION="1253a27756540d2ca526b2061d98d54868e9177c"
 
 set -e
 
@@ -65,4 +65,7 @@ info "Building $pkgname..."
     host_strip "$here/$pkgname/dist/lib/$dlname"
     cp -fpv "$here/$pkgname/dist/lib/$dlname" "$PROJECT_ROOT/electrum" || fail "Could not copy the $pkgname binary to its destination"
     info "$dlname has been placed in the inner 'electrum' folder."
+    if [ -n "$DLL_TARGET_DIR" ] ; then
+        cp -fpv "$here/$pkgname/dist/lib/$dlname" "$DLL_TARGET_DIR" || fail "Could not copy the $pkgname binary to DLL_TARGET_DIR"
+    fi
 )

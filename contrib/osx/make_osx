@@ -1,31 +1,30 @@
 #!/usr/bin/env bash
 
-export PYTHONHASHSEED=22
-
-src_dir=$(dirname "$0")
-cd "$src_dir/../.."
+set -e
 
 # Parameterize
-PYTHON_VERSION=3.7.9
+PYTHON_VERSION=3.9.11
 GIT_REPO=https://github.com/qtumproject/qtum-electrum
-DIST_DIR="dist"
 BUILDDIR=/tmp/qtum-electrum-build
 PACKAGE="Qtum Electrum"
 VERSION=`git describe --tags --dirty --always`
-DMG_NAME="${DIST_DIR}/Qtum-electrum-${VERSION}.dmg"
+DMG_NAME="./dist/Qtum-electrum-${VERSION}.dmg"
 TEMP_DMG_NAME="$BUILDDIR/qtum-electrum.dmg"
-LIBSECP_VERSION="b408c6a8b287003d1ade5709e6f7bc3c7f1d5be7"
 
 #export http_proxy=http://127.0.0.1:1087;export https_proxy=http://127.0.0.1:1087;
 
 export GCC_STRIP_BINARIES="1"
+export PYTHONDONTWRITEBYTECODE=1  # don't create __pycache__/ folders with .pyc files
 
 . "$(dirname "$0")/../build_tools_util.sh"
 
 CONTRIB_OSX="$(dirname "$(realpath "$0")")"
 CONTRIB="$CONTRIB_OSX/.."
-ROOT_FOLDER="$CONTRIB/.."
+PROJECT_ROOT="$CONTRIB/.."
+CACHEDIR="$CONTRIB_OSX/.cache"
 
+mkdir -p "$CACHEDIR"
+cd "$PROJECT_ROOT"
 
 which brew > /dev/null 2>&1 || fail "Please install brew from https://brew.sh/ to continue"
 which xcodebuild > /dev/null 2>&1 || fail "Please install Xcode and xcode command line tools to continue"
@@ -68,19 +67,23 @@ function DoCodeSignMaybe { # ARGS: infoName fileOrDirName
 }
 
 
-export LDFLAGS="-L/usr/local/opt/zlib/lib -L/usr/local/opt/sqlite/lib"
-export CPPFLAGS="-I/usr/local/opt/zlib/include -I/usr/local/opt/sqlite/include"
-
 info "Installing Python $PYTHON_VERSION"
-export PATH="~/.pyenv/bin:~/.pyenv/shims:~/Library/Python/3.7/bin:$PATH"
-if [ -d "${HOME}/.pyenv" ]; then
-  pyenv update
-else
-  curl -L https://raw.githubusercontent.com/pyenv/pyenv-installer/master/bin/pyenv-installer | bash > /dev/null 2>&1
+PKG_FILE="python-${PYTHON_VERSION}-macosx10.9.pkg"
+if [ ! -f "$CACHEDIR/$PKG_FILE" ]; then
+    curl -o "$CACHEDIR/$PKG_FILE" "https://www.python.org/ftp/python/${PYTHON_VERSION}/$PKG_FILE"
 fi
-PYTHON_CONFIGURE_OPTS="--enable-framework" pyenv install -s $PYTHON_VERSION && \
-pyenv global $PYTHON_VERSION || \
-fail "Unable to use Python $PYTHON_VERSION"
+echo "c2073d44c404c661dadbf0cbda55c6e7d681baba9178ed1bdb126d34caa898a9  $CACHEDIR/$PKG_FILE" | shasum -a 256 -c \
+     || fail "python pkg checksum mismatched"
+sudo installer -pkg "$CACHEDIR/$PKG_FILE" -target / \
+    || fail "failed to install python"
+
+# sanity check "python3" has the version we just installed.
+FOUND_PY_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:3])))')
+if [[ "$FOUND_PY_VERSION" != "$PYTHON_VERSION" ]]; then
+    fail "python version mismatch: $FOUND_PY_VERSION != $PYTHON_VERSION"
+fi
+
+break_legacy_easy_install
 
 # create a fresh virtualenv
 # This helps to avoid older versions of pip-installed dependencies interfering with the build.
@@ -90,8 +93,53 @@ python3 -m venv $VENV_DIR
 source $VENV_DIR/bin/activate
 
 info "Installing build dependencies"
-python3 -m pip install --no-dependencies --no-warn-script-location -Ir ./contrib/deterministic-build/requirements-build-mac.txt \
-    || fail "Could not install build dependencies"
+python3 -m pip install --no-build-isolation --no-dependencies --no-warn-script-location \
+    -Ir ./contrib/deterministic-build/requirements-build-base.txt \
+    || fail "Could not install build dependencies (base)"
+python3 -m pip install --no-build-isolation --no-dependencies --no-warn-script-location \
+    -Ir ./contrib/deterministic-build/requirements-build-mac.txt \
+    || fail "Could not install build dependencies (mac)"
+
+info "Installing some build-time deps for compilation..."
+brew install autoconf automake libtool gettext coreutils pkgconfig
+
+info "Building PyInstaller."
+PYINSTALLER_REPO="https://github.com/pyinstaller/pyinstaller.git"
+PYINSTALLER_COMMIT="40c9abce2d8de879e414fd377c933dccaab1e156"
+# ^ tag "4.2"
+# TODO test newer versions of pyinstaller for build-reproducibility.
+#      we are using this version for now due to change in code-signing behaviour
+#      (https://github.com/pyinstaller/pyinstaller/pull/5581)
+(
+    if [ -f "$CACHEDIR/pyinstaller/PyInstaller/bootloader/Darwin-64bit/runw" ]; then
+        info "pyinstaller already built, skipping"
+        exit 0
+    fi
+    cd "$PROJECT_ROOT"
+    ELECTRUM_COMMIT_HASH=$(git rev-parse HEAD)
+    cd "$CACHEDIR"
+    rm -rf pyinstaller
+    mkdir pyinstaller
+    cd pyinstaller
+    # Shallow clone
+    git init
+    git remote add origin $PYINSTALLER_REPO
+    git fetch --depth 1 origin $PYINSTALLER_COMMIT
+    git checkout -b pinned "${PYINSTALLER_COMMIT}^{commit}"
+    rm -fv PyInstaller/bootloader/Darwin-*/run* || true
+    # add reproducible randomness. this ensures we build a different bootloader for each commit.
+    # if we built the same one for all releases, that might also get anti-virus false positives
+    echo "const char *electrum_tag = \"tagged by Electrum@$ELECTRUM_COMMIT_HASH\";" >> ./bootloader/src/pyi_main.c
+    pushd bootloader
+    # compile bootloader
+    python3 ./waf all CFLAGS="-static"
+    popd
+    # sanity check bootloader is there:
+    [[ -e "PyInstaller/bootloader/Darwin-64bit/runw" ]] || fail "Could not find runw in target dir!"
+    rm pyinstaller.py  # workaround for https://github.com/pyinstaller/pyinstaller/pull/6701
+) || fail "PyInstaller build failed"
+info "Installing PyInstaller."
+python3 -m pip install --no-build-isolation --no-dependencies --no-warn-script-location "$CACHEDIR/pyinstaller"
 
 info "Using these versions for building $PACKAGE:"
 sw_vers
@@ -99,7 +147,7 @@ python3 --version
 echo -n "Pyinstaller "
 pyinstaller --version
 
-rm -rf ${DIST_DIR}
+rm -rf ./dist
 
 git submodule update --init
 
@@ -112,26 +160,46 @@ info "generating locale"
         brew install gettext
         brew link --force gettext
     fi
-    cd "$ROOT_FOLDER"/electrum/locale
+    cd "$PROJECT_ROOT"/electrum/locale
     for i in ./*; do
-        dir="$ROOT_FOLDER"/electrum/locale/$i/LC_MESSAGES
+        dir="$PROJECT_ROOT"/electrum/locale/$i/LC_MESSAGES
         mkdir -p "$dir"
         msgfmt --output-file=$dir/electrum.mo $i/electrum.po || true
     done
 ) || fail "failed generating locale"
 
 
-info "Downloading libusb..."
-curl https://homebrew.bintray.com/bottles/libusb-1.0.23.high_sierra.bottle.tar.gz | \
-tar xz --directory "$BUILDDIR"
-cp "$BUILDDIR/libusb/1.0.23/lib/libusb-1.0.dylib" contrib/osx
-echo "caea266f3fc3982adc55d6cb8d9bad10f6e61f0c24ce5901aa1804618e08e14d  contrib/osx/libusb-1.0.dylib" | \
-    shasum -a 256 -c || fail "libusb checksum mismatched"
+if [ ! -f "$PROJECT_ROOT"/electrum/libsecp256k1.0.dylib ]; then
+    info "Building libsecp256k1 dylib..."
+    "$CONTRIB"/make_libsecp256k1.sh || fail "Could not build libsecp"
+else
+    info "Skipping libsecp256k1 build: reusing already built dylib."
+fi
+cp "$PROJECT_ROOT"/electrum/libsecp256k1.0.dylib "$CONTRIB"/osx
+
+
+if [ ! -f "$PROJECT_ROOT"/electrum/libzbar.0.dylib ]; then
+    info "Building ZBar dylib..."
+    "$CONTRIB"/make_zbar.sh || fail "Could not build ZBar dylib"
+else
+    info "Skipping ZBar build: reusing already built dylib."
+fi
+cp "$PROJECT_ROOT"/electrum/libzbar.0.dylib "$CONTRIB"/osx
+
+
+if [ ! -f "$PROJECT_ROOT"/electrum/libusb-1.0.dylib ]; then
+    info "Building libusb dylib..."
+    "$CONTRIB"/make_libusb.sh || fail "Could not build libusb dylib"
+else
+    info "Skipping libusb build: reusing already built dylib."
+fi
+cp "$PROJECT_ROOT"/electrum/libusb-1.0.dylib "$CONTRIB"/osx
+
 
 info "Preparing for building libsecp256k1"
 brew install autoconf automake libtool
 "$CONTRIB"/make_libsecp256k1.sh || fail "Could not build libsecp"
-cp "$ROOT_FOLDER"/electrum/libsecp256k1.0.dylib contrib/osx
+cp "$PROJECT_ROOT"/electrum/libsecp256k1.0.dylib contrib/osx
 
 info "Building CalinsQRReader..."
 d=contrib/osx/CalinsQRReader
@@ -140,19 +208,17 @@ rm -fr build
 # prefer building using xcode ourselves. otherwise fallback to prebuilt binary
 xcodebuild || cp -r prebuilt_qr build || fail "Could not build CalinsQRReader"
 popd
-DoCodeSignMaybe "CalinsQRReader.app" "${d}/build/Release/CalinsQRReader.app"
-
 
 info "Installing requirements..."
-python3 -m pip install --no-dependencies --no-warn-script-location -Ir ./contrib/deterministic-build/requirements.txt \
+python3 -m pip install --no-build-isolation --no-dependencies --no-warn-script-location -Ir ./contrib/deterministic-build/requirements.txt \
     || fail "Could not install requirements"
 
 info "Installing hardware wallet requirements..."
-python3 -m pip install --no-dependencies --no-warn-script-location -Ir ./contrib/deterministic-build/requirements-hw.txt \
+python3 -m pip install --no-build-isolation --no-dependencies --no-warn-script-location -Ir ./contrib/deterministic-build/requirements-hw.txt \
     || fail "Could not install hardware wallet requirements"
 
 info "Installing dependencies specific to binaries..."
-python3 -m pip install --no-dependencies --no-warn-script-location -Ir ./contrib/deterministic-build/requirements-binaries-mac.txt \
+python3 -m pip install --no-build-isolation --no-dependencies --no-warn-script-location -Ir ./contrib/deterministic-build/requirements-binaries-mac.txt \
     || fail "Could not install dependencies specific to binaries"
 
 info "Installing eth requirements..."
@@ -160,22 +226,19 @@ python3 -m pip install -Ir ./contrib/deterministic-build/requirements-eth.txt --
     || fail "Could not install eth requirements"
 
 info "Building $PACKAGE..."
-python3 -m pip install --no-dependencies --no-warn-script-location . > /dev/null || fail "Could not build $PACKAGE"
+python3 -m pip install --no-build-isolation --no-dependencies --no-warn-script-location . > /dev/null || fail "Could not build $PACKAGE"
 
 info "Faking timestamps..."
-for d in ~/Library/Python/ ~/.pyenv .; do
-  pushd "$d"
-  find . -exec touch -t '200101220000' {} +
-  popd
-done
+find . -exec touch -t '200101220000' {} + || true
+
 
 info "Building binary"
-APP_SIGN="$APP_SIGN" pyinstaller --noconfirm --ascii --clean --name $VERSION contrib/osx/osx.spec || fail "Could not build binary"
+pyinstaller --noconfirm --ascii --clean --name $VERSION contrib/osx/osx.spec || fail "Could not build binary"
 
 info "Adding qtum URI types to Info.plist"
 plutil -insert 'CFBundleURLTypes' \
 	-xml '<array><dict> <key>CFBundleURLName</key> <string>qtum</string> <key>CFBundleURLSchemes</key> <array><string>qtum</string></array> </dict></array>' \
-	-- "${DIST_DIR}/${PACKAGE}.app/Contents/Info.plist" \
+	-- "./dist/${PACKAGE}.app/Contents/Info.plist" \
 	|| fail "Could not add keys to Info.plist. Make sure the program 'plutil' exists and is installed."
 
 #DoCodeSignMaybe "app bundle" "${DIST_DIR}/${PACKAGE}.app" "$APP_SIGN" # If APP_SIGN is empty will be a noop
@@ -183,7 +246,7 @@ plutil -insert 'CFBundleURLTypes' \
 info "Creating .DMG"
 hdiutil create -size 300m -fs HFS+ -volname "${PACKAGE}" -ov ${TEMP_DMG_NAME}
 hdiutil mount ${TEMP_DMG_NAME}
-cp -R "${DIST_DIR}/${PACKAGE}.app" "/Volumes/${PACKAGE}/${PACKAGE}.app"
+cp -R "./dist/${PACKAGE}.app" "/Volumes/${PACKAGE}/${PACKAGE}.app"
 ln -s /Applications "/Volumes/${PACKAGE}/Applications"
 
 hdiutil detach "/Volumes/${PACKAGE}"
