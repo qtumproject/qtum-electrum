@@ -1135,11 +1135,24 @@ def make_aiohttp_session(proxy: Optional[dict], headers=None, timeout=None):
 
 class SilentTaskGroup(TaskGroup):
 
-    def spawn(self, *args, **kwargs):
-        # don't complain if group is already closed.
-        if self._closed:
-            raise asyncio.CancelledError()
-        return super().spawn(*args, **kwargs)
+    async def join(self):
+        if self._wait is all:
+            exc = False
+            try:
+                async for task in self:
+                    if not task.cancelled():
+                        task.result()
+            except BaseException:  # including asyncio.CancelledError
+                exc = True
+                raise
+            finally:
+                if exc:
+                    await self.cancel_remaining()
+                await super().join()
+        else:
+            await super().join()
+            if self.completed:
+                self.completed.result()
 
 
 class NetworkJobOnDefaultServer(Logger):
