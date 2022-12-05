@@ -2118,7 +2118,9 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
             _logger.info("return None when sign_message on a watch-only wallet")
             return None
         index = self.get_address_index(address)
-        return self.keystore.sign_message(index, message, password)
+        script_type = self.get_txin_type(address)
+        assert script_type != "address"
+        return self.keystore.sign_message(index, message, password, script_type=script_type)
 
     def decrypt_message(self, pubkey: str, message, password) -> bytes:
         addr = self.pubkeys_to_address([pubkey])
