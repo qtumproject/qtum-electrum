@@ -292,6 +292,13 @@ class SimpleConfig(Logger):
 
         return new_path
 
+    def get_fallback_wallet_path(self):
+        util.assert_datadir_available(self.path)
+        dirpath = os.path.join(self.path, "wallets")
+        make_dir(dirpath, allow_symlink=False)
+        path = os.path.join(self.path, "wallets", "default_wallet")
+        return path
+
     def remove_from_recently_open(self, filename):
         recent = self.get('recently_open', [])
         if filename in recent:

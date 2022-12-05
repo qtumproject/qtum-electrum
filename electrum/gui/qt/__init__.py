@@ -35,7 +35,7 @@ from electrum import GuiImportError
 try:
     import PyQt5
     import PyQt5.QtGui
-except Exception:
+except Exception as e:
     raise GuiImportError(
         "Error: Could not import PyQt5 on Linux systems, "
         "you may try 'sudo apt-get install python3-pyqt5'") from e
