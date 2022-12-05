@@ -205,7 +205,6 @@ Use this if you want your local watchtower to keep running after you close your 
         unit_combo.currentIndexChanged.connect(lambda x: on_unit(x, nz))
         gui_widgets.append((unit_label, unit_combo))
 
-        system_cameras = qrscanner._find_system_cameras()
         qr_combo = QComboBox()
         qr_combo.addItem("Default", "default")
         msg = (_("For scanning QR codes.") + "\n"
