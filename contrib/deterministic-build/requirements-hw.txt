@@ -4,8 +4,6 @@ base58==2.1.1 \
 bitbox02==6.0.0 \
     --hash=sha256:a738f9977317c104298c0b59a0fc93c98d48a1b03d192dcd6396963d3ed58127 \
     --hash=sha256:c136ad7a1ddd272705368ccb6906c0cd71746afaf6a1f05d8e5aaa70e04baffd
-btchip-qtum==0.1.30.1 \
-    --hash=sha256:14595f19696c99f3d797aad5c44b8e4b777dbc8144910dd3ce93c535af21822a
 certifi==2021.10.8 \
     --hash=sha256:78884e7c1d4b00ce3cea67b44566851c4343c120abd683433ce934a68ea58872 \
     --hash=sha256:d62a0163eb4c2344ac042ab2bdf75399a71a2d8c7d47eac2e2ee91b9d6339569
@@ -192,3 +190,5 @@ cbor==1.0.0 \
 pyserial==3.5.0 \
     --hash=sha256:c4451db6ba391ca6ca299fb3ec7bae67a5c55dde170964c7a14ceefec02f2cf0 \
     --hash=sha256:3c77e014170dfffbd816e6ffc205e9842efb10be9f58ec16d3e8675b4925cddb
+https://github.com/qtumproject/btchip-python/archive/master.zip \
+    --hash=sha256:6d8a3ebfa6928687bee741c2aacfb9a297ebd6f02e8220d5b9fdf730e0699204
