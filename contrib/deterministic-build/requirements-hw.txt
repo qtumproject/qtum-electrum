@@ -170,6 +170,9 @@ keepkey==6.3.1 \
     --hash=sha256:88e2b5291c85c8e8567732f675697b88241082884aa1aba32257f35ee722fc09 \
     --hash=sha256:cef1e862e195ece3e42640a0f57d15a63086fd1dedc8b5ddfcbc9c2657f0bb1e \
     --hash=sha256:f369d640c65fec7fd8e72546304cdc768c04224a6b9b00a19dc2cd06fa9d2a6b
+ledgercomm==1.1.2 \
+    --hash=sha256:8b338f6f0bfedf85eaf26a6af7e41120685dfb3e2956718948c9d83a4b5155bb \
+    --hash=sha256:e3a39198b7c01135d7bdb049948ac41ce22cd8d39ddf6fbfc236a228d560a0ce
 libusb1==3.0.0 \
     --hash=sha256:083f75e5d15cb5e2159e64c308c5317284eae926a820d6dce53a9505d18be3b2 \
     --hash=sha256:0e652b04cbe85ec8e74f9ee82b49f861fb14b5320ae51399387ad2601ccc0500 \
@@ -245,3 +248,5 @@ wheel==0.38.4 \
     --hash=sha256:b60533f3f5d530e971d6737ca6d58681ee434818fab630c83a734bb10c083ce8
 https://github.com/qtumproject/btchip-python/archive/master.zip \
     --hash=sha256:6d8a3ebfa6928687bee741c2aacfb9a297ebd6f02e8220d5b9fdf730e0699204
+https://github.com/qtumproject/ledger-qtum-py/archive/master.zip \
+    --hash=sha256:87a53d9fbe53aaf38f584d1389e559f3dcdf276df82f8e2ad0b8c28d86c1cbee

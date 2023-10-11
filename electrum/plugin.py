@@ -581,7 +581,7 @@ class DeviceMgr(ThreadJob):
               'its seed (and passphrase, if any).  Otherwise all QTUMs you '
               'receive will be unspendable.').format(plugin.device))
 
-    def unpaired_device_infos(self, handler: Optional['HardwareHandlerBase'], plugin: 'HW_PluginBase',
+    def list_pairable_device_infos(self, *,  handler: Optional['HardwareHandlerBase'], plugin: 'HW_PluginBase',
                               devices: Sequence['Device'] = None,
                               include_failing_clients=False) -> List['DeviceInfo']:
         '''Returns a list of DeviceInfo objects: one for each connected,
@@ -625,7 +625,7 @@ class DeviceMgr(ThreadJob):
         # ideally this should not be called from the GUI thread...
         # assert handler.get_gui_thread() != threading.current_thread(), 'must not be called from GUI thread'
         while True:
-            infos = self.unpaired_device_infos(handler, plugin, devices)
+            infos = self.list_pairable_device_infos(handler=handler, plugin=plugin, devices=devices)
             if infos:
                 break
             if not allow_user_interaction:

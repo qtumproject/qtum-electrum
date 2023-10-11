@@ -911,6 +911,20 @@ class Hardware_KeyStore(Xpub, KeyStore):
         assert not self.has_seed()
         return False
 
+    def get_client(
+            self,
+            force_pair: bool = True,
+            *,
+            devices: Sequence['Device'] = None,
+            allow_user_interaction: bool = True,
+    ) -> Optional['HardwareClientBase']:
+        return self.plugin.get_client(
+            self,
+            force_pair=force_pair,
+            devices=devices,
+            allow_user_interaction=allow_user_interaction,
+        )
+
     def get_password_for_storage_encryption(self) -> str:
         client = self.plugin.get_client(self)
         return client.get_password_for_storage_encryption()

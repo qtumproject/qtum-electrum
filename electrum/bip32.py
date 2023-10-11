@@ -17,6 +17,7 @@ _logger = get_logger(__name__)
 BIP32_PRIME = 0x80000000
 UINT32_MAX = (1 << 32) - 1
 
+BIP32_HARDENED_CHAR = "h"  # default "hardened" char we put in str paths
 
 def protect_against_invalid_ecpoint(func):
     def func_wrapper(*args):
@@ -336,7 +337,9 @@ def convert_bip32_path_to_list_of_uint32(n: str) -> List[int]:
     return path
 
 
-def convert_bip32_intpath_to_strpath(path: Sequence[int]) -> str:
+def convert_bip32_intpath_to_strpath(path: Sequence[int], *, hardened_char=BIP32_HARDENED_CHAR) -> str:
+    assert isinstance(hardened_char, str), hardened_char
+    assert len(hardened_char) == 1, hardened_char
     s = "m/"
     for child_index in path:
         if not isinstance(child_index, int):
@@ -345,7 +348,7 @@ def convert_bip32_intpath_to_strpath(path: Sequence[int]) -> str:
             raise ValueError(f"bip32 path child index out of range: {child_index}")
         prime = ""
         if child_index & BIP32_PRIME:
-            prime = "'"
+            prime = hardened_char
             child_index = child_index ^ BIP32_PRIME
         s += str(child_index) + prime + '/'
     # cut trailing "/"
@@ -364,13 +367,13 @@ def is_bip32_derivation(s: str) -> bool:
         return True
 
 
-def normalize_bip32_derivation(s: Optional[str]) -> Optional[str]:
+def normalize_bip32_derivation(s: Optional[str], *, hardened_char=BIP32_HARDENED_CHAR) -> Optional[str]:
     if s is None:
         return None
     if not is_bip32_derivation(s):
         raise ValueError(f"invalid bip32 derivation: {s}")
     ints = convert_bip32_path_to_list_of_uint32(s)
-    return convert_bip32_intpath_to_strpath(ints)
+    return convert_bip32_intpath_to_strpath(ints, hardened_char=hardened_char)
 
 
 def is_all_public_derivation(path: Union[str, Iterable[int]]) -> bool:
