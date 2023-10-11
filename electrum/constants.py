@@ -47,6 +47,12 @@ BIP39_WALLET_FORMATS = read_json('bip39_wallet_formats.json', [])
 
 class AbstractNet:
 
+    NET_NAME: str
+    TESTNET: bool
+    WIF_PREFIX: int
+    ADDRTYPE_P2PKH: int
+    ADDRTYPE_P2SH: int
+    SEGWIT_HRP: str
     BLOCK_HEIGHT_FIRST_LIGHTNING_CHANNELS = 0
     CHECKPOINTS = {}
     GENESIS = ""
@@ -68,6 +74,7 @@ class AbstractNet:
 
 class QtumMainnet(AbstractNet):
 
+    NET_NAME = "mainnet"
     TESTNET = False
     WIF_PREFIX = 0x80
     BITCOIN_ADDRTYPE_P2PKH = 0
@@ -124,6 +131,7 @@ class QtumMainnet(AbstractNet):
 
 class QtumTestnet(AbstractNet):
 
+    NET_NAME = "testnet"
     TESTNET = True
     WIF_PREFIX = 0xef
     BITCOIN_ADDRTYPE_P2PKH = 111
