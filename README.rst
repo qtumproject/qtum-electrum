@@ -24,10 +24,11 @@ Electrum is a pure python application. If you want to use the Qt interface, inst
     // macOS (thanks @puruoni)
     brew install pyqt5
     export PATH="/opt/homebrew/opt/qt@5/bin:$PATH"
-    export PATH="/opt/homebrew/opt/pyqt@5/5.15.4_1/bin:$PATH"
+    export PATH="/opt/homebrew/opt/pyqt@5/bin:$PATH"
+    cp -pr /opt/homebrew/Cellar/pyqt@5/5.15.9/lib/python3.10/site-packages/*  /opt/homebrew/lib/python3.10/site-packages/.
+
     // *** In the case of pyenv ***
-    cd /opt/homebrew/Cellar/pyqt@5/5.15.7_1/lib/python3.10/site-packages
-    cp -pr * /Users/[username]/.pyenv/versions/3.10.8/lib/python3.10/site-packages/.
+    cp -pr /opt/homebrew/Cellar/pyqt@5/5.15.9/lib/python3.10/site-packages/* /Users/[username]/.pyenv/versions/3.10.8/lib/python3.10/site-packages/.
 
 
 For elliptic curve operations, `libsecp256k1`_ is a required dependency::
