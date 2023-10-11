@@ -526,7 +526,7 @@ class SimpleConfig(Logger):
             return self.has_fee_etas()
 
     def is_dynfee(self):
-        return bool(self.get('dynamic_fees', True))
+        return bool(self.get('dynamic_fees', True)) and self.fee_estimates
 
     def use_mempool_fees(self):
         return bool(self.get('mempool_fees', False))
