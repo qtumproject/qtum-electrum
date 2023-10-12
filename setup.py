@@ -25,7 +25,10 @@ with open('contrib/requirements/requirements.txt') as f:
 requirements += ['eth-hash', 'eth-utils', 'eth-abi']
 
 with open('contrib/requirements/requirements-hw.txt') as f:
-    requirements_hw = f.read().splitlines()
+    text = f.read()
+    text = text.replace("https://github.com/qtumproject/btchip-python/archive/master.zip", "btchip")
+    text = text.replace("https://github.com/qtumproject/ledger-qtum-py/archive/master.zip", "ledger-qtum")
+    requirements_hw = text.splitlines()
 
 # load version.py; needlessly complicated alternative to "imp.load_source":
 version_spec = importlib.util.spec_from_file_location('version', 'electrum/version.py')

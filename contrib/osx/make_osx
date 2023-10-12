@@ -3,7 +3,7 @@
 set -e
 
 # Parameterize
-PYTHON_VERSION=3.10.11
+PYTHON_VERSION=3.11.6
 GIT_REPO=https://github.com/qtumproject/qtum-electrum
 BUILDDIR=/tmp/qtum-electrum-build
 PACKAGE="Qtum Electrum"
@@ -66,15 +66,15 @@ function DoCodeSignMaybe { # ARGS: infoName fileOrDirName
 }
 
 
-info "Installing Python $PYTHON_VERSION"
-PKG_FILE="python-${PYTHON_VERSION}-macos11.pkg"
-if [ ! -f "$CACHEDIR/$PKG_FILE" ]; then
-    curl -o "$CACHEDIR/$PKG_FILE" "https://www.python.org/ftp/python/${PYTHON_VERSION}/$PKG_FILE"
-fi
-echo "767ed35ad688d28ea4494081ae96408a0318d0d5bb9ca0139d74d6247b231cfc  $CACHEDIR/$PKG_FILE" | shasum -a 256 -c \
-    || fail "python pkg checksum mismatched"
-sudo installer -pkg "$CACHEDIR/$PKG_FILE" -target / \
-    || fail "failed to install python"
+#info "Installing Python $PYTHON_VERSION"
+#PKG_FILE="python-${PYTHON_VERSION}-macos11.pkg"
+#if [ ! -f "$CACHEDIR/$PKG_FILE" ]; then
+#    curl -o "$CACHEDIR/$PKG_FILE" "https://www.python.org/ftp/python/${PYTHON_VERSION}/$PKG_FILE"
+#fi
+#echo "767ed35ad688d28ea4494081ae96408a0318d0d5bb9ca0139d74d6247b231cfc  $CACHEDIR/$PKG_FILE" | shasum -a 256 -c \
+#    || fail "python pkg checksum mismatched"
+#sudo installer -pkg "$CACHEDIR/$PKG_FILE" -target / \
+#    || fail "failed to install python"
 
 # sanity check "python3" has the version we just installed.
 FOUND_PY_VERSION=$(python3 -c 'import sys; print(".".join(map(str, sys.version_info[:3])))')
@@ -86,23 +86,24 @@ break_legacy_easy_install
 
 # create a fresh virtualenv
 # This helps to avoid older versions of pip-installed dependencies interfering with the build.
-VENV_DIR="$CONTRIB_OSX/build-venv"
-rm -rf "$VENV_DIR"
-python3 -m venv $VENV_DIR
-source $VENV_DIR/bin/activate
+#VENV_DIR="$CONTRIB_OSX/build-venv"
+#rm -rf "$VENV_DIR"
+#python3 -m venv $VENV_DIR
+#source $VENV_DIR/bin/activate
 
 info "Installing build dependencies"
 python3 -m pip install --no-build-isolation --no-dependencies --no-warn-script-location \
     -Ir ./contrib/deterministic-build/requirements-build-base.txt \
     || fail "Could not install build dependencies (base)"
-python3 -m pip install --no-build-isolation --no-dependencies --no-warn-script-location \
+python3 -m pip install --no-build-isolation --no-dependencies --no-binary :all: --no-warn-script-location \
     -Ir ./contrib/deterministic-build/requirements-build-mac.txt \
     || fail "Could not install build dependencies (mac)"
 
 info "Building PyInstaller."
+# rm -rf "$CACHEDIR/pyinstaller"
 PYINSTALLER_REPO="https://github.com/pyinstaller/pyinstaller.git"
-PYINSTALLER_COMMIT="413cce49ff28d87fad4472f4953489226ec90c84"
-# ^ tag "v5.11.0"
+PYINSTALLER_COMMIT="d1b6b520a017578a19e1cb9514752a4517755ee0"
+# ^ tag "v5.13.2"
 (
     if [ -f "$CACHEDIR/pyinstaller/PyInstaller/bootloader/Darwin-64bit/runw" ]; then
         info "pyinstaller already built, skipping"
@@ -129,7 +130,6 @@ PYINSTALLER_COMMIT="413cce49ff28d87fad4472f4953489226ec90c84"
     popd
     # sanity check bootloader is there:
     [[ -e "PyInstaller/bootloader/Darwin-64bit/runw" ]] || fail "Could not find runw in target dir!"
-    rm pyinstaller.py  # workaround for https://github.com/pyinstaller/pyinstaller/pull/6701
 ) || fail "PyInstaller build failed"
 info "Installing PyInstaller."
 python3 -m pip install --no-build-isolation --no-dependencies --no-warn-script-location "$CACHEDIR/pyinstaller"
@@ -190,7 +190,7 @@ info "Preparing for building libsecp256k1"
 cp "$PROJECT_ROOT"/electrum/libsecp256k1.0.dylib contrib/osx
 
 info "Installing requirements..."
-python3 -m pip install --no-build-isolation --no-dependencies --no-warn-script-location -Ir ./contrib/deterministic-build/requirements.txt \
+python3 -m pip install --no-build-isolation --no-dependencies --no-binary :all: --no-warn-script-location -Ir ./contrib/deterministic-build/requirements.txt \
     || fail "Could not install requirements"
 
 info "Installing hardware wallet requirements..."
@@ -211,15 +211,11 @@ python3 -m pip install --no-build-isolation --no-dependencies --no-warn-script-l
 info "Faking timestamps..."
 find . -exec touch -t '200101220000' {} + || true
 
+VERSION=$(git describe --tags --dirty --always)
+info "Version: $VERSION"
 
 info "Building binary"
-pyinstaller --noconfirm --ascii --clean --name $VERSION contrib/osx/osx.spec || fail "Could not build binary"
-
-info "Adding qtum URI types to Info.plist"
-plutil -insert 'CFBundleURLTypes' \
-	-xml '<array><dict> <key>CFBundleURLName</key> <string>qtum</string> <key>CFBundleURLSchemes</key> <array><string>qtum</string></array> </dict></array>' \
-	-- "./dist/${PACKAGE}.app/Contents/Info.plist" \
-	|| fail "Could not add keys to Info.plist. Make sure the program 'plutil' exists and is installed."
+ELECTRUM_VERSION=$VERSION pyinstaller --noconfirm --ascii --clean contrib/osx/osx.spec || fail "Could not build binary"
 
 #DoCodeSignMaybe "app bundle" "${DIST_DIR}/${PACKAGE}.app" "$APP_SIGN" # If APP_SIGN is empty will be a noop
 
@@ -233,7 +229,6 @@ hdiutil detach "/Volumes/${PACKAGE}"
 sleep 2
 
 hdiutil convert ${TEMP_DMG_NAME} -format UDZO -o ${DMG_NAME}
-hdiutil internet-enable -yes ${DMG_NAME}
 rm -rf ${TEMP_DMG_NAME}
 
 openssl dgst -sha256 ${DMG_NAME}
