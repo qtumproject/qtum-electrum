@@ -48,7 +48,7 @@ import itertools
 from aiorpcx import TaskGroup, ignore_after
 
 from .i18n import _
-from .bip32 import BIP32Node, convert_bip32_intpath_to_strpath, convert_bip32_path_to_list_of_uint32
+from .bip32 import BIP32Node, convert_bip32_intpath_to_strpath, convert_bip32_strpath_to_intpath
 from .crypto import sha256
 from . import util
 from .util import (NotEnoughFunds, UserCancelled, profiler,
@@ -83,6 +83,8 @@ from .logging import get_logger
 from .lnworker import LNWallet, LNBackups
 from .paymentrequest import PaymentRequest
 from .util import read_json_file, write_json_file, UserFacingException
+from . import descriptor
+from .descriptor import Descriptor
 
 if TYPE_CHECKING:
     from .network import Network
@@ -99,7 +101,8 @@ TX_STATUS = [
 
 
 async def _append_utxos_to_inputs(*, inputs: List[PartialTxInput], network: 'Network',
-                                  pubkey: str, txin_type: str, imax: int) -> None:
+                                  pubkey: str, txin_type: str,
+                                  script_descriptor: 'descriptor.Descriptor', imax: int) -> None:
     if txin_type in ('p2pkh', 'p2wpkh', 'p2wpkh-p2sh'):
         address = bitcoin.pubkey_to_address(txin_type, pubkey)
         scripthash = bitcoin.address_to_scripthash(address)
@@ -125,6 +128,7 @@ async def _append_utxos_to_inputs(*, inputs: List[PartialTxInput], network: 'Net
         txin.num_sig = 1
         if txin_type == 'p2wpkh-p2sh':
             txin.redeem_script = bfh(bitcoin.p2wpkh_nested_script(pubkey))
+        txin.script_descriptor = script_descriptor
         inputs.append(txin)
 
     u = await network.listunspent_for_scripthash(scripthash)
@@ -139,11 +143,13 @@ async def sweep_preparations(privkeys, network: 'Network', imax=100):
 
     async def find_utxos_for_privkey(txin_type, privkey, compressed):
         pubkey = ecc.ECPrivkey(privkey).get_public_key_hex(compressed=compressed)
+        desc = descriptor.get_singlesig_descriptor_from_legacy_leaf(pubkey=pubkey, script_type=txin_type)
         await _append_utxos_to_inputs(
             inputs=inputs,
             network=network,
             pubkey=pubkey,
             txin_type=txin_type,
+            script_descriptor=desc,
             imax=imax)
         keypairs[pubkey] = privkey, compressed
 
@@ -1646,7 +1652,42 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
                 txin.witness_script = bfh(witness_script_hex) if witness_script_hex else None
             except UnknownTxinType:
                 pass
+        txin.script_descriptor = self.get_script_descriptor_for_address(address)
         self._add_input_sig_info(txin, address, only_der_suffix=only_der_suffix)
+
+    def get_script_descriptor_for_address(self, address: str) -> Optional[Descriptor]:
+        if not self.is_mine(address):
+            return None
+        script_type = self.get_txin_type(address)
+        if script_type in ('address', 'unknown'):
+            return None
+        addr_index = self.get_address_index(address)
+        if addr_index is None:
+            return None
+        pubkeys = [ks.get_pubkey_provider(addr_index) for ks in self.get_keystores()]
+        if not pubkeys:
+            return None
+        if script_type == 'p2pk':
+            return descriptor.PKDescriptor(pubkey=pubkeys[0])
+        elif script_type == 'p2pkh':
+            return descriptor.PKHDescriptor(pubkey=pubkeys[0])
+        elif script_type == 'p2wpkh':
+            return descriptor.WPKHDescriptor(pubkey=pubkeys[0])
+        elif script_type == 'p2wpkh-p2sh':
+            wpkh = descriptor.WPKHDescriptor(pubkey=pubkeys[0])
+            return descriptor.SHDescriptor(subdescriptor=wpkh)
+        elif script_type == 'p2sh':
+            multi = descriptor.MultisigDescriptor(pubkeys=pubkeys, thresh=self.m, is_sorted=True)
+            return descriptor.SHDescriptor(subdescriptor=multi)
+        elif script_type == 'p2wsh':
+            multi = descriptor.MultisigDescriptor(pubkeys=pubkeys, thresh=self.m, is_sorted=True)
+            return descriptor.WSHDescriptor(subdescriptor=multi)
+        elif script_type == 'p2wsh-p2sh':
+            multi = descriptor.MultisigDescriptor(pubkeys=pubkeys, thresh=self.m, is_sorted=True)
+            wsh = descriptor.WSHDescriptor(subdescriptor=multi)
+            return descriptor.SHDescriptor(subdescriptor=wsh)
+        else:
+            raise NotImplementedError(f"unexpected {script_type=}")
 
     def can_sign(self, tx: Transaction) -> bool:
         if not isinstance(tx, PartialTransaction):
@@ -1698,6 +1739,7 @@ class Abstract_Wallet(AddressSynchronizer, ABC):
             is_mine = self._learn_derivation_path_for_address_from_txinout(txout, address)
             if not is_mine:
                 return
+        txout.script_descriptor = self.get_script_descriptor_for_address(address)
         txout.script_type = self.get_txin_type(address)
         txout.is_mine = True
         txout.is_change = self.is_change(address)
@@ -2663,7 +2705,7 @@ class Deterministic_Wallet(Abstract_Wallet):
 
     def export_private_key_for_path(self, path: Union[Sequence[int], str], password: Optional[str]) -> str:
         if isinstance(path, str):
-            path = convert_bip32_path_to_list_of_uint32(path)
+            path = convert_bip32_strpath_to_intpath(path)
         pk, compressed = self.keystore.get_private_key(path, password)
         txin_type = self.get_txin_type()  # assumes no mixed-scripts in wallet
         return bitcoin.serialize_privkey(pk, compressed, txin_type)

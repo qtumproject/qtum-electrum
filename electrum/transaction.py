@@ -50,6 +50,7 @@ from .bitcoin import (TYPE_ADDRESS, TYPE_SCRIPT, push_data, hash_160,
                       base_encode, construct_witness, construct_script, pubkeyhash_to_p2pkh_script, public_key_to_p2pkh)
 from .crypto import sha256d
 from .logging import get_logger
+from .descriptor import Descriptor
 
 if TYPE_CHECKING:
     from .wallet import Abstract_Wallet
@@ -1200,6 +1201,8 @@ class PartialTxInput(TxInput, PSBTSection):
         self.script_type = 'unknown'
         self.num_sig = 0  # type: int  # num req sigs for multisig
         self.pubkeys = []  # type: List[bytes]  # note: order matters
+        self._script_descriptor = None  # type: Optional[Descriptor]
+
         self._trusted_value_sats = None  # type: Optional[int]
         self._trusted_address = None  # type: Optional[str]
         self.block_height = None  # type: Optional[int]  # height at which the TXO is mined; None means unknown
@@ -1227,12 +1230,26 @@ class PartialTxInput(TxInput, PSBTSection):
         self.validate_data()
         self.ensure_there_is_only_one_utxo()
 
+    @property
+    def script_descriptor(self):
+        return self._script_descriptor
+
+    @script_descriptor.setter
+    def script_descriptor(self, desc: Optional[Descriptor]):
+        self._script_descriptor = desc
+        if desc:
+            if self.redeem_script is None:
+                self.redeem_script = desc.expand().redeem_script
+            if self.witness_script is None:
+                self.witness_script = desc.expand().witness_script
+
     def to_json(self):
         d = super().to_json()
         d.update({
             'height': self.block_height,
             'value_sats': self.value_sats(),
             'address': self.address,
+            'desc': self.script_descriptor.to_string() if self.script_descriptor else None,
             'utxo': str(self.utxo) if self.utxo else None,
             'witness_utxo': self.witness_utxo.serialize_to_network().hex() if self.witness_utxo else None,
             'sighash': self.sighash,
@@ -1542,13 +1559,29 @@ class PartialTxOutput(TxOutput, PSBTSection):
         self.script_type = 'unknown'
         self.num_sig = 0  # num req sigs for multisig
         self.pubkeys = []  # type: List[bytes]  # note: order matters
+        self._script_descriptor = None  # type: Optional[Descriptor]
+
         self.is_mine = False  # type: bool  # whether the wallet considers the output to be ismine
         self.is_change = False  # type: bool  # whether the wallet considers the output to be change
         self.opsender_pubkey = None  # type bytes
 
+    @property
+    def script_descriptor(self):
+        return self._script_descriptor
+
+    @script_descriptor.setter
+    def script_descriptor(self, desc: Optional[Descriptor]):
+        self._script_descriptor = desc
+        if desc:
+            if self.redeem_script is None:
+                self.redeem_script = desc.expand().redeem_script
+            if self.witness_script is None:
+                self.witness_script = desc.expand().witness_script
+
     def to_json(self):
         d = super().to_json()
         d.update({
+            'desc': self.script_descriptor.to_string() if self.script_descriptor else None,
             'redeem_script': self.redeem_script.hex() if self.redeem_script else None,
             'witness_script': self.witness_script.hex() if self.witness_script else None,
             'bip32_paths': {pubkey.hex(): (xfp.hex(), bip32.convert_bip32_intpath_to_strpath(path))

@@ -12,7 +12,7 @@ from electrum.bitcoin import (public_key_to_p2pkh, address_from_private_key,
 from electrum import bip32
 from electrum.bip32 import (BIP32Node, convert_bip32_intpath_to_strpath,
                             xpub_from_xprv, xpub_type, is_xprv, is_bip32_derivation,
-                            is_xpub, convert_bip32_path_to_list_of_uint32,
+                            is_xpub, convert_bip32_strpath_to_intpath,
                             normalize_bip32_derivation, is_all_public_derivation)
 from electrum.crypto import sha256d, SUPPORTED_PW_HASH_VERSIONS
 from electrum import ecc, crypto, constants
@@ -534,10 +534,10 @@ class Test_xprv_xpub(ElectrumTestCase):
         self.assertFalse(is_bip32_derivation("m/q8462"))
         self.assertFalse(is_bip32_derivation("m/-8h"))
 
-    def test_convert_bip32_path_to_list_of_uint32(self):
-        self.assertEqual([0, 0x80000001, 0x80000001], convert_bip32_path_to_list_of_uint32("m/0/-1/1'"))
-        self.assertEqual([], convert_bip32_path_to_list_of_uint32("m/"))
-        self.assertEqual([2147483692, 2147488889, 221], convert_bip32_path_to_list_of_uint32("m/44'/5241h/221"))
+    def test_convert_bip32_strpath_to_intpath(self):
+        self.assertEqual([0, 0x80000001, 0x80000001], convert_bip32_strpath_to_intpath("m/0/-1/1'"))
+        self.assertEqual([], convert_bip32_strpath_to_intpath("m/"))
+        self.assertEqual([2147483692, 2147488889, 221], convert_bip32_strpath_to_intpath("m/44'/5241h/221"))
 
     def test_convert_bip32_intpath_to_strpath(self):
         self.assertEqual("m/0/1'/1'", convert_bip32_intpath_to_strpath([0, 0x80000001, 0x80000001]))

@@ -2,7 +2,9 @@
 # Distributed under the MIT software license, see the accompanying
 # file LICENCE or http://www.opensource.org/licenses/mit-license.php
 
+import binascii
 import hashlib
+import struct
 from typing import List, Tuple, NamedTuple, Union, Iterable, Sequence, Optional
 
 from .util import bfh, BitcoinException
@@ -18,6 +20,7 @@ BIP32_PRIME = 0x80000000
 UINT32_MAX = (1 << 32) - 1
 
 BIP32_HARDENED_CHAR = "h"  # default "hardened" char we put in str paths
+
 
 def protect_against_invalid_ecpoint(func):
     def func_wrapper(*args):
@@ -121,7 +124,13 @@ class BIP32Node(NamedTuple):
     child_number: bytes = b'\x00'*4
 
     @classmethod
-    def from_xkey(cls, xkey: str, *, net=None) -> 'BIP32Node':
+    def from_xkey(
+        cls,
+        xkey: str,
+        *,
+        net=None,
+        allow_custom_headers: bool = True,  # to also accept ypub/zpub
+    ) -> 'BIP32Node':
         if net is None:
             net = constants.net
         xkey = DecodeBase58Check(xkey)
@@ -142,6 +151,8 @@ class BIP32Node(NamedTuple):
         else:
             raise InvalidMasterKeyVersionBytes(f'Invalid extended key format: {hex(header)}')
         xtype = headers_inv[header]
+        if not allow_custom_headers and xtype != "standard":
+            raise ValueError(f"only standard xpub/xprv allowed. found custom xtype={xtype}")
         if is_private:
             eckey = ecc.ECPrivkey(xkey[13 + 33:])
         else:
@@ -225,7 +236,7 @@ class BIP32Node(NamedTuple):
         if path is None:
             raise Exception("derivation path must not be None")
         if isinstance(path, str):
-            path = convert_bip32_path_to_list_of_uint32(path)
+            path = convert_bip32_strpath_to_intpath(path)
         if not self.is_private():
             raise Exception("cannot do bip32 private derivation; private key missing")
         if not path:
@@ -251,7 +262,7 @@ class BIP32Node(NamedTuple):
         if path is None:
             raise Exception("derivation path must not be None")
         if isinstance(path, str):
-            path = convert_bip32_path_to_list_of_uint32(path)
+            path = convert_bip32_strpath_to_intpath(path)
         if not path:
             return self.convert_to_public()
         depth = self.depth
@@ -278,7 +289,8 @@ class BIP32Node(NamedTuple):
         return hash_160(self.eckey.get_public_key_bytes(compressed=True))[0:4]
 
 
-def xpub_type(x):
+def xpub_type(x: str):
+    assert x is not None
     return BIP32Node.from_xkey(x).xtype
 
 
@@ -286,7 +298,7 @@ def is_xpub(text):
     try:
         node = BIP32Node.from_xkey(text)
         return not node.is_private()
-    except:
+    except Exception:
         return False
 
 
@@ -294,7 +306,7 @@ def is_xprv(text):
     try:
         node = BIP32Node.from_xkey(text)
         return node.is_private()
-    except:
+    except Exception:
         return False
 
 
@@ -302,8 +314,8 @@ def xpub_from_xprv(xprv):
     return BIP32Node.from_xkey(xprv).to_xpub()
 
 
-def convert_bip32_path_to_list_of_uint32(n: str) -> List[int]:
-    """Convert bip32 path to list of uint32 integers with prime flags
+def convert_bip32_strpath_to_intpath(n: str) -> List[int]:
+    """Convert bip32 path str to list of uint32 integers with prime flags
     m/0/-1/1' -> [0, 0x80000001, 0x80000001]
 
     based on code in trezorlib
@@ -323,14 +335,18 @@ def convert_bip32_path_to_list_of_uint32(n: str) -> List[int]:
             # makes concatenating paths easier
             continue
         prime = 0
-        if x.endswith("'") or x.endswith("h"):
+        if x.endswith("'") or x.endswith("h"):  # note: some implementations also accept "H", "p", "P"
             x = x[:-1]
             prime = BIP32_PRIME
         if x.startswith('-'):
             if prime:
                 raise ValueError(f"bip32 path child index is signalling hardened level in multiple ways")
             prime = BIP32_PRIME
-        child_index = abs(int(x)) | prime
+        try:
+            x_int = int(x)
+        except ValueError as e:
+            raise ValueError(f"failed to parse bip32 path: {(str(e))}") from None
+        child_index = abs(x_int) | prime
         if child_index > UINT32_MAX:
             raise ValueError(f"bip32 path child index too large: {child_index} > {UINT32_MAX}")
         path.append(child_index)
@@ -360,8 +376,8 @@ def is_bip32_derivation(s: str) -> bool:
     try:
         if not (s == 'm' or s.startswith('m/')):
             return False
-        convert_bip32_path_to_list_of_uint32(s)
-    except:
+        convert_bip32_strpath_to_intpath(s)
+    except Exception:
         return False
     else:
         return True
@@ -372,14 +388,14 @@ def normalize_bip32_derivation(s: Optional[str], *, hardened_char=BIP32_HARDENED
         return None
     if not is_bip32_derivation(s):
         raise ValueError(f"invalid bip32 derivation: {s}")
-    ints = convert_bip32_path_to_list_of_uint32(s)
+    ints = convert_bip32_strpath_to_intpath(s)
     return convert_bip32_intpath_to_strpath(ints, hardened_char=hardened_char)
 
 
 def is_all_public_derivation(path: Union[str, Iterable[int]]) -> bool:
     """Returns whether all levels in path use non-hardened derivation."""
     if isinstance(path, str):
-        path = convert_bip32_path_to_list_of_uint32(path)
+        path = convert_bip32_strpath_to_intpath(path)
     for child_index in path:
         if child_index < 0:
             raise ValueError('the bip32 index needs to be non-negative')
@@ -412,7 +428,7 @@ def is_xkey_consistent_with_key_origin_info(xkey: str, *,
     bip32node = BIP32Node.from_xkey(xkey)
     int_path = None
     if derivation_prefix is not None:
-        int_path = convert_bip32_path_to_list_of_uint32(derivation_prefix)
+        int_path = convert_bip32_strpath_to_intpath(derivation_prefix)
     if int_path is not None and len(int_path) != bip32node.depth:
         return False
     if bip32node.depth == 0:
@@ -427,3 +443,84 @@ def is_xkey_consistent_with_key_origin_info(xkey: str, *,
         if bfh(root_fingerprint) != bip32node.fingerprint:
             return False
     return True
+
+
+class KeyOriginInfo:
+    """
+    Object representing the origin of a key.
+
+    from https://github.com/bitcoin-core/HWI/blob/5f300d3dee7b317a6194680ad293eaa0962a3cc7/hwilib/key.py
+    # Copyright (c) 2020 The HWI developers
+    # Distributed under the MIT software license.
+    """
+    def __init__(self, fingerprint: bytes, path: Sequence[int]) -> None:
+        """
+        :param fingerprint: The 4 byte BIP 32 fingerprint of a parent key from which this key is derived from
+        :param path: The derivation path to reach this key from the key at ``fingerprint``
+        """
+        self.fingerprint: bytes = fingerprint
+        self.path: Sequence[int] = path
+
+    @classmethod
+    def deserialize(cls, s: bytes) -> 'KeyOriginInfo':
+        """
+        Deserialize a serialized KeyOriginInfo.
+        They will be serialized in the same way that PSBTs serialize derivation paths
+        """
+        fingerprint = s[0:4]
+        s = s[4:]
+        path = list(struct.unpack("<" + "I" * (len(s) // 4), s))
+        return cls(fingerprint, path)
+
+    def serialize(self) -> bytes:
+        """
+        Serializes the KeyOriginInfo in the same way that derivation paths are stored in PSBTs
+        """
+        r = self.fingerprint
+        r += struct.pack("<" + "I" * len(self.path), *self.path)
+        return r
+
+    def _path_string(self) -> str:
+        strpath = self.get_derivation_path()
+        if len(strpath) >= 2:
+            assert strpath.startswith("m/")
+        return strpath[1:]  # cut leading "m"
+
+    def to_string(self) -> str:
+        """
+        Return the KeyOriginInfo as a string in the form <fingerprint>/<index>/<index>/...
+        This is the same way that KeyOriginInfo is shown in descriptors
+        """
+        s = binascii.hexlify(self.fingerprint).decode()
+        s += self._path_string()
+        return s
+
+    @classmethod
+    def from_string(cls, s: str) -> 'KeyOriginInfo':
+        """
+        Create a KeyOriginInfo from the string
+        :param s: The string to parse
+        """
+        s = s.lower()
+        entries = s.split("/")
+        fingerprint = binascii.unhexlify(s[0:8])
+        path: Sequence[int] = []
+        if len(entries) > 1:
+            path = convert_bip32_strpath_to_intpath(s[9:])
+        return cls(fingerprint, path)
+
+    def get_derivation_path(self) -> str:
+        """
+        Return the string for just the path
+        """
+        return convert_bip32_intpath_to_strpath(self.path)
+
+    def get_full_int_list(self) -> List[int]:
+        """
+        Return a list of ints representing this KeyOriginInfo.
+        The first int is the fingerprint, followed by the path
+        """
+        xfp = [struct.unpack("<I", self.fingerprint)[0]]
+        xfp.extend(self.path)
+        return xfp
+

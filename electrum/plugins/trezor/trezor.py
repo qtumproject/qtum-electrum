@@ -3,7 +3,7 @@ import sys
 from typing import NamedTuple, Any, Optional, Dict, Union, List, Tuple, TYPE_CHECKING
 
 from electrum.util import bfh, bh2u, versiontuple, UserCancelled, UserFacingException
-from electrum.bip32 import BIP32Node, convert_bip32_path_to_list_of_uint32 as parse_path
+from electrum.bip32 import BIP32Node, convert_bip32_strpath_to_intpath as parse_path
 from electrum import constants
 from electrum.i18n import _
 from electrum.plugin import Device, runs_in_hwd_thread
