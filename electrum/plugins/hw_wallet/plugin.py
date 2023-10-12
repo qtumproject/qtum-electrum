@@ -85,7 +85,7 @@ class HW_PluginBase(BasePlugin):
     def close_wallet(self, wallet: 'Abstract_Wallet'):
         for keystore in wallet.get_keystores():
             if isinstance(keystore, self.keystore_class):
-                self.device_manager().unpair_xpub(keystore.xpub)
+                self.device_manager().unpair_pairing_code(keystore.pairing_code())
                 if keystore.thread:
                     keystore.thread.stop()
 

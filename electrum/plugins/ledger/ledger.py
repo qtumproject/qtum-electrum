@@ -275,9 +275,9 @@ def get_addrtype_from_bip44_purpose(index: int) -> Optional['AddressType']:
 
 
 def is_standard_path(
-        path: Sequence[int],
-        addrtype: 'AddressType',
-        chain: 'Chain',
+    path: Sequence[int],
+    addrtype: 'AddressType',
+    chain: 'Chain',
 ) -> bool:
     if len(path) != 5:
         return False
@@ -367,9 +367,10 @@ class Ledger_Client(HardwareClientBase):
 
 
 class Ledger_Client_Legacy(Ledger_Client):
+    """Client based on the bitchip library, targeting versions 2.0.* and below."""
     is_legacy = True
 
-    def __init__(self, hidDevice, *, product_key: Tuple[int, int],
+    def __init__(self, hidDevice: 'HID', *, product_key: Tuple[int, int],
                  plugin: HW_PluginBase):
         Ledger_Client.__init__(self, plugin=plugin)
 
@@ -381,6 +382,7 @@ class Ledger_Client_Legacy(Ledger_Client):
         self.dongleObject = btchip(HIDDongleHIDAPI(dev, True, False))
 
         self.signing = False
+
         self._product_key = product_key
         self._soft_device_id = None
 
@@ -443,8 +445,8 @@ class Ledger_Client_Legacy(Ledger_Client):
         # S-L-O-W - we don't handle the fingerprint directly, so compute
         # it manually from the previous node
         # This only happens once so it's bearable
-        #self.get_client() # prompt for the PIN before displaying the dialog if necessary
-        #self.handler.show_message("Computing master public key")
+        # self.get_client() # prompt for the PIN before displaying the dialog if necessary
+        # self.handler.show_message("Computing master public key")
         if xtype in ['p2wpkh', 'p2wsh'] and not self.supports_native_segwit():
             raise UserFacingException(MSG_NEEDS_FW_UPDATE_SEGWIT)
         if xtype in ['p2wpkh-p2sh', 'p2wsh-p2sh'] and not self.supports_segwit():
@@ -471,7 +473,7 @@ class Ledger_Client_Legacy(Ledger_Client):
                          fingerprint=fingerprint_bytes,
                          child_number=childnum_bytes).to_xpub()
 
-    def has_detached_pin_support(self, client):
+    def has_detached_pin_support(self, client: 'btchip'):
         try:
             client.getVerifyPinRemainingAttempts()
             return True
@@ -480,7 +482,7 @@ class Ledger_Client_Legacy(Ledger_Client):
                 return False
             raise e
 
-    def is_pin_validated(self, client):
+    def is_pin_validated(self, client: 'btchip'):
         try:
             # Invalid SET OPERATION MODE to verify the PIN status
             client.dongle.exchange(bytearray([0xe0, 0x26, 0x00, 0x00, 0x01, 0xAB]))
@@ -543,7 +545,6 @@ class Ledger_Client_Legacy(Ledger_Client):
             self.handler.show_error(e)
         finally:
             self.handler.finished()
-
 
     @runs_in_hwd_thread
     @test_pin_unlocked
@@ -801,16 +802,17 @@ class Ledger_Client_Legacy(Ledger_Client):
             self.handler.show_error(_('Cancelled by user'))
             return
         except BTChipException as e:
-            if e.sw in (0x6985, ):  # cancelled by user
+            if e.sw in (0x6985, 0x6d00):  # cancelled by user
+                print("cancelled by user", e)
                 return
             elif e.sw == 0x6982:
                 raise  # pin lock. decorator will catch it
             else:
                 _logger.exception('')
-                self.give_error(f'Sign failed {e}', True)
+                self.give_error(e)
         except BaseException as e:
             _logger.exception('')
-            self.give_error(e, True)
+            self.give_error(e)
         finally:
             self.handler.finished()
 
@@ -841,18 +843,20 @@ class Ledger_Client_Legacy(Ledger_Client):
             signature = self.dongleObject.signMessageSign(pin)
         except BTChipException as e:
             if e.sw == 0x6a80:
-                self.give_error("Unfortunately, this message cannot be signed by the Ledger wallet. Only alphanumerical messages shorter than 140 characters are supported. Please remove any extra characters (tab, carriage return) and retry.")
+                self.give_error("Unfortunately, this message cannot be signed by the Ledger wallet. "
+                                "Only alphanumerical messages shorter than 140 characters are supported. "
+                                "Please remove any extra characters (tab, carriage return) and retry.")
             elif e.sw == 0x6985:  # cancelled by user
                 return b''
             elif e.sw == 0x6982:
                 raise  # pin lock. decorator will catch it
             else:
-                self.give_error(e, True)
+                self.give_error(e)
         except UserWarning:
             self.handler.show_error(_('Cancelled by user'))
             return b''
         except Exception as e:
-            self.give_error(e, True)
+            self.give_error(e)
         finally:
             self.handler.finished()
         # Parse the ASN.1 signature
@@ -865,6 +869,7 @@ class Ledger_Client_Legacy(Ledger_Client):
         if sLength == 33:
             s = s[1:]
         # And convert it
+
         # Pad r and s points with 0x00 bytes when the point is small to get valid signature.
         r_padded = bytes([0x00]) * (32 - len(r)) + r
         s_padded = bytes([0x00]) * (32 - len(s)) + s
@@ -873,6 +878,8 @@ class Ledger_Client_Legacy(Ledger_Client):
 
 
 class Ledger_Client_New(Ledger_Client):
+    """Client based on the ledger_bitcoin library, targeting versions 2.1.* and above."""
+
     is_legacy = False
 
     def __init__(self, hidDevice: 'HID', *, product_key: Tuple[int, int],
@@ -882,7 +889,9 @@ class Ledger_Client_New(Ledger_Client):
         self.client = ledger_qtum.client.NewClient(transport, get_chain())
         self._product_key = product_key
         self._soft_device_id = None
+
         self.master_fingerprint = None
+
         self._known_xpubs: Dict[str, str] = {}  # path ==> xpub
         self._registered_policies: Dict[bytes, bytes] = {}  # wallet id => wallet hmac
 
@@ -1076,7 +1085,6 @@ class Ledger_Client_New(Ledger_Client):
 
                 if utxo is None:
                     continue
-
                 if (desc := electrum_txin.script_descriptor) is None:
                     raise Exception("script_descriptor missing for txin ")
                 scriptcode = desc.expand().scriptcode_for_sighash
@@ -1254,6 +1262,8 @@ class Ledger_Client_New(Ledger_Client):
 
 
 class Ledger_KeyStore(Hardware_KeyStore):
+    """Ledger keystore. Targets all versions, will have different behavior with different clients."""
+
     hw_type = 'ledger'
     device = 'Ledger'
 
@@ -1338,6 +1348,7 @@ class LedgerPlugin(HW_PluginBase):
         HW_PluginBase.__init__(self, parent, config, name)
         self.libraries_available = self.check_libraries_available()
         if not self.libraries_available:
+            _logger.info("Library unavailable")
             return
         # to support legacy devices and legacy firmwares
         self.device_manager().register_devices(self.DEVICE_IDS, plugin=self)
@@ -1346,11 +1357,11 @@ class LedgerPlugin(HW_PluginBase):
 
     def get_library_version(self):
         try:
-            import btchip
-            version = btchip.__version__
+            import ledger_qtum
+            version = ledger_qtum.__version__
         except ImportError:
             raise
-        except:
+        except Exception:
             version = "unknown"
         if LEDGER_QTUM:
             return version
@@ -1370,6 +1381,10 @@ class LedgerPlugin(HW_PluginBase):
                 return True, "Ledger Nano S"
             if product_key == (0x2c97, 0x0004):
                 return True, "Ledger Nano X"
+            if product_key == (0x2c97, 0x0005):
+                return True, "Ledger Nano S Plus"
+            if product_key == (0x2c97, 0x0006):
+                return True, "Ledger Stax"
             return True, None
         # modern product_keys
         if product_key[0] == 0x2c97:
@@ -1395,25 +1410,6 @@ class LedgerPlugin(HW_PluginBase):
         return device
 
     @runs_in_hwd_thread
-    def get_btchip_device(self, device):
-        ledger = False
-        if device.product_key[0] == 0x2581 and device.product_key[1] == 0x3b7c:
-            ledger = True
-        if device.product_key[0] == 0x2581 and device.product_key[1] == 0x4b7c:
-            ledger = True
-        if device.product_key[0] == 0x2c97:
-            if device.interface_number == 0 or device.usage_page == 0xffa0:
-                ledger = True
-            else:
-                return None  # non-compatible interface of a Nano S or Blue
-        if (os.getenv("LEDGER_PROXY_ADDRESS") is not None) and (os.getenv("LEDGER_PROXY_PORT") is not None):
-            return DongleServer(os.getenv("LEDGER_PROXY_ADDRESS"), int(os.getenv("LEDGER_PROXY_PORT")), BTCHIP_DEBUG)
-        dev = hid.device()
-        dev.open_path(device.path)
-        dev.set_nonblocking(True)
-        return HIDDongleHIDAPI(dev, ledger, BTCHIP_DEBUG)
-
-    @runs_in_hwd_thread
     def create_client(self, device, handler) -> Optional[Ledger_Client]:
         try:
             return Ledger_Client.construct_new(device=device, product_key=device.product_key, plugin=self)
@@ -1432,7 +1428,6 @@ class LedgerPlugin(HW_PluginBase):
         if xtype not in self.SUPPORTED_XTYPES:
             raise ScriptTypeNotSupported(_('This type of script is not supported with {}.').format(self.device))
         client = self.scan_and_create_client_for_device(device_id=device_id, wizard=wizard)
-        client.checkDevice()
         xpub = client.get_xpub(derivation, xtype)
         return xpub
 
