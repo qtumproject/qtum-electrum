@@ -1389,33 +1389,33 @@ class ElectrumWindow(QMainWindow, MessageBoxMixin, Logger):
         self.payto_e.set_completer(completer)
         completer.setModel(self.completions)
 
-        msg = _('Description of the transaction (not mandatory).') + '\n\n'\
-              + _('The description is not sent to the recipient of the funds. It is stored in your wallet file, and displayed in the \'History\' tab.')
-        description_label = HelpLabel(_('Description'), msg)
-        grid.addWidget(description_label, 2, 0)
-        self.message_e = FreezableLineEdit()
-        self.message_e.setMinimumWidth(700)
-        grid.addWidget(self.message_e, 2, 1, 1, -1)
-
         msg = _('Amount to be sent.') + '\n\n' \
               + _('The amount will be displayed in red if you do not have enough funds in your wallet.') + ' ' \
               + _('Note that if you have frozen some of your addresses, the available funds will be lower than your total balance.') + '\n\n' \
               + _('Keyboard shortcut: type "!" to send all your coins.')
         amount_label = HelpLabel(_('Amount'), msg)
-        grid.addWidget(amount_label, 3, 0)
-        grid.addWidget(self.amount_e, 3, 1)
+        grid.addWidget(amount_label, 2, 0)
+        grid.addWidget(self.amount_e, 2, 1)
 
         self.fiat_send_e = AmountEdit(self.fx.get_currency if self.fx else '')
         if not self.fx or not self.fx.is_enabled():
             self.fiat_send_e.setVisible(False)
-        grid.addWidget(self.fiat_send_e, 3, 2)
+        grid.addWidget(self.fiat_send_e, 2, 2)
         self.amount_e.frozen.connect(
             lambda: self.fiat_send_e.setFrozen(self.amount_e.isReadOnly()))
 
         self.max_button = EnterButton(_("Max"), self.spend_max)
         self.max_button.setFixedWidth(100)
         self.max_button.setCheckable(True)
-        grid.addWidget(self.max_button, 3, 3)
+        grid.addWidget(self.max_button, 2, 3)
+
+        msg = _('Description of the transaction (not mandatory).') + '\n\n' \
+              + _('The description is not sent to the recipient of the funds. It is stored in your wallet file, and displayed in the \'History\' tab.')
+        description_label = HelpLabel(_('Description'), msg)
+        grid.addWidget(description_label, 3, 0)
+        self.message_e = FreezableLineEdit()
+        self.message_e.setMinimumWidth(700)
+        grid.addWidget(self.message_e, 3, 1, 1, -1)
 
         self.save_button = EnterButton(_("Save"), self.do_save_invoice)
         self.send_button = EnterButton(_("Pay") + "...", self.do_pay)
