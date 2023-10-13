@@ -911,8 +911,12 @@ class OverlayControlMixin:
                     new_text = data
                 setText(new_text)
 
-            from .qrreader import scan_qrcode
-            scan_qrcode(parent=self, config=config, callback=cb)
+            try:
+                from .qrreader import scan_qrcode
+                scan_qrcode(parent=self, config=config, callback=cb)
+            except Exception as e:
+                show_error(_("Unable to scan with camera.") + "\n" + repr(e))
+                return
 
         def qr_from_screenshot_input() -> None:
             from .qrreader import scan_qr_from_image
