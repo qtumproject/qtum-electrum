@@ -37,9 +37,7 @@ from electrum.util import base_units_list
 
 from .util import (ColorScheme, WindowModalDialog, HelpLabel, Buttons,
                    CloseButton)
-
 from electrum.i18n import languages
-from electrum import qrscanner
 
 if TYPE_CHECKING:
     from electrum.simple_config import SimpleConfig
@@ -210,12 +208,15 @@ Use this if you want your local watchtower to keep running after you close your 
         msg = (_("For scanning QR codes.") + "\n"
                + _("Install the zbar package to enable this."))
         qr_label = HelpLabel(_('Video Device') + ':', msg)
-        from .qrreader import find_system_cameras
-        system_cameras = find_system_cameras()
-        for cam_desc, cam_path in system_cameras.items():
-            qr_combo.addItem(cam_desc, cam_path)
-        index = qr_combo.findData(self.config.get("video_device"))
-        qr_combo.setCurrentIndex(index)
+        try:
+            from .qrreader import find_system_cameras
+            system_cameras = find_system_cameras()
+            for cam_desc, cam_path in system_cameras.items():
+                qr_combo.addItem(cam_desc, cam_path)
+            index = qr_combo.findData(self.config.get("video_device"))
+            qr_combo.setCurrentIndex(index)
+        except Exception as e:
+            print("cannot find or set cameras:", e)
         on_video_device = lambda x: self.config.set_key("video_device", qr_combo.itemData(x), True)
         qr_combo.currentIndexChanged.connect(on_video_device)
         gui_widgets.append((qr_label, qr_combo))
