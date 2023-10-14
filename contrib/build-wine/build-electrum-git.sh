@@ -49,13 +49,15 @@ export MULTIDICT_NO_EXTENSIONS=1
 export FROZENLIST_NO_EXTENSIONS=1
 
 info "Installing requirements..."
-$WINE_PYTHON -m pip install --no-build-isolation --no-dependencies --no-warn-script-location \
+$WINE_PYTHON -m pip install --no-build-isolation --no-dependencies --no-binary :all: --no-warn-script-location \
     --cache-dir "$WINE_PIP_CACHE_DIR" -r "$CONTRIB"/deterministic-build/requirements.txt
 
 $WINE_PYTHON -m pip install --no-build-isolation --no-dependencies --no-warn-script-location \
+    --no-binary :all: --only-binary cffi,cryptography \
     --cache-dir "$WINE_PIP_CACHE_DIR" -r "$CONTRIB"/deterministic-build/requirements-binaries.txt
 
 $WINE_PYTHON -m pip install --no-build-isolation --no-dependencies --no-warn-script-location \
+    --no-binary :all: --only-binary PyQt5,PyQt5-Qt5,PyQt5-sip \
     --cache-dir "$WINE_PIP_CACHE_DIR" -r "$CONTRIB"/deterministic-build/requirements-qt.txt
 
 $WINE_PYTHON -m pip install --no-build-isolation --no-dependencies --no-warn-script-location \
