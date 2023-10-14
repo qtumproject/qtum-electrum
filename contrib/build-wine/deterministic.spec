@@ -2,12 +2,10 @@
 
 from PyInstaller.utils.hooks import collect_data_files, collect_submodules, collect_dynamic_libs
 
-import sys
-for i, x in enumerate(sys.argv):
-    if x == '--name':
-        cmdline_name = sys.argv[i+1]
-        break
-else:
+import sys, os
+
+cmdline_name = os.environ.get("ELECTRUM_CMDLINE_NAME")
+if not cmdline_name:
     raise Exception('no name')
 
 PYHOME = 'c:/python3'
@@ -19,7 +17,8 @@ hiddenimports = []
 hiddenimports += collect_submodules('pkg_resources')  # workaround for https://github.com/pypa/setuptools/issues/1963
 hiddenimports += collect_submodules('trezorlib')
 hiddenimports += collect_submodules('safetlib')
-hiddenimports += collect_submodules('btchip')
+hiddenimports += collect_submodules('btchip')           # device plugin: ledger
+hiddenimports += collect_submodules('ledger_qtum')      # device plugin: ledger
 hiddenimports += collect_submodules('keepkeylib')
 hiddenimports += collect_submodules('websocket')
 hiddenimports += collect_submodules('ckcc')

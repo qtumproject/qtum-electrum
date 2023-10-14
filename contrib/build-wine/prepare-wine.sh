@@ -6,11 +6,10 @@ NSIS_URL=https://downloads.sourceforge.net/project/nsis/NSIS%203/3.08/$NSIS_FILE
 NSIS_SHA256=bbc76be36ecb2fc00d493c91befdaf71654226ad8a4fc4dc338458916bf224d0
 
 PYINSTALLER_REPO="https://github.com/pyinstaller/pyinstaller.git"
-PYINSTALLER_COMMIT="413cce49ff28d87fad4472f4953489226ec90c84"
-# ^ tag "v5.11.0"
+PYINSTALLER_COMMIT="d1b6b520a017578a19e1cb9514752a4517755ee0"
+# ^ tag "v5.13.2"
 
-PYTHON_VERSION=3.10.11
-
+PYTHON_VERSION=3.11.6
 
 # Let's begin!
 set -e
