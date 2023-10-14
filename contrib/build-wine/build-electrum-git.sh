@@ -53,7 +53,7 @@ $WINE_PYTHON -m pip install --no-build-isolation --no-dependencies --no-binary :
     --cache-dir "$WINE_PIP_CACHE_DIR" -r "$CONTRIB"/deterministic-build/requirements.txt
 
 $WINE_PYTHON -m pip install --no-build-isolation --no-dependencies --no-warn-script-location \
-    --no-binary :all: --only-binary cffi,cryptography \
+    --no-binary :all: --only-binary cffi,cryptography,pycryptodomex \
     --cache-dir "$WINE_PIP_CACHE_DIR" -r "$CONTRIB"/deterministic-build/requirements-binaries.txt
 
 $WINE_PYTHON -m pip install --no-build-isolation --no-dependencies --no-warn-script-location \
