@@ -46,7 +46,7 @@ datas += collect_data_files('bitbox02')
 
 # Add libusb so Trezor and Safe-T mini will work
 binaries = [(electrum + "contrib/osx/libusb-1.0.dylib", ".")]
-binaries += [(electrum + "contrib/osx/libsecp256k1.0.dylib", ".")]
+binaries += [(electrum + "contrib/osx/libsecp256k1.2.dylib", ".")]
 binaries += [(electrum + "contrib/osx/libzbar.0.dylib", ".")]
 
 # Workaround for "Retro Look":
