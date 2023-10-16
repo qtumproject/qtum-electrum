@@ -1088,7 +1088,7 @@ class Ledger_Client_New(Ledger_Client):
                     )
 
             # sign opsender
-            for _, (addrtype, bip32_path, wallet, wallet_hmac) in sorted(sender_wallets.items(), key=lambda y: y[1][0]):
+            for __, (addrtype, bip32_path, wallet, wallet_hmac) in sorted(sender_wallets.items(), key=lambda y: y[1][0]):
                 print("sign_sender_psbt", addrtype, bip32_path, wallet, wallet_hmac)
                 sender_sigs = self.client.sign_sender_psbt(psbt, bip32_path, wallet, wallet_hmac)
                 for odx, part_sig in sender_sigs:
