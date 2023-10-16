@@ -1311,7 +1311,7 @@ class Ledger_KeyStore(Hardware_KeyStore):
         return self.get_client_ledger().sign_transaction(self, *args, **kwargs)
 
     def show_address(self, sequence, *args, **kwargs):
-        address_path = self.get_derivation_prefix()[2:] + "/%d/%d" % sequence
+        address_path = self.get_derivation_prefix() + "/%d/%d" % sequence
         address_path = normalize_bip32_derivation(address_path, hardened_char="'")
         address_path = address_path[2:]  # cut m/
         self.get_client_ledger().show_address(address_path, *args, **kwargs)
