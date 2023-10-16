@@ -267,4 +267,4 @@ wheel==0.38.4 \
 https://github.com/qtumproject/btchip-python/archive/master.zip \
     --hash=sha256:6d8a3ebfa6928687bee741c2aacfb9a297ebd6f02e8220d5b9fdf730e0699204
 https://github.com/qtumproject/ledger-qtum-py/archive/main.zip \
-    --hash=sha256:3c629ab8c2c6f9e7c49ebbdfc1df89007ae5dd14fe225739c2cff9278a8fa81d
+    --hash=sha256:79580f3cc24cd73eabe9690e2fba4cd399c4a439eaf28fba85d104f2ed2722f8

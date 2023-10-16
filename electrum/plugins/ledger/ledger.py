@@ -1068,6 +1068,38 @@ class Ledger_Client_New(Ledger_Client):
         try:
             master_fp = self.client.get_master_fingerprint()
 
+            # Figure out which wallets are signing for opsender
+            sender_wallets: Dict[bytes, Tuple[AddressType, str, WalletPolicy, Optional[bytes]]] = {}
+            for output_num, psbt_out in enumerate(psbt.outputs):
+                decoded = decode_opsender_script(psbt_out.script)
+                if (decoded is None) or decoded[3][1]:
+                    continue
+                for pubkey, origin in psbt_out.hd_keypaths.items():
+                    if origin.fingerprint != master_fp or hash_160(pubkey) != decoded[1][1]:
+                        continue
+                    sender_path = origin.get_derivation_path(hardened_char="'")
+                    script_addrtype = AddressType.LEGACY
+                    policy = self.get_singlesig_default_wallet_policy(script_addrtype, origin.path[2])
+                    sender_wallets[policy.id] = (
+                        script_addrtype,
+                        sender_path,
+                        policy,
+                        None, # Wallet hmac
+                    )
+
+            # sign opsender
+            for _, (addrtype, bip32_path, wallet, wallet_hmac) in sorted(sender_wallets.items(), key=lambda y: y[1][0]):
+                print("sign_sender_psbt", addrtype, bip32_path, wallet, wallet_hmac)
+                sender_sigs = self.client.sign_sender_psbt(psbt, bip32_path, wallet, wallet_hmac)
+                for odx, part_sig in sender_sigs:
+                    sig = bytes.fromhex(push_data((part_sig.signature + b'\x01').hex()))
+                    sig += bytes.fromhex(push_data(part_sig.pubkey.hex()))
+                    sig = bytes.fromhex(int_to_hex(len(sig))) + sig
+                    psbt_out = psbt.outputs[odx]
+                    print("update_opsender_sig")
+                    psbt_out.script = update_opsender_sig(psbt_out.script, sig)
+                    tx._outputs[odx].scriptPubKey = psbt_out.script
+
             # Figure out which wallets are signing
             wallets: Dict[bytes, Tuple[AddressType, WalletPolicy, Optional[bytes]]] = {}
             for input_num, (electrum_txin, psbt_in) in enumerate(zip(tx.inputs(), psbt.inputs)):
