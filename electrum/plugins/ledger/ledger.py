@@ -1064,6 +1064,7 @@ class Ledger_Client_New(Ledger_Client):
         psbt_bytes = tx.serialize_as_bytes()
         psbt = ledger_qtum.client.PSBT()
         psbt.deserialize(base64.b64encode(psbt_bytes).decode('ascii'))
+        psbt.convert_to_v2()
 
         try:
             master_fp = self.client.get_master_fingerprint()
@@ -1098,7 +1099,7 @@ class Ledger_Client_New(Ledger_Client):
                     psbt_out = psbt.outputs[odx]
                     print("update_opsender_sig")
                     psbt_out.script = update_opsender_sig(psbt_out.script, sig)
-                    tx._outputs[odx].scriptPubKey = psbt_out.script
+                    tx._outputs[odx].scriptpubkey = psbt_out.script
 
             # Figure out which wallets are signing
             wallets: Dict[bytes, Tuple[AddressType, WalletPolicy, Optional[bytes]]] = {}
