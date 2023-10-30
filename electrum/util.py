@@ -402,7 +402,7 @@ class DaemonThread(threading.Thread, Logger):
     def __init__(self):
         threading.Thread.__init__(self)
         Logger.__init__(self)
-        self.parent_thread = threading.currentThread()
+        self.parent_thread = threading.current_thread()
         self.running = False
         self.running_lock = threading.Lock()
         self.job_lock = threading.Lock()
